@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { base44 } from "@/api/base44Client";
 import { toDayKey, todayKey, parseShotDate } from "@/lib/dateUtils";
 import { convertWeight } from "@/lib/units";
+import { getPendingDoses, buildShotFromSchedule } from "@/lib/repeatSchedule";
 import { seedDemoDataIfNeeded } from "@/lib/seedDemoData";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -40,6 +41,7 @@ export function AppStateProvider({ children }) {
   const [inventory, setInventory] = useState([]);
   const [storageLogs, setStorageLogs] = useState([]);
   const [proxyAccess, setProxyAccess] = useState([]);
+  const [repeatSchedules, setRepeatSchedules] = useState([]);
 
   // ── Dark mode ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -61,6 +63,7 @@ export function AppStateProvider({ children }) {
       loadInventory();
       loadStorageLogs();
       loadProxyAccess();
+      loadRepeatSchedules();
     })();
   }, [isAuthenticated]);
 
@@ -126,6 +129,39 @@ export function AppStateProvider({ children }) {
   const loadProxyAccess = async () => {
     const data = await base44.entities.ProxyAccess.list("-created_date", 100);
     setProxyAccess(data);
+  };
+
+  // ── Repeat schedules ──────────────────────────────────────────────────────
+  const loadRepeatSchedules = async () => {
+    const data = await base44.entities.RepeatSchedule.list("-created_date", 100);
+    setRepeatSchedules(data);
+  };
+
+  const addRepeatSchedule = async (data) => {
+    const rec = await base44.entities.RepeatSchedule.create(data);
+    setRepeatSchedules((prev) => [rec, ...prev]);
+    return rec;
+  };
+
+  const updateRepeatSchedule = async (id, updates) => {
+    const rec = await base44.entities.RepeatSchedule.update(id, updates);
+    setRepeatSchedules((prev) => prev.map((s) => (s.id === id ? { ...s, ...rec } : s)));
+    return rec;
+  };
+
+  // One-tap confirm: logs a complete dose for the scheduled occurrence date.
+  // Nothing is written until the user confirms.
+  const confirmRepeatDose = async (schedule, dayKey) => {
+    const injectable = ["subcutaneous", "intramuscular", "intradermal"].includes(schedule.route);
+    const shot = buildShotFromSchedule(schedule, dayKey, injectable ? getRecommendedSite() : schedule.site);
+    const rec = await addShot(shot);
+    await updateRepeatSchedule(schedule.id, { last_confirmed_date: dayKey });
+    return rec;
+  };
+
+  const skipRepeatDose = async (schedule, dayKey) => {
+    const skipped = Array.from(new Set([...(schedule.skipped_dates || []), dayKey]));
+    await updateRepeatSchedule(schedule.id, { skipped_dates: skipped });
   };
 
   // ── Shots CRUD ─────────────────────────────────────────────────────────────
@@ -431,6 +467,7 @@ export function AppStateProvider({ children }) {
   const resetState = () => {
     setShots([]); setDayMetrics({}); setProgressPhotosList([]); setJournalEntries([]);
     setMedications([]); setAdverseEvents([]); setInventory([]); setStorageLogs([]); setProxyAccess([]);
+    setRepeatSchedules([]);
     setProfileState(DEFAULT_PROFILE); setProfileId(null);
     setDarkModeState(false); setOnboardingCompleted(null);
   };
@@ -468,6 +505,9 @@ export function AppStateProvider({ children }) {
     return sites[(lastIdx + 1) % sites.length];
   }, [shots]);
 
+  // Repeat doses due today or overdue, awaiting confirmation
+  const pendingRepeatDoses = getPendingDoses(repeatSchedules, shots);
+
   return (
     <AppStateContext.Provider value={{
       // Shots
@@ -493,6 +533,9 @@ export function AppStateProvider({ children }) {
       storageLogs, addStorageLog, deleteStorageLog,
       // ProxyAccess
       proxyAccess, addProxyAccess, revokeProxyAccess,
+      // Repeat schedules
+      repeatSchedules, pendingRepeatDoses, addRepeatSchedule, updateRepeatSchedule,
+      loadRepeatSchedules, confirmRepeatDose, skipRepeatDose,
       // Profile
       profile, setProfile, recordConsent, recordParentalConsent,
       refreshProfile: loadProfile,

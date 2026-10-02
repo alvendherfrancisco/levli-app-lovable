@@ -7,6 +7,8 @@ import { getDeliveryMethods, getDeliveryMethodLabel, getSelectableRoutes, RETIRE
 import { getCapabilityProfile, getCapabilityWarning, getMolecularClassLabel } from "@/lib/capabilityProfile";
 import { detectDuplicateActiveIngredient } from "@/lib/drugSafety";
 import { convertDose, doseStep, doseUnitLabel } from "@/lib/units";
+import { addDaysToKey } from "@/lib/repeatSchedule";
+import RepeatOptionsField from "@/components/modals/RepeatOptionsField";
 import { toast } from "sonner";
 
 // Routes that require site selection
@@ -35,8 +37,9 @@ const pad = (n) => String(n).padStart(2, "0");
 function toInputDate(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 function toInputTime(d) { return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
 
-export default function AddShotModal({ open, onClose, editingShot }) {
-  const { addShot, updateShot, deleteShot, profile, getRecommendedSite, shots, medications } = useAppState();
+export default function AddShotModal({ open, onClose, editingShot, initialValues }) {
+  const { addShot, updateShot, deleteShot, profile, getRecommendedSite, shots, medications,
+    repeatSchedules, addRepeatSchedule, updateRepeatSchedule } = useAppState();
   const confirmedDupRef = useRef(false);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
 
@@ -61,6 +64,11 @@ export default function AddShotModal({ open, onClose, editingShot }) {
   const [deviceType, setDeviceType] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Repeat schedule (weekly repeat of the dose being logged)
+  const [repeatOn, setRepeatOn] = useState(false);
+  const [repeatMode, setRepeatMode] = useState("weeks");
+  const [repeatWeeks, setRepeatWeeks] = useState("12");
 
   // Route-specific fields
   const [infusionDuration, setInfusionDuration] = useState("");
@@ -98,6 +106,7 @@ export default function AddShotModal({ open, onClose, editingShot }) {
   );
 
   const recommendedSite = getRecommendedSite();
+  const scheduleFor = (med) => repeatSchedules.find((s) => s.status === "active" && s.medication === med) || null;
 
   useEffect(() => {
     if (open) {
@@ -160,7 +169,22 @@ export default function AddShotModal({ open, onClose, editingShot }) {
         setInsertionDate(toInputDate(n)); setPumpRate(""); setSiteChangeDate(toInputDate(n));
         setReconstitutionDate(""); setInUseExpiry("");
         setDate(toInputDate(n)); setTime(toInputTime(n));
+        if (initialValues) {
+          setMedication(initialValues.medication || defaultMed);
+          setMedicationId(initialValues.medication_id || "");
+          setDose(String(initialValues.dose ?? "2.50"));
+          setDoseUnit(initialValues.dose_unit || "mg");
+          setConcentration(initialValues.concentration || "");
+          setRoute(initialValues.route || getPrimaryRoute(initialValues.medication || defaultMed));
+          setDeviceType(initialValues.device_type || "");
+          setNotes(initialValues.notes || "");
+          setDate(initialValues.date || toInputDate(n));
+          setTime(initialValues.time || toInputTime(n));
+        }
       }
+      setRepeatOn(!!scheduleFor(editingShot?.medication || initialValues?.medication || defaultMed));
+      setRepeatMode("weeks");
+      setRepeatWeeks("12");
       setError("");
       confirmedDupRef.current = false;
       setDuplicateWarning(null);
@@ -182,6 +206,41 @@ export default function AddShotModal({ open, onClose, editingShot }) {
 
   if (!open) return null;
 
+  // Creates, updates, or ends the weekly repeat for the dose being logged.
+  const syncRepeatSchedule = async (doseNum) => {
+    const existing = scheduleFor(medication);
+    if (!repeatOn) {
+      if (existing) {
+        await updateRepeatSchedule(existing.id, { status: "cancelled" });
+      }
+      return;
+    }
+    const weeks = Math.max(1, parseInt(repeatWeeks, 10) || 12);
+    const startKey = addDaysToKey(date, 7);
+    const base = {
+      medication,
+      medication_id: medicationId || "",
+      dose: doseNum,
+      dose_unit: doseUnit,
+      concentration: isCompounded ? concentration.trim() : "",
+      drug_class: DRUG_CLASS[medication] || "GLP-1",
+      molecular_class: getMolecularClass(medication),
+      route: activeRoute,
+      device_type: deviceType || "",
+      site: isInjectable ? site : "",
+      notes: notes || "",
+      time,
+      start_date: startKey,
+      repeat_mode: repeatMode,
+      repeat_weeks: repeatMode === "weeks" ? weeks : 0,
+      end_date: repeatMode === "weeks" ? addDaysToKey(startKey, (weeks - 1) * 7) : "",
+      status: "active",
+      skipped_dates: [],
+    };
+    if (existing) await updateRepeatSchedule(existing.id, base);
+    else await addRepeatSchedule(base);
+  };
+
   const handleSave = async () => {
     const doseNum = parseFloat(dose);
     if (isNaN(doseNum) || doseNum <= 0) {
@@ -196,6 +255,10 @@ export default function AddShotModal({ open, onClose, editingShot }) {
         setError(`That dose exceeds the typical maximum for ${medication} (${maxDoseMg} mg). Check the label or confirm with your prescriber.`);
         return;
       }
+    }
+    if (!editingShot && repeatOn && repeatMode === "weeks" && !(parseInt(repeatWeeks, 10) >= 1)) {
+      setError("Enter how many weeks to repeat this dose for.");
+      return;
     }
     if (!editingShot && !confirmedDupRef.current) {
       const dup = detectDuplicateActiveIngredient(medication, shots);
@@ -262,6 +325,7 @@ export default function AddShotModal({ open, onClose, editingShot }) {
         toast.success("Shot updated successfully!");
       } else {
         await addShot(payload);
+        await syncRepeatSchedule(doseNum);
         toast.success("Shot added successfully!");
       }
       setSaving(false);
@@ -338,7 +402,7 @@ export default function AddShotModal({ open, onClose, editingShot }) {
               {showMedDropdown && (
                 <div className="absolute z-10 mt-1 w-full bg-white dark:bg-[#1e2130] border border-gray-200 dark:border-white/[0.08] rounded-xl shadow-lg max-h-64 overflow-y-auto">
                   {MEDICATIONS.map((m) => (
-                    <button key={m} onClick={() => { setMedication(m); setRoute(getPrimaryRoute(m)); if (RETIRED_DELIVERY_METHODS.includes(deviceType)) setDeviceType(""); setShowMedDropdown(false); }}
+                    <button key={m} onClick={() => { setMedication(m); setRoute(getPrimaryRoute(m)); if (RETIRED_DELIVERY_METHODS.includes(deviceType)) setDeviceType(""); setRepeatOn(!!scheduleFor(m)); setShowMedDropdown(false); }}
                       className={`w-full px-4 py-3 text-left text-sm dark:text-[#E8E9F0] ${medication === m ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-medium" : "hover:bg-gray-50 dark:hover:bg-white/[0.05]"}`}>
                       <span className="block">{m}</span>
                       <span className="text-xs text-gray-400 dark:text-gray-500 block">{getMolecularClassLabel(m)}</span>
@@ -618,6 +682,24 @@ export default function AddShotModal({ open, onClose, editingShot }) {
               placeholder={isCompounded ? "e.g. pharmacy name, how you felt" : "Add any notes or side effects experienced"}
               className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-sm resize-none h-24 outline-none focus:border-indigo-300" />
           </div>
+
+          {/* Repeat this dose — weekly repeat schedule */}
+          {!editingShot && (
+            <RepeatOptionsField
+              enabled={repeatOn}
+              onToggle={setRepeatOn}
+              mode={repeatMode}
+              onModeChange={setRepeatMode}
+              weeks={repeatWeeks}
+              onWeeksChange={setRepeatWeeks}
+              schedule={scheduleFor(medication)}
+              dayKey={date}
+              time={time}
+              medication={medication}
+              dose={dose}
+              doseUnit={doseUnit}
+            />
+          )}
         </div>
 
         {duplicateWarning && (

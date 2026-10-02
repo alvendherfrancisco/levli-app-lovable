@@ -5,11 +5,15 @@ import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import { useAppState } from "@/lib/AppState";
 import MedicationModal from "@/components/modals/MedicationModal";
+import RepeatScheduleCard from "@/components/medications/RepeatScheduleCard";
+import RepeatScheduleModal from "@/components/modals/RepeatScheduleModal";
 
 export default function MyMedications() {
-  const { medications, deleteMedication, shots } = useAppState();
+  const { medications, deleteMedication, shots, repeatSchedules } = useAppState();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
 
   const openNew = () => { setEditing(null); setModalOpen(true); };
   const openEdit = (m) => { setEditing(m); setModalOpen(true); };
@@ -40,6 +44,23 @@ export default function MyMedications() {
         <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
           Track your prescribed regimens. Titration stages show only what you or your prescriber entered — Levli never generates a schedule.
         </p>
+
+        {repeatSchedules.filter((s) => s.status !== "cancelled").length > 0 && (
+          <div className="mb-5">
+            <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1">Repeat schedules</p>
+            <div className="space-y-3">
+              {repeatSchedules
+                .filter((s) => s.status !== "cancelled")
+                .map((s) => (
+                  <RepeatScheduleCard
+                    key={s.id}
+                    schedule={s}
+                    onEdit={(sched) => { setEditingSchedule(sched); setScheduleOpen(true); }}
+                  />
+                ))}
+            </div>
+          </div>
+        )}
 
         {medications.length === 0 ? (
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 text-center">
@@ -84,6 +105,11 @@ export default function MyMedications() {
       <Fab onClick={openNew} label="Add Medication" />
 
       <MedicationModal open={modalOpen} onClose={() => { setModalOpen(false); setEditing(null); }} editing={editing} />
+      <RepeatScheduleModal
+        open={scheduleOpen}
+        onClose={() => { setScheduleOpen(false); setEditingSchedule(null); }}
+        schedule={editingSchedule}
+      />
     </PageContainer>
   );
 }

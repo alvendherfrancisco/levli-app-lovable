@@ -5,8 +5,7 @@ import { toast } from "sonner";
 import { useAppState } from "@/lib/AppState";
 import { todayKey } from "@/lib/dateUtils";
 import {
-  shotDateFromKey, inputTimeToShotTime, shotTimeToInput, weekdayName, weekdayOfKey,
-  describeRepeat, getNextOccurrence,
+  shotDateFromKey, inputTimeToShotTime, shotTimeToInput, describeRepeat, getNextOccurrence,
 } from "@/lib/repeatSchedule";
 
 /**
@@ -21,6 +20,7 @@ export default function RepeatDoseCard({ onEdit }) {
 
   const activeSchedules = repeatSchedules.filter((s) => s.status === "active");
   const pending = pendingRepeatDoses.slice(0, 3);
+  const morePending = pendingRepeatDoses.length - pending.length;
 
   if (pending.length === 0 && activeSchedules.length === 0) return null;
 
@@ -114,6 +114,12 @@ export default function RepeatDoseCard({ onEdit }) {
           </div>
         );
       })}
+
+      {morePending > 0 && (
+        <p className="mx-4 -mt-2 mb-4 text-xs text-gray-400 dark:text-gray-500">
+          {morePending} more repeat dose{morePending === 1 ? "" : "s"} waiting — confirm or skip these first.
+        </p>
+      )}
 
       {pending.length === 0 &&
         activeSchedules.map((schedule) => {

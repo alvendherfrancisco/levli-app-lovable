@@ -171,14 +171,17 @@ export function getPendingDoses(schedules, shots) {
 export function getNextOccurrence(schedule, fromKey) {
   if (!schedule?.start_date || schedule.status !== "active") return null;
   const base = fromKey || todayKey();
+  const skipped = new Set(schedule.skipped_dates || []);
   const d = fromDayKey(schedule.start_date);
   let key = toDayKey(d);
-  while (key < base) {
+  let guard = 0;
+  while (guard++ < 600) {
+    if (schedule.end_date && key > schedule.end_date) return null;
+    if (key >= base && !skipped.has(key)) return key;
     d.setDate(d.getDate() + 7);
     key = toDayKey(d);
   }
-  if (schedule.end_date && key > schedule.end_date) return null;
-  return key;
+  return null;
 }
 
 /** "Every Monday at 8:00 AM" */

@@ -5,6 +5,7 @@ import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import DateStrip from "@/components/home/DateStrip";
 import NextShotCard from "@/components/home/NextShotCard";
+import RepeatDoseCard from "@/components/home/RepeatDoseCard";
 import MetricsGrid from "@/components/home/MetricsGrid";
 import AddShotModal from "@/components/modals/AddShotModal";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
@@ -15,6 +16,7 @@ import { useSubscription } from "@/lib/SubscriptionContext";
 
 export default function Home() {
   const [showShot, setShowShot] = useState(false);
+  const [shotPreset, setShotPreset] = useState(null);
   const [showSideEffects, setShowSideEffects] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const { getSideEffects, adverseEventsByDay } = useAppState();
@@ -35,6 +37,7 @@ export default function Home() {
 
       <div className="max-w-3xl mx-auto pt-4">
         <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+        <RepeatDoseCard onEdit={(preset) => { setShotPreset(preset); setShowShot(true); }} />
         <NextShotCard />
         <MetricsGrid dayKey={dk} />
 
@@ -109,9 +112,9 @@ export default function Home() {
         </p>
       </div>
 
-      <Fab onClick={() => setShowShot(true)} label="Add Shot" />
+      <Fab onClick={() => { setShotPreset(null); setShowShot(true); }} label="Add Shot" />
 
-      <AddShotModal open={showShot} onClose={() => setShowShot(false)} />
+      <AddShotModal open={showShot} onClose={() => { setShowShot(false); setShotPreset(null); }} initialValues={shotPreset} />
       <SideEffectsModal open={showSideEffects} onClose={() => setShowSideEffects(false)} dayKey={dk} />
     </PageContainer>
   );

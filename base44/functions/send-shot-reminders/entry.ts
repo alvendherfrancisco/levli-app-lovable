@@ -57,6 +57,55 @@ function greet(firstName: string): string {
   return firstName ? `Hi ${firstName}` : "Hi there";
 }
 
+// ── Repeat schedules ────────────────────────────────────────────────────────
+// An occurrence stays unresolved until a Shot for that medication exists inside
+// its weekly window. Levli never logs a dose on the user's behalf.
+
+function dayKeyToDate(key: string): Date {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function addDaysToKey(key: string, days: number): string {
+  const d = dayKeyToDate(key);
+  d.setDate(d.getDate() + days);
+  return toDayKey(d);
+}
+
+function findPendingOccurrence(schedule: any, userShots: any[], todayKey: string): { dayKey: string; daysLate: number } | null {
+  if (!schedule?.start_date) return null;
+  const skipped = new Set<string>(schedule.skipped_dates || []);
+  const medDayKeys = userShots
+    .filter((s) => s.medication === schedule.medication)
+    .map((s) => { const d = parseShotDate(s.date); return d ? toDayKey(d) : null; })
+    .filter(Boolean);
+
+  // Only look back 60 days so an abandoned course doesn't pile up.
+  const lookback = addDaysToKey(todayKey, -60);
+  let key = schedule.start_date;
+  if (key < lookback) {
+    const steps = Math.ceil((dayKeyToDate(lookback).getTime() - dayKeyToDate(key).getTime()) / (7 * 86400000));
+    key = addDaysToKey(key, steps * 7);
+    if (key < lookback) key = addDaysToKey(key, 7);
+  }
+
+  let guard = 0;
+  while (guard++ < 400) {
+    if (key > todayKey) return null;
+    if (schedule.end_date && key > schedule.end_date) return null;
+    if (!skipped.has(key)) {
+      const windowEnd = addDaysToKey(key, 7);
+      const covered = medDayKeys.some((k) => k >= key && k < windowEnd);
+      if (!covered) {
+        const daysLate = Math.round((dayKeyToDate(todayKey).getTime() - dayKeyToDate(key).getTime()) / 86400000);
+        return { dayKey: key, daysLate };
+      }
+    }
+    key = addDaysToKey(key, 7);
+  }
+  return null;
+}
+
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -67,7 +116,7 @@ export default async function(req) {
     }
 
     // Batch-fetch all data upfront (service role bypasses RLS)
-    const [allProfiles, allSubs, allLogs, allShots, allAdverse, allMetrics, allJournal, allInventory] = await Promise.all([
+    const [allProfiles, allSubs, allLogs, allShots, allAdverse, allMetrics, allJournal, allInventory, allSchedules] = await Promise.all([
       base44.asServiceRole.entities.UserProfile.list("", 1000),
       base44.asServiceRole.entities.PushSubscription.list(),
       base44.asServiceRole.entities.ReminderLog.list(),
@@ -76,6 +125,7 @@ export default async function(req) {
       base44.asServiceRole.entities.DayMetric.list("", 1000),
       base44.asServiceRole.entities.JournalEntry.list("", 1000),
       base44.asServiceRole.entities.Inventory.list("", 1000),
+      base44.asServiceRole.entities.RepeatSchedule.list("", 1000),
     ]);
 
     const profiles = allProfiles.filter((p) => p.notifications_enabled === true);
@@ -92,6 +142,7 @@ export default async function(req) {
     const metricsByUser = groupBy(allMetrics);
     const journalByUser = groupBy(allJournal);
     const inventoryByUser = groupBy(allInventory);
+    const schedulesByUser = groupBy(allSchedules);
 
     // Dedup: exact key match (user|instanceKey|reminder_type)
     const loggedKeys = new Set(allLogs.map((l) => `${l.created_by_id}|${l.shot_date_key}|${l.reminder_type}`));
@@ -107,6 +158,7 @@ export default async function(req) {
     const now = new Date();
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
+    const todayKey = toDayKey(today);
 
     // Manila time (UTC+8) for scheduling and quiet hours
     const manilaNow = new Date(now.getTime() + 8 * 3600000);
@@ -134,7 +186,37 @@ export default async function(req) {
 
         // ── 1. Shot due today / overdue (core reminder) ─────────────
         if (profile.notif_shot_reminders !== false) {
-          if (userShots.length > 0) {
+          // When a repeat schedule is running it drives the reminder, and the
+          // push deep-links straight to the one-tap confirm card on Home.
+          const activeSchedules = (schedulesByUser[userId] || []).filter((s) => s.status === 'active');
+          let dueSchedule: any = null;
+          let duePending: { dayKey: string; daysLate: number } | null = null;
+          for (const sched of activeSchedules) {
+            const pending = findPendingOccurrence(sched, userShots, todayKey);
+            if (!pending) continue;
+            if (!duePending || pending.dayKey < duePending.dayKey) {
+              dueSchedule = sched;
+              duePending = pending;
+            }
+          }
+
+          if (dueSchedule && duePending) {
+            const isToday = duePending.dayKey === todayKey;
+            const reminderKey = `${userId}|${duePending.dayKey}|due_today`;
+            if (!loggedKeys.has(reminderKey)) {
+              const medication = dueSchedule.medication || "your medication";
+              const doseLabel = dueSchedule.dose != null ? `${dueSchedule.dose} ${dueSchedule.dose_unit || 'mg'} ` : '';
+              const body = isToday
+                ? `${greet(firstName)}, one tap confirms your ${doseLabel}${medication} dose 💊`
+                : `${greet(firstName)}, your ${doseLabel}${medication} dose is ${duePending.daysLate} day${duePending.daysLate === 1 ? '' : 's'} overdue — confirm it when you can.`;
+              const payload = JSON.stringify({ title: isToday ? 'Dose day' : 'Levli Reminder', body, url: `/?confirm=${dueSchedule.id}` });
+              const result = await sendPushToUserSubs(base44, userSubs, payload, vapidConfig, {
+                created_by_id: userId, shot_date_key: duePending.dayKey, reminder_type: 'due_today', medication,
+              });
+              sent += result.sent; failed += result.failed;
+              sentThisRun.add('shot');
+            }
+          } else if (userShots.length > 0) {
             const lastShot = userShots[0];
             const lastDate = parseShotDate(lastShot.date);
             if (lastDate) {
