@@ -155,6 +155,7 @@ export default function SettingsPage() {
           await base44.entities.Shot.bulkCreate(data.shots.map((s) => ({
             medication: s.medication, dose: s.dose, drug_class: s.drug_class, molecular_class: s.molecular_class,
             route: s.route, device_type: s.device_type, dose_unit: s.dose_unit, medication_id: s.medication_id,
+            concentration: s.concentration,
             date: s.date, time: s.time, site: s.site, pain: s.pain, notes: s.notes,
             reconstitution_date: s.reconstitution_date, in_use_expiry: s.in_use_expiry,
           })));
