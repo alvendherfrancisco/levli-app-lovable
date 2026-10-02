@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Save, MapPin, Star, ChevronDown, Trash2 } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
-import { MEDICATIONS, DRUG_CLASS, isInvestigational, getDoseMax, getMedicationRoutes, getPrimaryRoute, getMolecularClass } from "@/lib/medicationData";
+import { MEDICATIONS, DRUG_CLASS, isInvestigational, getDoseMax, getPrimaryRoute, getMolecularClass } from "@/lib/medicationData";
 import { ROUTE_LABELS } from "@/lib/medicationCatalogue";
+import { getDeliveryMethods, getDeliveryMethodLabel, getSelectableRoutes, RETIRED_DELIVERY_METHODS } from "@/lib/deliveryMethods";
 import { getCapabilityProfile, getCapabilityWarning, getMolecularClassLabel } from "@/lib/capabilityProfile";
 import { detectDuplicateActiveIngredient } from "@/lib/drugSafety";
 import { convertDose, doseStep, doseUnitLabel } from "@/lib/units";
@@ -26,17 +27,6 @@ const idSites = [
   "Inner Forearm – Left", "Inner Forearm – Right",
   "Upper Arm – Left", "Upper Arm – Right",
   "Upper Back – Left", "Upper Back – Right",
-];
-
-const DEVICE_TYPES = [
-  { value: "", label: "—" },
-  { value: "prefilled_syringe", label: "Prefilled syringe" },
-  { value: "single_dose_pen", label: "Single-dose pen" },
-  { value: "multidose_pen", label: "Multidose pen" },
-  { value: "vial_syringe", label: "Vial + syringe" },
-  { value: "pump", label: "Pump" },
-  { value: "patch", label: "Patch" },
-  { value: "other", label: "Other" },
 ];
 
 const DOSE_UNITS = ["mg", "mcg", "units", "IU", "mL", "sprays", "tablets", "applications"];
@@ -89,10 +79,12 @@ export default function AddShotModal({ open, onClose, editingShot }) {
   const [reconstitutionDate, setReconstitutionDate] = useState("");
   const [inUseExpiry, setInUseExpiry] = useState("");
 
-  const medRoutes = getMedicationRoutes(medication);
+  const medRoutes = getSelectableRoutes(medication);
   const caps = getCapabilityProfile(medication);
   const capabilityWarning = getCapabilityWarning(medication);
   const activeRoute = route || getPrimaryRoute(medication);
+  const deliveryOptions = getDeliveryMethods(medication, activeRoute);
+  const isLegacyDevice = RETIRED_DELIVERY_METHODS.includes(deviceType);
   const isInjectable = INJECTABLE_ROUTES.includes(activeRoute);
   const siteOptions = activeRoute === "intramuscular" ? imSites : activeRoute === "intradermal" ? idSites : scSites;
   const isReconstituted = activeRoute === "reconstituted_vial" || caps?.supports_reconstitution;
@@ -169,6 +161,19 @@ export default function AddShotModal({ open, onClose, editingShot }) {
       setDuplicateWarning(null);
     }
   }, [open, editingShot]);
+
+  // Delivery method: when only one is valid for this medication/route it is
+  // selected automatically (and shown as a static row instead of a dropdown).
+  // Legacy retired values are left untouched so old records aren't altered.
+  useEffect(() => {
+    if (!open) return;
+    const options = getDeliveryMethods(medication, activeRoute);
+    if (options.length === 1) {
+      if (deviceType !== options[0].value) setDeviceType(options[0].value);
+    } else if (options.length === 0 && deviceType && !RETIRED_DELIVERY_METHODS.includes(deviceType)) {
+      setDeviceType("");
+    }
+  }, [open, medication, activeRoute, deviceType]);
 
   if (!open) return null;
 
@@ -327,7 +332,7 @@ export default function AddShotModal({ open, onClose, editingShot }) {
               {showMedDropdown && (
                 <div className="absolute z-10 mt-1 w-full bg-white dark:bg-[#1e2130] border border-gray-200 dark:border-white/[0.08] rounded-xl shadow-lg max-h-64 overflow-y-auto">
                   {MEDICATIONS.map((m) => (
-                    <button key={m} onClick={() => { setMedication(m); setRoute(getPrimaryRoute(m)); setShowMedDropdown(false); }}
+                    <button key={m} onClick={() => { setMedication(m); setRoute(getPrimaryRoute(m)); if (RETIRED_DELIVERY_METHODS.includes(deviceType)) setDeviceType(""); setShowMedDropdown(false); }}
                       className={`w-full px-4 py-3 text-left text-sm dark:text-[#E8E9F0] ${medication === m ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-medium" : "hover:bg-gray-50 dark:hover:bg-white/[0.05]"}`}>
                       <span className="block">{m}</span>
                       <span className="text-xs text-gray-400 dark:text-gray-500 block">{getMolecularClassLabel(m)}</span>
@@ -366,7 +371,7 @@ export default function AddShotModal({ open, onClose, editingShot }) {
               {showRouteDropdown && (
                 <div className="absolute z-10 mt-1 w-full bg-white dark:bg-[#1e2130] border border-gray-200 dark:border-white/[0.08] rounded-xl shadow-lg">
                   {medRoutes.map((r) => (
-                    <button key={r} onClick={() => { setRoute(r); setShowRouteDropdown(false); }}
+                    <button key={r} onClick={() => { setRoute(r); setShowRouteDropdown(false); if (RETIRED_DELIVERY_METHODS.includes(deviceType)) setDeviceType(""); }}
                       className={`w-full px-4 py-3 text-left text-sm dark:text-[#E8E9F0] ${route === r ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-medium" : "hover:bg-gray-50 dark:hover:bg-white/[0.05]"}`}>
                       {ROUTE_LABELS[r] || r}
                     </button>
@@ -376,14 +381,29 @@ export default function AddShotModal({ open, onClose, editingShot }) {
             </div>
           </div>
 
-          {/* Device Type */}
-          <div>
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Device Type (optional)</label>
-            <select value={deviceType} onChange={(e) => setDeviceType(e.target.value)}
-              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300">
-              {DEVICE_TYPES.map((dt) => <option key={dt.value || "none"} value={dt.value}>{dt.label}</option>)}
-            </select>
-          </div>
+          {/* Delivery method — hidden when the route has no delivery choice,
+              and collapsed to a static row when there is only one option. */}
+          {deliveryOptions.length > 0 && (
+            <div>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
+                {deliveryOptions.length === 1 ? "Delivery method" : "Delivery method (optional)"}
+              </label>
+              {deliveryOptions.length === 1 ? (
+                <div className="w-full border border-gray-100 dark:border-white/[0.08] bg-gray-50 dark:bg-white/[0.03] rounded-xl px-4 py-3 text-base text-gray-500 dark:text-gray-400">
+                  {deliveryOptions[0].label}
+                </div>
+              ) : (
+                <select value={deviceType} onChange={(e) => setDeviceType(e.target.value)}
+                  className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300">
+                  <option value="">—</option>
+                  {isLegacyDevice && (
+                    <option value={deviceType} disabled>{getDeliveryMethodLabel(deviceType)}</option>
+                  )}
+                  {deliveryOptions.map((dt) => <option key={dt.value} value={dt.value}>{dt.label}</option>)}
+                </select>
+              )}
+            </div>
+          )}
 
           {/* Dose + Unit */}
           <div>
