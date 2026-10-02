@@ -1,0 +1,119 @@
+{
+  "name": "RepeatSchedule",
+  "type": "object",
+  "properties": {
+    "medication": {
+      "type": "string",
+      "description": "Medication the repeat applies to"
+    },
+    "medication_id": {
+      "type": "string",
+      "description": "Reference to a Medication regimen record (optional link)"
+    },
+    "dose": {
+      "type": "number",
+      "description": "Dose amount carried into each repeated dose"
+    },
+    "dose_unit": {
+      "type": "string",
+      "default": "mg",
+      "description": "Unit the repeated dose is logged in"
+    },
+    "concentration": {
+      "type": "string",
+      "description": "Free-text concentration for compounded / generic products"
+    },
+    "drug_class": {
+      "type": "string",
+      "description": "Generic active ingredient (derived from catalogue)"
+    },
+    "molecular_class": {
+      "type": "string",
+      "description": "Molecular classification (peptide, peptide_analogue, protein, etc.)"
+    },
+    "route": {
+      "type": "string",
+      "description": "Route of administration carried into each repeated dose"
+    },
+    "device_type": {
+      "type": "string",
+      "description": "Delivery method carried into each repeated dose"
+    },
+    "site": {
+      "type": "string",
+      "description": "Injection / application site from the dose that started the repeat (rotated at confirm time)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes carried into each repeated dose"
+    },
+    "time": {
+      "type": "string",
+      "description": "Local time of day for the repeated dose (HH:MM)"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "First repeated occurrence (YYYY-MM-DD); the weekday of this date sets the repeat day"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Last occurrence for a fixed-week course (empty for until-I-change-it)"
+    },
+    "repeat_mode": {
+      "type": "string",
+      "enum": [
+        "weeks",
+        "until_change"
+      ],
+      "default": "weeks",
+      "description": "Fixed number of weeks or open-ended until changed"
+    },
+    "repeat_weeks": {
+      "type": "number",
+      "description": "Number of weeks the repeat runs for (weeks mode)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused",
+        "cancelled"
+      ],
+      "default": "active",
+      "description": "Whether the repeat is running, paused, or cancelled"
+    },
+    "skipped_dates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Occurrence dates (YYYY-MM-DD) the user explicitly skipped"
+    },
+    "last_confirmed_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Scheduled occurrence date confirmed most recently"
+    }
+  },
+  "required": [
+    "medication",
+    "dose",
+    "start_date"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}
