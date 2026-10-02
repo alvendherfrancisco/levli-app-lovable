@@ -11,6 +11,7 @@ import {
   MEDICATION_CATALOGUE,
   NAME_TO_ENTRY,
   ALL_MEDICATION_NAMES,
+  COMPOUNDED_GENERIC_NAMES,
   ROUTES,
 } from "@/lib/medicationCatalogue";
 
@@ -47,6 +48,16 @@ export const MEDICATIONS = (() => {
 
 // Extended list including ALL entries (for an "all medications" view)
 export const ALL_MEDICATIONS = ALL_MEDICATION_NAMES;
+
+// ── Compounded / generic products ──────────────────────────────────────────
+// Selectable next to brand names — they live on the same catalogue entry, so
+// routes, drug class, PK and reminders all resolve normally. They have no
+// brand-specific dose ceiling and accept a free-text concentration.
+export { COMPOUNDED_GENERIC_NAMES };
+
+export function isCompoundedGeneric(medication) {
+  return COMPOUNDED_GENERIC_NAMES.includes(medication);
+}
 
 // ── Per-generic dosing interval in days ───────────────────────────────────
 // Extracted from the catalogue's dosing_interval_days map (first route).

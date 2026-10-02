@@ -21,6 +21,7 @@ import {
 } from "@/components/onboarding/LevliIcons";
 import { useAppState } from "@/lib/AppState";
 import { MEDICATIONS } from "@/lib/medicationData";
+import { COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE } from "@/lib/medicationCatalogue";
 import { Check } from "lucide-react";
 
 const TOTAL_STEPS = 8;
@@ -44,6 +45,8 @@ const MED_OPTIONS = [
   { label: "Zepbound®", generic: "Tirzepatide" },
   { label: "Saxenda®", generic: "Liraglutide" },
   { label: "Rybelsus®", generic: "Semaglutide" },
+  { label: COMPOUNDED_SEMAGLUTIDE, generic: "Semaglutide" },
+  { label: COMPOUNDED_TIRZEPATIDE, generic: "Tirzepatide" },
   { label: "Other", generic: null },
 ];
 

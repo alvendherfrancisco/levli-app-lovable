@@ -133,7 +133,7 @@ export function AppStateProvider({ children }) {
   // device_type, reconstitution, and route-specific capture fields.
   const SHOT_FIELDS = [
     "medication", "medication_id", "dose", "dose_unit", "drug_class", "molecular_class",
-    "route", "device_type", "date", "time", "site", "pain", "notes",
+    "route", "device_type", "concentration", "date", "time", "site", "pain", "notes",
     "reconstitution_date", "in_use_expiry",
     "infusion_duration", "clinic_location", "premedication",
     "spray_count", "nostril", "priming",

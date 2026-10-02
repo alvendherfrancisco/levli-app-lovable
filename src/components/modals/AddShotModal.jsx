@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Save, MapPin, Star, ChevronDown, Trash2 } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
-import { MEDICATIONS, DRUG_CLASS, isInvestigational, getDoseMax, getPrimaryRoute, getMolecularClass } from "@/lib/medicationData";
+import { MEDICATIONS, DRUG_CLASS, isInvestigational, getDoseMax, getPrimaryRoute, getMolecularClass, isCompoundedGeneric } from "@/lib/medicationData";
 import { ROUTE_LABELS } from "@/lib/medicationCatalogue";
 import { getDeliveryMethods, getDeliveryMethodLabel, getSelectableRoutes, RETIRED_DELIVERY_METHODS } from "@/lib/deliveryMethods";
 import { getCapabilityProfile, getCapabilityWarning, getMolecularClassLabel } from "@/lib/capabilityProfile";
@@ -48,6 +48,7 @@ export default function AddShotModal({ open, onClose, editingShot }) {
   const [medicationId, setMedicationId] = useState("");
   const [dose, setDose] = useState("2.50");
   const [doseUnit, setDoseUnit] = useState("mg");
+  const [concentration, setConcentration] = useState("");
   const [site, setSite] = useState("");
   const [notes, setNotes] = useState("");
   const [date, setDate] = useState(toInputDate(now));
@@ -85,6 +86,8 @@ export default function AddShotModal({ open, onClose, editingShot }) {
   const activeRoute = route || getPrimaryRoute(medication);
   const deliveryOptions = getDeliveryMethods(medication, activeRoute);
   const isLegacyDevice = RETIRED_DELIVERY_METHODS.includes(deviceType);
+  // Compounded / generic products take a free-text concentration.
+  const isCompounded = isCompoundedGeneric(medication);
   const isInjectable = INJECTABLE_ROUTES.includes(activeRoute);
   const siteOptions = activeRoute === "intramuscular" ? imSites : activeRoute === "intradermal" ? idSites : scSites;
   const isReconstituted = activeRoute === "reconstituted_vial" || caps?.supports_reconstitution;
@@ -103,6 +106,7 @@ export default function AddShotModal({ open, onClose, editingShot }) {
         setMedicationId(editingShot.medication_id || "");
         setDose(String(editingShot.dose ?? "2.50"));
         setDoseUnit(editingShot.dose_unit || "mg");
+        setConcentration(editingShot.concentration || "");
         setSite(editingShot.site || recommendedSite);
         setRoute(editingShot.route || getPrimaryRoute(editingShot.medication || defaultMed));
         setDeviceType(editingShot.device_type || "");
@@ -143,6 +147,7 @@ export default function AddShotModal({ open, onClose, editingShot }) {
         setMedicationId("");
         setDose("2.50");
         setDoseUnit("mg");
+        setConcentration("");
         setSite(recommendedSite);
         setRoute(getPrimaryRoute(defaultMed));
         setDeviceType("");
@@ -211,6 +216,7 @@ export default function AddShotModal({ open, onClose, editingShot }) {
       drugClass: DRUG_CLASS[medication] || "GLP-1",
       molecularClass: getMolecularClass(medication),
       route: activeRoute, device_type: deviceType || undefined,
+      concentration: isCompounded ? concentration.trim() || undefined : undefined,
       date: formattedDate, time: formattedTime,
       site: isInjectable ? site : "",
       pain: pain || 0, notes,
@@ -434,6 +440,17 @@ export default function AddShotModal({ open, onClose, editingShot }) {
             )}
           </div>
 
+          {/* Concentration — compounded / generic products only */}
+          {isCompounded && (
+            <div>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Concentration (Optional)</label>
+              <input type="text" value={concentration} onChange={(e) => setConcentration(e.target.value)}
+                placeholder="e.g. 2.5 mg/mL"
+                className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Compounded strengths vary by pharmacy — enter what your vial says.</p>
+            </div>
+          )}
+
           {/* Injection Site — injectable routes only */}
           {isInjectable && (
             <div>
@@ -598,7 +615,7 @@ export default function AddShotModal({ open, onClose, editingShot }) {
           <div>
             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Notes (Optional)</label>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any notes or side effects experienced"
+              placeholder={isCompounded ? "e.g. pharmacy name, how you felt" : "Add any notes or side effects experienced"}
               className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-sm resize-none h-24 outline-none focus:border-indigo-300" />
           </div>
         </div>

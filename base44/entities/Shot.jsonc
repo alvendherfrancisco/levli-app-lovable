@@ -16,6 +16,10 @@
       "description": "Unit the dose was logged in (mg, mcg, units, IU, mL, sprays, tablets, applications)",
       "default": "mg"
     },
+    "concentration": {
+      "type": "string",
+      "description": "Free-text concentration for compounded / generic products (e.g. '2.5 mg/mL')"
+    },
     "drug_class": {
       "type": "string",
       "description": "Generic active ingredient (derived from catalogue)"
