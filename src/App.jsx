@@ -35,6 +35,9 @@ import MedicalDisclaimerPage from '@/pages/MedicalDisclaimerPage';
 import AboutSourcesPage from '@/pages/AboutSourcesPage';
 import MyMedications from '@/pages/MyMedications';
 import InventoryPage from '@/pages/InventoryPage';
+import BackupRestorePage from '@/pages/BackupRestorePage';
+import CaregiverAccessPage from '@/pages/CaregiverAccessPage';
+import HelpFeedbackPage from '@/pages/HelpFeedbackPage';
 
 // Layout
 import AppLayout from '@/components/AppLayout';
@@ -108,6 +111,11 @@ const AuthenticatedApp = () => {
           <Route path="/profile" element={<Profile />} />
         </Route>
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/backup-restore" element={<BackupRestorePage />} />
+        <Route path="/caregiver-access" element={<CaregiverAccessPage />} />
+        <Route path="/help-feedback" element={<HelpFeedbackPage />} />
+        {/* The old developer push test screen is gone; send its link to Settings. */}
+        <Route path="/push-test" element={<Navigate to="/settings" replace />} />
         <Route path="/report" element={<ReportErrorBoundary><ReportPage /></ReportErrorBoundary>} />
       </Route>
       <Route path="*" element={<PageNotFound />} />

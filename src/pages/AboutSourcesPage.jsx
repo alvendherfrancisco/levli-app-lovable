@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ExternalLink, BookOpen } from "lucide-react";
 import { MEDICAL_SOURCES, MEDICAL_INFO_LAST_REVIEWED, REPORTING_SYSTEMS } from "@/lib/medicalSources";
-import { APP_NAME, APP_VERSION } from "@/lib/appInfo";
+import { APP_NAME, APP_VERSION, SUPPORT_EMAIL } from "@/lib/appInfo";
 
 const Section = ({ title, children }) => (
   <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 border border-gray-100 dark:border-gray-800 mb-4">
@@ -65,7 +65,13 @@ export default function AboutSourcesPage() {
         </Section>
 
         <Section title="Found an error?">
-          <p>If something in Levli does not match your medicine's label, tell us from Settings → “Report an error in medical info” and it will be checked against the source above.</p>
+          <p>If something in Levli does not match your medicine's label, tell us and it will be checked against the source above.</p>
+          <a
+            href={`mailto:${SUPPORT_EMAIL}?subject=Medical%20information%20error%20in%20Levli`}
+            className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 underline"
+          >
+            Report an error in medical info <ExternalLink size={14} aria-hidden="true" />
+          </a>
         </Section>
       </div>
     </div>
