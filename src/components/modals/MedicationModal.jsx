@@ -97,6 +97,8 @@ export default function MedicationModal({ open, onClose, editing }) {
   const clearError = (field) => setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
 
   const handleSelect = ({ name, isCustom: custom }) => {
+    // Choosing what is already selected only closes the list — nothing is reset.
+    if (custom ? isCustom : (!isCustom && name === selectedName)) return;
     setErrors({});
     setDose(""); setDoseConfirmed(false);
     if (custom) {
