@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Check, Search } from "lucide-react";
 import { MEDICATION_OPTIONS, OTHER_MEDICATION_OPTION } from "@/lib/medicationRegimen";
+import { haptic } from "@/lib/haptics";
 
 /**
  * The searchable medication picker. Each row shows the brand with its generic
@@ -25,6 +26,7 @@ export default function MedicationNamePicker({ selectedName, isCustom, onSelect,
   const typed = query.trim();
   const exact = matches.some((o) => o.label.toLowerCase() === typed.toLowerCase());
   const pick = (selection) => {
+    haptic("light");
     onSelect(selection);
     setOpen(false);
     setQuery("");

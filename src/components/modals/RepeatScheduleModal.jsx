@@ -6,6 +6,7 @@ import { useAppState } from "@/lib/AppState";
 import DoseChips from "@/components/modals/DoseChips";
 import { getDoseChips, withCustomDose } from "@/lib/doseOptions";
 import { addDaysToKey, shiftWeekday, shotDateFromKey } from "@/lib/repeatSchedule";
+import { haptic } from "@/lib/haptics";
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 0]; // Mon → Sun
 const WEEKDAY_LABELS = { 0: "S", 1: "M", 2: "T", 3: "W", 4: "T", 5: "F", 6: "S" };
@@ -63,6 +64,7 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
         end_date: mode === "weeks" ? addDaysToKey(startDate, (weeksNum - 1) * 7) : "",
         notes: notes || "",
       });
+      haptic("success");
       toast.success("Repeat schedule updated");
       onClose();
     } catch (e) {
@@ -72,6 +74,7 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
   };
 
   const togglePause = async () => {
+    haptic("medium");
     if (active) {
       await updateRepeatSchedule(schedule.id, { status: "paused" });
       toast("Repeat paused — no reminders until you resume");
@@ -84,6 +87,7 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
 
   const handleCancel = async () => {
     if (!confirm(`Cancel the repeat for ${schedule.medication}? Your logged doses stay in your history.`)) return;
+    haptic("warning");
     await updateRepeatSchedule(schedule.id, { status: "cancelled" });
     toast("Repeat cancelled");
     onClose();
@@ -135,7 +139,7 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
                 return (
                   <button
                     key={dow}
-                    onClick={() => setStartDate(shiftWeekday(startDate, dow))}
+                    onClick={() => { haptic("light"); setStartDate(shiftWeekday(startDate, dow)); }}
                     className={`w-10 h-10 rounded-full text-sm font-medium transition-all active:scale-95 ${selected
                       ? "bg-indigo-600 text-white"
                       : "bg-gray-100 dark:bg-white/[0.06] text-gray-500 dark:text-[#9A9DAE]"}`}

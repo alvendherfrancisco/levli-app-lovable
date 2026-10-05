@@ -26,6 +26,7 @@ import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import useModal from "@/hooks/useModal";
 import { toast } from "sonner";
+import { haptic } from "@/lib/haptics";
 
 // SC injection sites
 const scSites = [
@@ -364,6 +365,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     // medication — the same message the save path shows.
     const check = validateDosePair(medication, value);
     if (!check.valid) {
+      haptic("warning");
       setError(check.message);
       return;
     }
@@ -376,10 +378,12 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     const isCustom = medication === CUSTOM_MEDICATION_NAME;
     const finalMedication = isCustom ? customName.trim() : medication;
     if (isCustom && !finalMedication) {
+      haptic("warning");
       setError("Enter the medication name your prescriber gave you.");
       return;
     }
     if (isNaN(doseNum) || doseNum <= 0) {
+      haptic("warning");
       setError("Please enter a valid dose.");
       return;
     }
@@ -387,11 +391,13 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       // Only a strength the label lists for this medication can be saved.
       const check = validateDosePair(medication, doseNum);
       if (!check.valid) {
+        haptic("warning");
         setError(check.message);
         return;
       }
     }
     if (!editingShot && repeatOn && repeatMode === "weeks" && !(parseInt(repeatWeeks, 10) >= 1)) {
+      haptic("warning");
       setError("Enter how many weeks to repeat this dose for.");
       return;
     }
@@ -459,6 +465,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
         await syncRepeatSchedule(doseNum);
         toast.success("Shot added successfully!");
       }
+      haptic("success");
       setSaving(false);
       setSaved(true);
     } catch (err) {
@@ -471,6 +478,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const handleDelete = async () => {
     if (!editingShot) return;
     if (!confirm("Delete this shot?")) return;
+    haptic("warning");
     await deleteShot(editingShot.id);
     toast.success("Shot deleted successfully!");
     onClose();
@@ -568,7 +576,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                           const entry = getMedicationConfig(m);
                           const custom = m === CUSTOM_MEDICATION_NAME;
                           return (
-                            <button key={m} onClick={() => selectMedication(m)}
+                            <button key={m} onClick={() => { haptic("light"); selectMedication(m); }}
                               className={`w-full px-4 py-3 text-left text-sm dark:text-[#E8E9F0] ${medication === m ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-medium" : "hover:bg-gray-50 dark:hover:bg-white/[0.05]"}`}>
                               <span className="block">{m}</span>
                               {!custom && (
@@ -662,7 +670,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                       {showSiteDropdown && (
                         <div className="absolute z-10 mt-1 w-full bg-white dark:bg-[#1e2130] border border-gray-200 dark:border-white/[0.08] rounded-xl shadow-lg max-h-48 overflow-y-auto">
                           {siteOptions.map((s) => (
-                            <button key={s} onClick={() => { setSite(s); setShowSiteDropdown(false); }}
+                            <button key={s} onClick={() => { haptic("light"); setSite(s); setShowSiteDropdown(false); }}
                               className={`w-full px-4 py-3 text-left text-sm dark:text-[#E8E9F0] ${site === s ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-medium" : "hover:bg-gray-50 dark:hover:bg-white/[0.05]"}`}>{s}</button>
                           ))}
                         </div>
@@ -689,7 +697,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
 
                 {/* Optional details, collapsed by default */}
                 <div className="border-t border-gray-100 dark:border-white/[0.08] pt-3">
-                  <button onClick={() => setShowDetails(!showDetails)} data-skip-dirty className="w-full flex items-center justify-between gap-2 py-1">
+                  <button onClick={() => { haptic("medium"); setShowDetails(!showDetails); }} data-skip-dirty className="w-full flex items-center justify-between gap-2 py-1">
                     <span className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                       Add details (optional)
                       {detailSummary.length > 0 && (

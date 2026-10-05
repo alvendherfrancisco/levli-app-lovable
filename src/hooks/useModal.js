@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import useScrollLock from "@/hooks/useScrollLock";
+import { haptic } from "@/lib/haptics";
 
 const FOCUSABLE =
   'a[href], area[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -30,6 +31,9 @@ export default function useModal({ open = true, onDismiss }) {
 
   useEffect(() => {
     if (!open) return;
+
+    // Every sheet in the app opens with the same soft tick.
+    haptic("medium");
 
     const token = {};
     stack.push(token);
@@ -92,6 +96,7 @@ export default function useModal({ open = true, onDismiss }) {
     }, 60);
 
     return () => {
+      haptic("medium");
       clearTimeout(focusTimer);
       window.removeEventListener("popstate", onPopState);
       document.removeEventListener("keydown", onKeyDown, true);

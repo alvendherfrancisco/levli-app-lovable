@@ -1,5 +1,6 @@
 import React from "react";
 import useModal from "@/hooks/useModal";
+import { haptic } from "@/lib/haptics";
 
 /**
  * An in-app confirmation dialog. Used instead of window.confirm, which is
@@ -36,7 +37,7 @@ export default function ConfirmDialog({
             {cancelLabel}
           </button>
           <button
-            onClick={onConfirm}
+            onClick={() => { if (destructive) haptic("warning"); onConfirm?.(); }}
             disabled={busy}
             className={`flex-1 min-w-0 min-h-[48px] py-3 rounded-xl font-semibold text-base text-white disabled:opacity-60 ${destructive ? "bg-red-600" : "bg-indigo-600"}`}
           >

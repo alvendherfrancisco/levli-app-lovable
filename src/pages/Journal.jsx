@@ -10,6 +10,7 @@ import { parseShotDate, toDayKey, formatLocaleDate } from "@/lib/dateUtils";
 import { classifyRedFlag } from "@/lib/redFlags";
 import { getRecentMedication } from "@/lib/medicationData";
 import { toast } from "sonner";
+import { haptic } from "@/lib/haptics";
 
 export default function Journal() {
   const {
@@ -61,6 +62,7 @@ export default function Journal() {
   };
 
   const handleDelete = async (id) => {
+    haptic("warning");
     try {
       await deleteJournalEntry(id);
       toast.success("Journal entry deleted successfully!");

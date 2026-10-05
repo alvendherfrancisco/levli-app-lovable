@@ -4,6 +4,7 @@ import {
   MG_VIAL_NOTE, NON_STANDARD_DOSE_CONFIRM, NON_STANDARD_DOSE_MESSAGE,
   STRENGTH_BUTTON_LIMIT, isLabelStrength,
 } from "@/lib/medicationRegimen";
+import { haptic } from "@/lib/haptics";
 
 const UNITS = ["mg", "mcg", "units", "IU", "mL"];
 
@@ -33,6 +34,7 @@ export default function DoseStrengthPicker({
   const needsConfirm = hasStrengths && typed !== "" && !standard;
 
   const pick = (v) => {
+    haptic("light");
     setOtherTouched(false);
     onChange(String(v));
   };

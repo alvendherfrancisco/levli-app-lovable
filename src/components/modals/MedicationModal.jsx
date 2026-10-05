@@ -5,6 +5,7 @@ import useModal from "@/hooks/useModal";
 import { toast } from "sonner";
 import { findMedicationOption, labelledSchedule, isLabelStrength, scheduleText, statusOptionsFor, validateRegimenForm,
   DOSE_STEP_HELPER, INDICATION_OPTIONS, OTHER_SCHEDULE } from "@/lib/medicationRegimen";
+import { haptic } from "@/lib/haptics";
 import MedicationNamePicker from "@/components/medications/MedicationNamePicker";
 import DoseStrengthPicker from "@/components/medications/DoseStrengthPicker";
 import ScheduleField from "@/components/medications/ScheduleField";
@@ -136,6 +137,7 @@ export default function MedicationModal({ open, onClose, editing }) {
       startDate, plannedEndDate,
     });
     if (problem) {
+      haptic("warning");
       setErrors({ [problem.field]: problem.message });
       return;
     }
@@ -172,6 +174,7 @@ export default function MedicationModal({ open, onClose, editing }) {
         const linked = await linkShotsToMedication(payload.medication_name, rec.id);
         toast.success(linked ? `Medication added — ${linked} shot log${linked === 1 ? "" : "s"} linked` : "Medication added");
       }
+      haptic("success");
       setSaving(false);
       setTimeout(() => onClose(), 300);
     } catch (err) {

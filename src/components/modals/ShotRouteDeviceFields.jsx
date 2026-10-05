@@ -1,4 +1,5 @@
 import React from "react";
+import { haptic } from "@/lib/haptics";
 
 const LABEL_CLASS = "text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block";
 
@@ -30,7 +31,7 @@ export default function ShotRouteDeviceFields({
         <select
           id="shot-route"
           value={route}
-          onChange={(e) => onRouteChange(e.target.value)}
+          onChange={(e) => { haptic("light"); onRouteChange(e.target.value); }}
           className={selectClass}
         >
           {routeOptions.map((r) => (
@@ -44,7 +45,7 @@ export default function ShotRouteDeviceFields({
         <select
           id="shot-device"
           value={deviceType}
-          onChange={(e) => onDeviceChange(e.target.value)}
+          onChange={(e) => { haptic("light"); onDeviceChange(e.target.value); }}
           className={selectClass}
         >
           <option value="">—</option>

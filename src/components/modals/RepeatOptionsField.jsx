@@ -4,6 +4,7 @@ import {
   addDaysToKey, weekdayName, weekdayOfKey, shotDateFromKey, inputTimeToShotTime,
 } from "@/lib/repeatSchedule";
 import DoseBadge from "@/components/DoseBadge";
+import { haptic } from "@/lib/haptics";
 
 const PRESETS = [4, 8, 12, 26, 52];
 
@@ -22,7 +23,7 @@ export default function RepeatOptionsField({
 
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-white/[0.1] overflow-hidden">
-      <button type="button" onClick={() => onToggle(!enabled)} className="w-full flex items-start justify-between gap-3 p-3.5 text-left">
+      <button type="button" onClick={() => { haptic("medium"); onToggle(!enabled); }} className="w-full flex items-start justify-between gap-3 p-3.5 text-left">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/15 flex items-center justify-center flex-shrink-0">
             <Repeat size={18} className="text-indigo-600 dark:text-indigo-400" />

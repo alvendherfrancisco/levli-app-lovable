@@ -8,6 +8,7 @@ import { useAppState } from "@/lib/AppState";
 import { parseShotDate, todayKey, toDayKey } from "@/lib/dateUtils";
 import { isInvestigational, getHalfLifeDays, getDosingInterval } from "@/lib/medicationData";
 import { heightCmOf, shownBmi } from "@/lib/measure";
+import { haptic } from "@/lib/haptics";
 import { isExposureEligible } from "@/lib/medicationConfig";
 import SideEffectsPanel from "@/components/insights/SideEffectsPanel";
 import WellbeingPanel from "@/components/insights/WellbeingPanel";
@@ -226,6 +227,7 @@ export default function Insights() {
     }
   };
   const handleDeletePhotoModal = async () => {
+    haptic("warning");
     await deleteProgressPhotoRecord(photoModal.id, photoModal.dayKey);
     toast.success("Progress photo deleted successfully!");
   };

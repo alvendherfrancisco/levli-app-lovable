@@ -1,6 +1,7 @@
 import React from "react";
 import { useAppState } from "@/lib/AppState";
 import { parseShotDate, toDayKey } from "@/lib/dateUtils";
+import { haptic } from "@/lib/haptics";
 
 export default function DateStrip({ selectedDate, onSelectDate }) {
   const { shots } = useAppState();
@@ -30,7 +31,7 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
         return (
           <button
             key={d.getTime()}
-            onClick={() => onSelectDate && onSelectDate(d)}
+            onClick={() => { haptic("light"); onSelectDate && onSelectDate(d); }}
             className={`flex flex-col items-center gap-0.5 px-2 sm:px-3 py-2 rounded-2xl flex-1 min-w-0 max-w-[64px] transition-all ${
               isSelected
                 ? "bg-indigo-600 dark:bg-indigo-500/80 text-white shadow-lg dark:[box-shadow:0_0_18px_4px_rgba(99,102,241,0.35)]"

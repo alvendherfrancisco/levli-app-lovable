@@ -8,6 +8,7 @@ import InventoryModal from "@/components/modals/InventoryModal";
 import { todayKey, fromDayKey, calendarDaysBetween } from "@/lib/dateUtils";
 import useModal from "@/hooks/useModal";
 import { toast } from "sonner";
+import { haptic } from "@/lib/haptics";
 
 export default function InventoryPage() {
   const { inventory, deleteInventory, addStorageLog, storageLogs } = useAppState();
@@ -24,6 +25,7 @@ export default function InventoryPage() {
 
   const handleDelete = async (id) => {
     if (!confirm("Remove this inventory item?")) return;
+    haptic("warning");
     await deleteInventory(id);
     toast.success("Inventory item removed");
   };

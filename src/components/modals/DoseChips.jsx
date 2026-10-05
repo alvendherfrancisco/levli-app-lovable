@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { DOSE_UNIT } from "@/lib/doseOptions";
 import { CUSTOM_DOSE_COLOR, getDoseColor, getDoseStyle } from "@/lib/doseColors";
+import { haptic } from "@/lib/haptics";
 
 /**
  * Compact single-select dose chips (40px tall), filled with each dose's own
@@ -51,7 +52,7 @@ export default function DoseChips({ medication, options = [], value, unit = DOSE
             <button
               key={v}
               type="button"
-              onClick={() => { setOtherOpen(false); onSelect(v); }}
+              onClick={() => { haptic("light"); setOtherOpen(false); onSelect(v); }}
               style={{ ...getDoseStyle(medication, v), ...(selected ? { "--tw-ring-color": color } : {}) }}
               className={chipClass(selected)}
             >
@@ -63,6 +64,7 @@ export default function DoseChips({ medication, options = [], value, unit = DOSE
         <button
           type="button"
           onClick={() => {
+            haptic("light");
             setCustom(isChipValue ? "" : numeric > 0 ? String(numeric) : "");
             setOtherOpen(true);
           }}
