@@ -37,9 +37,9 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
                 : "text-gray-400 dark:text-[#9A9DAE]"
             }`}
           >
-            <span className="text-[10px] sm:text-[11px] font-medium">{dayNames[d.getDay()]}</span>
+            <span className="text-xs font-medium">{dayNames[d.getDay()]}</span>
             <span className={`text-base sm:text-lg font-bold ${isSelected ? "text-white" : "text-gray-600 dark:text-[#E8E9F0]"}`}>{d.getDate()}</span>
-            <span className={`text-[10px] sm:text-[11px] ${isSelected ? "text-indigo-200 dark:text-indigo-200" : "text-gray-400 dark:text-[#9A9DAE]"}`}>{monthNames[d.getMonth()]}</span>
+            <span className={`text-xs ${isSelected ? "text-indigo-200 dark:text-indigo-200" : "text-gray-500 dark:text-[#9A9DAE]"}`}>{monthNames[d.getMonth()]}</span>
             {hasShot && (
               <div
                 className="w-1.5 h-1.5 rounded-full bg-teal-400 mt-0.5"

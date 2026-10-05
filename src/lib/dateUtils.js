@@ -58,6 +58,12 @@ export function todayKey() {
   return toDayKey(new Date());
 }
 
+/** A date in the device's own short format, e.g. "Jun 29, 2026" or "29 Jun 2026". */
+export function formatLocaleDate(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
 /** "YYYY-MM-DD" → "Aug 1" — compact captions such as a date range. */
 export function formatDayKeyShort(key) {
   if (!key) return "";

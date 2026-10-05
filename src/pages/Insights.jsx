@@ -266,11 +266,27 @@ export default function Insights() {
   const heightMissing = !heightCm && latestWeightKg != null;
   const bmiNeedsCheck = bmiSuspicious || !!(latestWeightKg != null && heightCm && bmi == null);
 
+  // A plain-language summary of the weight chart, for screen readers and small
+  // screens: "Down 3.8 lb over 180 days".
+  const weightSummary = weightEntries.length >= 2
+    ? `${weightLoss >= 0 ? "Down" : "Up"} ${Math.abs(weightLoss).toFixed(1)} ${weightUnit} over ${weightRange.toLowerCase()}`
+    : "";
+
+  // Shots inside the injection-site range, used for its empty state.
+  const siteRangeDays = MED_RANGES[siteRange];
+  const shotsInSiteRange = shots.filter((s) => {
+    const sd = parseShotDate(s.date);
+    if (!sd) return false;
+    const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+    const daysSince = Math.round((startOfToday - sd) / 86400000);
+    return daysSince >= 0 && daysSince <= siteRangeDays;
+  }).length;
+
   return (
     <PageContainer bottomInset="banner">
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Insights</h1>
-        <Link to="/settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
+        <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
       </div>
 
       <div className="max-w-3xl mx-auto pt-4">
@@ -320,7 +336,7 @@ export default function Insights() {
               <Gauge size={14} className="text-orange-500 dark:text-orange-400 mx-auto mb-1" style={{filter:"drop-shadow(0 0 6px rgba(249,115,22,0.4))"}} />
               <p className="text-gray-500 dark:text-[#9A9DAE] text-[11px]">Current BMI</p>
               <p className="font-bold text-orange-600 dark:text-orange-400 text-sm">
-                {bmi || (bmiNeedsCheck ? <span className="text-[10px] font-medium">Not shown — check units</span> : heightMissing ? <span className="text-[10px] font-medium">Add height in Profile</span> : "—")}
+                {bmi || (bmiNeedsCheck ? <span className="text-xs font-medium">Not shown — check units</span> : heightMissing ? <span className="text-xs font-medium">Add height in Profile</span> : "—")}
               </p>
             </div>
           </div>
@@ -341,12 +357,13 @@ export default function Insights() {
           )}
 
           {weightEntries.length >= 2 ? (
-            <div className="h-52">
+            <div className="h-52" role="img" aria-label={weightSummary || "Weight chart"}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={weightData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="#999" interval="preserveStartEnd" />
-                  <YAxis tick={{ fontSize: 10 }} stroke="#999" domain={["auto", "auto"]} width={36} />
+                  {/* 4–6 readable ticks rather than a label per entry */}
+                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#767676" }} stroke="#767676" interval={Math.max(0, Math.floor(weightData.length / 5))} />
+                  <YAxis tick={{ fontSize: 12, fill: "#767676" }} stroke="#767676" domain={["auto", "auto"]} width={40} />
                   <Tooltip
                     formatter={(v, name) => [`${v} ${weightUnit}`, name === "rollingAvg" ? "7-day avg" : "Weight"]}
                     contentStyle={{ background: "rgba(20,22,32,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#E8E9F0" }}
@@ -357,13 +374,18 @@ export default function Insights() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-48 flex flex-col items-center justify-center bg-gray-50 dark:bg-white/[0.03] rounded-xl gap-2">
-              <p className="text-sm text-gray-400 dark:text-[#9A9DAE] text-center px-4">
-                {weightHistory.length === 0 ? "Log your weight in the Home tab to see trends here." : "Log at least 2 weight entries in this time range to see a chart."}
+            <div className="h-48 flex flex-col items-center justify-center bg-gray-50 dark:bg-white/[0.03] rounded-xl gap-3 px-4">
+              <p className="text-sm text-gray-500 dark:text-[#9A9DAE] text-center">
+                {weightHistory.length === 0 ? "No weight entries yet." : "Only one weight entry in this range."}
               </p>
+              <Link to="/" className="px-4 py-2.5 min-h-[44px] flex items-center bg-indigo-600 text-white rounded-xl font-semibold text-sm">
+                Log your weight
+              </Link>
             </div>
           )}
-          <p className="text-[11px] text-gray-400 dark:text-[#9A9DAE] mt-2">Solid line: daily entries · Dashed: 7-day rolling average · Days with no entry are left blank</p>
+          <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-2">
+            {weightSummary ? `${weightSummary} · ` : ""}Solid line: daily entries · Dashed: 7-day rolling average · Days with no entry are left blank
+          </p>
         </div>
 
         {/* Progress Pictures Panel */}
@@ -424,7 +446,7 @@ export default function Insights() {
                       <ProgressPhotoCard photo={prevDayPhoto} dateLabel={formatPhotoDate(prevDayPhoto.day_key)} weightLabel={getWeightLabel(prevDayPhoto.day_key)} tag={null} onClick={() => openEditPhoto(prevDayPhoto)} />
                       <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
                         <ArrowRight size={16} sm={18} className="text-indigo-500" />
-                        <span className="text-[10px] sm:text-xs text-indigo-400 whitespace-nowrap">{gapDays}d</span>
+                        <span className="text-xs sm:text-sm text-indigo-500 dark:text-indigo-400 whitespace-nowrap">{gapDays}d</span>
                       </div>
                     </>
                   )}
@@ -493,8 +515,8 @@ export default function Insights() {
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={medLevel.data}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
-                      <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="#999" interval={Math.floor(medLevel.data.length / 5)} />
-                      <YAxis tick={{ fontSize: 10 }} stroke="#999" width={36} domain={[0, (dataMax) => Math.max(100, Math.ceil(dataMax))]} />
+                      <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#767676" }} stroke="#767676" interval={Math.floor(medLevel.data.length / 5)} />
+                      <YAxis tick={{ fontSize: 12, fill: "#767676" }} stroke="#767676" width={40} domain={[0, (dataMax) => Math.max(100, Math.ceil(dataMax))]} />
                       <Tooltip formatter={(v, name) => [`${v}% of steady state`, name]} contentStyle={{ background: "rgba(20,22,32,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#E8E9F0" }} />
                       {medLevel.classes.map((cls) => (
                         <Area key={cls} type="monotone" dataKey={cls} stroke={CLASS_COLORS[cls] || "#6366F1"} fill={CLASS_COLORS[cls] || "#6366F1"} fillOpacity={0.08} strokeWidth={2} />
@@ -513,7 +535,7 @@ export default function Insights() {
                     <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-2.5 text-center border border-transparent dark:border-indigo-500/15">
                       <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Steady state reached</p>
                       <p className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">{medLevel.summary.steadyStatePercent}%</p>
-                      <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-[#9A9DAE]">
                         of {medLevel.primaryClass} at {medLevel.summary.referenceDose} {medLevel.doseUnit} every {medLevel.interval}d
                       </p>
                     </div>
@@ -522,7 +544,7 @@ export default function Insights() {
                       <p className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">
                         {medLevel.summary.lastDoseDaysAgo === 0 ? "Today" : `${medLevel.summary.lastDoseDaysAgo}d ago`}
                       </p>
-                      <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-[#9A9DAE]">
                         {medLevel.summary.dosesInWindow} dose{medLevel.summary.dosesInWindow === 1 ? "" : "s"} inside the last 5 half-lives
                       </p>
                     </div>
@@ -548,7 +570,7 @@ export default function Insights() {
           </div>
           <p className="text-xs text-gray-400 dark:text-[#9A9DAE] text-center mt-2">Time vs modelled exposure, as % of the steady-state level for your current dose</p>
           <p className="text-[11px] text-gray-400 dark:text-[#9A9DAE] text-center mt-1 px-2">Illustrative estimate only — not a blood-level measurement. Do not use it to adjust your dose. Confirm any decisions with your prescriber.</p>
-          <button onClick={() => setShowHowItWorks(true)} className="w-full text-[10px] text-gray-300 dark:text-gray-600 text-center mt-1">How this works · model {PK_CALCULATION_VERSION}</button>
+          <button onClick={() => setShowHowItWorks(true)} className="w-full text-xs text-gray-500 dark:text-[#9A9DAE] text-center mt-1">How this works · model {PK_CALCULATION_VERSION}</button>
           {!medLevel.disabled && medLevel.classes.length > 0 && (
             <div className="flex items-center justify-center gap-3 mt-2 flex-wrap">
               {medLevel.classes.map((cls) => (
@@ -588,7 +610,24 @@ export default function Insights() {
 
           <div className="relative">
             <div className={isPremium ? "" : "blur-sm pointer-events-none select-none opacity-60"}>
-              <SiteRotationChart shots={shots} range={MED_RANGES[siteRange]} />
+              {shotsInSiteRange === 0 ? (
+                <div className="h-40 flex flex-col items-center justify-center bg-gray-50 dark:bg-white/[0.03] rounded-xl gap-3 px-4">
+                  <p className="text-sm text-gray-500 dark:text-[#9A9DAE] text-center">
+                    No shots in the last {siteRangeDays} days.
+                  </p>
+                  {siteRange !== "90 Days" ? (
+                    <button onClick={() => setSiteRange("90 Days")} className="px-4 py-2.5 min-h-[44px] bg-indigo-600 text-white rounded-xl font-semibold text-sm">
+                      Try 90 days
+                    </button>
+                  ) : (
+                    <Link to="/shots" className="px-4 py-2.5 min-h-[44px] flex items-center bg-indigo-600 text-white rounded-xl font-semibold text-sm">
+                      Log a shot
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <SiteRotationChart shots={shots} range={MED_RANGES[siteRange]} />
+              )}
             </div>
             {!isPremium && (
               <button onClick={openPaywall} className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">

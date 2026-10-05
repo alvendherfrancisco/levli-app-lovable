@@ -96,14 +96,22 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Shared layout metrics: the bottom tab bar and the floating action button.
+   Content padding is derived from these so the FAB can never sit on content. */
+:root {
+  --tabbar-h: 3.25rem;
+  --fab-h: 3rem;
+}
+
 /* PWA standalone safe-area-aware spacing.
    Without viewport-fit=cover these env() values resolve to 0; the viewport
    meta in index.html now enables them so installed PWAs respect the home
    indicator / bottom safe area. */
-.pb-safe-content { padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px)); }
-.pb-safe-fab { padding-bottom: calc(10rem + env(safe-area-inset-bottom, 0px)); }
-.pb-safe-banner { padding-bottom: calc(13rem + env(safe-area-inset-bottom, 0px)); }
-.bottom-fab-safe { bottom: calc(6rem + env(safe-area-inset-bottom, 0px)); }
+.pb-safe-content { padding-bottom: calc(var(--tabbar-h) + 2.5rem + env(safe-area-inset-bottom, 0px)); }
+.pb-safe-fab { padding-bottom: calc(var(--tabbar-h) + var(--fab-h) + 3rem + env(safe-area-inset-bottom, 0px)); }
+.pb-safe-banner { padding-bottom: calc(var(--tabbar-h) + var(--fab-h) + 6rem + env(safe-area-inset-bottom, 0px)); }
+/* The FAB sits 8px above the tab bar, never over it and never over content. */
+.bottom-fab-safe { bottom: calc(var(--tabbar-h) + 0.5rem + env(safe-area-inset-bottom, 0px)); }
 .pb-modal-footer { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
 @media (min-width: 1024px) {
   .pb-safe-content, .pb-safe-fab, .pb-safe-banner { padding-bottom: 2rem; }

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { toDayKey, todayKey, parseShotDate } from "@/lib/dateUtils";
 import { getPendingDoses, buildShotFromSchedule } from "@/lib/repeatSchedule";
@@ -9,6 +9,12 @@ import {
 import { useAuth } from "@/lib/AuthContext";
 
 const AppStateContext = createContext(null);
+
+/** The device's current light/dark preference. */
+function systemPrefersDark() {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
 
 const DEFAULT_PROFILE = {
   // Canonical measurements (kg / cm). A new profile starts empty rather than
@@ -43,6 +49,8 @@ export function AppStateProvider({ children }) {
   const [profile, setProfileState] = useState(DEFAULT_PROFILE);
   const [profileId, setProfileId] = useState(null);
   const [darkMode, setDarkModeState] = useState(false);
+  // Dark mode follows the device setting until the user picks a theme.
+  const themeChosenRef = useRef(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState(null);
 
   // ── New entity states ─────────────────────────────────────────────────────
@@ -57,6 +65,20 @@ export function AppStateProvider({ children }) {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
+
+  // Follows the device's light/dark setting until the user chooses a theme.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const query = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => {
+      if (themeChosenRef.current) return;
+      setDarkModeState(query.matches);
+      setProfileState((prev) => (prev.dark_mode === query.matches ? prev : { ...prev, dark_mode: query.matches }));
+    };
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, [profileId]);
 
   // ── One-time migration onto canonical units (kg / cm) ───────────────────────
   // Legacy rows keep their weight, expressed in kilograms, and record the unit
@@ -134,11 +156,19 @@ export function AppStateProvider({ children }) {
     if (data.length > 0) {
       const p = data[0];
       setProfileId(p.id);
-      const merged = { ...DEFAULT_PROFILE, ...p };
-      setProfileState(merged);
-      setDarkModeState(!!p.dark_mode);
+      // A stored true/false is the user's own choice; anything else follows the
+      // device's light/dark setting.
+      const hasChoice = p.dark_mode === true || p.dark_mode === false;
+      const resolvedDark = hasChoice ? p.dark_mode : systemPrefersDark();
+      themeChosenRef.current = hasChoice;
+      setProfileState({ ...DEFAULT_PROFILE, ...p, dark_mode: resolvedDark });
+      setDarkModeState(resolvedDark);
       setOnboardingCompleted(!!p.onboarding_completed);
     } else {
+      themeChosenRef.current = false;
+      const prefersDark = systemPrefersDark();
+      setProfileState((prev) => ({ ...prev, dark_mode: prefersDark }));
+      setDarkModeState(prefersDark);
       setOnboardingCompleted(false);
     }
   };
@@ -295,13 +325,16 @@ export function AppStateProvider({ children }) {
 
   const getNutrition = (dayKey) => {
     const m = dayMetrics[dayKey];
-    if (!m) return { calories: "0.0", protein: "0.0", water: "0.0", fiber: "0.0", carbs: "0.0" };
+    // Calories, protein, fiber and carbs show as whole numbers; the liquid
+    // amount keeps the precision of its own unit.
+    const whole = (v) => String(Math.round(Number(v) || 0));
+    if (!m) return { calories: "0", protein: "0", water: "0.0", fiber: "0", carbs: "0" };
     return {
-      calories: m.calories != null ? String(m.calories) : "0.0",
-      protein: m.protein != null ? String(m.protein) : "0.0",
+      calories: whole(m.calories),
+      protein: whole(m.protein),
       water: m.water != null ? String(m.water) : "0.0",
-      fiber: m.fiber != null ? String(m.fiber) : "0.0",
-      carbs: m.carbs != null ? String(m.carbs) : "0.0",
+      fiber: whole(m.fiber),
+      carbs: whole(m.carbs),
     };
   };
 
@@ -537,7 +570,9 @@ export function AppStateProvider({ children }) {
       liquid_unit: next.liquid_unit, height_unit: next.height_unit,
       weight_unit: next.weight_unit, default_medication: next.default_medication,
       notifications_enabled: !!next.notifications_enabled,
-      dark_mode: !!next.dark_mode,
+      // Only recorded once the user has chosen a theme; until then the device
+      // setting governs.
+      dark_mode: themeChosenRef.current ? !!next.dark_mode : undefined,
       onboarding_completed: !!next.onboarding_completed,
       birthdate: next.birthdate || "",
       gdpr_consent_date: next.gdpr_consent_date || "",
@@ -563,7 +598,10 @@ export function AppStateProvider({ children }) {
     }
   };
 
-  const setDarkMode = (val) => setProfile({ ...profile, dark_mode: val });
+  const setDarkMode = (val) => {
+    themeChosenRef.current = true;
+    setProfile({ ...profile, dark_mode: val });
+  };
 
   // Records GDPR Art. 9 consent with timestamp and privacy-policy version.
   const recordConsent = async (privacyPolicyVersion) => {

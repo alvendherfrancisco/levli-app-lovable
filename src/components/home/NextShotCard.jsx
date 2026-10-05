@@ -143,7 +143,7 @@ export default function NextShotCard({ onLogPastShot }) {
                 style={{ filter: `drop-shadow(${ringGlow})` }}
               />
             </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[10px] text-gray-500 dark:text-[#9A9DAE] font-medium text-center leading-tight px-1">
+            <span className="absolute inset-0 flex items-center justify-center text-xs text-gray-600 dark:text-[#9A9DAE] font-medium text-center leading-tight px-1">
               {dueToday ? "Now!" : isLate ? `${evaluation.daysLate}d late` : `${evaluation.daysLeft}d left`}
             </span>
           </div>

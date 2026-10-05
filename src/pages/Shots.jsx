@@ -54,7 +54,7 @@ export default function Shots() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Shots</h1>
         <div className="flex items-center gap-3">
           <button onClick={() => navigate("/report")}><FileText size={22} className="text-gray-500" /></button>
-          <Link to="/settings"><Settings size={22} className="text-gray-600" /></Link>
+          <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600" /></Link>
         </div>
       </div>
 

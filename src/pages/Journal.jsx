@@ -5,7 +5,7 @@ import PageContainer from "@/components/PageContainer";
 import JournalEntryModal from "@/components/modals/JournalEntryModal";
 import { useAppState } from "@/lib/AppState";
 import { JOURNAL_CATEGORIES, categoryMeta, normaliseCategory, sortJournalNewestFirst } from "@/lib/journalMeta";
-import { parseShotDate, toDayKey } from "@/lib/dateUtils";
+import { parseShotDate, toDayKey, formatLocaleDate } from "@/lib/dateUtils";
 import { classifyRedFlag } from "@/lib/redFlags";
 import { getRecentMedication } from "@/lib/medicationData";
 import { toast } from "sonner";
@@ -82,8 +82,8 @@ export default function Journal() {
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Journal</h1>
         <div className="flex items-center gap-3">
-          <button onClick={openNew}><Plus size={22} className="text-gray-600 dark:text-gray-400" /></button>
-          <Link to="/settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
+          <button onClick={openNew} aria-label="New journal entry" className="w-11 h-11 -m-2.5 flex items-center justify-center rounded-full"><Plus size={22} className="text-gray-600 dark:text-gray-400" aria-hidden="true" /></button>
+          <Link to="/settings" aria-label="Settings" className="w-11 h-11 -m-2.5 flex items-center justify-center rounded-full"><Settings size={22} className="text-gray-600 dark:text-gray-400" aria-hidden="true" /></Link>
         </div>
       </div>
 
@@ -144,7 +144,9 @@ export default function Journal() {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start gap-2">
                         <p className="text-sm text-gray-700 dark:text-gray-300 overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0">{e.text}</p>
-                        <span className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">{e.date}</span>
+                        <span className="text-xs text-gray-500 dark:text-[#9A9DAE] flex-shrink-0 whitespace-nowrap">
+                          {formatLocaleDate(parseShotDate(e.date)) || e.date}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
                         <Clock size={11} className="flex-shrink-0" /><span>{e.time}</span>

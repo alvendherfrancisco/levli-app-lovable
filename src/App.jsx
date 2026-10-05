@@ -25,6 +25,7 @@ import Shots from '@/pages/Shots';
 import History from '@/pages/History';
 import Insights from '@/pages/Insights';
 import Journal from '@/pages/Journal';
+import More from '@/pages/More';
 import Profile from '@/pages/Profile';
 import SettingsPage from '@/pages/SettingsPage';
 import ReportPage from '@/pages/ReportPage';
@@ -96,6 +97,7 @@ const AuthenticatedApp = () => {
           <Route path="/history" element={<History />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="/journal" element={<Journal />} />
+          <Route path="/more" element={<More />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
         <Route path="/push-test" element={<PushTest />} />

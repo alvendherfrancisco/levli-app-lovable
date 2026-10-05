@@ -69,7 +69,7 @@ export default function SiteRotationChart({ shots, range }) {
             <div key={s.id} className="flex items-center gap-1.5 bg-gray-50 dark:bg-white/[0.05] rounded-lg px-2 py-1">
               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: getDoseColor(s.medication, s.dose) }} />
               <span className="text-xs text-gray-600 dark:text-gray-300">{s.site}</span>
-              <span className="text-[10px] text-gray-400">{s.date}</span>
+              <span className="text-xs text-gray-500 dark:text-[#9A9DAE]">{s.date}</span>
             </div>
           ))}
         </div>

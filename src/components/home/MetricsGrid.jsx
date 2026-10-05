@@ -83,10 +83,21 @@ export default function MetricsGrid({ dayKey }) {
 
   return (
     <>
-      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-2 px-3 mb-4">
-        {allMetrics.map((m) => (
-          <MetricCard key={m.label} {...m} onAdd={m.onAdd} />
-        ))}
+      {/* Phones: one scrollable row of larger cards, so a value is never
+          squeezed into a 10px label. Tablet and up: a grid. */}
+      <div className="mb-4">
+        <div className="flex gap-3 overflow-x-auto snap-x px-4 pb-1 sm:hidden">
+          {allMetrics.map((m) => (
+            <div key={m.label} className="snap-start flex-shrink-0 w-40">
+              <MetricCard {...m} />
+            </div>
+          ))}
+        </div>
+        <div className="hidden sm:grid sm:grid-cols-4 lg:grid-cols-8 gap-3 px-4">
+          {allMetrics.map((m) => (
+            <MetricCard key={m.label} {...m} />
+          ))}
+        </div>
       </div>
       <AddNutritionModal open={showNutrition} onClose={() => setShowNutrition(false)} dayKey={dk} />
       {metricModal && (

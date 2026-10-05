@@ -36,8 +36,8 @@ export default function MyMedications() {
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Medications</h1>
         <div className="flex items-center gap-3">
-          <button onClick={openNew}><Plus size={24} className="text-indigo-600" /></button>
-          <Link to="/settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
+          <button onClick={openNew} aria-label="Add medication"><Plus size={24} className="text-indigo-600" /></button>
+          <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
         </div>
       </div>
 

@@ -13,14 +13,14 @@ export default function ProgressPhotoCard({ photo, dateLabel, weightLabel, tag, 
       }`}>
         <SafeImage src={photo.url} alt={`Progress ${photo.day_key}`} className="w-full h-full object-cover" />
         {tag === "latest" && (
-          <span className="absolute top-2 left-2 bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Latest</span>
+          <span className="absolute top-2 left-2 bg-indigo-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">Latest</span>
         )}
         {weightLabel && (
-          <span className="absolute top-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{weightLabel}</span>
+          <span className="absolute top-2 right-2 bg-black/60 text-white text-xs font-bold px-2 py-0.5 rounded-full">{weightLabel}</span>
         )}
       </div>
       <p className="text-xs font-semibold text-gray-700 dark:text-[#E8E9F0] mt-1.5">{dateLabel.month}</p>
-      <p className="text-[10px] text-gray-400 dark:text-[#9A9DAE]">{dateLabel.year}</p>
+      <p className="text-xs text-gray-500 dark:text-[#9A9DAE]">{dateLabel.year}</p>
     </button>
   );
 }

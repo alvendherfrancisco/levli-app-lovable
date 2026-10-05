@@ -76,7 +76,7 @@ export default function History() {
     <PageContainer bottomInset="fab">
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">History</h1>
-        <Link to="/settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
+        <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
       </div>
 
       <div className="max-w-3xl mx-auto pt-4">
