@@ -29,6 +29,7 @@ import More from '@/pages/More';
 import Profile from '@/pages/Profile';
 import SettingsPage from '@/pages/SettingsPage';
 import ReportPage from '@/pages/ReportPage';
+import ReportFixturesPage from '@/pages/ReportFixturesPage';
 import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
 import TermsPage from '@/pages/TermsPage';
 import MedicalDisclaimerPage from '@/pages/MedicalDisclaimerPage';
@@ -117,6 +118,8 @@ const AuthenticatedApp = () => {
         {/* The old developer push test screen is gone; send its link to Settings. */}
         <Route path="/push-test" element={<Navigate to="/settings" replace />} />
         <Route path="/report" element={<ReportErrorBoundary><ReportPage /></ReportErrorBoundary>} />
+        {/* Test-only: the report fixtures, rendered through the real engine. */}
+        <Route path="/report-fixtures" element={<ReportFixturesPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

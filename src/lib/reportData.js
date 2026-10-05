@@ -5,6 +5,10 @@
 // shots, DayMetric (weight / nutrition / water / exercise / legacy side-effect
 // notes), AdverseEvent, JournalEntry, ProgressPhoto and the profile.
 // No interpretation, no diagnosis, no dose advice, nothing invented.
+//
+// Every value the report shows is built here from the selected range, the
+// medication filter, the chosen weight unit and the selected sections — the
+// screens and the PDF both render this one object, so the two can never drift.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { convertWeight } from "@/lib/units";
@@ -18,12 +22,18 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 // Adult BMI is shown only inside this band. Outside it the number is almost
 // always a unit or data-entry mismatch rather than a measurement, so it is left
-// out and the user is asked to check their units instead.
+// out of the report entirely — no note, no placeholder.
 export const BMI_MIN_PLAUSIBLE = 12;
 export const BMI_MAX_PLAUSIBLE = 70;
 // While an unanswered kg/lb question is outstanding, a very low value is not
 // shown as a number either.
 const BMI_SUSPICIOUS_LOW = 15;
+
+// The one muted line each empty section falls back to, so the preview and the
+// PDF always say the same thing.
+export const NO_WEIGHT_LINE = "No weight entries recorded in this period.";
+export const NO_DOSES_LINE = "No doses logged in this period.";
+export const NO_SIDE_EFFECTS_LINE = "None logged.";
 
 export function addDaysToKey(key, days) {
   const d = fromDayKey(key);
@@ -43,6 +53,12 @@ export function formatDayShort(key) {
   if (!key) return "—";
   const d = fromDayKey(key);
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+
+/** "+1.4" / "-2.0" — the sign is the point of a change column. */
+function signed(value, digits = 1) {
+  if (value == null || !Number.isFinite(value)) return "";
+  return `${value < 0 ? "-" : "+"}${Math.abs(value).toFixed(digits)}`;
 }
 
 const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -128,6 +144,7 @@ export function resolveRange({ rangeId, customFrom, customTo, dayKeys = [] }) {
     return {
       from: earliest || today,
       to: today,
+      name: "All time",
       label: earliest ? `All time (${formatDay(earliest)} – ${formatDay(today)})` : "All time",
     };
   }
@@ -137,13 +154,13 @@ export function resolveRange({ rangeId, customFrom, customTo, dayKeys = [] }) {
     const b = asDayKey(customTo) || today;
     const from = a <= b ? a : b;
     const to = a <= b ? b : a;
-    return { from, to, label: `Custom (${formatDay(from)} – ${formatDay(to)})` };
+    return { from, to, name: "Custom", label: `Custom (${formatDay(from)} – ${formatDay(to)})` };
   }
   const option = RANGE_OPTIONS.find((r) => r.id === rangeId)
     || RANGE_OPTIONS.find((r) => r.id === DEFAULT_RANGE)
     || RANGE_OPTIONS[0];
   const from = addDaysToKey(today, -(option.days - 1));
-  return { from, to: today, label: option.label };
+  return { from, to: today, name: option.label, label: option.label };
 }
 
 /**
@@ -175,39 +192,18 @@ export function buildWeightSeries(weightHistory = [], range, profileUnit, report
   });
 }
 
-function weightGaps(series) {
-  const gaps = [];
-  for (let i = 1; i < series.length; i++) {
-    const days = calendarDaysBetween(series[i - 1].dayKey, series[i].dayKey);
-    if (days >= 14) {
-      gaps.push({ from: series[i - 1].dayKey, to: series[i].dayKey, days });
-    }
-  }
-  return gaps;
-}
-
 function round1(n) {
   return Math.round(n * 10) / 10;
 }
 
-export function summarizeWeight(series, profile, profileUnit, reportUnit, range) {
+export function summarizeWeight(series, profile, profileUnit, reportUnit) {
   if (!series.length) {
-    return {
-      count: 0, start: null, end: null, change: null, changePct: null,
-      perWeek: null, weeks: null, goal: null, goalLabel: null, goalDistance: null, gaps: [],
-    };
+    return { count: 0, start: null, end: null, change: null, changePct: null, goal: null, goalLabel: null, goalDistance: null };
   }
   const start = series[0];
   const end = series[series.length - 1];
   const change = round1(end.value - start.value);
   const changePct = start.value > 0 ? round1(((end.value - start.value) / start.value) * 100) : null;
-
-  // The period is counted from the SAME start and end dates as the header
-  // range, so the two can never disagree. The weekly rate uses the exact span.
-  const rangeDays = Number.isFinite(range?.days) && range.days > 0 ? range.days : null;
-  const weeksExact = rangeDays ? rangeDays / 7 : null;
-  const weeks = series.length >= 2 && weeksExact ? Math.max(1, Math.round(weeksExact)) : null;
-  const perWeek = series.length >= 2 && weeksExact ? round1(change / weeksExact) : null;
 
   // The goal is stored in kilograms and converted for display only.
   const goalKg = parseFloat(profile?.goal_weight_kg) || toKg(profile?.goal_weight, profileUnit);
@@ -223,9 +219,28 @@ export function summarizeWeight(series, profile, profileUnit, reportUnit, range)
 
   return {
     count: series.length, start: start.value, end: end.value, change, changePct,
-    perWeek, weeks, goal, goalLabel: goal != null ? `${goal} ${reportUnit}` : null,
-    goalDistance, gaps: weightGaps(series),
+    goal, goalLabel: goal != null ? `${goal} ${reportUnit}` : null, goalDistance,
   };
+}
+
+/**
+ * Weight entries for the compact table, newest first, each with the change from
+ * the entry logged before it. The oldest entry has nothing to compare against,
+ * so its change cell stays empty.
+ */
+export function weightTableRows(series = [], unit) {
+  return series
+    .map((point, i) => {
+      const change = i > 0 ? round1(point.value - series[i - 1].value) : null;
+      return {
+        id: point.dayKey,
+        dayLabel: formatDay(point.dayKey),
+        valueLabel: `${point.value} ${unit}`,
+        change,
+        changeLabel: change == null ? "" : `${signed(change)} ${unit}`,
+      };
+    })
+    .reverse();
 }
 
 /** Distinct medications across every shot, newest first. */
@@ -244,7 +259,7 @@ function routeLabel(shot) {
   return [route, asText(shot.concentration)].filter(Boolean).join(" · ");
 }
 
-/** Dose table rows, newest first. */
+/** Dose table rows, newest first. Medication and route are never repeated here. */
 export function doseRows(shotsDesc = []) {
   return shotsDesc.map((s) => {
     const dose = asNumber(s.dose);
@@ -294,6 +309,88 @@ export function doseChangeSummary(rowsAsc = [], multipleMeds = false) {
   });
 }
 
+/**
+ * The dose each reported medication is on now, and how long it has been at that
+ * dose. Built from the whole log so a step that began before the report window
+ * still shows its real start date; the dose shown is the last one logged on or
+ * before the end of the period.
+ */
+export function currentDoses(allShots = [], medications = [], range = {}) {
+  const named = medications.length > 1;
+  return medications
+    .map((medication) => {
+      const rows = allShots
+        .filter((s) => s.medication === medication)
+        .map((s) => ({ day: shotDayKey(s), dose: asNumber(s.dose), unit: asText(s.dose_unit, "mg") }))
+        .filter((row) => row.day && row.dose != null && (!range?.to || row.day <= range.to))
+        .sort((a, b) => b.day.localeCompare(a.day));
+      if (!rows.length) return null;
+
+      const latest = rows[0];
+      // Walk back over the same dose to find the day this step started.
+      let since = latest.day;
+      rows.forEach((row) => {
+        if (row.dose !== latest.dose || row.unit !== latest.unit) return;
+        if (row.day < since) since = row.day;
+      });
+
+      const days = range?.to ? calendarDaysBetween(since, range.to) : null;
+      const duration = days == null || days < 1
+        ? ""
+        : days < 14
+          ? `for ${days} day${days === 1 ? "" : "s"}`
+          : `for ${Math.round(days / 7)} weeks`;
+
+      return {
+        medication,
+        label: `${latest.dose} ${latest.unit}`,
+        // The medication is only named when the report holds more than one, so a
+        // single-medication tile reads "for 6 weeks · since 12 Aug".
+        sub: [named ? medication : "", duration, `since ${formatDayShort(since)}`].filter(Boolean).join(" · "),
+      };
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Doses logged twice at the same timestamp, dose and site. Flagged in one line
+ * under the table — nothing is removed or corrected.
+ */
+export function duplicateDoseNote(rows = []) {
+  const seen = new Map();
+  rows.forEach((row) => {
+    const key = [row.day, row.time, row.dose, row.unit, row.site].join("|");
+    seen.set(key, (seen.get(key) || 0) + 1);
+  });
+  const extras = [...seen.values()].reduce((total, count) => total + (count > 1 ? count - 1 : 0), 0);
+  if (!extras) return "";
+  return extras === 1
+    ? "1 entry shares the same timestamp and may be a duplicate."
+    : `${extras} entries share the same timestamp and may be duplicates.`;
+}
+
+/**
+ * One footnote line per medication shown in the dose table: its route and
+ * concentration, and the doses used. This is where medication and route live,
+ * instead of a column repeated on every row.
+ */
+export function doseFootnotes(rows = []) {
+  const byMedication = new Map();
+  rows.forEach((row) => {
+    if (!byMedication.has(row.medication)) byMedication.set(row.medication, { details: [], doses: [] });
+    const entry = byMedication.get(row.medication);
+    if (row.detail && !entry.details.includes(row.detail)) entry.details.push(row.detail);
+    if (row.doseLabel !== "—" && !entry.doses.includes(row.doseLabel)) entry.doses.push(row.doseLabel);
+  });
+
+  return [...byMedication.entries()].map(([medication, entry]) => [
+    medication,
+    entry.details.join(" / "),
+    // Rows arrive newest first, so the dose list reverses to the order of use.
+    entry.doses.length ? `doses ${[...entry.doses].reverse().join(", ")}` : "",
+  ].filter(Boolean).join(" · "));
+}
+
 /** "Shots logged: X of Y scheduled" — the same logic as the Shots page figure. */
 export function adherenceFor(shots = [], shotsInRange = [], medicationFilter, days) {
   const meds = medicationFilter && medicationFilter !== "all"
@@ -325,15 +422,12 @@ export function cleanSymptom(text) {
 }
 
 /**
- * Side-effect rows, newest first, each with the most recent dose logged before
- * it — timing data only, no conclusions.
+ * Side-effect rows, newest first: what was logged, when, and how bad. Free-text
+ * side effects recorded before structured tracking are shown the same way.
  */
-export function sideEffectRows(events = [], shotsDesc = [], dayMetrics = {}, range) {
+export function sideEffectRows(events = [], dayMetrics = {}, range) {
   const structured = events
-    .map((e) => {
-      const day = eventDayKey(e);
-      return { day, event: e };
-    })
+    .map((e) => ({ day: eventDayKey(e), event: e }))
     .filter(({ day }) => day && day >= range.from && day <= range.to)
     .map(({ day, event }) => ({
       id: event.id,
@@ -341,11 +435,9 @@ export function sideEffectRows(events = [], shotsDesc = [], dayMetrics = {}, ran
       dayLabel: formatDay(day),
       symptom: cleanSymptom(event.symptom),
       severity: asText(event.severity),
-      detail: asText(event.duration || event.notes),
       legacy: false,
     }));
 
-  // Free-text side effects logged before structured tracking are still shown.
   const legacy = Object.values(dayMetrics)
     .filter((m) => m.day_key >= range.from && m.day_key <= range.to && m.side_effects)
     .map((m) => ({
@@ -354,36 +446,10 @@ export function sideEffectRows(events = [], shotsDesc = [], dayMetrics = {}, ran
       dayLabel: formatDay(m.day_key),
       symptom: cleanSymptom(m.side_effects),
       severity: "",
-      detail: "",
       legacy: true,
     }));
 
-  return [...structured, ...legacy]
-    .sort((a, b) => b.day.localeCompare(a.day))
-    .map((row) => {
-      const prior = shotsDesc.find((s) => {
-        const key = shotDayKey(s);
-        return key && key <= row.day;
-      });
-      return {
-        ...row,
-        prior: prior
-          ? { label: `${prior.dose} ${prior.dose_unit || "mg"}`, day: shotDayKey(prior), dayLabel: formatDay(shotDayKey(prior)) }
-          : null,
-      };
-    });
-}
-
-export function sideEffectFrequency(rows = []) {
-  const counts = new Map();
-  rows.forEach((row) => {
-    row.symptom.split(",").map((part) => part.trim()).filter(Boolean).forEach((term) => {
-      counts.set(term, (counts.get(term) || 0) + 1);
-    });
-  });
-  return [...counts.entries()]
-    .map(([label, count]) => ({ label, count }))
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  return [...structured, ...legacy].sort((a, b) => b.day.localeCompare(a.day));
 }
 
 function inRange(dayKey, range) {
@@ -516,6 +582,60 @@ export function injectionSiteData(shotsInRange = []) {
   };
 }
 
+/** The report period: its name, both dates and how many days it covers. */
+function periodLabel(range) {
+  const days = `${range.days} day${range.days === 1 ? "" : "s"}`;
+  const name = range.name && range.name !== "Custom" ? `${range.name} · ` : "";
+  return `${name}${formatDay(range.from)} – ${formatDay(range.to)} · ${days}`;
+}
+
+function goalSub(goalDistance, unit) {
+  if (!goalDistance) return "";
+  return goalDistance.direction === "above" ? `${goalDistance.value} ${unit} to go` : "Goal reached";
+}
+
+/**
+ * The summary tiles, in the order a clinician reads them. Built here so the
+ * screen and the PDF show the same tiles with the same wording. A tile only
+ * exists when its value exists — nothing is shown as "not set" or "—".
+ */
+export function summaryTiles({ current = [], weight, series = [], adherence, dosesCount, bmi, unit }) {
+  const tiles = current.map((dose) => ({
+    id: `dose-${dose.medication}`,
+    label: current.length > 1 ? `Current dose · ${dose.medication}` : "Current dose",
+    value: dose.label,
+    sub: dose.sub,
+  }));
+
+  if (dosesCount > 0) {
+    tiles.push({
+      id: "doses",
+      label: "Doses logged",
+      value: String(dosesCount),
+      sub: adherence.scheduled ? `of ${adherence.scheduled} scheduled` : "in this period",
+    });
+  }
+
+  if (series.length) {
+    const first = series[0];
+    const last = series[series.length - 1];
+    tiles.push({ id: "start", label: "Start weight", value: `${weight.start} ${unit}`, sub: `on ${formatDayShort(first.dayKey)}` });
+    tiles.push({ id: "current", label: "Current weight", value: `${weight.end} ${unit}`, sub: `on ${formatDayShort(last.dayKey)}` });
+    tiles.push({
+      id: "change",
+      label: "Total change",
+      value: `${signed(weight.change)} ${unit}`,
+      sub: weight.changePct != null ? `${signed(weight.changePct)}%` : "",
+    });
+    if (weight.goalLabel) {
+      tiles.push({ id: "goal", label: "Goal weight", value: weight.goalLabel, sub: goalSub(weight.goalDistance, unit) });
+    }
+    if (bmi != null) tiles.push({ id: "bmi", label: "BMI", value: String(bmi), sub: "" });
+  }
+
+  return tiles;
+}
+
 /**
  * Assembles everything the report screens and the PDF need, from the app's
  * existing state and the chosen options.
@@ -557,11 +677,19 @@ export function buildReport(state, options) {
   });
 
   const series = buildWeightSeries(weightHistory, range, profileUnit, unit);
-  const weight = summarizeWeight(series, profile, profileUnit, unit, range);
+  const weight = summarizeWeight(series, profile, profileUnit, unit);
   const doses = doseRows(shotsInRange);
   const changes = doseChangeSummary([...doses].reverse(), new Set(doses.map((d) => d.medication)).size > 1);
   const adherence = adherenceFor(shots, shotsInRange, medicationFilter, range.days);
-  const sideEffects = sideEffectRows(adverseEvents, shotsDesc, dayMetrics, range);
+  const sideEffects = sideEffectRows(adverseEvents, dayMetrics, range);
+
+  // The medications this report covers, and the dose each of them is on.
+  const medicationsInRange = medicationList(shotsInRange);
+  const current = currentDoses(
+    shots,
+    medicationFilter === "all" ? medicationsInRange : [medicationFilter],
+    range,
+  );
 
   const optional = {
     injectionSites: injectionSiteData(shotsInRange),
@@ -574,11 +702,14 @@ export function buildReport(state, options) {
 
   const available = {};
   OPTIONAL_IDS.forEach((id) => { available[id] = !!optional[id]; });
-  // An optional section only appears when the user has data for it in the range.
-  const selected = (options.sections || []).filter((id) => CORE_IDS.includes(id) || available[id]);
+  // Core sections are always part of the report. An optional section only
+  // appears when it was selected AND the range holds data for it.
+  const selected = [...new Set([...CORE_IDS, ...(options.sections || [])])]
+    .filter((id) => CORE_IDS.includes(id) || available[id]);
 
   const bmi = plausibleBmi(profile, weight.end, unit);
   const name = (options.name || "").trim();
+  const covered = medicationFilter === "all" ? medicationsInRange : [medicationFilter];
 
   return {
     range,
@@ -589,22 +720,24 @@ export function buildReport(state, options) {
     header: {
       name,
       generatedLabel: formatDay(todayKey()),
-      rangeLabel: range.label,
+      periodLabel: periodLabel(range),
       medications: medicationFilter === "all" ? medications : [medicationFilter],
       heightLabel: heightLabel(profile),
-      startWeight: weight.start,
-      endWeight: weight.end,
-      goalWeight: weight.goal,
-      change: weight.change,
-      changePct: weight.changePct,
-      bmi,
     },
+    summaryTiles: summaryTiles({ current, weight, series, adherence, dosesCount: doses.length, bmi, unit }),
     // `series` carries the plotted points through to the chart and the PDF.
-    // `notEnough` is set when a trend cannot be drawn, so the preview and the
-    // PDF say the same thing.
-    weight: { ...weight, series, notEnough: series.length < 2 },
-    doses: { rows: doses, changes, adherence, count: doses.length },
-    sideEffects: { rows: sideEffects, frequency: sideEffectFrequency(sideEffects), total: sideEffects.length },
+    // `table` is the compact table underneath it.
+    weight: { ...weight, series, table: weightTableRows(series, unit) },
+    doses: {
+      rows: doses,
+      changes,
+      adherence,
+      count: doses.length,
+      duplicateNote: duplicateDoseNote(doses),
+      footnotes: doseFootnotes(doses),
+      medications: covered,
+    },
+    sideEffects: { rows: sideEffects, total: sideEffects.length },
     optional,
     has: {
       weight: series.length > 0,

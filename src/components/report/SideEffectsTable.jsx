@@ -1,15 +1,16 @@
 import React from "react";
+import { NO_SIDE_EFFECTS_LINE } from "@/lib/reportData";
 import { useReportTokens } from "@/components/report/ReportTheme";
 
 /**
- * Side effects — newest first, with the most recent dose logged before each
- * entry. Timing data only; nothing is concluded from it.
+ * Side effects — newest first: what was logged, when, and how bad. Nothing was
+ * logged in the period is one muted line, never an empty table.
  */
 export default function SideEffectsTable({ rows }) {
   const t = useReportTokens();
 
   if (!rows.length) {
-    return <p className="text-sm" style={{ color: t.muted }}>No side effects logged in this range.</p>;
+    return <p className="text-sm" style={{ color: t.muted }}>{NO_SIDE_EFFECTS_LINE}</p>;
   }
 
   return (
@@ -20,8 +21,6 @@ export default function SideEffectsTable({ rows }) {
             <th className="text-left p-2 font-medium whitespace-nowrap">Date</th>
             <th className="text-left p-2 font-medium">Side effect</th>
             <th className="text-left p-2 font-medium">Severity</th>
-            <th className="text-left p-2 font-medium">Duration / notes</th>
-            <th className="text-left p-2 font-medium">Most recent dose before</th>
           </tr>
         </thead>
         <tbody>
@@ -30,10 +29,6 @@ export default function SideEffectsTable({ rows }) {
               <td className="p-2 whitespace-nowrap">{row.dayLabel}</td>
               <td className="p-2">{row.symptom}</td>
               <td className="p-2 capitalize">{row.severity || "—"}</td>
-              <td className="p-2">{row.detail || "—"}</td>
-              <td className="p-2 whitespace-nowrap">
-                {row.prior ? `${row.prior.label} on ${row.prior.dayLabel}` : "No dose logged before"}
-              </td>
             </tr>
           ))}
         </tbody>

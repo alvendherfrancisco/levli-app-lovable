@@ -13,20 +13,11 @@ const MUTED = PDF_RGB.muted;
 const GRID = PDF_RGB.grid;
 const WEIGHT = PDF_RGB.weightLine;
 const AVERAGE = PDF_RGB.avgLine;
-const BAR = PDF_RGB.barFill;
 
 export function hexToRgb(hex) {
   const value = String(hex || "").replace("#", "");
   if (value.length !== 6) return [100, 116, 139];
   return [0, 2, 4].map((i) => parseInt(value.slice(i, i + 2), 16));
-}
-
-export function fitText(doc, text, maxWidth) {
-  const str = String(text ?? "");
-  if (doc.getTextWidth(str) <= maxWidth) return str;
-  let cut = str;
-  while (cut.length > 1 && doc.getTextWidth(`${cut}…`) > maxWidth) cut = cut.slice(0, -1);
-  return `${cut}…`;
 }
 
 function line(doc, x1, y1, x2, y2, colour) {
@@ -70,7 +61,7 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
   doc.rect(plotX, plotY, plotW, plotH);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
+  doc.setFontSize(8);
   // Only distinct tick values are drawn, so a narrow band can never show the
   // same number twice.
   const ticks = [];
@@ -87,7 +78,7 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
     doc.text(tick.label, plotX - 2, gy + 1, { align: "right" });
   });
 
-  doc.setFontSize(7);
+  doc.setFontSize(8.5);
   doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
   doc.text(labelFor(axisFrom), plotX, legendY + 4, { align: "left" });
   doc.text(labelFor(axisTo), plotX + plotW, legendY + 4, { align: "right" });
@@ -124,7 +115,7 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
 
   // Legend
   let lx = plotX;
-  doc.setFontSize(7);
+  doc.setFontSize(8.5);
   line(doc, lx, legendY + 8, lx + 5, legendY + 8, WEIGHT);
   doc.setTextColor(INK[0], INK[1], INK[2]);
   doc.text("Weight", lx + 6, legendY + 9);
@@ -156,26 +147,4 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
   });
 
   return h + 14 + Math.max(0, doseRowY - (legendY + 6.4));
-}
-
-/** Horizontal bars of how often each side effect was logged. */
-export function drawFrequencyBars(doc, { x, y, w, rows, maxLabelWidth = 52, barMaxWidth = 70 }) {
-  const labelW = Math.min(maxLabelWidth, w * 0.34);
-  const rowH = 7;
-  const max = Math.max(...rows.map((r) => r.count), 1);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  rows.forEach((row, i) => {
-    const ry = y + i * rowH;
-    doc.setTextColor(INK[0], INK[1], INK[2]);
-    doc.text(fitText(doc, row.label, labelW - 2), x, ry + 2.6);
-    const barW = Math.max(1.5, (row.count / max) * Math.min(barMaxWidth, w - labelW - 10));
-    doc.setFillColor(BAR[0], BAR[1], BAR[2]);
-    doc.roundedRect(x + labelW, ry, barW, 3.6, 0.8, 0.8, "F");
-    doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
-    doc.text(String(row.count), x + labelW + barW + 2, ry + 2.8);
-  });
-
-  return rows.length * rowH;
 }
