@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, Pause, Play, Trash2 } from "lucide-react";
+import { X, Save, Pause, Play, Trash2, CalendarX } from "lucide-react";
 import { toast } from "@/lib/toast";
 import useModal from "@/hooks/useModal";
 import { useAppState } from "@/lib/AppState";
 import DoseChips from "@/components/modals/DoseChips";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { chipsForMedication, withCustomDose } from "@/lib/doseOptions";
 import { addDaysToKey, shiftWeekday, shotDateFromKey } from "@/lib/repeatSchedule";
 import { sound } from "@/lib/sounds";
@@ -24,6 +25,7 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
   const [startDate, setStartDate] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [askingCancel, setAskingCancel] = useState(false);
 
   useEffect(() => {
     if (!open || !schedule) return;
@@ -85,15 +87,16 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
     onClose();
   };
 
+  // Cancelling asks first, in the app's own dialog; this is the work it does
+  // once the answer is yes.
   const handleCancel = async () => {
-    if (!confirm(`Cancel the repeat for ${schedule.medication}? Your logged doses stay in your history.`)) return;
-    sound.delete();
     await updateRepeatSchedule(schedule.id, { status: "cancelled" });
     toast.deleted("Repeat cancelled");
     onClose();
   };
 
   return (
+    <>
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={onClose} aria-hidden="true" />
       <div
@@ -225,7 +228,7 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
               {active ? <Pause size={16} /> : <Play size={16} />} {active ? "Pause repeat" : "Resume repeat"}
             </button>
             <button
-              onClick={handleCancel}
+              onClick={() => setAskingCancel(true)}
               className="flex-1 py-3 rounded-xl bg-gray-50 dark:bg-white/[0.06] text-red-500 font-semibold text-sm flex items-center justify-center gap-2 border border-gray-100 dark:border-white/[0.08]"
             >
               <Trash2 size={16} /> Cancel repeat
@@ -234,5 +237,19 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
         </div>
       </div>
     </div>
+
+    {/* Its own dialog sits outside the sheet, so it dims the sheet as well. */}
+    <ConfirmDialog
+      open={askingCancel}
+      tone="destructive"
+      icon={CalendarX}
+      title="Cancel repeat?"
+      message={<><strong className="font-semibold text-gray-900 dark:text-white">{schedule.medication}</strong> will stop repeating. Your logged doses stay in your history.</>}
+      confirmLabel="Cancel repeat"
+      cancelLabel="Keep repeat"
+      onConfirm={handleCancel}
+      onCancel={() => setAskingCancel(false)}
+    />
+    </>
   );
 }

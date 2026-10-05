@@ -19,21 +19,27 @@ const isVisible = (el) => !!(el.offsetWidth || el.offsetHeight || el.getClientRe
  *  - the page behind it is scroll-locked (useScrollLock, reference counted)
  *  - focus is trapped inside the sheet, and returned to the trigger on close
  *  - Escape and the hardware/Android back button dismiss it
+ *  - the sound played on open (openSound, "open" unless the caller says otherwise)
  *
  * Returns the ref to attach to the sheet container (give it tabIndex={-1}).
  */
-export default function useModal({ open = true, onDismiss }) {
+export default function useModal({ open = true, onDismiss, openSound = "open" }) {
   const containerRef = useRef(null);
   const dismissRef = useRef(onDismiss);
   dismissRef.current = onDismiss;
+  // Read at open time only, so a sheet that changes its tone mid-life cannot
+  // replay the sound.
+  const openSoundRef = useRef(openSound);
+  openSoundRef.current = openSound;
 
   useScrollLock(open);
 
   useEffect(() => {
     if (!open) return;
 
-    // Every sheet in the app opens with the same soft tone.
-    sound.open();
+    // Every sheet in the app opens with the same soft tone, unless it names
+    // another one — a confirmation, for instance, opens on the warning tone.
+    (sound[openSoundRef.current] || sound.open)();
 
     const token = {};
     stack.push(token);

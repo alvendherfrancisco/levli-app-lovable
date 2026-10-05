@@ -5,10 +5,10 @@ import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import { useAppState } from "@/lib/AppState";
 import InventoryModal from "@/components/modals/InventoryModal";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { todayKey, fromDayKey, calendarDaysBetween } from "@/lib/dateUtils";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
-import { sound } from "@/lib/sounds";
 
 export default function InventoryPage() {
   const { inventory, deleteInventory, addStorageLog, storageLogs } = useAppState();
@@ -17,17 +17,21 @@ export default function InventoryPage() {
   const [storageModalFor, setStorageModalFor] = useState(null);
   const [excursion, setExcursion] = useState(false);
   const [storageNote, setStorageNote] = useState("");
+  const [removeTarget, setRemoveTarget] = useState(null);
   const today = todayKey();
   const storageSheetRef = useModal({ open: !!storageModalFor, onDismiss: () => setStorageModalFor(null) });
 
   const openNew = () => { setEditing(null); setModalOpen(true); };
   const openEdit = (i) => { setEditing(i); setModalOpen(true); };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Remove this inventory item?")) return;
-    sound.delete();
-    await deleteInventory(id);
+  // Removing asks first, in the app's own dialog; this is the work it does once
+  // the answer is yes.
+  const handleDelete = async () => {
+    const item = removeTarget;
+    if (!item) return;
+    await deleteInventory(item.id);
     toast.deleted("Inventory item removed");
+    setRemoveTarget(null);
   };
 
   const openStorageLog = (item) => {
@@ -119,7 +123,7 @@ export default function InventoryPage() {
                   <div className="flex flex-col gap-2 items-end flex-shrink-0">
                     <button onClick={() => openEdit(i)} className="text-gray-400 hover:text-indigo-600"><ChevronRight size={20} /></button>
                     <button onClick={() => openStorageLog(i)} className="text-gray-400 hover:text-orange-500"><Thermometer size={16} /></button>
-                    <button onClick={() => handleDelete(i.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={16} /></button>
+                    <button onClick={() => setRemoveTarget(i)} aria-label="Remove this item" className="text-gray-400 hover:text-red-500"><Trash2 size={16} /></button>
                   </div>
                 </div>
                 {productStorageLogs(i.id).length > 0 && (
@@ -140,6 +144,17 @@ export default function InventoryPage() {
       </div>
 
       <Fab onClick={openNew} label="Add Product" />
+
+      <ConfirmDialog
+        open={!!removeTarget}
+        tone="destructive"
+        title="Remove this item?"
+        message={<><strong className="font-semibold text-gray-900 dark:text-white">{removeTarget?.product_name}</strong> will be removed from your inventory.</>}
+        confirmLabel="Remove item"
+        cancelLabel="Keep it"
+        onConfirm={handleDelete}
+        onCancel={() => setRemoveTarget(null)}
+      />
 
       <InventoryModal open={modalOpen} onClose={() => { setModalOpen(false); setEditing(null); }} editing={editing} />
 

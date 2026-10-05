@@ -380,3 +380,20 @@ input[type="range"].pain-slider:active::-moz-range-thumb { transform: scale(1.1)
   .toast-enter { animation-name: toastFadeIn; }
   .toast-leave { animation-name: toastFadeOut; }
 }
+
+/* ── Confirmation dialog ───────────────────────────────────────────────────
+   The centered confirm card fades and scales in over ~180ms, and reverses on
+   the way out — the element is kept mounted for exactly that beat, so the
+   close is seen rather than the card simply vanishing. With reduced motion the
+   card is a plain fade: nothing moves, the meaning is unchanged. The backdrop
+   reuses the toast fades, which are opacity-only. */
+@keyframes confirmIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+@keyframes confirmOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.96); } }
+.confirm-card { animation: confirmIn 180ms ease-out both; }
+.confirm-card[data-state="closed"] { animation: confirmOut 180ms ease-in both; }
+.confirm-backdrop { animation: toastFadeIn 180ms ease-out both; }
+.confirm-backdrop[data-state="closed"] { animation: toastFadeOut 180ms ease-in both; }
+@media (prefers-reduced-motion: reduce) {
+  .confirm-card { animation-name: toastFadeIn; }
+  .confirm-card[data-state="closed"] { animation-name: toastFadeOut; }
+}

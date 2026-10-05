@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Settings, Plus, Pill, Calendar, User, Activity, Trash2, ChevronRight } from "lucide-react";
+import { Settings, Plus, Pill, Calendar, User, Activity, Trash2, ChevronRight, Archive } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import { useAppState } from "@/lib/AppState";
@@ -10,7 +10,6 @@ import RepeatScheduleModal from "@/components/modals/RepeatScheduleModal";
 import LinkShotsToMedsCard from "@/components/medications/LinkShotsToMedsCard";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { shotsOfMedication } from "@/lib/medicationLink";
-import { sound } from "@/lib/sounds";
 import { toast } from "@/lib/toast";
 
 export default function MyMedications() {
@@ -33,11 +32,11 @@ export default function MyMedications() {
     setConfirming({ medication: m, archive: count > 0, count });
   };
 
+  // The dialog keeps its spinner up while the change is written, then closes on
+  // success — the toast is the confirmation that it landed.
   const handleConfirm = async () => {
     const target = confirming;
-    setConfirming(null);
     if (!target) return;
-    sound.tap();
     if (target.archive) {
       await archiveMedication(target.medication.id);
       toast.success(`${target.medication.medication_name} archived — your shot history is kept`);
@@ -45,6 +44,7 @@ export default function MyMedications() {
       await deleteMedication(target.medication.id);
       toast.deleted("Medication removed");
     }
+    setConfirming(null);
   };
 
   const statusColors = {
@@ -139,13 +139,16 @@ export default function MyMedications() {
 
       <ConfirmDialog
         open={!!confirming}
+        tone={confirming?.archive ? "neutral" : "destructive"}
+        icon={confirming?.archive ? Archive : undefined}
         title={confirming?.archive ? "Archive this medication?" : "Delete this medication?"}
-        message={confirming?.archive
-          ? "Your shot history will be kept."
-          : "It has no shot logs, so nothing else is affected."}
+        message={confirming
+          ? (confirming.archive
+            ? <><strong className="font-semibold text-gray-900 dark:text-white">{confirming.medication.medication_name}</strong> will stop appearing on your schedule and in your shot pickers. Your {confirming.count} shot log{confirming.count === 1 ? "" : "s"} stay in your history.</>
+            : <><strong className="font-semibold text-gray-900 dark:text-white">{confirming.medication.medication_name}</strong> has no shot logs, so nothing else is affected.</>)
+          : undefined}
         confirmLabel={confirming?.archive ? "Archive" : "Delete"}
-        cancelLabel="Keep it"
-        destructive={!confirming?.archive}
+        cancelLabel={confirming?.archive ? "Keep active" : "Keep it"}
         onConfirm={handleConfirm}
         onCancel={() => setConfirming(null)}
       />

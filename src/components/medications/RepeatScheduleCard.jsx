@@ -1,8 +1,9 @@
-import React from "react";
-import { Repeat, Pause, Play, Pencil, X } from "lucide-react";
+import React, { useState } from "react";
+import { Repeat, Pause, Play, Pencil, X, CalendarX } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
 import DoseBadge from "@/components/DoseBadge";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   describeRepeat, shotDateFromKey, getNextOccurrence, summarizeSchedule, nextOnOrAfter,
 } from "@/lib/repeatSchedule";
@@ -12,6 +13,7 @@ import {
  */
 export default function RepeatScheduleCard({ schedule, onEdit }) {
   const { updateRepeatSchedule, shots } = useAppState();
+  const [askingCancel, setAskingCancel] = useState(false);
   const active = schedule.status === "active";
   const { total, confirmed, remaining } = summarizeSchedule(schedule, shots);
   const nextKey = getNextOccurrence(schedule);
@@ -33,10 +35,12 @@ export default function RepeatScheduleCard({ schedule, onEdit }) {
     }
   };
 
+  // Cancelling asks first, in the app's own dialog — the ask is what the button
+  // does, and this is the work it does once the answer is yes.
   const cancel = async () => {
-    if (!confirm(`Cancel the repeat for ${schedule.medication}? Your logged doses stay in your history.`)) return;
     await updateRepeatSchedule(schedule.id, { status: "cancelled" });
     toast.deleted("Repeat cancelled");
+    setAskingCancel(false);
   };
 
   return (
@@ -80,12 +84,24 @@ export default function RepeatScheduleCard({ schedule, onEdit }) {
           {active ? <Pause size={14} /> : <Play size={14} />} {active ? "Pause" : "Resume"}
         </button>
         <button
-          onClick={cancel}
+          onClick={() => setAskingCancel(true)}
           className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.06] text-red-500 text-sm font-semibold border border-gray-100 dark:border-white/[0.08]"
         >
           <X size={14} /> Cancel
         </button>
       </div>
+
+      <ConfirmDialog
+        open={askingCancel}
+        tone="destructive"
+        icon={CalendarX}
+        title="Cancel repeat?"
+        message={<><strong className="font-semibold text-gray-900 dark:text-white">{schedule.medication}</strong> will stop repeating. Your logged doses stay in your history.</>}
+        confirmLabel="Cancel repeat"
+        cancelLabel="Keep repeat"
+        onConfirm={cancel}
+        onCancel={() => setAskingCancel(false)}
+      />
     </div>
   );
 }

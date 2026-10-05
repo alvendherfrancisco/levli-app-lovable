@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Save, Star, ChevronDown, Trash2, Plus, Pill } from "lucide-react";
+import { X, Save, Star, ChevronDown, Trash2, Plus, Pill, AlertTriangle } from "lucide-react";
 import CustomMedicationFields from "@/components/modals/CustomMedicationFields";
 import MedicationModal from "@/components/modals/MedicationModal";
 import { getIntervalDays, getMedicationConfig, validateDosePair } from "@/lib/medicationConfig";
@@ -215,6 +215,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     confirmedDupRef.current = false;
     dirtyRef.current = false;
     setConfirmDiscard(false);
+    setConfirmDelete(false);
     setMedicationId("");
     setCustomName("");
     setConcentration(""); setNotes(""); setPain(0);
@@ -338,6 +339,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // lock, focus trap, Escape and the hardware back button).
   const dirtyRef = useRef(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const markEdited = () => { dirtyRef.current = true; };
   const requestClose = () => {
     if (!saved && dirtyRef.current) { setConfirmDiscard(true); return; }
@@ -544,10 +546,10 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     }
   };
 
+  // Deleting asks first, in the app's own dialog. The log is held whole in
+  // memory so Undo can put it straight back.
   const handleDelete = async () => {
     if (!editingShot) return;
-    if (!confirm("Delete this shot?")) return;
-    sound.delete();
     const removed = editingShot;
     await deleteShot(removed.id);
     toast.deleted("Shot deleted", { actionLabel: "Undo", actionTtlMs: 5000, onAction: () => restoreShot(removed) });
@@ -583,7 +585,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
             <div className="flex items-center justify-between gap-2 px-5 pb-4">
               <h2 id="add-shot-title" className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0] min-w-0 break-words">{editingShot ? "Edit Shot Log" : "Add Shot Log"}</h2>
               <div className="flex items-center gap-1 shrink-0">
-                {editingShot && !saved && <button onClick={handleDelete} data-skip-dirty aria-label="Delete this shot" className="w-11 h-11 flex items-center justify-center rounded-full"><Trash2 size={20} className="text-red-400" /></button>}
+                {editingShot && !saved && <button onClick={() => setConfirmDelete(true)} data-skip-dirty aria-label="Delete this shot" className="w-11 h-11 flex items-center justify-center rounded-full"><Trash2 size={20} className="text-red-400" /></button>}
                 <button onClick={requestClose} data-skip-dirty aria-label="Close" className="w-11 h-11 flex items-center justify-center rounded-full"><X size={22} className="text-gray-400" /></button>
               </div>
             </div>
@@ -1048,11 +1050,23 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
         open={confirmDiscard}
         title="Discard this shot?"
         message="This log has unsaved changes. Closing it now will lose them."
-        confirmLabel="Discard"
+        tone="warning"
+        icon={AlertTriangle}
+        confirmLabel="Discard changes"
         cancelLabel="Keep editing"
-        destructive
         onConfirm={() => { setConfirmDiscard(false); dirtyRef.current = false; onClose(); }}
         onCancel={() => setConfirmDiscard(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmDelete}
+        tone="destructive"
+        title="Delete this shot?"
+        message="The dose, site, time and notes for this log are removed from your history."
+        confirmLabel="Delete shot"
+        cancelLabel="Keep shot"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
       />
 
       <SideEffectsModal open={reporting} onClose={() => setReporting(false)} dayKey={date} />
