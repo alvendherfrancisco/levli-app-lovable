@@ -145,6 +145,23 @@
   height: 0;
 }
 
+/* ── Mobile: no visible scrollbar anywhere ──────────────────────────────────
+   Same breakpoint the app uses for its mobile layout (tab bar / side rail).
+   Only the scrollbar is hidden: every scroll container, momentum scrolling,
+   overscroll and the sticky headers/footers keep working exactly as before.
+   Desktop keeps its scrollbar for pointer users. */
+@media (max-width: 1023px) {
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
 /* ── Doctor report: on-screen page and print ─────────────────────────────── */
 /* The exported report is always a light page (the PDF is drawn vector, never a
    screenshot of the dark screen). These keep the preview's own colours when it
