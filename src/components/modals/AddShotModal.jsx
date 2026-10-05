@@ -843,7 +843,15 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                       <div>
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Pain Level: <span className="text-indigo-600">{pain}/10</span></label>
                         <div className="px-1">
-                          <input type="range" min="0" max="10" value={pain} onChange={(e) => setPain(Number(e.target.value))} className="w-full accent-indigo-600" />
+                          <input
+                            type="range" min="0" max="10"
+                            value={pain}
+                            onChange={(e) => setPain(Number(e.target.value))}
+                            className="pain-slider w-full"
+                            style={{ "--pain-fill": `${Math.round((pain / 10) * 100)}%` }}
+                            aria-label="Pain level"
+                            aria-valuetext={`${pain} out of 10`}
+                          />
                           <div className="flex justify-between text-xs text-gray-400 mt-1"><span>0 – No Pain</span><span>10 – Severe</span></div>
                         </div>
                       </div>
