@@ -1,6 +1,6 @@
 import React from "react";
 import { Repeat, Pause, Play, Pencil, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
 import DoseBadge from "@/components/DoseBadge";
 import {
@@ -23,7 +23,7 @@ export default function RepeatScheduleCard({ schedule, onEdit }) {
   const togglePause = async () => {
     if (active) {
       await updateRepeatSchedule(schedule.id, { status: "paused" });
-      toast("Repeat paused");
+      toast.success("Repeat paused");
     } else {
       await updateRepeatSchedule(schedule.id, {
         status: "active",
@@ -36,7 +36,7 @@ export default function RepeatScheduleCard({ schedule, onEdit }) {
   const cancel = async () => {
     if (!confirm(`Cancel the repeat for ${schedule.medication}? Your logged doses stay in your history.`)) return;
     await updateRepeatSchedule(schedule.id, { status: "cancelled" });
-    toast("Repeat cancelled");
+    toast.deleted("Repeat cancelled");
   };
 
   return (

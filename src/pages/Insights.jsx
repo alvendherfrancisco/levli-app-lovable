@@ -14,7 +14,7 @@ import SideEffectsPanel from "@/components/insights/SideEffectsPanel";
 import WellbeingPanel from "@/components/insights/WellbeingPanel";
 import { PK_CALCULATION_VERSION, superposition, recentDoses, steadyStateAmount, exposureSummary } from "@/lib/pkCalculations";
 import ExposureHowItWorks from "@/components/insights/ExposureHowItWorks";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import UpsellBanner from "@/components/UpsellBanner";
 import SiteRotationChart from "@/components/insights/SiteRotationChart";
 import DoseLegend from "@/components/insights/DoseLegend";
@@ -220,16 +220,16 @@ export default function Insights() {
     const dayKey = newDayKey || photoModal.dayKey;
     if (photoModal.mode === "add") {
       await addProgressPhotoRecord(dayKey, url);
-      toast.success("Progress photo added successfully!");
+      toast.success("Progress photo added");
     } else {
       await updateProgressPhotoRecord(photoModal.id, dayKey, url);
-      toast.success("Progress photo updated successfully!");
+      toast.success("Progress photo updated");
     }
   };
   const handleDeletePhotoModal = async () => {
     haptic("warning");
     await deleteProgressPhotoRecord(photoModal.id, photoModal.dayKey);
-    toast.success("Progress photo deleted successfully!");
+    toast.deleted("Progress photo deleted");
   };
 
   // ── Weight stats (over the entries actually logged) ─────────────────────────

@@ -7,7 +7,7 @@ import UrgentHelpCard from "@/components/sideEffects/UrgentHelpCard";
 import { JOURNAL_CATEGORIES, MOOD_SCALE, moodFor } from "@/lib/journalMeta";
 import { SEVERITY_LEVELS } from "@/lib/sideEffectSymptoms";
 import useModal from "@/hooks/useModal";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 function nowFormatted() {
   const d = new Date();
@@ -64,10 +64,10 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
         // Carried through for the structured side-effect record only.
         severity: category === "Side effect" ? severity : undefined,
       });
-      toast.success(initialEntry ? "Journal entry updated successfully!" : "Journal entry added successfully!");
+      toast.success(initialEntry ? "Journal entry updated" : "Journal entry added");
       setTimeout(() => onClose(), 500);
     } catch (err) {
-      toast.error("Failed to save journal entry");
+      toast.error("Couldn't save. Please try again.", { actionLabel: "Retry", onAction: handleSave });
     }
   };
 

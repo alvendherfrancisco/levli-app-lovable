@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Crown, Download, Eye, EyeOff, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import { buildReport, medicationList } from "@/lib/reportData";

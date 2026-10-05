@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, Loader2, Repeat, Pencil, SkipForward, ChevronRight } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
 import DoseBadge from "@/components/DoseBadge";
 import { todayKey } from "@/lib/dateUtils";
@@ -39,7 +39,7 @@ export default function RepeatDoseCard({ onEdit }) {
   const handleSkip = async (schedule, dayKey) => {
     try {
       await skipRepeatDose(schedule, dayKey);
-      toast("Dose skipped — nothing logged");
+      toast.success("Dose skipped — nothing logged");
     } catch (e) {
       toast.error("Could not skip that dose");
     }

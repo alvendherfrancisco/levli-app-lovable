@@ -156,9 +156,8 @@ export default function ToastHost() {
 
   return (
     <div
-      // Always in the tree so an announcement is not missed the moment the card
-      // is mounted, and never in the way of the app underneath.
-      aria-live={isError ? "assertive" : "polite"}
+      // Never in the way of the app underneath; the card itself carries the
+      // live region, so what is announced is exactly what is on screen.
       className="pointer-events-none fixed inset-x-0 top-0 z-[80] px-4"
       style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
     >

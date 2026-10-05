@@ -9,7 +9,7 @@ import { JOURNAL_CATEGORIES, categoryMeta, normaliseCategory, sortJournalNewestF
 import { parseShotDate, toDayKey, formatLocaleDate } from "@/lib/dateUtils";
 import { classifyRedFlag } from "@/lib/redFlags";
 import { getRecentMedication } from "@/lib/medicationData";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { haptic } from "@/lib/haptics";
 
 export default function Journal() {
@@ -30,7 +30,7 @@ export default function Journal() {
   const handleSave = async (entry) => {
     if (editingEntry) {
       await updateJournalEntry(editingEntry.id, entry);
-      toast.success("Journal entry updated successfully!");
+      toast.success("Journal entry updated");
     } else {
       const rec = await addJournalEntry(entry);
       // A side-effect entry always has a structured record to match it.
@@ -65,7 +65,7 @@ export default function Journal() {
     haptic("warning");
     try {
       await deleteJournalEntry(id);
-      toast.success("Journal entry deleted successfully!");
+      toast.deleted("Journal entry deleted");
       setEditingEntry(null);
       setShowModal(false);
     } catch (err) {

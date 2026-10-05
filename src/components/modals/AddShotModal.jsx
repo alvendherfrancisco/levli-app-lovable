@@ -25,7 +25,7 @@ import ShotSuccessPanel from "@/components/modals/ShotSuccessPanel";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import useModal from "@/hooks/useModal";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { haptic } from "@/lib/haptics";
 
 // SC injection sites
@@ -495,19 +495,30 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     try {
       if (editingShot) {
         await updateShot(editingShot.id, payload);
-        toast.success("Shot updated successfully!");
       } else {
         await addShot(payload);
         await syncRepeatSchedule(doseNum);
-        toast.success("Shot added successfully!");
       }
+      // No toast here: the confirmation screen in the sheet is the confirmation.
       haptic("success");
       setSaving(false);
       setSaved(true);
     } catch (err) {
       console.error("Error saving shot:", err);
-      toast.error("Failed to save shot");
+      toast.error("Couldn't save. Please try again.", { actionLabel: "Retry", onAction: handleSave });
       setSaving(false);
+    }
+  };
+
+  // Undo re-logs the removed shot from the record itself: the new entry gets a
+  // fresh id and every logged detail is carried over.
+  const restoreShot = async (shot) => {
+    try {
+      await addShot(shot);
+      haptic("success");
+    } catch (err) {
+      console.error("Error restoring shot:", err);
+      toast.error("Couldn't save. Please try again.");
     }
   };
 
@@ -515,8 +526,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     if (!editingShot) return;
     if (!confirm("Delete this shot?")) return;
     haptic("warning");
-    await deleteShot(editingShot.id);
-    toast.success("Shot deleted successfully!");
+    const removed = editingShot;
+    await deleteShot(removed.id);
+    toast.deleted("Shot deleted", { actionLabel: "Undo", actionTtlMs: 5000, onAction: () => restoreShot(removed) });
     onClose();
   };
 

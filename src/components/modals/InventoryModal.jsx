@@ -3,7 +3,7 @@ import { X, Save } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { getMedicationPickerNames } from "@/lib/medicationConfig";
 import useModal from "@/hooks/useModal";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 const pad = (n) => String(n).padStart(2, "0");
 function todayInput() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
@@ -78,7 +78,7 @@ export default function InventoryModal({ open, onClose, editing }) {
       setSaving(false);
       setTimeout(() => onClose(), 300);
     } catch (err) {
-      toast.error("Failed to save product");
+      toast.error("Couldn't save. Please try again.", { actionLabel: "Retry", onAction: handleSave });
       setSaving(false);
     }
   };

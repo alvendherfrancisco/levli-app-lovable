@@ -8,7 +8,7 @@ import { SIDE_EFFECT_SYMPTOMS, SEVERITY_LEVELS, symptomByKey } from "@/lib/sideE
 import SideEffectChecklist from "@/components/sideEffects/SideEffectChecklist";
 import UrgentHelpCard from "@/components/sideEffects/UrgentHelpCard";
 import useModal from "@/hooks/useModal";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { haptic } from "@/lib/haptics";
 
 const PHARMACOVIGILANCE_LINKS = [
@@ -86,7 +86,7 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
       setSelected([]);
       setNote("");
     } catch (err) {
-      toast.error("Failed to save side effect");
+      toast.error("Couldn't save. Please try again.", { actionLabel: "Retry", onAction: handleAdd });
     }
     setSaving(false);
   };
@@ -95,7 +95,7 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
     haptic("warning");
     try {
       await deleteAdverseEvent(id);
-      toast.success("Side effect removed");
+      toast.deleted("Side effect removed");
     } catch (err) {
       toast.error("Failed to remove");
     }

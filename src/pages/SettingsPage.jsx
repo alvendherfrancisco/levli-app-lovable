@@ -10,7 +10,7 @@ import { APP_VERSION, SUPPORT_EMAIL, FEEDBACK_EMAIL, DISCLAIMER_TEXT } from "@/l
 import { getHapticsPreference, setHapticsPreference, haptic } from "@/lib/haptics";
 import { buildFullExportCsv, downloadTextFile } from "@/lib/dataExport";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 // Shared toggle — defined outside the component so React doesn't remount it
 // on every state change (which caused the two toggles to look inconsistent).
@@ -56,7 +56,7 @@ export default function SettingsPage() {
   const handleRevoke = async (id) => {
     haptic("warning");
     await revokeProxyAccess(id);
-    toast.success("Access revoked");
+    toast.deleted("Access revoked");
   };
 
   const handleLogout = () => {

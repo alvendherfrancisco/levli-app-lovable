@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, Camera, Image, Trash2, Save, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { toast } from "sonner";
 import CameraCapture from "@/components/modals/CameraCapture";
 import SafeImage from "@/components/SafeImage";
 import useModal from "@/hooks/useModal";

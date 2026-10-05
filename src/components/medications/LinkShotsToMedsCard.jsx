@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link2, Pill } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { getMedicationConfig, getIntervalDays, plainBrandName } from "@/lib/medicationConfig";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 /**
  * When shot logs exist but Meds is empty, the medication is drafted from the

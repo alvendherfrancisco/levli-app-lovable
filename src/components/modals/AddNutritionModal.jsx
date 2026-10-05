@@ -3,7 +3,7 @@ import { X, RotateCcw, Save } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { todayKey } from "@/lib/dateUtils";
 import useModal from "@/hooks/useModal";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 const EMPTY = { calories: "", protein: "", water: "", fiber: "", carbs: "" };
 
@@ -62,10 +62,10 @@ export default function AddNutritionModal({ open, onClose, dayKey }) {
     if (Object.values(newErrors).some(Boolean)) { setErrors(newErrors); return; }
     try {
       saveNutrition(dk, values);
-      toast.success(isNew ? "Nutrition data added successfully!" : "Nutrition data updated successfully!");
+      toast.success(isNew ? "Nutrition added" : "Nutrition updated");
       setTimeout(() => onClose(), 500);
     } catch (err) {
-      toast.error("Failed to save nutrition data");
+      toast.error("Couldn't save. Please try again.", { actionLabel: "Retry", onAction: handleSave });
     }
   };
 

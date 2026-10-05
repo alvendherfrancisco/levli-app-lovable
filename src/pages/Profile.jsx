@@ -4,7 +4,7 @@ import { Settings, Check, Loader2 } from "lucide-react";
 import IonIcon from "@/components/IonIcon";
 import { SyringeIcon, ScaleIcon } from "@/components/CustomIcons";
 import { useAppState } from "@/lib/AppState";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   heightCmOf, heightCmFromParts, heightPartsFromCm,
   checkHeight, checkGoal, fromKg, weightUnitLabel,
@@ -53,9 +53,9 @@ export default function Profile() {
       setLocal((p) => ({ ...p, days_between_override: "" }));
       try {
         await setProfile({ ...profile, days_between_override: "" });
-        toast.success("Profile updated successfully!");
+        toast.success("Profile updated");
       } catch (err) {
-        toast.error("Failed to update profile");
+        toast.error("Couldn't save. Please try again.");
       }
     }
     setOverrideOn((v) => !v);
@@ -102,10 +102,10 @@ export default function Profile() {
     setSavingHeight(true);
     try {
       await setProfile({ ...profile, height_cm: check.cm });
-      toast.success("Profile updated successfully!");
+      toast.success("Profile updated");
       flashSaved(setHeightSaved);
     } catch (err) {
-      toast.error("Failed to update profile");
+      toast.error("Couldn't save. Please try again.");
     }
     setSavingHeight(false);
   };
@@ -134,10 +134,10 @@ export default function Profile() {
     setSavingGoal(true);
     try {
       await setProfile({ ...profile, goal_weight_kg: check.kg });
-      toast.success("Profile updated successfully!");
+      toast.success("Profile updated");
       flashSaved(setGoalSaved);
     } catch (err) {
-      toast.error("Failed to update profile");
+      toast.error("Couldn't save. Please try again.");
     }
     setSavingGoal(false);
   };
@@ -165,9 +165,9 @@ export default function Profile() {
     updates.forEach((f) => { partial[f] = local[f]; });
     try {
       await setProfile({ ...profile, ...partial });
-      toast.success("Profile updated successfully!");
+      toast.success("Profile updated");
     } catch (err) {
-      toast.error("Failed to update profile");
+      toast.error("Couldn't save. Please try again.");
     }
     setSaving((p) => ({ ...p, [key]: false }));
     setSaved((p) => ({ ...p, [key]: true }));
@@ -198,9 +198,9 @@ export default function Profile() {
         setLocal(next);
         try {
           await setProfile({ ...profile, [field]: opt });
-          toast.success("Profile updated successfully!");
+          toast.success("Profile updated");
         } catch (err) {
-          toast.error("Failed to update profile");
+          toast.error("Couldn't save. Please try again.");
         }
       }}
       className={`px-5 py-2 text-sm font-medium transition-colors ${

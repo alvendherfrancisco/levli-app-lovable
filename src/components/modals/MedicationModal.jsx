@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { X, Save } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import useModal from "@/hooks/useModal";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { findMedicationOption, labelledSchedule, isLabelStrength, scheduleText, statusOptionsFor, validateRegimenForm,
   DOSE_STEP_HELPER, INDICATION_OPTIONS, OTHER_SCHEDULE } from "@/lib/medicationRegimen";
 import { haptic } from "@/lib/haptics";
@@ -178,7 +178,7 @@ export default function MedicationModal({ open, onClose, editing }) {
       setSaving(false);
       setTimeout(() => onClose(), 300);
     } catch (err) {
-      toast.error("Failed to save medication");
+      toast.error("Couldn't save. Please try again.", { actionLabel: "Retry", onAction: handleSave });
       setSaving(false);
     }
   };

@@ -8,7 +8,7 @@ import AddMetricModal from "@/components/modals/AddMetricModal";
 import { todayKey } from "@/lib/dateUtils";
 import { checkWeight } from "@/lib/measure";
 import { useToast } from "@/hooks/useToast";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { haptic } from "@/lib/haptics";
 
 // Card order — also the order of the value signature used for the saved flash.
@@ -79,7 +79,7 @@ export default function MetricsGrid({ dayKey }) {
         unit: weightUnit,
         current: weight != null ? String(weight) : "",
         validate: (v) => { const check = checkWeight(v, weightUnit); return check.ok ? "" : check.message; },
-        onSave: async (v) => { await saveWeight(dk, v); weight != null ? toast.success("Weight updated successfully!") : toast.success("Weight added successfully!"); },
+        onSave: async (v) => { await saveWeight(dk, v); weight != null ? toast.success("Weight updated") : toast.success("Weight added"); },
       }),
     },
     {
@@ -116,13 +116,13 @@ export default function MetricsGrid({ dayKey }) {
       icon: <IonIcon name="barbell" size={20} className="text-red-500 dark:text-red-400" />, label: "Exercise",
       value: whole(exercise), unit: "min", color: "bg-red-100 dark:bg-red-500/10",
       ariaLabel: addLabel("Exercise", `${whole(exercise)} min`),
-      onAdd: () => setMetricModal({ label: "Exercise", unit: "min", current: exercise != null ? String(exercise) : "", onSave: async (v) => { await saveExercise(dk, v); exercise != null ? toast.success("Exercise updated successfully!") : toast.success("Exercise added successfully!"); } }),
+      onAdd: () => setMetricModal({ label: "Exercise", unit: "min", current: exercise != null ? String(exercise) : "", onSave: async (v) => { await saveExercise(dk, v); exercise != null ? toast.success("Exercise updated") : toast.success("Exercise added"); } }),
     },
     {
       icon: <IonIcon name="camera" size={20} className="text-purple-500 dark:text-purple-400" />, label: "Progress",
       value: photo ? "✓" : "–", unit: "pic", color: "bg-purple-100 dark:bg-purple-500/10",
       ariaLabel: addLabel("Progress", photo ? "photo logged today" : "no photo today"),
-      onAdd: () => setMetricModal({ label: "Progress", unit: "pic", current: photo || "–", dayKey: dk, onSave: async (v, newDayKey) => { await addProgressPhotoRecord(newDayKey || dk, v); toast.success("Progress photo added successfully!"); }, onDelete: async () => { haptic("warning"); await deleteLatestProgressPhoto(dk); toast.success("Progress photo deleted successfully!"); } }),
+      onAdd: () => setMetricModal({ label: "Progress", unit: "pic", current: photo || "–", dayKey: dk, onSave: async (v, newDayKey) => { await addProgressPhotoRecord(newDayKey || dk, v); toast.success("Progress photo added"); }, onDelete: async () => { haptic("warning"); await deleteLatestProgressPhoto(dk); toast.deleted("Progress photo deleted"); } }),
     },
   ];
 

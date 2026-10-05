@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { AlertTriangle, Check, Undo2, X } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import useModal from "@/hooks/useModal";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 /**
  * One-time check raised when entries kept in pounds read as a believable weight

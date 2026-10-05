@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useAppState } from "@/lib/AppState";
 import useModal from "@/hooks/useModal";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 const PLANS = [
   { id: "monthly", name: "Monthly", desc: "Full access for just ₱125.00/month" },

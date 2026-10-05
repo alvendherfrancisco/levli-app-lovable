@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Syringe, PauseCircle } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
 import { parseShotDate, toDayKey } from "@/lib/dateUtils";
 import {
