@@ -9,6 +9,8 @@ import { parseShotDate, todayKey, toDayKey } from "@/lib/dateUtils";
 import { isInvestigational, getHalfLifeDays, getDosingInterval } from "@/lib/medicationData";
 import { heightCmOf, shownBmi } from "@/lib/measure";
 import { isExposureEligible } from "@/lib/medicationConfig";
+import SideEffectsPanel from "@/components/insights/SideEffectsPanel";
+import WellbeingPanel from "@/components/insights/WellbeingPanel";
 import { steadyStateFraction, accumulationRatio, PK_CALCULATION_VERSION } from "@/lib/pkCalculations";
 import { toast } from "sonner";
 import UpsellBanner from "@/components/UpsellBanner";
@@ -553,6 +555,9 @@ export default function Insights() {
           </div>
           <p className="text-xs text-gray-400 dark:text-[#9A9DAE] text-center mt-2">Rotate sites to support absorption and reduce irritation.</p>
         </div>
+
+        <WellbeingPanel />
+        <SideEffectsPanel />
 
         <UpsellBanner />
       </div>

@@ -12,6 +12,7 @@ import {
 import {
   getIntervalDays, effectiveDaysBetween, intervalWarning, plainBrandName,
 } from "@/lib/medicationConfig";
+import { goalBmiSafeguard } from "@/lib/wellbeing";
 import PageContainer from "@/components/PageContainer";
 
 // Only allow digits, one leading decimal, and basic numeric chars
@@ -41,6 +42,7 @@ export default function Profile() {
   // The days between shots come from the medication itself. A prescriber's
   // override replaces it, and is flagged when it is shorter than the label allows.
   const [overrideOn, setOverrideOn] = useState(!!profile?.days_between_override);
+  const [goalWarning, setGoalWarning] = useState("");
   const currentMedication = shots?.[0]?.medication || local.default_medication || "";
   const labelInterval = getIntervalDays(currentMedication);
   const effectiveInterval = effectiveDaysBetween(local, currentMedication);
@@ -123,6 +125,12 @@ export default function Profile() {
       return;
     }
     setErrors((p) => ({ ...p, goal_weight: null }));
+    const goalCheck = goalBmiSafeguard(check.kg, heightCmOf(profile));
+    setGoalWarning(
+      goalCheck.flagged
+        ? `A goal of ${Math.round(check.kg)} kg works out to a BMI of ${goalCheck.bmi.toFixed(1)}, below 18.5. Worth talking to your prescriber before aiming for it — this isn't a diagnosis.`
+        : ""
+    );
     setSavingGoal(true);
     try {
       await setProfile({ ...profile, goal_weight_kg: check.kg });
@@ -271,6 +279,9 @@ export default function Profile() {
             </button>
           </div>
           {errors.goal_weight && <p className="text-xs text-orange-500 mt-1">{errors.goal_weight}</p>}
+          {goalWarning && (
+            <p className="text-xs text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/25 rounded-xl px-3 py-2 mt-2 leading-relaxed">{goalWarning}</p>
+          )}
           <p className="text-xs text-gray-400 dark:text-gray-500">Stored as kilograms.</p>
         </div>
 

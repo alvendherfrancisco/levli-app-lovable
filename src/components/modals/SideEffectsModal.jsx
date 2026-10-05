@@ -1,83 +1,90 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, ChevronDown, ExternalLink } from "lucide-react";
+import { X, Plus, Trash2, ExternalLink } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
-import { todayKey, toDayKey } from "@/lib/dateUtils";
+import { todayKey } from "@/lib/dateUtils";
 import { getRecentMedication } from "@/lib/medicationData";
-import { classifyRedFlag, RED_FLAG_WORDING, RED_FLAG_DISCLAIMER } from "@/lib/redFlags";
+import { classifyRedFlag } from "@/lib/redFlags";
+import { SIDE_EFFECT_SYMPTOMS, SEVERITY_LEVELS, symptomByKey } from "@/lib/sideEffectSymptoms";
+import SideEffectChecklist from "@/components/sideEffects/SideEffectChecklist";
+import UrgentHelpCard from "@/components/sideEffects/UrgentHelpCard";
 import { toast } from "sonner";
-
-const SIDE_EFFECT_OPTIONS = [
-  { label: "Nausea", emoji: "🤢" }, { label: "Vomiting", emoji: "🤮" },
-  { label: "Diarrhea", emoji: "💩" }, { label: "Constipation", emoji: "😣" },
-  { label: "Fatigue", emoji: "😴" }, { label: "Headache", emoji: "🤕" },
-  { label: "Dizziness", emoji: "💫" }, { label: "Injection site pain", emoji: "💉" },
-  { label: "Stomach pain", emoji: "😖" }, { label: "Heartburn", emoji: "🔥" },
-];
-const SEVERITIES = ["mild", "moderate", "severe", "emergency"];
 
 const PHARMACOVIGILANCE_LINKS = [
   { label: "UK — MHRA Yellow Card", url: "https://yellowcard.mhra.gov.uk/" },
   { label: "US — FDA MedWatch", url: "https://www.fda.gov/safety/medwatch-fda-safety-information-and-adverse-event-reporting-program" },
 ];
 
-// Map free-text side-effect entries (legacy) to structured AdverseEvent fields
-function classifyCategory(symptom) {
-  const lower = (symptom || "").toLowerCase();
-  if (/nausea|vomit|diarrh|constipat|stomach|heartburn/.test(lower)) return "gastrointestinal";
-  if (/headache|dizz/.test(lower)) return "neurological";
-  if (/injection site/.test(lower)) return "dermatological";
-  return "other";
-}
+const severityLabel = (value) => SEVERITY_LEVELS.find((s) => s.value === value)?.label || value || "";
 
+/**
+ * The structured side-effect log: a checklist of symptoms, one severity, one
+ * date and an optional note. Every ticked symptom becomes its own record, so the
+ * same entry shows up in History, Insights and the Report.
+ */
 export default function SideEffectsModal({ open, onClose, dayKey }) {
-  const dk = dayKey || todayKey();
-  const { getSideEffects, saveSideEffects, shots, adverseEvents, addAdverseEvent, deleteAdverseEvent } = useAppState();
-  const [selectedEffect, setSelectedEffect] = useState(null);
+  const { shots, getSideEffects, adverseEvents, addAdverseEvent, deleteAdverseEvent } = useAppState();
+  const [selected, setSelected] = useState([]);
   const [severity, setSeverity] = useState("mild");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [notes, setNotes] = useState("");
-
-  // Existing structured events for this day
-  const dayEvents = (adverseEvents || []).filter((e) => (e.day_key || (e.onset_date ? toDayKey(new Date(e.onset_date)) : "")) === dk);
+  const [date, setDate] = useState(dayKey || todayKey());
+  const [note, setNote] = useState("");
+  const [urgentOpen, setUrgentOpen] = useState(false);
+  const [severeLogged, setSevereLogged] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) {
-      // Legacy free-text is still displayed (read-only) for entries logged before migration.
-      setNotes("");
-      setSelectedEffect(null);
-      setShowDropdown(false);
-    }
-  }, [open, dk]);
+    if (!open) return;
+    setSelected([]);
+    setSeverity("mild");
+    setDate(dayKey || todayKey());
+    setNote("");
+    setUrgentOpen(false);
+    setSevereLogged(false);
+  }, [open, dayKey]);
 
   if (!open) return null;
 
-  const recentMed = getRecentMedication(shots, dk);
+  const dayEvents = adverseEvents.filter((e) => (e.day_key || "") === date);
+  const legacyText = getSideEffects(date);
+  const recentMed = getRecentMedication(shots, date);
 
-  const addEffect = async () => {
-    if (!selectedEffect) return;
-    const symptom = `${selectedEffect.emoji} ${selectedEffect.label}`;
-    const { tier } = classifyRedFlag(symptom, recentMed);
+  const toggle = (key) =>
+    setSelected((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+
+  const selectedLabels = selected.map((k) => symptomByKey(k)?.label).filter(Boolean);
+
+  const handleAdd = async () => {
+    if (!selected.length) return;
+    setSaving(true);
     try {
-      await addAdverseEvent({
-        medication_name: recentMed || "",
-        symptom,
-        symptom_category: classifyCategory(selectedEffect.label),
-        severity,
-        onset_date: dk,
-        onset_time: "",
-        resolved: false,
-        user_attribution: true,
-        red_flag_tier: tier || "none",
-        day_key: dk,
-        notes: "",
-      });
-      toast.success("Side effect recorded");
-      setSelectedEffect(null);
-      setShowDropdown(false);
-      setSeverity("mild");
+      for (const key of selected) {
+        const symptom = symptomByKey(key);
+        const { tier } = classifyRedFlag(`${severity} ${symptom.label}`, recentMed);
+        await addAdverseEvent({
+          medication_name: recentMed || "",
+          symptom: symptom.label,
+          symptom_key: symptom.key,
+          symptom_category: symptom.category,
+          severity,
+          onset_date: date,
+          day_key: date,
+          resolved: false,
+          user_attribution: true,
+          red_flag_tier: tier || "none",
+          notes: note.trim(),
+        });
+      }
+      // A severe symptom opens the urgent-help list straight away.
+      if (severity === "severe") {
+        setUrgentOpen(true);
+        setSevereLogged(true);
+      }
+      toast.success(selected.length === 1 ? "Side effect logged" : `${selected.length} side effects logged`);
+      setSelected([]);
+      setNote("");
     } catch (err) {
       toast.error("Failed to save side effect");
     }
+    setSaving(false);
   };
 
   const handleDelete = async (id) => {
@@ -89,13 +96,7 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
     }
   };
 
-  // Combined text for red-flag banner (structured + legacy + notes)
-  const combinedText = [
-    ...dayEvents.map((e) => e.symptom),
-    notes.trim(),
-  ].filter(Boolean).join(" ");
-
-  const legacyText = getSideEffects(dk);
+  const flagText = [...selectedLabels, severity].join(" ");
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
@@ -108,60 +109,80 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
             <button onClick={onClose}><X size={22} className="text-gray-400" /></button>
           </div>
         </div>
+
+        {/* Always present, and opened straight away after a severe entry. */}
+        <div className="px-5 pb-3">
+          <UrgentHelpCard
+            open={urgentOpen}
+            onToggle={() => setUrgentOpen((v) => !v)}
+            highlight={severeLogged}
+          />
+        </div>
+
         <div className="px-5 pb-4 space-y-4">
-          {/* Dropdown */}
+          {/* Checklist */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Select Side Effect</label>
-            <div className="relative">
-              <button onClick={() => setShowDropdown(!showDropdown)}
-                className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] rounded-xl px-4 py-3 flex items-center justify-between text-left">
-                <span className="text-base text-gray-600 dark:text-[#9A9DAE]">{selectedEffect ? `${selectedEffect.emoji} ${selectedEffect.label}` : "Choose a side effect..."}</span>
-                <ChevronDown size={18} className="text-gray-400" />
-              </button>
-              {showDropdown && (
-                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-[#1e2130] border border-gray-200 dark:border-white/[0.08] rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                  {SIDE_EFFECT_OPTIONS.map((o) => (
-                    <button key={o.label} onClick={() => { setSelectedEffect(o); setShowDropdown(false); }}
-                      className="w-full px-4 py-3 text-left text-sm dark:text-[#E8E9F0] hover:bg-gray-50 dark:hover:bg-white/[0.05] flex items-center gap-2">
-                      <span>{o.emoji}</span> {o.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">What are you feeling?</label>
+            <SideEffectChecklist selected={selected} onToggle={toggle} />
           </div>
 
           {/* Severity */}
           <div>
             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Severity</label>
             <div className="flex gap-2">
-              {SEVERITIES.map((s) => (
-                <button key={s} onClick={() => setSeverity(s)}
-                  className={`flex-1 py-2 rounded-xl text-sm font-medium border capitalize transition-colors ${severity === s ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30" : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.1]"}`}>
-                  {s}
+              {SEVERITY_LEVELS.map((s) => (
+                <button key={s.value} onClick={() => setSeverity(s.value)}
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                    severity === s.value
+                      ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30"
+                      : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.1]"
+                  }`}>
+                  {s.label}
                 </button>
               ))}
             </div>
           </div>
 
-          <button onClick={addEffect} disabled={!selectedEffect}
-            className="w-full py-2.5 bg-indigo-600/10 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 rounded-xl font-semibold text-sm hover:bg-indigo-500/20 transition-colors disabled:opacity-50">
-            + Add to List
+          {/* Date */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Date</label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
+          </div>
+
+          {/* Note */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Note (optional)</label>
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2}
+              placeholder="Anything you want to remember about it..."
+              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-sm resize-none outline-none focus:border-indigo-300" />
+          </div>
+
+          <button onClick={handleAdd} disabled={!selected.length || saving}
+            className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+            <Plus size={16} /> {saving ? "Saving…" : "Log side effect"}
           </button>
 
-          {/* Today's structured side effects */}
+          {/* Entries already logged for this date */}
           {dayEvents.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {dayEvents.map((e) => (
-                <span key={e.id} className="flex items-center gap-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/25 rounded-full px-3 py-1 text-sm">
-                  {e.symptom} <span className="text-xs opacity-60">({e.severity})</span>
-                  <button onClick={() => handleDelete(e.id)} className="ml-1 text-indigo-400 hover:text-indigo-300 dark:hover:text-indigo-200">×</button>
-                </span>
-              ))}
+            <div>
+              <label className="text-xs text-gray-400 dark:text-gray-500 mb-1.5 block">Logged for this date</label>
+              <div className="space-y-2">
+                {dayEvents.map((e) => (
+                  <div key={e.id} className="flex items-center justify-between gap-2 bg-gray-50 dark:bg-white/[0.05] rounded-xl px-3 py-2 border border-gray-100 dark:border-white/[0.08]">
+                    <span className="text-sm text-gray-700 dark:text-[#E8E9F0]">
+                      {e.symptom}
+                      <span className="text-xs text-gray-400 dark:text-gray-500"> · {severityLabel(e.severity)}</span>
+                      {e.notes && <span className="block text-xs text-gray-400 dark:text-gray-500">{e.notes}</span>}
+                    </span>
+                    <button onClick={() => handleDelete(e.id)}><Trash2 size={16} className="text-gray-400" /></button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Legacy free-text (read-only display for pre-migration entries) */}
+          {/* Free-text entries logged before structured tracking */}
           {legacyText && (
             <div>
               <label className="text-xs text-gray-400 dark:text-gray-500 mb-1 block">Previously logged (read-only)</label>
@@ -169,33 +190,31 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
             </div>
           )}
 
-          {/* Additional notes */}
-          <div>
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Additional Notes</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
-              placeholder="Any other observations..."
-              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-sm resize-none h-20 outline-none focus:border-indigo-300" />
-          </div>
+          {flagText.trim() && (
+            <div className="space-y-2">
+              {(selectedLabels.length > 0 || severity === "severe") && recentMed && flagText && (
+                (() => {
+                  const { tier } = classifyRedFlag(flagText, recentMed);
+                  if (tier === "none") return null;
+                  const isEmergency = tier === "emergency";
+                  return (
+                    <div className={`rounded-xl p-3 border ${isEmergency ? "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20" : "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/20"}`}>
+                      <p className={`text-sm font-semibold ${isEmergency ? "text-red-700 dark:text-red-300" : "text-orange-700 dark:text-orange-300"}`}>
+                        {isEmergency ? "This may need urgent attention" : "Consider contacting your clinician"}
+                      </p>
+                      <p className="text-xs mt-1 text-gray-700 dark:text-[#E8E9F0]">
+                        {isEmergency
+                          ? "These symptoms can be serious. If severe or worsening, contact emergency services or your healthcare provider now."
+                          : "Contact your clinician promptly if this persists or worsens."}
+                      </p>
+                      <p className="text-[11px] mt-1 text-gray-500 dark:text-[#9A9DAE]">Based on the warnings in your medication's prescribing information. This is information, not a diagnosis.</p>
+                    </div>
+                  );
+                })()
+              )}
+            </div>
+          )}
         </div>
-
-        {combinedText && (
-          <div className="px-5 pb-3">
-            {(() => {
-              const { tier } = classifyRedFlag(combinedText, recentMed);
-              if (tier === "none") return null;
-              const isEmergency = tier === "emergency";
-              return (
-                <div className={`rounded-xl p-3 border ${isEmergency ? "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20" : "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/20"}`}>
-                  <p className={`text-sm font-semibold ${isEmergency ? "text-red-700 dark:text-red-300" : "text-orange-700 dark:text-orange-300"}`}>
-                    {isEmergency ? "This may need urgent attention" : "Consider contacting your clinician"}
-                  </p>
-                  <p className="text-xs mt-1 text-gray-700 dark:text-[#E8E9F0]">{RED_FLAG_WORDING[tier]}</p>
-                  <p className="text-[11px] mt-1 text-gray-500 dark:text-[#9A9DAE]">{RED_FLAG_DISCLAIMER}</p>
-                </div>
-              );
-            })()}
-          </div>
-        )}
 
         {/* Pharmacovigilance resource links — public government pages only */}
         <div className="px-5 pb-3">
@@ -211,10 +230,8 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
         </div>
 
         <div className="h-24" />
-        <div className="sticky bottom-0 px-5 pb-8 pt-2 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]">
-          <button onClick={onClose} className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
-            <Save size={16} /> Done
-          </button>
+        <div className="sticky bottom-0 px-5 pb-modal-footer pt-2 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]">
+          <button onClick={onClose} className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold">Done</button>
         </div>
       </div>
     </div>

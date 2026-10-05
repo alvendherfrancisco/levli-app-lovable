@@ -9,6 +9,10 @@
       "type": "string",
       "description": "Symptom or adverse event description (structured term or free text)"
     },
+    "symptom_key": {
+      "type": "string",
+      "description": "Checklist key when the symptom came from the structured list (nausea, vomiting, abdominal_pain, injection_site, other, ...)"
+    },
     "symptom_category": {
       "type": "string",
       "description": "Ontology category (e.g., gastrointestinal, neurological, dermatological, cardiovascular, psychiatric)"
@@ -75,6 +79,10 @@
     "reportability_status": {
       "type": "string",
       "description": "Whether this may be reportable to MHRA Yellow Card, FDA MedWatch, etc. (informational only)"
+    },
+    "journal_entry_id": {
+      "type": "string",
+      "description": "The Journal entry this record was created from, when it came from the Journal"
     },
     "notes": {
       "type": "string"

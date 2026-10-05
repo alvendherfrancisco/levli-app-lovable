@@ -12,6 +12,9 @@ const EMERGENCY_TERMS = [
   "cannot keep fluids", "difficulty breathing", "shortness of breath",
   "swelling of face", "swelling of throat", "swelling of lips", "throat swelling",
   "severe allergic reaction", "anaphylaxis", "signs of pancreatitis",
+  // Checklist entries that reach this tier on severity alone.
+  "severe vomiting", "severe diarrhea", "severe diarrhoea",
+  "yellowing of the skin", "yellowing of the eyes",
 ];
 
 const URGENT_TERMS = [
@@ -19,6 +22,9 @@ const URGENT_TERMS = [
   "severe injection site reaction", "sudden vision", "vision changes",
   "right upper quadrant", "gallbladder", "mood change", "behaviour change",
   "behavior change", "suicidal", "depression", "severe constipation",
+  // Boxed-warning symptoms: thyroid C-cell tumours.
+  "lump or swelling in your neck", "swelling in your neck", "hoarseness",
+  "trouble swallowing", "persistent vomiting",
 ];
 
 const APPROVED_GLPTONE_CLASSES = new Set(["Semaglutide", "Tirzepatide", "Liraglutide"]);

@@ -1,35 +1,60 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Settings, Plus, BookOpen, Smile, FileText, AlertTriangle, Zap, Star, Clock, Heart } from "lucide-react";
+import { Settings, Plus, BookOpen, Clock, Heart } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import JournalEntryModal from "@/components/modals/JournalEntryModal";
 import { useAppState } from "@/lib/AppState";
+import { JOURNAL_CATEGORIES, categoryMeta, normaliseCategory, sortJournalNewestFirst } from "@/lib/journalMeta";
+import { parseShotDate, toDayKey } from "@/lib/dateUtils";
+import { classifyRedFlag } from "@/lib/redFlags";
+import { getRecentMedication } from "@/lib/medicationData";
 import { toast } from "sonner";
 
-const CATEGORY_CONFIG = {
-  "Mood":         { icon: <Smile size={20} />,         lightBg: "bg-indigo-100",  darkBg: "rgba(20,184,166,0.13)",   color: "#2DD4BF" },
-  "General Note": { icon: <FileText size={20} />,      lightBg: "bg-indigo-100",   darkBg: "rgba(99,102,241,0.13)",  color: "#818CF8" },
-  "Side Effect":  { icon: <AlertTriangle size={20} />, lightBg: "bg-red-100",    darkBg: "rgba(239,68,68,0.13)",   color: "#F87171" },
-  "Energy":       { icon: <Zap size={20} />,           lightBg: "bg-indigo-100", darkBg: "rgba(99,102,241,0.13)",  color: "#818CF8" },
-  "Milestone":    { icon: <Star size={20} />,          lightBg: "bg-orange-100", darkBg: "rgba(249,115,22,0.13)",   color: "#FB923C" },
-  "Food":         { icon: <FileText size={20} />,      lightBg: "bg-orange-100", darkBg: "rgba(249,115,22,0.13)",  color: "#FB923C" },
-  "Exercise":     { icon: <Zap size={20} />,           lightBg: "bg-indigo-100",   darkBg: "rgba(20,184,166,0.13)",  color: "#2DD4BF" },
-};
-const ALL_CATEGORIES = ["All", "Mood", "General Note", "Side Effect", "Energy", "Milestone", "Food", "Exercise"];
-
 export default function Journal() {
-  const { journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry } = useAppState();
+  const {
+    journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry,
+    adverseEvents, addAdverseEvent, shots,
+  } = useAppState();
   const [showModal, setShowModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [filterCat, setFilterCat] = useState("All");
+
+  // Newest first, by the date and time each entry was written.
+  const entries = useMemo(() => sortJournalNewestFirst(journalEntries), [journalEntries]);
+  const filtered = filterCat === "All"
+    ? entries
+    : entries.filter((e) => normaliseCategory(e.category) === filterCat);
 
   const handleSave = async (entry) => {
     if (editingEntry) {
       await updateJournalEntry(editingEntry.id, entry);
       toast.success("Journal entry updated successfully!");
     } else {
-      await addJournalEntry(entry);
-      toast.success("Journal entry added successfully!");
+      const rec = await addJournalEntry(entry);
+      // A side-effect entry always has a structured record to match it.
+      if (normaliseCategory(entry.category) === "Side effect" && rec?.id) {
+        const day = toDayKey(parseShotDate(entry.date) || new Date());
+        const recentMed = getRecentMedication(shots, day) || "";
+        const { tier } = classifyRedFlag(`${entry.severity || ""} ${entry.text}`.trim(), recentMed);
+        try {
+          await addAdverseEvent({
+            medication_name: recentMed,
+            symptom: entry.text,
+            symptom_category: "other",
+            severity: entry.severity || "",
+            onset_date: day,
+            day_key: day,
+            resolved: false,
+            user_attribution: true,
+            red_flag_tier: tier || "none",
+            notes: entry.text,
+            journal_entry_id: rec.id,
+          });
+        } catch (err) {
+          // The journal entry itself is already saved; the log can be re-added by hand.
+          toast.error("Saved the entry, but the side-effect record could not be added");
+        }
+      }
     }
     setEditingEntry(null);
   };
@@ -45,12 +70,12 @@ export default function Journal() {
     }
   };
 
-  const openEdit = (entry) => {setEditingEntry(entry);setShowModal(true);};
-  const openNew = () => {setEditingEntry(null);setShowModal(true);};
+  const openEdit = (entry) => { setEditingEntry(entry); setShowModal(true); };
+  const openNew = () => { setEditingEntry(null); setShowModal(true); };
 
-  const filtered = filterCat === "All" ? journalEntries : journalEntries.filter((e) => e.category === filterCat);
-  // Map DB field name to display name
-  const normalizeEntry = (e) => ({ ...e, moodColor: e.mood_color || e.moodColor || "bg-gray-100 text-gray-600" });
+  const normaliseEntry = (e) => ({ ...e, category: normaliseCategory(e.category) });
+
+  const linkedCount = (entryId) => adverseEvents.filter((e) => e.journal_entry_id === entryId).length;
 
   return (
     <PageContainer bottomInset="default">
@@ -62,50 +87,60 @@ export default function Journal() {
         </div>
       </div>
 
-      {/* Category filter chips */}
+      {/* Category filter chips — icon, colour and text label for each */}
       <div className="max-w-3xl mx-auto pt-4 px-4 mb-3 flex flex-wrap gap-2">
-        {ALL_CATEGORIES.map((cat) =>
-        <button key={cat} onClick={() => setFilterCat(cat)}
-        className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border transition-colors ${
-        filterCat === cat ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-gray-900 text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-gray-700"}`
-        }>
-            {cat}
-          </button>
-        )}
+        <button onClick={() => setFilterCat("All")}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+            filterCat === "All"
+              ? "bg-indigo-600 text-white border-indigo-600"
+              : "bg-white dark:bg-gray-900 text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-gray-700"
+          }`}>
+          All
+        </button>
+        {JOURNAL_CATEGORIES.map((c) => {
+          const active = filterCat === c.key;
+          return (
+            <button key={c.key} onClick={() => setFilterCat(c.key)}
+              style={active ? { background: c.color, borderColor: c.color } : {}}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                active ? "text-white" : "bg-white dark:bg-gray-900 text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-gray-700"
+              }`}>
+              {React.cloneElement(c.icon, { size: 13, style: active ? { color: "#fff" } : { color: c.color } })}
+              {c.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="max-w-3xl mx-auto">
-        {filtered.length === 0 ?
-        <div className="px-4">
+        {filtered.length === 0 ? (
+          <div className="px-4">
             <div className="relative overflow-hidden bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 text-center">
               <div>
-              <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 bg-indigo-100 dark:bg-indigo-500/15">
-                <BookOpen size={36} className="text-indigo-500 dark:text-indigo-400" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Journal Entries</h3>
-              <p className="text-sm text-gray-400 mb-4">Record your thoughts, symptoms, and medication experiences.</p>
-              <button onClick={openNew} className="px-5 py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center gap-2 mx-auto">
-                <Plus size={18} /> Add Journal Entry
-              </button>
+                <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 bg-indigo-100 dark:bg-indigo-500/15">
+                  <BookOpen size={36} className="text-indigo-500 dark:text-indigo-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Journal Entries</h3>
+                <p className="text-sm text-gray-400 mb-4">Record your thoughts, symptoms, and medication experiences.</p>
+                <button onClick={openNew} className="px-5 py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center gap-2 mx-auto">
+                  <Plus size={18} /> Add Journal Entry
+                </button>
               </div>
             </div>
-          </div> :
-
-        <div className="px-4 space-y-3">
-            {filtered.map((entry) => {
-            const e = normalizeEntry(entry);
-            return (
-              <button key={e.id} onClick={() => openEdit(e)} className="w-full text-left bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden box-border">
+          </div>
+        ) : (
+          <div className="px-4 space-y-3">
+            {filtered.map((raw) => {
+              const e = normaliseEntry(raw);
+              const meta = categoryMeta(e.category);
+              const mood = e.mood || "";
+              const severityRecorded = e.category === "Side effect" ? linkedCount(e.id) : 0;
+              return (
+                <button key={e.id} onClick={() => openEdit(e)} className="w-full text-left bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden box-border">
                   <div className="flex items-start gap-3 w-full min-w-0">
-                    {(() => {
-                      const cfg = CATEGORY_CONFIG[e.category];
-                      return (
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                          style={{ background: cfg ? cfg.darkBg : "rgba(150,150,150,0.13)" }}>
-                          {cfg ? React.cloneElement(cfg.icon, { style: { color: cfg.color } }) : <FileText size={20} className="text-gray-500" />}
-                        </div>
-                      );
-                    })()}
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: meta.bg }}>
+                      {React.cloneElement(meta.icon, { size: 20, style: { color: meta.color } })}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start gap-2">
                         <p className="text-sm text-gray-700 dark:text-gray-300 overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0">{e.text}</p>
@@ -115,26 +150,36 @@ export default function Journal() {
                         <Clock size={11} className="flex-shrink-0" /><span>{e.time}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap flex items-center gap-1 bg-white/10 dark:bg-white/[0.08] text-gray-600 dark:text-[#C0C3D4] border border-gray-200 dark:border-white/[0.1]">
-                          <Heart size={10} /> {e.mood}
+                        {mood && (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap flex items-center gap-1 bg-white/10 dark:bg-white/[0.08] text-gray-600 dark:text-[#C0C3D4] border border-gray-200 dark:border-white/[0.1]">
+                            <Heart size={10} /> {mood}
+                          </span>
+                        )}
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap flex items-center gap-1"
+                          style={{ background: meta.bg, color: meta.color }}>
+                          {React.cloneElement(meta.icon, { size: 11 })}
+                          {meta.label}
                         </span>
-                        <span className="text-xs text-gray-400 whitespace-nowrap">• {e.category}</span>
+                        {severityRecorded > 0 && (
+                          <span className="text-xs text-gray-400 whitespace-nowrap">• side-effect record added</span>
+                        )}
                       </div>
                     </div>
                   </div>
-                </button>);
-
-          })}
+                </button>
+              );
+            })}
           </div>
-        }
+        )}
       </div>
 
       <JournalEntryModal
         open={showModal}
-        onClose={() => {setShowModal(false);setEditingEntry(null);}}
+        onClose={() => { setShowModal(false); setEditingEntry(null); }}
         onSave={handleSave}
         onDelete={editingEntry ? () => handleDelete(editingEntry.id) : null}
-        initialEntry={editingEntry} />
-        
-        </PageContainer>);
-        }
+        initialEntry={editingEntry}
+      />
+    </PageContainer>
+  );
+}

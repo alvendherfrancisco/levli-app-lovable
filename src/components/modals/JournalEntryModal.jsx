@@ -3,48 +3,47 @@ import { X, Save, Trash2 } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { getRecentMedication } from "@/lib/medicationData";
 import RedFlagBanner from "@/components/RedFlagBanner";
+import UrgentHelpCard from "@/components/sideEffects/UrgentHelpCard";
+import { JOURNAL_CATEGORIES, MOOD_SCALE, moodFor } from "@/lib/journalMeta";
+import { SEVERITY_LEVELS } from "@/lib/sideEffectSymptoms";
 import { toast } from "sonner";
-
-const MOODS = [
-  { label: "Feeling Excellent", emoji: "😊", lightCls: "bg-teal-100 text-teal-700 border-teal-300",  darkBg: "rgba(20,184,166,0.15)", darkBorder: "rgba(20,184,166,0.3)", darkText: "#5eead4" },
-  { label: "Feeling Good",      emoji: "🙂", lightCls: "bg-indigo-100 text-indigo-700 border-indigo-300", darkBg: "rgba(99,102,241,0.13)", darkBorder: "rgba(99,102,241,0.3)", darkText: "#a5b4fc" },
-  { label: "Feeling Neutral",   emoji: "😐", lightCls: "bg-orange-100 text-orange-700 border-orange-300", darkBg: "rgba(249,115,22,0.15)", darkBorder: "rgba(249,115,22,0.3)", darkText: "#fdba74" },
-  { label: "Feeling Low",       emoji: "😔", lightCls: "bg-orange-200 text-orange-800 border-orange-400", darkBg: "rgba(234,88,12,0.15)", darkBorder: "rgba(234,88,12,0.3)", darkText: "#fb923c" },
-  { label: "Feeling Bad",       emoji: "😞", lightCls: "bg-red-100 text-red-700 border-red-300",     darkBg: "rgba(239,68,68,0.15)",  darkBorder: "rgba(239,68,68,0.3)",   darkText: "#f87171" },
-];
-
-const CATEGORIES = ["Mood", "General Note", "Side Effect", "Energy", "Milestone", "Food", "Exercise"];
 
 function nowFormatted() {
   const d = new Date();
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const date = `${months[d.getMonth()]} ${String(d.getDate()).padStart(2,"0")}, ${d.getFullYear()}`;
-  let h = d.getHours(), m = d.getMinutes();
+  let h = d.getHours();
+  const m = d.getMinutes();
   const ampm = h >= 12 ? "PM" : "AM";
   h = h % 12 || 12;
-  const time = `${h}:${String(m).padStart(2,"0")} ${ampm}`;
-  return { date, time };
+  return { date, time: `${h}:${String(m).padStart(2,"0")} ${ampm}` };
 }
 
+/**
+ * Category and mood are separate answers: what the entry is about, and how the
+ * day felt. The entry is stamped with the real date and time it was written.
+ */
 export default function JournalEntryModal({ open, onClose, onSave, onDelete, initialEntry }) {
   const [text, setText] = useState("");
-  const [mood, setMood] = useState(MOODS[0]);
-  const [category, setCategory] = useState("General Note");
+  const [mood, setMood] = useState(MOOD_SCALE[2]);
+  const [category, setCategory] = useState("General");
+  const [severity, setSeverity] = useState("mild");
+  const [urgentOpen, setUrgentOpen] = useState(false);
   const { darkMode, shots } = useAppState();
 
   useEffect(() => {
-    if (open) {
-      if (initialEntry) {
-        setText(initialEntry.text || "");
-        const m = MOODS.find(x => x.label === initialEntry.mood) || MOODS[0];
-        setMood(m);
-        setCategory(initialEntry.category || "General Note");
-      } else {
-        setText("");
-        setMood(MOODS[0]);
-        setCategory("General Note");
-      }
+    if (!open) return;
+    if (initialEntry) {
+      setText(initialEntry.text || "");
+      setMood(moodFor(initialEntry.mood));
+      setCategory(initialEntry.category || "General");
+    } else {
+      setText("");
+      setMood(MOOD_SCALE[2]);
+      setCategory("General");
     }
+    setSeverity("mild");
+    setUrgentOpen(false);
   }, [open, initialEntry]);
 
   if (!open) return null;
@@ -55,7 +54,13 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
     if (!text.trim()) return;
     try {
       const { date, time } = initialEntry ? { date: initialEntry.date, time: initialEntry.time } : nowFormatted();
-      await onSave({ text: text.trim(), date, time, mood: mood.label, moodColor: mood.lightCls, category });
+      await onSave({
+        text: text.trim(), date, time,
+        mood: mood.label, moodColor: "",
+        category,
+        // Carried through for the structured side-effect record only.
+        severity: category === "Side effect" ? severity : undefined,
+      });
       toast.success(initialEntry ? "Journal entry updated successfully!" : "Journal entry added successfully!");
       setTimeout(() => onClose(), 500);
     } catch (err) {
@@ -74,55 +79,74 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
           <div className="flex items-center justify-between px-5 pb-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0]">{initialEntry ? "Edit Entry" : "New Journal Entry"}</h2>
             <div className="flex items-center gap-3">
-              {onDelete && <button onClick={onDelete}><Trash2 size={20} className="text-red-400" /></button>}
+              {onDelete && <button onClick={onDelete}><Trash2 size={20} className="text-gray-400" /></button>}
               <button onClick={onClose}><X size={22} className="text-gray-400" /></button>
             </div>
           </div>
         </div>
 
         <div className="px-5 pb-4 space-y-4">
-          {/* Mood */}
+          {/* Category — what the entry is about */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">How are you feeling?</label>
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Category</label>
             <div className="flex flex-wrap gap-2">
-              {MOODS.map((m) => {
-                const isActive = mood.label === m.label;
-                const activeStyle = darkMode && isActive
-                  ? { background: m.darkBg, borderColor: m.darkBorder, color: m.darkText }
-                  : {};
+              {JOURNAL_CATEGORIES.map((c) => {
+                const active = category === c.key;
                 return (
-                  <button key={m.label} onClick={() => setMood(m)}
-                    style={activeStyle}
+                  <button key={c.key} onClick={() => setCategory(c.key)}
+                    style={active ? { background: c.bg, borderColor: c.color, color: c.color } : {}}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
-                      isActive && !darkMode
-                        ? m.lightCls
-                        : isActive && darkMode
-                        ? "border-transparent"
-                        : "bg-white dark:bg-white/[0.05] text-gray-400 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.08]"
+                      active ? "" : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.08]"
                     }`}>
-                    {m.emoji} {m.label.replace("Feeling ", "")}
+                    {React.cloneElement(c.icon, { style: active ? { color: c.color } : undefined, size: 14 })}
+                    {c.label}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Category */}
+          {/* Mood — how the day felt, on its own 5-point scale */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Category</label>
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Mood</label>
             <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((c) => (
-                <button key={c} onClick={() => setCategory(c)}
-                  className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${
-                    category === c
-                      ? "bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30"
-                      : "bg-white dark:bg-white/[0.05] text-gray-400 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.08]"
-                  }`}>
-                  {c}
-                </button>
-              ))}
+              {MOOD_SCALE.map((m) => {
+                const active = mood.label === m.label;
+                return (
+                  <button key={m.label} onClick={() => setMood(m)}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                      active
+                        ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30"
+                        : "bg-white dark:bg-white/[0.05] text-gray-400 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.08]"
+                    }`}>
+                    {m.emoji} {m.short}
+                  </button>
+                );
+              })}
             </div>
           </div>
+
+          {/* Severity, only for a side-effect entry */}
+          {category === "Side effect" && (
+            <div>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">How bad is it?</label>
+              <div className="flex gap-2">
+                {SEVERITY_LEVELS.map((s) => (
+                  <button key={s.value} onClick={() => setSeverity(s.value)}
+                    className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                      severity === s.value
+                        ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30"
+                        : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.08]"
+                    }`}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                This is saved as a side-effect record too, so it appears in History, Insights and your report.
+              </p>
+            </div>
+          )}
 
           {/* Text */}
           <div>
@@ -133,12 +157,19 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
           </div>
         </div>
 
-        {category === "Side Effect" && text.trim() && (
-          <div className="px-5 pb-3"><RedFlagBanner text={text} medication={recentMed} /></div>
+        {category === "Side effect" && (
+          <div className="px-5 pb-3 space-y-2">
+            <UrgentHelpCard
+              open={urgentOpen || severity === "severe"}
+              onToggle={() => setUrgentOpen((v) => !v)}
+              highlight={severity === "severe"}
+            />
+            {text.trim() && <RedFlagBanner text={`${severity} ${text}`} medication={recentMed} />}
+          </div>
         )}
 
         <div className="h-24" />
-        <div className="sticky bottom-0 px-5 pb-8 pt-2 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]">
+        <div className="sticky bottom-0 px-5 pb-modal-footer pt-2 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]">
           <button onClick={handleSave} disabled={!text.trim()}
             className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
             <Save size={16} /> {initialEntry ? "Update Entry" : "Save Entry"}
