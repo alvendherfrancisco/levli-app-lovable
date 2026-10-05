@@ -63,7 +63,7 @@ export default function OptionalSections({ report }) {
         <p className="text-sm mt-1" style={{ color: t.muted }}>
           {data.painReported
             ? `Pain was recorded on ${data.painReported} dose${data.painReported === 1 ? "" : "s"}, average ${data.averagePain}/10.`
-            : "No pain was recorded with any dose in this range."}
+            : "No pain was recorded with any dose in this period."}
         </p>
       </Block>,
     );
@@ -75,10 +75,10 @@ export default function OptionalSections({ report }) {
       <Block key="nutrition" title="Nutrition" t={t}>
         <PaperPairs pairs={[
           ["Days logged", String(data.days)],
-          ["Calories (average)", data.calories != null ? `${data.calories} kcal` : "—"],
-          ["Protein (average)", data.protein != null ? `${data.protein} g` : "—"],
-          ["Fiber (average)", data.fiber != null ? `${data.fiber} g` : "—"],
-          ["Carbs (average)", data.carbs != null ? `${data.carbs} g` : "—"],
+          ...(data.calories != null ? [["Calories (average)", `${data.calories} kcal`]] : []),
+          ...(data.protein != null ? [["Protein (average)", `${data.protein} g`]] : []),
+          ...(data.fiber != null ? [["Fiber (average)", `${data.fiber} g`]] : []),
+          ...(data.carbs != null ? [["Carbs (average)", `${data.carbs} g`]] : []),
         ]} />
         {data.weekly.length > 0 && (
           <div className="mt-3">
@@ -175,7 +175,6 @@ export default function OptionalSections({ report }) {
   if (has("progressPictures") && optional.progressPictures) {
     blocks.push(
       <Block key="pictures" title="Progress pictures" t={t}>
-        <p className="text-sm mb-2" style={{ color: t.muted }}>Personal photos, included because this section was selected.</p>
         <div className="grid grid-cols-3 gap-3">
           {optional.progressPictures.map((photo) => (
             <div key={photo.id} className="min-w-0">

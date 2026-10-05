@@ -1,7 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Doctor report — vector charts drawn straight into the PDF.
+//
 // Drawn with primitives (no screenshotting), so they stay sharp in print and
-// keep their colours on the report's white background.
+// keep their contrast on the report's white background. The report uses ONE
+// accent colour — the weight line and the bars — so both charts still read when
+// they are printed in grayscale.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { PDF_RGB } from "@/components/report/reportTokens";
@@ -11,15 +14,10 @@ import { PDF_RGB } from "@/components/report/reportTokens";
 const INK = PDF_RGB.ink;
 const MUTED = PDF_RGB.muted;
 const GRID = PDF_RGB.grid;
-const WEIGHT = PDF_RGB.weightLine;
-const AVERAGE = PDF_RGB.avgLine;
+const WEIGHT = PDF_RGB.weightLine; // the report accent
+const AVERAGE = PDF_RGB.avgLine; // muted grey, drawn dashed
+const TICK = PDF_RGB.doseTick;
 const BAR = PDF_RGB.barFill;
-
-export function hexToRgb(hex) {
-  const value = String(hex || "").replace("#", "");
-  if (value.length !== 6) return [100, 116, 139];
-  return [0, 2, 4].map((i) => parseInt(value.slice(i, i + 2), 16));
-}
 
 export function fitText(doc, text, maxWidth) {
   const str = String(text ?? "");
@@ -35,8 +33,9 @@ function line(doc, x1, y1, x2, y2, colour) {
 }
 
 /**
- * Weight line chart with its dashed 7-day rolling average and a colour-coded
- * dose timeline on the same date axis. Only real entries are plotted.
+ * Weight line chart with its dashed 7-day rolling average and a dose timeline on
+ * the same date axis. Only real entries are plotted; dose dates are light ticks,
+ * because the dose itself is listed in full in the table below.
  */
 export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], unit, fromTs, toTs, labelFor }) {
   const plotX = x + 11;
@@ -44,7 +43,7 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
   const markerBand = 4;
   const plotY = y + markerBand + 2;
   const plotH = h - markerBand - 12;
-  const legendY = plotY + plotH + 7;
+  const legendY = plotY + plotH + 8;
 
   // Only real points are drawn; anything unusable is left out.
   const points = (Array.isArray(series) ? series : [])
@@ -69,10 +68,9 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
   doc.setLineWidth(0.2);
   doc.rect(plotX, plotY, plotW, plotH);
 
+  // The axis figures stay small: they label the chart, they are not body text.
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  // Only distinct tick values are drawn, so a narrow band can never show the
-  // same number twice.
+  doc.setFontSize(8);
   const ticks = [];
   for (let i = 0; i <= 3; i++) {
     const value = lo + ((hi - lo) * i) / 3;
@@ -87,7 +85,6 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
     doc.text(tick.label, plotX - 2, gy + 1, { align: "right" });
   });
 
-  doc.setFontSize(7);
   doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
   doc.text(labelFor(axisFrom), plotX, legendY + 4, { align: "left" });
   doc.text(labelFor(axisTo), plotX + plotW, legendY + 4, { align: "right" });
@@ -104,7 +101,7 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
     doc.circle(X(point.ts), Y(point.value), 0.65, "F");
   });
 
-  // Dashed 7-day rolling average
+  // Dashed 7-day rolling average — muted and dashed, never a second colour.
   doc.setLineDashPattern([1.2, 0.9], 0);
   doc.setLineWidth(0.45);
   points.forEach((point, i) => {
@@ -113,68 +110,54 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
   });
   doc.setLineDashPattern([], 0);
 
-  // Dose timeline — one coloured tick per dose, in its own dose colour
+  // Dose timeline — one light tick per dose date.
   markers.forEach((marker) => {
     const mx = X(marker.ts);
     if (mx < plotX || mx > plotX + plotW) return;
-    const rgb = hexToRgb(marker.color);
-    doc.setFillColor(rgb[0], rgb[1], rgb[2]);
-    doc.rect(mx - 0.35, plotY - markerBand, 0.7, markerBand, "F");
+    doc.setFillColor(TICK[0], TICK[1], TICK[2]);
+    doc.rect(mx - 0.3, plotY - markerBand, 0.6, markerBand, "F");
   });
 
-  // Legend
+  // Legend, on one line.
   let lx = plotX;
-  doc.setFontSize(7);
+  doc.setFontSize(8.5);
   line(doc, lx, legendY + 8, lx + 5, legendY + 8, WEIGHT);
   doc.setTextColor(INK[0], INK[1], INK[2]);
-  doc.text("Weight", lx + 6, legendY + 9);
-  lx += 22;
+  doc.text("Weight", lx + 6.5, legendY + 9);
+  lx += doc.getTextWidth("Weight") + 17;
+
   doc.setLineDashPattern([1.2, 0.9], 0);
   line(doc, lx, legendY + 8, lx + 5, legendY + 8, AVERAGE);
   doc.setLineDashPattern([], 0);
-  doc.text("7-day average", lx + 6, legendY + 9);
-  lx += 32;
+  doc.text("7-day average", lx + 6.5, legendY + 9);
+  lx += doc.getTextWidth("7-day average") + 17;
 
-  let doseRowY = legendY + 6.4;
   if (markers.length) {
-    doc.setTextColor(INK[0], INK[1], INK[2]);
-    doc.text("Coloured ticks", lx, doseRowY + 2.6);
-    lx += doc.getTextWidth("Coloured ticks") + 3;
+    doc.setFillColor(TICK[0], TICK[1], TICK[2]);
+    doc.rect(lx, legendY + 6.4, 0.9, 3, "F");
+    doc.text("Dose dates", lx + 3.4, legendY + 9);
   }
-  markers.forEach((marker) => {
-    const width = 4 + doc.getTextWidth(marker.label) + 5;
-    if (lx + width > plotX + plotW) {
-      lx = plotX;
-      doseRowY += 5;
-    }
-    const rgb = hexToRgb(marker.color);
-    doc.setFillColor(rgb[0], rgb[1], rgb[2]);
-    doc.roundedRect(lx, doseRowY, 3.4, 3.4, 0.8, 0.8, "F");
-    doc.setTextColor(INK[0], INK[1], INK[2]);
-    doc.text(marker.label, lx + 4.4, doseRowY + 2.6);
-    lx += width;
-  });
 
-  return h + 14 + Math.max(0, doseRowY - (legendY + 6.4));
+  return h + 18;
 }
 
-/** Horizontal bars of how often each side effect was logged. */
-export function drawFrequencyBars(doc, { x, y, w, rows, maxLabelWidth = 52, barMaxWidth = 70 }) {
+/** Horizontal bars of how often each side effect was logged, in the accent. */
+export function drawFrequencyBars(doc, { x, y, w, rows, maxLabelWidth = 60, barMaxWidth = 74 }) {
   const labelW = Math.min(maxLabelWidth, w * 0.34);
-  const rowH = 7;
+  const rowH = 8.5;
   const max = Math.max(...rows.map((r) => r.count), 1);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
+  doc.setFontSize(10);
   rows.forEach((row, i) => {
     const ry = y + i * rowH;
     doc.setTextColor(INK[0], INK[1], INK[2]);
-    doc.text(fitText(doc, row.label, labelW - 2), x, ry + 2.6);
-    const barW = Math.max(1.5, (row.count / max) * Math.min(barMaxWidth, w - labelW - 10));
+    doc.text(fitText(doc, row.label, labelW - 2), x, ry + 3);
+    const barW = Math.max(1.5, (row.count / max) * Math.min(barMaxWidth, w - labelW - 12));
     doc.setFillColor(BAR[0], BAR[1], BAR[2]);
-    doc.roundedRect(x + labelW, ry, barW, 3.6, 0.8, 0.8, "F");
+    doc.roundedRect(x + labelW, ry, barW, 4.2, 0.8, 0.8, "F");
     doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
-    doc.text(String(row.count), x + labelW + barW + 2, ry + 2.8);
+    doc.text(String(row.count), x + labelW + barW + 2, ry + 3.2);
   });
 
   return rows.length * rowH;

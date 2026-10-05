@@ -1,27 +1,15 @@
 import React from "react";
-import PaperPairs from "@/components/report/PaperPairs";
 import WeightDoseChart from "@/components/report/WeightDoseChart";
 import DoseTable from "@/components/report/DoseTable";
 import SideEffectsTable from "@/components/report/SideEffectsTable";
 import SideEffectBars from "@/components/report/SideEffectBars";
 import OptionalSections from "@/components/report/OptionalSections";
 import SectionBoundary from "@/components/report/SectionBoundary";
-import { formatDayShort } from "@/lib/reportData";
+import SummaryFigures from "@/components/report/SummaryFigures";
+import {
+  adherenceLine, duplicateLine, formatDayShort, medicationLine, summaryFigures, weightContextLine,
+} from "@/lib/reportData";
 import { useReportTokens } from "@/components/report/ReportTheme";
-
-const signed = (value, digits = 1) =>
-  value == null ? "—" : `${value < 0 ? "-" : "+"}${Math.abs(value).toFixed(digits)}`;
-
-/**
- * Direction-aware goal wording. Above the goal weight there is still weight to
- * lose, so it reads "70 lb to go"; at or past the goal it reads "Goal reached".
- * It never says "below goal" when the reading is below it for the wrong reason.
- */
-function goalText(goalDistance, unit) {
-  if (!goalDistance) return "Not set";
-  if (goalDistance.direction === "above") return `${goalDistance.value} ${unit} to go`;
-  return "Goal reached";
-}
 
 /** One report section. If its content fails, only this section shows a message. */
 function Section({ title, children, t }) {
@@ -39,13 +27,18 @@ function Section({ title, children, t }) {
  * it mirrors the PDF's content and layout. In "app theme" it follows the live
  * light/dark theme; in "PDF look" it is painted with the always-light PDF
  * tokens, which is exactly what gets exported.
+ *
+ * It reads the same strings the PDF is drawn from, so the summary, the empty
+ * sections and the notes can never say one thing on screen and another in print.
  */
 export default function ReportPreview({ report }) {
   const t = useReportTokens();
   const header = report.header;
   const unit = report.unit;
   const weight = report.weight;
+  const summary = report.summary;
   const has = (id) => report.sections.includes(id);
+  const figures = summaryFigures(summary, unit);
 
   return (
     <div
@@ -53,54 +46,46 @@ export default function ReportPreview({ report }) {
       style={{ background: t.cardBg, borderColor: t.cardBorder, color: t.ink }}
     >
       <h2 className="text-xl font-bold" style={{ color: t.ink }}>Levli Health Report</h2>
-      {header.name && <p className="text-sm mt-1" style={{ color: t.muted }}>Name: {header.name}</p>}
       <div className="text-sm mt-1 space-y-0.5" style={{ color: t.muted }}>
+        {header.name && <p className="break-words">Name: {header.name}</p>}
         <p className="break-words">Date range: {header.rangeLabel}</p>
         <p className="break-words">Generated: {header.generatedLabel}</p>
-        <p className="break-words">Medication{header.medications.length === 1 ? "" : "s"}: {header.medications.join(", ") || "—"}</p>
       </div>
 
-      <Section title="At a glance" t={t}>
-        <PaperPairs pairs={[
-          ["Height", header.heightLabel || "Not recorded"],
-          ["Starting weight", header.startWeight != null ? `${header.startWeight} ${unit}` : "—"],
-          ["Current weight", header.endWeight != null ? `${header.endWeight} ${unit}` : "—"],
-          ["Goal weight", header.goalWeight != null ? `${header.goalWeight} ${unit}` : "Not set"],
-          ["Total change", header.change != null ? `${signed(header.change)} ${unit} (${signed(header.changePct)}%)` : "—"],
-          ...(header.bmi != null ? [["BMI", String(header.bmi)]] : []),
-        ]} />
-        {header.bmi == null && header.heightLabel && (
-          <p className="text-sm mt-2" style={{ color: t.muted }}>
-            BMI is omitted because the height and weight on file do not produce a plausible value. Check your height and weight units in Profile.
-          </p>
-        )}
-      </Section>
+      {(summary.medications.length > 0 || figures.length > 0) && (
+        <Section title="Summary" t={t}>
+          <div className="space-y-1">
+            {summary.medications.map((group) => (
+              <p key={group.name} className="text-sm font-semibold break-words" style={{ color: t.ink }}>
+                {medicationLine(group)}
+              </p>
+            ))}
+          </div>
+          {figures.length > 0 && (
+            <div className={summary.medications.length ? "mt-3" : ""}>
+              <SummaryFigures figures={figures} />
+            </div>
+          )}
+        </Section>
+      )}
 
       {has("weight") && (
-        <Section title="Weight progress" t={t}>
+        <Section title="Weight" t={t}>
           {weight.count === 0 ? (
-            <p className="text-sm" style={{ color: t.muted }}>No weight entries in this selected range.</p>
+            <p className="text-sm" style={{ color: t.muted }}>No weight entries in this period.</p>
           ) : (
             <>
-              <PaperPairs pairs={[
-                ["Starting weight", `${weight.start} ${unit}`],
-                ["Current weight", `${weight.end} ${unit}`],
-                ["Total change", `${signed(weight.change)} ${unit}`],
-                ["Change (%)", `${signed(weight.changePct)}%`],
-                ["Average weekly change", weight.perWeek != null ? `${signed(weight.perWeek)} ${unit}` : "—"],
-                ["Goal", weight.goalLabel ? `${weight.goalLabel} · ${goalText(weight.goalDistance, unit)}` : "Not set"],
-                ["Entries", String(weight.count)],
-                ["Period", weight.weeks ? `${weight.weeks} weeks` : "—"],
-              ]} />
-              {weight.count >= 2 ? (
-                <div className="mt-4">
+              {weight.count < 2 && (
+                <p className="text-sm" style={{ color: t.muted }}>One weight entry in this period.</p>
+              )}
+              {weight.count >= 2 && (
+                <>
                   <WeightDoseChart series={weight.series} rows={report.doses.rows} unit={unit} range={report.range} />
-                </div>
-              ) : (
-                <p className="text-sm mt-3" style={{ color: t.muted }}>Not enough entries in this range.</p>
+                  <p className="text-sm mt-3" style={{ color: t.muted }}>{weightContextLine(weight, unit)}</p>
+                </>
               )}
               {weight.gaps.length > 0 && (
-                <div className="mt-3 space-y-1">
+                <div className="mt-2 space-y-1">
                   {weight.gaps.map((gap) => (
                     <p key={gap.from} className="text-sm" style={{ color: t.muted }}>
                       No weight entries between {formatDayShort(gap.from)} and {formatDayShort(gap.to)} ({gap.days} days).
@@ -116,20 +101,24 @@ export default function ReportPreview({ report }) {
       {has("doses") && (
         <Section title="Doses taken" t={t}>
           {report.doses.count === 0 ? (
-            <p className="text-sm" style={{ color: t.muted }}>No doses logged in this selected range.</p>
+            <p className="text-sm" style={{ color: t.muted }}>No doses logged in this period.</p>
           ) : (
             <>
-              <p className="text-sm mb-1 break-words" style={{ color: t.muted }}>{report.doses.changes.join(" · ")}</p>
-              <p className="text-sm mb-3" style={{ color: t.muted }}>
-                {report.doses.adherence.scheduled
-                  ? `Shots logged: ${report.doses.adherence.logged} of ${report.doses.adherence.scheduled} scheduled doses (${report.doses.adherence.days}-day range).`
-                  : `Shots logged: ${report.doses.adherence.logged}.`}
+              <p className="text-sm mb-1 break-words" style={{ color: t.muted }}>
+                {adherenceLine(report.doses.adherence, report.doses.count)}
               </p>
-              <DoseTable
-                rows={report.doses.rows}
-                showPain={has("injectionSites")}
-                showDetail={report.doses.rows.some((r) => r.detail)}
-              />
+              {report.doses.changes.length > 1 && (
+                <p className="text-sm mb-3 break-words" style={{ color: t.muted }}>
+                  Dose: {report.doses.changes.join(" · ")}
+                </p>
+              )}
+              <DoseTable rows={report.doses.rows} showPain={has("injectionSites")} />
+              <p className="text-sm mt-2" style={{ color: t.muted }}>Newest dose first.</p>
+              {summary.duplicates.map((group, index) => (
+                <p key={`${group.dayLabel}-${group.time}-${index}`} className="text-sm mt-1 break-words" style={{ color: t.muted }}>
+                  {duplicateLine(group)}
+                </p>
+              ))}
             </>
           )}
         </Section>
@@ -137,17 +126,21 @@ export default function ReportPreview({ report }) {
 
       {has("sideEffects") && (
         <Section title="Side effects" t={t}>
-          <SideEffectsTable rows={report.sideEffects.rows} />
-          {report.sideEffects.frequency.length > 0 && (
-            <div className="mt-4">
-              <p className="text-sm font-semibold mb-2" style={{ color: t.ink }}>How often each side effect was logged</p>
-              <SideEffectBars rows={report.sideEffects.frequency} />
-            </div>
-          )}
-          {report.sideEffects.total > 0 && (
-            <p className="text-sm mt-3" style={{ color: t.muted }}>
-              Severe or persistent symptoms should be discussed with a healthcare provider.
-            </p>
+          {report.sideEffects.total === 0 ? (
+            <p className="text-sm" style={{ color: t.muted }}>No side effects logged in this period.</p>
+          ) : (
+            <>
+              <SideEffectsTable rows={report.sideEffects.rows} />
+              {report.sideEffects.frequency.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-semibold mb-2" style={{ color: t.ink }}>How often each side effect was logged</p>
+                  <SideEffectBars rows={report.sideEffects.frequency} />
+                </div>
+              )}
+              <p className="text-sm mt-3" style={{ color: t.muted }}>
+                Severe or persistent symptoms should be discussed with a healthcare provider.
+              </p>
+            </>
           )}
         </Section>
       )}

@@ -2,19 +2,15 @@ import React from "react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { fromDayKey, toDayKey } from "@/lib/dateUtils";
 import { formatDay, formatDayShort } from "@/lib/reportData";
-import { getDoseColor, getDoseLegend } from "@/lib/doseColors";
-import DoseLegend from "@/components/insights/DoseLegend";
 import { useReportTokens } from "@/components/report/ReportTheme";
 
 /**
- * Weight entries with their 7-day rolling average and a colour-coded dose
- * timeline on the same date axis. Only real entries are plotted — gaps stay
- * gaps, nothing is filled in.
+ * Weight entries with their 7-day rolling average and the dose dates on the same
+ * axis. Only real entries are plotted — gaps stay gaps, nothing is filled in.
  *
- * Every colour comes from the report tokens, so the chart follows the light or
- * dark theme on screen and is redrawn from the light PDF tokens in "PDF look".
- * Dose ticks are thin and semi-transparent, and always carry their dose text in
- * the legend, so colour is never the only signal.
+ * Every colour comes from the report tokens: one accent for the weight line, the
+ * dashed average in muted grey, and light ticks for the dose dates — so the chart
+ * matches the exported PDF and stays legible in grayscale.
  */
 export default function WeightDoseChart({ series = [], rows = [], unit, range }) {
   const t = useReportTokens();
@@ -22,15 +18,8 @@ export default function WeightDoseChart({ series = [], rows = [], unit, range })
   const points = (Array.isArray(series) ? series : [])
     .filter((p) => p && Number.isFinite(p.ts) && Number.isFinite(p.value));
 
-  if (points.length < 2) {
-    return (
-      <p className="text-sm" style={{ color: t.muted }}>
-        {points.length === 0
-          ? "No weight entries in this range."
-          : "Not enough entries in this range."}
-      </p>
-    );
-  }
+  // A trend needs two entries; the report says so in words instead of drawing it.
+  if (points.length < 2) return null;
 
   // The axis spans the selected range, falling back to the entries themselves
   // when the range is missing or unreadable.
@@ -42,16 +31,8 @@ export default function WeightDoseChart({ series = [], rows = [], unit, range })
     : Math.max(points[points.length - 1].ts, fromTs + 86400000);
 
   const markers = (Array.isArray(rows) ? rows : [])
-    .map((row) => ({
-      key: row.id,
-      ts: row.day ? fromDayKey(row.day).getTime() : NaN,
-      color: getDoseColor(row.medication, row.dose),
-    }))
+    .map((row) => ({ key: row.id, ts: row.day ? fromDayKey(row.day).getTime() : NaN }))
     .filter((marker) => Number.isFinite(marker.ts));
-
-  const legend = getDoseLegend((Array.isArray(rows) ? rows : []).map((row) => ({
-    medication: row.medication, dose: row.dose, dose_unit: row.unit,
-  })));
 
   return (
     <div>
@@ -84,7 +65,7 @@ export default function WeightDoseChart({ series = [], rows = [], unit, range })
               <ReferenceLine
                 key={marker.key}
                 x={marker.ts}
-                stroke={marker.color}
+                stroke={t.doseTick}
                 strokeWidth={t.doseBarWidth}
                 strokeOpacity={t.doseBarOpacity}
               />
@@ -92,17 +73,8 @@ export default function WeightDoseChart({ series = [], rows = [], unit, range })
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <DoseLegend
-        items={legend}
-        title="Dose dates"
-        align="start"
-        labelClassName="text-sm"
-        titleClassName="text-sm font-medium"
-        titleStyle={{ color: t.muted }}
-        labelStyle={{ color: t.muted }}
-      />
       <p className="text-sm mt-2" style={{ color: t.muted }}>
-        Solid line: logged weight entries (one point per entry, no values filled in) · Dashed: 7-day rolling average · Coloured ticks: dose dates, matching the dose colours in the app.
+        Solid line: weight entries · Dashed line: 7-day rolling average · Ticks: dose dates.
       </p>
     </div>
   );

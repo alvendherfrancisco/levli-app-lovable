@@ -10,10 +10,12 @@ import { useReportTokens } from "@/components/report/ReportTheme";
  */
 export default function PaperPairs({ pairs }) {
   const t = useReportTokens();
+  // A pair with no value is left out entirely — the report never shows a dash.
+  const shown = pairs.filter(([, value]) => value != null && value !== "" && value !== "—");
 
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-      {pairs.map(([label, value]) => (
+      {shown.map(([label, value]) => (
         <div key={label} className="min-w-0 sm:flex sm:items-baseline sm:justify-between sm:gap-2">
           <span className="block text-sm leading-snug break-words" style={{ color: t.muted }}>
             {label}

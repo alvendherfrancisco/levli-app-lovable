@@ -1,23 +1,42 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Doctor report — PDF.
 //
-// A clean A4 document on a WHITE background (the app itself is dark), built
-// only from values the report engine assembled. Rows and charts are never split
-// across pages, and every page carries the same footer.
+// A clean portrait A4 document on a WHITE background (the app itself is dark),
+// built only from values the report engine assembled. It opens with a short
+// summary — medication, dose, number of doses, and the weight figures — then one
+// section per selected topic.
+//
+// Two rules run through the whole document:
+//   • a value or a section with no data is left out or collapsed into a single
+//     muted line; there is never a dash, a placeholder or a note addressed to
+//     the person reading the app, and
+//   • every line of body text is 10pt or larger (only the page footer is
+//     smaller) and one accent colour is used, so the page stays readable printed
+//     in colour or in grayscale.
+//
+// Rows and charts are never split across pages, and every page carries the same
+// footer.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getDoseColor, getDoseTextColor, CUSTOM_DOSE_COLOR } from "@/lib/doseColors";
 import { fromDayKey, toDayKey } from "@/lib/dateUtils";
 import { REPORT_FOOTER } from "@/lib/reportOptions";
-import { formatDayShort } from "@/lib/reportData";
-import { drawWeightChart, drawFrequencyBars, fitText, hexToRgb } from "@/lib/reportPdfCharts";
+import {
+  adherenceLine, duplicateLine, formatDayShort, medicationLine, summaryFigures, weightContextLine,
+} from "@/lib/reportData";
+import { drawWeightChart, drawFrequencyBars, fitText } from "@/lib/reportPdfCharts";
 import { PDF_RGB } from "@/components/report/reportTokens";
 
-const PAGE = { w: 210, h: 297, margin: 14, contentW: 182, bottom: 268 };
+const PAGE = { w: 210, h: 297, margin: 14, contentW: 182, bottom: 264 };
 // Every colour in the exported PDF comes from the shared PDF token set, which is
 // always light — nothing here can be darkened by the app's theme.
 const INK = PDF_RGB.ink;
 const MUTED = PDF_RGB.muted;
+const ACCENT = PDF_RGB.accent;
+
+const BODY = 10; // the smallest body text in the document
+const FOOT = 8; // the page footer only
+const LEAD = BODY * 0.406; // one line of 10pt text, in millimetres
+const VALUE_LEAD = 13 * 0.406; // one line of the summary's 13pt figures
 
 function paintWhite(doc) {
   doc.setFillColor(PDF_RGB.page[0], PDF_RGB.page[1], PDF_RGB.page[2]);
@@ -27,54 +46,112 @@ function paintWhite(doc) {
 function newPage(doc) {
   doc.addPage();
   paintWhite(doc);
-  return PAGE.margin + 4;
+  return PAGE.margin + 6;
 }
 
 function ensure(doc, y, needed) {
   return y + needed > PAGE.bottom ? newPage(doc) : y;
 }
 
-function signed(value, digits = 1) {
-  if (value == null) return "—";
-  return `${value < 0 ? "-" : "+"}${Math.abs(value).toFixed(digits)}`;
-}
-
+/** A section heading with the report's accent rule under it. */
 function heading(doc, text, y) {
-  y = ensure(doc, y, 16);
+  y = ensure(doc, y, 18);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12.5);
+  doc.setFontSize(14);
   doc.setTextColor(INK[0], INK[1], INK[2]);
   doc.text(text, PAGE.margin, y);
-  doc.setDrawColor(PDF_RGB.accent[0], PDF_RGB.accent[1], PDF_RGB.accent[2]);
+  doc.setDrawColor(ACCENT[0], ACCENT[1], ACCENT[2]);
   doc.setLineWidth(0.6);
-  doc.line(PAGE.margin, y + 1.6, PAGE.margin + 22, y + 1.6);
-  return y + 8;
+  doc.line(PAGE.margin, y + 1.8, PAGE.margin + 24, y + 1.8);
+  return y + 9;
 }
 
-function note(doc, text, y, size = 8) {
+/** One line of muted body text — context, notes, and empty sections. */
+function muted(doc, text, y, size = BODY) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(size);
   doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
   const lines = doc.splitTextToSize(text, PAGE.contentW);
-  y = ensure(doc, y, lines.length * 3.8 + 2);
+  const lead = size * 0.406;
+  y = ensure(doc, y, lines.length * lead + 2.5);
   doc.text(lines, PAGE.margin, y);
-  return y + lines.length * 3.8 + 2;
+  return y + lines.length * lead + 2.5;
+}
+
+/** One line of body text in the report ink — values that carry the content. */
+function inkLine(doc, text, y, size = BODY) {
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(size);
+  doc.setTextColor(INK[0], INK[1], INK[2]);
+  const lines = doc.splitTextToSize(text, PAGE.contentW);
+  const lead = size * 0.406;
+  y = ensure(doc, y, lines.length * lead + 2.5);
+  doc.text(lines, PAGE.margin, y);
+  return y + lines.length * lead + 2.5;
 }
 
 /**
- * Two-column key/value block. Long labels wrap onto the next line (the row
- * grows) — text is never cut off with an ellipsis.
+ * The figures that lead the report, in a very light panel: a muted label above a
+ * bold value, up to four to a row. Long labels and values wrap — nothing is cut
+ * off — and only figures that exist are passed in.
+ */
+function figurePanel(doc, figures, y) {
+  if (!figures.length) return y;
+  const pad = 4.5;
+
+  const rows = [];
+  for (let i = 0; i < figures.length; i += 4) rows.push(figures.slice(i, i + 4));
+
+  rows.forEach((row) => {
+    const colW = (PAGE.contentW - pad * 2) / row.length;
+    const sized = row.map((figure) => {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(BODY);
+      const labelLines = doc.splitTextToSize(figure.label, colW - 4);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      const valueLines = doc.splitTextToSize(figure.value, colW - 4);
+      return { figure, labelLines, valueLines };
+    });
+    const blockH = Math.max(...sized.map((s) => s.labelLines.length * LEAD + s.valueLines.length * VALUE_LEAD));
+    const height = blockH + pad * 2;
+
+    y = ensure(doc, y, height + 3);
+    doc.setFillColor(PDF_RGB.tableHeadBg[0], PDF_RGB.tableHeadBg[1], PDF_RGB.tableHeadBg[2]);
+    doc.roundedRect(PAGE.margin, y, PAGE.contentW, height, 2, 2, "F");
+
+    sized.forEach(({ figure, labelLines, valueLines }, i) => {
+      const x = PAGE.margin + pad + i * colW;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(BODY);
+      doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
+      doc.text(labelLines, x, y + pad + BODY * 0.34);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(INK[0], INK[1], INK[2]);
+      doc.text(valueLines, x, y + pad + labelLines.length * LEAD + 13 * 0.4);
+    });
+
+    y += height + 4;
+  });
+
+  return y;
+}
+
+/**
+ * Key/value pairs, two to a row. The label sits muted on the left and the value
+ * bold in the ink colour on the right. Long labels and values wrap onto the next
+ * line — text is never cut off with an ellipsis.
  */
 function keyValues(doc, pairs, y) {
-  doc.setFontSize(8.5);
-  const lineH = 3.6;
-  const rowH = 5.4;
   const colW = PAGE.contentW / 2;
-  const valueW = 34;
+  const valueW = 42;
+  const rowH = 6.6;
 
   const drawPair = (pair, left) => {
     const labelW = colW - valueW - 4;
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(BODY);
     doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
     const labelLines = doc.splitTextToSize(String(pair[0] ?? ""), labelW);
     doc.text(labelLines, left, y);
@@ -87,72 +164,62 @@ function keyValues(doc, pairs, y) {
 
   for (let i = 0; i < pairs.length; i += 2) {
     const second = pairs[i + 1];
-    const rows = Math.max(drawPair(pairs[i], PAGE.margin), second ? drawPair(second, PAGE.margin + colW) : 1);
-    y += Math.max(rowH, rows * lineH + 1.4);
+    const lines = Math.max(drawPair(pairs[i], PAGE.margin), second ? drawPair(second, PAGE.margin + colW) : 1);
+    y += Math.max(rowH, lines * LEAD + 2);
   }
   return y + 2;
 }
 
-/** Table with per-row page-break safety and an optional dose-colour badge. */
-function table(doc, { x = PAGE.margin, y, width = PAGE.contentW, columns, rows, fontSize = 8 }) {
-  const rowH = 6.2;
+/**
+ * A table with per-row page-break safety. Cells wrap onto extra lines and the
+ * row grows to fit, so nothing that was logged is missing from the printed
+ * report. A column marked `bold` carries the value the eye should land on first.
+ */
+function table(doc, { x = PAGE.margin, y, width = PAGE.contentW, columns, rows, fontSize = BODY }) {
+  const headH = 8.6;
+  const rowH = 8.2;
+  const pad = 2;
   const total = columns.reduce((a, c) => a + c.w, 0);
   const cols = columns.map((c) => ({ ...c, w: (c.w / total) * width }));
 
   const drawHead = (top) => {
     doc.setFillColor(PDF_RGB.tableHeadBg[0], PDF_RGB.tableHeadBg[1], PDF_RGB.tableHeadBg[2]);
-    doc.rect(x, top, width, rowH, "F");
+    doc.rect(x, top, width, headH, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(fontSize);
-    doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
-    let cx = x + 1.5;
+    doc.setTextColor(INK[0], INK[1], INK[2]);
+    let cx = x + pad;
     cols.forEach((c) => {
-      doc.text(fitText(doc, c.label, c.w - 3), cx, top + rowH - 2.1);
+      doc.text(fitText(doc, c.label, c.w - pad * 2), cx, top + headH - 3);
       cx += c.w;
     });
-    return top + rowH;
+    return top + headH;
   };
 
-  y = ensure(doc, y, rowH * 2);
+  y = ensure(doc, y, headH + rowH);
   y = drawHead(y);
 
-  // Cells wrap onto extra lines and the row grows to fit — long text is never
-  // cut off, so nothing that was logged is missing from the printed report.
   rows.forEach((row, index) => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(fontSize);
-    const cells = cols.map((c) => doc.splitTextToSize(String(c.text(row) ?? ""), c.w - 3));
+    const cells = cols.map((c) => doc.splitTextToSize(String(c.text(row) ?? ""), c.w - pad * 2));
     const lines = Math.max(1, ...cells.map((cell) => cell.length));
-    const height = Math.max(rowH, lines * 3.6 + 2.6);
+    const height = Math.max(rowH, lines * LEAD + 3.4);
 
     if (y + height > PAGE.bottom) {
       y = newPage(doc);
       y = drawHead(y);
-      doc.setFont("helvetica", "normal");
       doc.setFontSize(fontSize);
     }
     if (index % 2 === 1) {
       doc.setFillColor(PDF_RGB.tableZebraBg[0], PDF_RGB.tableZebraBg[1], PDF_RGB.tableZebraBg[2]);
       doc.rect(x, y, width, height, "F");
     }
-    let cx = x + 1.5;
+    let cx = x + pad;
     cols.forEach((c, ci) => {
-      const maxW = c.w - 3;
-      const cellLines = cells[ci];
-      if (c.badge) {
-        const colour = c.colour ? c.colour(row) : CUSTOM_DOSE_COLOR;
-        const rgb = hexToRgb(colour);
-        const badgeW = Math.min(maxW, doc.getTextWidth(cellLines[0] || "") + 3.4);
-        doc.setFillColor(rgb[0], rgb[1], rgb[2]);
-        doc.roundedRect(cx, y + 1.4, badgeW, 3.9, 0.9, 0.9, "F");
-        const ink = hexToRgb(getDoseTextColor(colour));
-        doc.setTextColor(ink[0], ink[1], ink[2]);
-        doc.text(cellLines[0] || "", cx + 1.7, y + rowH - 2.1);
-        doc.setTextColor(INK[0], INK[1], INK[2]);
-      } else {
-        doc.setTextColor(INK[0], INK[1], INK[2]);
-        doc.text(cellLines, cx, y + rowH - 2.1);
-      }
+      doc.setFont("helvetica", c.bold ? "bold" : "normal");
+      doc.setTextColor(INK[0], INK[1], INK[2]);
+      doc.text(cells[ci], cx, y + rowH - 3);
       cx += c.w;
     });
     y += height;
@@ -169,7 +236,7 @@ function footer(doc) {
     doc.setLineWidth(0.3);
     doc.line(PAGE.margin, PAGE.h - 16, PAGE.w - PAGE.margin, PAGE.h - 16);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
+    doc.setFontSize(FOOT);
     doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
     doc.text(REPORT_FOOTER, PAGE.margin, PAGE.h - 12);
     doc.text(`Page ${i} of ${pages}`, PAGE.w - PAGE.margin, PAGE.h - 12, { align: "right" });
@@ -206,8 +273,13 @@ function loadThumbnail(url, size = 260) {
   });
 }
 
-function reportUnitLabel(row) {
-  return row.dose == null ? "—" : `${row.dose} ${row.unit}`;
+/** Dose rows plotted on the weight chart's timeline, in the report's range only. */
+function doseMarkers(rows, range) {
+  const from = fromDayKey(range.from).getTime();
+  const to = fromDayKey(range.to).getTime();
+  return rows
+    .map((row) => ({ ts: fromDayKey(row.day).getTime() }))
+    .filter((marker) => Number.isFinite(marker.ts) && marker.ts >= from && marker.ts <= to);
 }
 
 export async function buildReportPdf(report) {
@@ -216,182 +288,143 @@ export async function buildReportPdf(report) {
   paintWhite(doc);
 
   const unit = report.unit;
+  const summary = report.summary;
   const has = (id) => report.sections.includes(id);
   let y = PAGE.margin + 2;
 
-  // ── 1. Header ──────────────────────────────────────────────────────────────
+  // ── 1. Title block ────────────────────────────────────────────────────────
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(19);
+  doc.setFontSize(20);
   doc.setTextColor(INK[0], INK[1], INK[2]);
   doc.text("Levli Health Report", PAGE.margin, y);
-  y += 7;
+  y += 3.6;
+  doc.setDrawColor(ACCENT[0], ACCENT[1], ACCENT[2]);
+  doc.setLineWidth(0.9);
+  doc.line(PAGE.margin, y, PAGE.margin + 34, y);
+  y += 8;
 
-  if (report.header.name) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
-    doc.text(`Name: ${report.header.name}`, PAGE.margin, y);
-    y += 5;
+  if (report.header.name) y = muted(doc, `Name: ${report.header.name}`, y);
+  y = muted(doc, `Date range: ${report.header.rangeLabel}`, y);
+  y = muted(doc, `Generated: ${report.header.generatedLabel}`, y);
+  y += 4;
+
+  // ── 2. Summary — medication, dose, doses logged, weight ───────────────────
+  const figures = summaryFigures(summary, unit);
+  if (summary.medications.length || figures.length) {
+    y = heading(doc, "Summary", y);
+    summary.medications.forEach((group) => {
+      y = inkLine(doc, medicationLine(group), y);
+    });
+    if (summary.medications.length && figures.length) y += 1.5;
+    y = figurePanel(doc, figures, y);
+    y += 3;
   }
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
-  doc.text(`Date range: ${report.header.rangeLabel}`, PAGE.margin, y);
-  y += 4.6;
-  doc.text(`Generated: ${report.header.generatedLabel}`, PAGE.margin, y);
-  y += 4.6;
-  doc.text(
-    `Medication${report.header.medications.length === 1 ? "" : "s"}: ${report.header.medications.join(", ") || "—"}`,
-    PAGE.margin, y,
-  );
-  y += 6;
-
-  y = heading(doc, "At a glance", y);
-  y = keyValues(doc, [
-    ["Height", report.header.heightLabel || "Not recorded"],
-    ["Starting weight", report.header.startWeight != null ? `${report.header.startWeight} ${unit}` : "—"],
-    ["Current weight", report.header.endWeight != null ? `${report.header.endWeight} ${unit}` : "—"],
-    ["Goal weight", report.header.goalWeight != null ? `${report.header.goalWeight} ${unit}` : "Not set"],
-    ["Total change", report.header.change != null ? `${signed(report.header.change)} ${unit} (${signed(report.header.changePct)}%)` : "—"],
-    ...(report.header.bmi != null ? [["BMI", `${report.header.bmi}`]] : []),
-  ], y);
-
-  if (report.header.bmi == null && report.header.heightLabel) {
-    y = note(doc, "The height and weight on file do not produce a plausible BMI, so it is not shown. Check your height and weight units in Profile.", y, 7.5);
-  }
-
-  // ── 2. Weight progress ─────────────────────────────────────────────────────
+  // ── 3. Weight ─────────────────────────────────────────────────────────────
   if (has("weight")) {
-    y = heading(doc, "Weight progress", y + 2);
+    y = heading(doc, "Weight", y + 3);
     const weight = report.weight;
 
     if (!weight.count) {
-      y = note(doc, "No weight entries in this selected range.", y);
+      y = muted(doc, "No weight entries in this period.", y);
+    } else if (weight.count < 2) {
+      y = muted(doc, "One weight entry in this period.", y);
     } else {
-      y = keyValues(doc, [
-        ["Starting weight", `${weight.start} ${unit}`],
-        ["Current weight", `${weight.end} ${unit}`],
-        ["Total change", `${signed(weight.change)} ${unit}`],
-        ["Change (%)", `${signed(weight.changePct)}%`],
-        ["Average weekly change", weight.perWeek != null ? `${signed(weight.perWeek)} ${unit}` : "—"],
-        ["Goal", weight.goalLabel ? `${weight.goalLabel} · ${goalText(weight.goalDistance, unit)}` : "Not set"],
-        ["Entries", `${weight.count}`],
-        ["Period", weight.weeks ? `${weight.weeks} weeks` : "—"],
-      ], y);
-      y += 2;
-
-      if (weight.count >= 2) {
-        const chartHeight = 62;
-        y = ensure(doc, y, chartHeight + 20);
-        const markers = report.doses.rows
-          .map((row) => ({
-            ts: fromDayKey(row.day).getTime(),
-            color: getDoseColor(row.medication, row.dose),
-            label: reportUnitLabel(row),
-          }))
-          .filter((marker) => marker.ts >= fromDayKey(report.range.from).getTime() && marker.ts <= fromDayKey(report.range.to).getTime());
-
-        y += drawWeightChart(doc, {
-          x: PAGE.margin,
-          y,
-          w: PAGE.contentW,
-          h: chartHeight,
-          series: weight.series || [],
-          markers,
-          unit,
-          fromTs: fromDayKey(report.range.from).getTime(),
-          toTs: fromDayKey(report.range.to).getTime(),
-          labelFor: (ts) => formatDayShort(toDayKey(new Date(ts))),
-        });
-        y = note(doc, "Solid line: logged weight entries (one point per entry, no values filled in). Dashed line: 7-day rolling average. Coloured ticks: dose dates, matching the dose colours in the app.", y, 7.5);
-      } else {
-        y = note(doc, "Not enough entries in this range.", y);
-      }
-
-      if (weight.gaps.length) {
-        weight.gaps.forEach((gap) => {
-          y = note(doc, `No weight entries between ${formatDayShort(gap.from)} and ${formatDayShort(gap.to)} (${gap.days} days).`, y, 7.5);
-        });
-      }
+      const chartHeight = 64;
+      y = ensure(doc, y, chartHeight + 22);
+      y += drawWeightChart(doc, {
+        x: PAGE.margin,
+        y,
+        w: PAGE.contentW,
+        h: chartHeight,
+        series: weight.series || [],
+        markers: doseMarkers(report.doses.rows, report.range),
+        unit,
+        fromTs: fromDayKey(report.range.from).getTime(),
+        toTs: fromDayKey(report.range.to).getTime(),
+        labelFor: (ts) => formatDayShort(toDayKey(new Date(ts))),
+      });
+      y = muted(doc, "Solid line: weight entries. Dashed line: 7-day rolling average. Ticks: dose dates.", y);
+      y = muted(doc, weightContextLine(weight, unit), y);
+      weight.gaps.forEach((gap) => {
+        y = muted(doc, `No weight entries between ${formatDayShort(gap.from)} and ${formatDayShort(gap.to)} (${gap.days} days).`, y);
+      });
     }
   }
 
-  // ── 3. Doses taken ─────────────────────────────────────────────────────────
+  // ── 4. Doses taken ────────────────────────────────────────────────────────
   if (has("doses")) {
-    y = heading(doc, "Doses taken", y + 2);
-    if (!report.doses.count) {
-      y = note(doc, "No doses logged in this selected range.", y);
-    } else {
-      y = note(doc, report.doses.changes.join(" · "), y, 8.5);
-      const adherence = report.doses.adherence;
-      y = note(
-        doc,
-        adherence.scheduled
-          ? `Shots logged: ${adherence.logged} of ${adherence.scheduled} scheduled doses (${adherence.days}-day range).`
-          : `Shots logged: ${adherence.logged}.`,
-        y, 8.5,
-      );
-      y += 1;
+    y = heading(doc, "Doses taken", y + 3);
 
-      const withDetail = report.doses.rows.some((r) => r.detail);
-      const withPain = has("injectionSites");
+    if (!summary.totalDoses) {
+      y = muted(doc, "No doses logged in this period.", y);
+    } else {
+      y = muted(doc, adherenceLine(report.doses.adherence, summary.totalDoses), y);
+      // The dose history is only listed when it changed; a single steady dose is
+      // already named in the summary above.
+      if (report.doses.changes.length > 1) {
+        y = muted(doc, `Dose: ${report.doses.changes.join(" · ")}`, y);
+      }
+
+      const showPain = has("injectionSites");
       const columns = [
-        { label: "Date", w: 20, text: (r) => r.dayLabel },
-        { label: "Time", w: 14, text: (r) => r.time },
-        { label: "Medication", w: 24, text: (r) => r.medication },
-        { label: "Dose", w: 14, badge: true, text: (r) => reportUnitLabel(r), colour: (r) => getDoseColor(r.medication, r.dose) },
-        { label: "Injection site", w: 26, text: (r) => r.site },
-        ...(withDetail ? [{ label: "Route / concentration", w: 20, text: (r) => r.detail || "—" }] : []),
-        ...(withPain ? [{ label: "Pain", w: 10, text: (r) => (r.pain != null ? `${r.pain}/10` : "—") }] : []),
+        { label: "Date", w: 22, text: (r) => r.dayLabel },
+        { label: "Time", w: 13, text: (r) => r.time },
+        { label: "Dose", w: 17, bold: true, text: (r) => r.doseLabel },
+        { label: "Injection site", w: 30, text: (r) => r.site },
+        ...(showPain ? [{ label: "Pain", w: 12, text: (r) => (r.pain != null ? `${r.pain}/10` : "") }] : []),
       ];
       y = table(doc, { y, columns, rows: report.doses.rows });
-      y = note(doc, "Newest dose first. Pain is the level recorded with each dose (0-10).", y, 7.5);
+      y = muted(doc, "Newest dose first.", y - 1);
+      summary.duplicates.forEach((group) => {
+        y = muted(doc, duplicateLine(group), y);
+      });
     }
   }
 
-  // ── 4. Side effects ────────────────────────────────────────────────────────
+  // ── 5. Side effects ───────────────────────────────────────────────────────
   if (has("sideEffects")) {
-    y = heading(doc, "Side effects", y + 2);
+    y = heading(doc, "Side effects", y + 3);
+
     if (!report.sideEffects.total) {
-      y = note(doc, "No side effects logged in this selected range.", y);
+      y = muted(doc, "No side effects logged in this period.", y);
     } else {
       y = table(doc, {
         y,
         columns: [
-          { label: "Date", w: 22, text: (r) => r.dayLabel },
-          { label: "Side effect", w: 32, text: (r) => r.symptom },
-          { label: "Severity", w: 18, text: (r) => r.severity || "—" },
-          { label: "Duration / notes", w: 30, text: (r) => r.detail || "—" },
-          { label: "Most recent dose before", w: 28, text: (r) => (r.prior ? `${r.prior.label} on ${r.prior.dayLabel}` : "No dose logged before") },
+          { label: "Date", w: 20, text: (r) => r.dayLabel },
+          { label: "Side effect", w: 34, text: (r) => r.symptom },
+          { label: "Severity", w: 16, text: (r) => r.severity },
+          { label: "Duration / notes", w: 30, text: (r) => r.detail },
+          { label: "Previous dose", w: 24, text: (r) => (r.prior ? `${r.prior.label} on ${r.prior.dayLabel}` : "None logged") },
         ],
         rows: report.sideEffects.rows,
       });
 
       if (report.sideEffects.frequency.length) {
-        y = ensure(doc, y, 14 + report.sideEffects.frequency.length * 7);
+        y = ensure(doc, y, 16 + report.sideEffects.frequency.length * 8.5);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
+        doc.setFontSize(10.5);
         doc.setTextColor(INK[0], INK[1], INK[2]);
         doc.text("How often each side effect was logged", PAGE.margin, y);
-        y += 5;
+        y += 6;
         y += drawFrequencyBars(doc, {
           x: PAGE.margin,
           y,
           w: PAGE.contentW,
           rows: report.sideEffects.frequency,
         });
-        y += 3;
+        y += 2;
       }
 
-      y = note(doc, "Severe or persistent symptoms should be discussed with a healthcare provider.", y, 8.5);
+      y = muted(doc, "Severe or persistent symptoms should be discussed with a healthcare provider.", y);
     }
   }
 
-  // ── 5. Optional sections ───────────────────────────────────────────────────
+  // ── 6. Optional sections ──────────────────────────────────────────────────
   const injection = report.optional.injectionSites;
   if (has("injectionSites") && injection) {
-    y = heading(doc, "Injection sites and pain", y + 2);
+    y = heading(doc, "Injection sites and pain", y + 3);
     y = table(doc, {
       y,
       columns: [
@@ -401,24 +434,26 @@ export async function buildReportPdf(report) {
       ],
       rows: injection.counts,
     });
-    y = note(doc, `${injection.sitesUsed} site${injection.sitesUsed === 1 ? "" : "s"} used across ${injection.totalDosesWithSite} doses.`, y, 7.5);
-    if (injection.painReported) {
-      y = note(doc, `Pain was recorded on ${injection.painReported} dose${injection.painReported === 1 ? "" : "s"}, average ${injection.averagePain}/10.`, y, 7.5);
-    } else {
-      y = note(doc, "No pain was recorded with any dose in this range.", y, 7.5);
-    }
+    y = muted(doc, `${injection.sitesUsed} site${injection.sitesUsed === 1 ? "" : "s"} used across ${injection.totalDosesWithSite} doses.`, y - 1);
+    y = muted(
+      doc,
+      injection.painReported
+        ? `Pain was recorded on ${injection.painReported} dose${injection.painReported === 1 ? "" : "s"}, average ${injection.averagePain}/10.`
+        : "No pain was recorded with any dose in this period.",
+      y,
+    );
   }
 
   const nutrition = report.optional.nutrition;
   if (has("nutrition") && nutrition) {
-    y = heading(doc, "Nutrition", y + 2);
-    y = keyValues(doc, [
-      ["Days logged", String(nutrition.days)],
-      ["Calories (average)", nutrition.calories != null ? `${nutrition.calories} kcal` : "—"],
-      ["Protein (average)", nutrition.protein != null ? `${nutrition.protein} g` : "—"],
-      ["Fiber (average)", nutrition.fiber != null ? `${nutrition.fiber} g` : "—"],
-      ["Carbs (average)", nutrition.carbs != null ? `${nutrition.carbs} g` : "—"],
-    ], y);
+    y = heading(doc, "Nutrition", y + 3);
+    const pairs = [["Days logged", String(nutrition.days)]];
+    if (nutrition.calories != null) pairs.push(["Calories (average)", `${nutrition.calories} kcal`]);
+    if (nutrition.protein != null) pairs.push(["Protein (average)", `${nutrition.protein} g`]);
+    if (nutrition.fiber != null) pairs.push(["Fiber (average)", `${nutrition.fiber} g`]);
+    if (nutrition.carbs != null) pairs.push(["Carbs (average)", `${nutrition.carbs} g`]);
+    y = keyValues(doc, pairs, y);
+
     if (nutrition.weekly.length) {
       y = table(doc, {
         y,
@@ -434,8 +469,8 @@ export async function buildReportPdf(report) {
 
   const water = report.optional.water;
   if (has("water") && water) {
-    y = heading(doc, "Water", y + 2);
-    y = note(doc, `Logged on ${water.days} day${water.days === 1 ? "" : "s"} · average ${water.average} ${water.unit}/day · total ${water.total} ${water.unit}.`, y, 8.5);
+    y = heading(doc, "Water", y + 3);
+    y = muted(doc, `Logged on ${water.days} day${water.days === 1 ? "" : "s"} · average ${water.average} ${water.unit}/day · total ${water.total} ${water.unit}.`, y);
     if (water.weekly.length) {
       y = table(doc, {
         y,
@@ -451,8 +486,8 @@ export async function buildReportPdf(report) {
 
   const exercise = report.optional.exercise;
   if (has("exercise") && exercise) {
-    y = heading(doc, "Exercise", y + 2);
-    y = note(doc, `Logged on ${exercise.days} day${exercise.days === 1 ? "" : "s"} · average ${exercise.average} min/day · total ${exercise.total} min.`, y, 8.5);
+    y = heading(doc, "Exercise", y + 3);
+    y = muted(doc, `Logged on ${exercise.days} day${exercise.days === 1 ? "" : "s"} · average ${exercise.average} min/day · total ${exercise.total} min.`, y);
     if (exercise.weekly.length) {
       y = table(doc, {
         y,
@@ -468,31 +503,30 @@ export async function buildReportPdf(report) {
 
   const journal = report.optional.journal;
   if (has("journal") && journal) {
-    y = heading(doc, "Journal entries", y + 2);
+    y = heading(doc, "Journal entries", y + 3);
     journal.forEach((entry) => {
       const meta = [entry.dayLabel, entry.time, entry.mood, entry.category].filter(Boolean).join(" · ");
       const bodyLines = doc.splitTextToSize(entry.text, PAGE.contentW);
-      y = ensure(doc, y, bodyLines.length * 3.8 + 8);
+      y = ensure(doc, y, bodyLines.length * LEAD + 12);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.5);
+      doc.setFontSize(BODY);
       doc.setTextColor(INK[0], INK[1], INK[2]);
       doc.text(meta, PAGE.margin, y);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.text(bodyLines, PAGE.margin, y + 4);
-      y += bodyLines.length * 3.8 + 8;
+      doc.setTextColor(INK[0], INK[1], INK[2]);
+      doc.text(bodyLines, PAGE.margin, y + LEAD + 1.2);
+      y += bodyLines.length * LEAD + 12;
     });
-    y = note(doc, "Entries are shown exactly as written by the person logging them.", y, 7.5);
+    y = muted(doc, "Entries appear exactly as written by the person logging them.", y);
   }
 
   const pictures = report.optional.progressPictures;
   if (has("progressPictures") && pictures) {
-    y = heading(doc, "Progress pictures", y + 2);
-    y = note(doc, "Personal photos, included because this section was selected.", y, 7.5);
+    y = heading(doc, "Progress pictures", y + 3);
     const cell = 52;
     let col = 0;
     for (const photo of pictures) {
-      if (col === 0) y = ensure(doc, y, cell + 8);
+      if (col === 0) y = ensure(doc, y, cell + 9);
       const dataUrl = await loadThumbnail(photo.url);
       const px = PAGE.margin + col * (cell + 8);
       if (dataUrl) {
@@ -500,34 +534,20 @@ export async function buildReportPdf(report) {
       } else {
         doc.setDrawColor(PDF_RGB.divider[0], PDF_RGB.divider[1], PDF_RGB.divider[2]);
         doc.rect(px, y, cell, cell);
-        doc.setFontSize(7);
-        doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
-        doc.text("Photo unavailable", px + 2, y + cell / 2);
       }
-      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
       doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
-      doc.text(photo.dayLabel, px, y + cell + 3.6);
+      doc.text(photo.dayLabel, px, y + cell + 4);
       col += 1;
       if (col === 3) {
         col = 0;
-        y += cell + 8;
+        y += cell + 9;
       }
     }
-    if (col !== 0) y += cell + 8;
+    if (col !== 0) y += cell + 9;
   }
 
   footer(doc);
   return doc;
-}
-
-/**
- * Direction-aware goal wording, identical to the on-screen preview: above the
- * goal weight there is still weight to lose, so it reads "70 lb to go"; at or
- * past the goal it reads "Goal reached". Never "below goal" in the wrong
- * direction.
- */
-function goalText(goalDistance, unit) {
-  if (!goalDistance) return "Goal not set";
-  if (goalDistance.direction === "above") return `${goalDistance.value} ${unit} to go`;
-  return "Goal reached";
 }

@@ -26,8 +26,12 @@ export const PDF_TOKENS = {
   tableZebraBg: "#FAFAFC",
   barTrack: "#EEF0F6",
   barFill: "#4F46E5",
-  weightLine: "#6366F1",
-  avgLine: "#8B5CF6",
+  // The report's single accent: the weight line itself. The rolling average is
+  // dashed in muted grey instead of a second colour, so the chart still reads
+  // when it is printed in grayscale.
+  weightLine: "#4F46E5",
+  avgLine: "#6B7280",
+  doseTick: "#CBD5E1",
   tooltipBg: "#FFFFFF",
   tooltipBorder: "#E5E7EB",
   tooltipText: "#111827",
@@ -68,6 +72,7 @@ export const APP_DARK_TOKENS = {
   barFill: "#818CF8",
   weightLine: "#A5B4FC",
   avgLine: "#C4B5FD",
+  doseTick: "#3A4152",
   tooltipBg: "#1E2130",
   tooltipBorder: "#333846",
   tooltipText: "#E8E9F0",
@@ -101,4 +106,5 @@ export const PDF_RGB = {
   weightLine: tokenRgb(PDF_TOKENS.weightLine),
   avgLine: tokenRgb(PDF_TOKENS.avgLine),
   barFill: tokenRgb(PDF_TOKENS.barFill),
+  doseTick: tokenRgb(PDF_TOKENS.doseTick),
 };

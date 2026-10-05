@@ -190,6 +190,11 @@ function round1(n) {
   return Math.round(n * 10) / 10;
 }
 
+/** "+1.2" / "-4.3" — the sign is always shown, so a change can never be misread. */
+function signedText(value, digits = 1) {
+  return `${value < 0 ? "-" : "+"}${Math.abs(value).toFixed(digits)}`;
+}
+
 export function summarizeWeight(series, profile, profileUnit, reportUnit, range) {
   if (!series.length) {
     return {
@@ -239,12 +244,16 @@ export function medicationList(shots = []) {
   return seen;
 }
 
-function routeLabel(shot) {
-  const route = asText(shot.route).replace(/_/g, " ");
-  return [route, asText(shot.concentration)].filter(Boolean).join(" · ");
+/** The shot's route as words: "subcutaneous", "oral tablet". */
+function routeWords(shot) {
+  return asText(shot.route).replace(/_/g, " ").trim();
 }
 
-/** Dose table rows, newest first. */
+/**
+ * Dose table rows, newest first. Each row also carries the medication, its
+ * route and its concentration, so the report can name those once in its summary
+ * rather than repeating them down every line of the table.
+ */
 export function doseRows(shotsDesc = []) {
   return shotsDesc.map((s) => {
     const dose = asNumber(s.dose);
@@ -253,14 +262,16 @@ export function doseRows(shotsDesc = []) {
       id: s.id,
       day: shotDayKey(s),
       dayLabel: formatDay(shotDayKey(s)),
-      time: asText(s.time, "—"),
-      medication: asText(s.medication, "—"),
+      time: asText(s.time),
+      medication: asText(s.medication),
+      route: routeWords(s),
+      generic: asText(s.drug_class),
+      concentration: asText(s.concentration),
       dose,
       unit,
-      doseLabel: dose != null ? `${dose} ${unit}` : "—",
-      site: asText(s.site, "—"),
+      doseLabel: dose != null ? `${dose} ${unit}` : "",
+      site: asText(s.site),
       pain: asNumber(s.pain),
-      detail: asText(routeLabel(s)),
       notes: asText(s.notes),
     };
   });
@@ -292,6 +303,120 @@ export function doseChangeSummary(rowsAsc = [], multipleMeds = false) {
     const name = multipleMeds ? `${step.medication} ` : "";
     return `${name}${step.dose} ${step.unit} from ${formatDayShort(step.day)}`;
   });
+}
+
+/**
+ * One entry per medication for the report's summary, newest first: the latest
+ * dose logged for it, its most recent route, and its concentration when every
+ * dose shared one.
+ */
+export function doseGroups(rows = []) {
+  const groups = new Map();
+  rows.forEach((row) => {
+    const name = row.medication || "Unnamed medication";
+    if (!groups.has(name)) {
+      groups.set(name, {
+        name, dose: row.dose, unit: row.unit, route: row.route,
+        generic: row.generic, count: 0, concentrations: new Set(),
+      });
+    }
+    const group = groups.get(name);
+    group.count += 1;
+    if (!group.route && row.route) group.route = row.route;
+    if (!group.generic && row.generic) group.generic = row.generic;
+    if (row.concentration) group.concentrations.add(row.concentration);
+  });
+  return [...groups.values()].map(({ concentrations, ...group }) => ({
+    ...group,
+    concentration: concentrations.size === 1 ? [...concentrations][0] : "",
+  }));
+}
+
+/** "Ozempic (semaglutide) · 2.5 mg · subcutaneous" — named once, at the top. */
+export function medicationLine(group) {
+  const generic = group.generic && group.generic.toLowerCase() !== group.name.toLowerCase()
+    ? `(${group.generic})`
+    : "";
+  const parts = [
+    group.dose != null ? `${group.dose} ${group.unit}` : "",
+    group.route,
+    group.concentration,
+  ].filter(Boolean);
+  return [`${group.name} ${generic}`.trim(), ...parts].join(" · ");
+}
+
+/**
+ * Entries that look like the same dose logged twice: same date, time, dose and
+ * site. Reported as a note under the table — nothing is removed, and nothing is
+ * concluded from it.
+ */
+export function duplicateDoses(rows = []) {
+  const groups = new Map();
+  rows.forEach((row) => {
+    const key = [row.day, row.time, row.dose, row.unit, String(row.site).trim().toLowerCase()].join("|");
+    const found = groups.get(key);
+    if (found) {
+      found.count += 1;
+      return;
+    }
+    groups.set(key, { dayLabel: row.dayLabel, time: row.time, doseLabel: row.doseLabel, site: row.site, count: 1 });
+  });
+  return [...groups.values()].filter((group) => group.count > 1);
+}
+
+/** "Possible duplicate: 19 Jan 2026, 08:30 · 2.5 mg · left thigh (logged twice)." */
+export function duplicateLine(group) {
+  const when = [group.dayLabel, group.time].filter(Boolean).join(", ");
+  const facts = [group.doseLabel, group.site].filter(Boolean).join(" · ");
+  const times = group.count === 2 ? "twice" : `${group.count} times`;
+  return `Possible duplicate: ${[when, facts].filter(Boolean).join(" · ")} (logged ${times}).`;
+}
+
+/** " · 6.8 kg to go" while the goal weight is still ahead, " · reached" once it is met. */
+function goalSuffix(goalDistance, unit) {
+  if (!goalDistance) return "";
+  if (goalDistance.direction === "above") return ` · ${goalDistance.value} ${unit} to go`;
+  return " · reached";
+}
+
+/**
+ * The figures that lead the report — medication dose counts and the weight
+ * figures. Only values that exist are returned, so nothing is ever shown as a
+ * dash or a placeholder.
+ */
+export function summaryFigures(summary, unit) {
+  const figures = [];
+  if (summary.totalDoses) figures.push({ label: "Doses logged", value: String(summary.totalDoses) });
+
+  const weight = summary.weight || {};
+  if (weight.count >= 2) {
+    figures.push({ label: "Starting weight", value: `${weight.start} ${unit}` });
+    figures.push({ label: "Current weight", value: `${weight.end} ${unit}` });
+    const pct = weight.changePct != null ? ` (${signedText(weight.changePct)}%)` : "";
+    figures.push({ label: "Total change", value: `${signedText(weight.change)} ${unit}${pct}` });
+  } else if (weight.count === 1) {
+    figures.push({ label: "Current weight", value: `${weight.end} ${unit}` });
+  }
+  if (weight.goal != null) {
+    figures.push({ label: "Goal weight", value: `${weight.goal} ${unit}${goalSuffix(weight.goalDistance, unit)}` });
+  }
+  if (summary.bmi != null) figures.push({ label: "BMI", value: String(summary.bmi) });
+  return figures;
+}
+
+/** "14 entries · average change -0.4 kg per week." */
+export function weightContextLine(weight, unit) {
+  const parts = [`${weight.count} ${weight.count === 1 ? "entry" : "entries"}`];
+  if (weight.weeks) parts.push(`over ${weight.weeks} weeks`);
+  if (weight.perWeek != null) parts.push(`average change ${signedText(weight.perWeek)} ${unit} per week`);
+  return `${parts.join(" · ")}.`;
+}
+
+/** "Doses logged: 12 of 14 scheduled in a 90-day period." */
+export function adherenceLine(adherence, totalDoses) {
+  return adherence.scheduled
+    ? `Doses logged: ${adherence.logged} of ${adherence.scheduled} scheduled in a ${adherence.days}-day period.`
+    : `Doses logged: ${totalDoses} in this period.`;
 }
 
 /** "Shots logged: X of Y scheduled" — the same logic as the Shots page figure. */
@@ -560,6 +685,8 @@ export function buildReport(state, options) {
   const weight = summarizeWeight(series, profile, profileUnit, unit, range);
   const doses = doseRows(shotsInRange);
   const changes = doseChangeSummary([...doses].reverse(), new Set(doses.map((d) => d.medication)).size > 1);
+  const medicationGroups = doseGroups(doses);
+  const duplicates = duplicateDoses(doses);
   const adherence = adherenceFor(shots, shotsInRange, medicationFilter, range.days);
   const sideEffects = sideEffectRows(adverseEvents, shotsDesc, dayMetrics, range);
 
@@ -602,6 +729,16 @@ export function buildReport(state, options) {
     // `series` carries the plotted points through to the chart and the PDF.
     // `notEnough` is set when a trend cannot be drawn, so the preview and the
     // PDF say the same thing.
+    // The summary is what leads the report: every medication with its latest
+    // dose, route and concentration, the number of doses, the weight figures
+    // that exist, and any entries that look like the same dose logged twice.
+    summary: {
+      medications: medicationGroups,
+      totalDoses: doses.length,
+      duplicates,
+      weight,
+      bmi,
+    },
     weight: { ...weight, series, notEnough: series.length < 2 },
     doses: { rows: doses, changes, adherence, count: doses.length },
     sideEffects: { rows: sideEffects, frequency: sideEffectFrequency(sideEffects), total: sideEffects.length },
