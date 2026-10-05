@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
-import { LevliDropletIcon } from "@/components/FilledIcons";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 
@@ -44,7 +43,7 @@ export default function Login() {
 
   return (
     <AuthLayout
-      iconNode={<LevliDropletIcon size={56} />}
+      iconNode={<img src="/assets/brand/levli-drop-mark-512.png?v=2" alt="Levli logo" width={56} height={56} />}
       title="Glad you're here"
       subtitle="Log in to your account"
       footer={

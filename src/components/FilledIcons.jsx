@@ -28,11 +28,3 @@ export function WeightFilledIcon({ size = 20, className = "", style }) {
     </svg>
   );
 }
-
-export function LevliDropletIcon({ size = 48, className = "", style }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} style={style} aria-hidden="true">
-      <path d="M12 2 C12 2 5 10 5 15 a7 7 0 0 0 14 0 C19 10 12 2 12 2 Z" fill="#4F46E5" />
-    </svg>
-  );
-}

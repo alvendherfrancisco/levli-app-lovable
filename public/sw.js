@@ -8,9 +8,11 @@
 //   * requests to other origins (fonts, CDN scripts) → left to the network, so
 //     nothing private is ever written into the cache.
 
-const SHELL_CACHE = "levli-shell-v1";
-const ASSET_CACHE = "levli-assets-v1";
-const SHELL_FILES = ["/", "/index.html", "/manifest.json", "/levli-logo-icon.svg"];
+const SHELL_CACHE = "levli-shell-v2";
+const ASSET_CACHE = "levli-assets-v2";
+// Brand icon, used for the app shell cache and for push notifications.
+const ICON = "/assets/brand/levli-icon-192.png?v=2";
+const SHELL_FILES = ["/", "/index.html", "/manifest.json", ICON];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -82,8 +84,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Levli";
   const options = {
     body: data.body || "",
-    icon: "/levli-logo-icon.svg",
-    badge: "/levli-logo-icon.svg",
+    icon: ICON,
+    badge: ICON,
     data: { url: data.url || "/" },
     vibrate: [100],
   };
