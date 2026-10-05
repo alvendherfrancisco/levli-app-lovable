@@ -35,7 +35,6 @@ import MedicalDisclaimerPage from '@/pages/MedicalDisclaimerPage';
 import AboutSourcesPage from '@/pages/AboutSourcesPage';
 import MyMedications from '@/pages/MyMedications';
 import InventoryPage from '@/pages/InventoryPage';
-import PushTest from '@/pages/PushTest';
 
 // Layout
 import AppLayout from '@/components/AppLayout';
@@ -108,7 +107,6 @@ const AuthenticatedApp = () => {
           <Route path="/more" element={<More />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
-        <Route path="/push-test" element={<PushTest />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/report" element={<ReportErrorBoundary><ReportPage /></ReportErrorBoundary>} />
       </Route>

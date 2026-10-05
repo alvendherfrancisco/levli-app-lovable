@@ -32,7 +32,7 @@ export default function NextShotCard({ onLogPastShot }) {
     setStopping(true);
     try {
       await stopMedication(medicationName);
-      toast.success(`${plainBrandName(medicationName)} marked as stopped. Reminders paused.`);
+      toast.success(`${plainBrandName(medicationName)} marked as stopped. Its schedule is paused.`);
     } catch (err) {
       toast.error("Could not update your medication");
     }

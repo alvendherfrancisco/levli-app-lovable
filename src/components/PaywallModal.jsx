@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Crown, Syringe, BarChart3, History, FileText, Droplet, Bell } from "lucide-react";
+import { X, Syringe, BarChart3, History, FileText, Droplet } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useAppState } from "@/lib/AppState";
@@ -18,7 +18,6 @@ const FEATURES = [
   { icon: History, label: "Unlock Complete History" },
   { icon: FileText, label: "Generate & Share Reports" },
   { icon: Droplet, label: "Remove Ads and Watermarks" },
-  { icon: Bell, label: "Notification Support" },
 ];
 
 export default function PaywallModal({ open, onClose }) {

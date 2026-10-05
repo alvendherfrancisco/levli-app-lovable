@@ -1,4 +1,4 @@
-// Levli Service Worker — offline shell caching plus push notifications.
+// Levli Service Worker — offline shell caching only.
 //
 // Caching strategy:
 //   * navigations  → network first, falling back to the cached app shell so an
@@ -10,7 +10,6 @@
 
 const SHELL_CACHE = "levli-shell-v2";
 const ASSET_CACHE = "levli-assets-v2";
-// Brand icon, used for the app shell cache and for push notifications.
 const ICON = "/assets/brand/levli-icon-192.png?v=2";
 const SHELL_FILES = ["/", "/index.html", "/manifest.json", ICON];
 
@@ -69,45 +68,6 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(() => cached);
       return cached || network;
-    })
-  );
-});
-
-self.addEventListener("push", (event) => {
-  let data = {};
-  try {
-    data = JSON.parse(event.data.text());
-  } catch (e) {
-    data = { title: "Levli", body: event.data ? event.data.text() : "" };
-  }
-
-  const title = data.title || "Levli";
-  const options = {
-    body: data.body || "",
-    icon: ICON,
-    badge: ICON,
-    data: { url: data.url || "/" },
-    vibrate: [100],
-  };
-
-  event.waitUntil(self.registration.showNotification(title, options));
-});
-
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-
-  const url = (event.notification.data && event.notification.data.url) || "/";
-
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      // Focus an existing window and navigate to the deep-link URL
-      for (const client of clients) {
-        if ("focus" in client) {
-          client.navigate(url);
-          return client.focus();
-        }
-      }
-      return self.clients.openWindow(url);
     })
   );
 });

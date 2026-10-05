@@ -7,8 +7,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
  */
 const OWNED_ENTITIES = [
   "Shot", "DayMetric", "JournalEntry", "AdverseEvent", "Medication",
-  "Inventory", "StorageLog", "RepeatSchedule", "ReminderLog",
-  "PushSubscription", "ProgressPhoto", "ProxyAccess", "UserProfile",
+  "Inventory", "StorageLog", "RepeatSchedule",
+  "ProgressPhoto", "ProxyAccess", "UserProfile",
 ];
 
 export default async function (req) {

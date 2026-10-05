@@ -2,8 +2,7 @@
 // CENTRAL MEDICATIONS CONFIG — the ONE place doses are defined in Levli.
 //
 // Shots, Meds, Stock, Insights and Reports all read from here. No screen
-// hardcodes a dose list, and the reminder function no longer holds one either
-// (it prints the dose it is given).
+// hardcodes a dose list.
 //
 // Each record: brandName, genericName, route, dosingIntervalDays, allowedDoses[]
 // (with units), indicationNote, missedDoseRule, source (link to the official

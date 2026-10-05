@@ -80,7 +80,7 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
     sound.tap();
     if (active) {
       await updateRepeatSchedule(schedule.id, { status: "paused" });
-      toast.success("Repeat paused — no reminders until you resume");
+      toast.success("Repeat paused until you resume");
     } else {
       await updateRepeatSchedule(schedule.id, { status: "active", start_date: shiftWeekday(startDate || schedule.start_date, new Date().getDay()) });
       toast.success("Repeat resumed");

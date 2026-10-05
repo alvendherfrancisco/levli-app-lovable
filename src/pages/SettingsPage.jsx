@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ChevronLeft, Moon, Lock, Mail, Bell, Database, FileText, MessageSquare, ChevronRight, Download, Upload, Loader2, LogOut, UserPlus, X, Share, ShieldCheck, Trash2, FileDown, AlertTriangle, BookOpen, Info, Volume2 } from "lucide-react";
+import { ChevronLeft, Moon, Mail, Bell, FileText, MessageSquare, ChevronRight, Download, Upload, Loader2, LogOut, UserPlus, X, ShieldCheck, Trash2, FileDown, AlertTriangle, BookOpen, Volume2 } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
-import { subscribeToPush, unsubscribeFromPush } from "@/lib/pushSubscription";
 import { ICON_SIZE_ROW } from "@/lib/iconConstants";
 import { APP_VERSION, SUPPORT_EMAIL, FEEDBACK_EMAIL, DISCLAIMER_TEXT } from "@/lib/appInfo";
 import { getSoundPreference, setSoundPreference, sound } from "@/lib/sounds";
 import { buildFullExportCsv, downloadTextFile } from "@/lib/dataExport";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { toast } from "@/lib/toast";
+
+// Where the placeholder Push Notifications switch keeps its position.
+const NOTIF_PREF_KEY = "levli_push_notifications_enabled";
 
 // Shared toggle — defined outside the component so React doesn't remount it
 // on every state change (which caused the two toggles to look inconsistent).
@@ -30,7 +32,6 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const { darkMode, setDarkMode, profile, setProfile, shots, journalEntries, dayMetrics, adverseEvents, medications, inventory, repeatSchedules, proxyAccess, addProxyAccess, revokeProxyAccess, resetState } = useAppState();
   const { logout, user } = useAuth();
-  const isDeveloper = user?.email === "alvendherfrancisco01@gmail.com";
   const [proxyEmail, setProxyEmail] = useState("");
   const [proxyScope, setProxyScope] = useState("read");
   const [proxySaving, setProxySaving] = useState(false);
@@ -63,27 +64,18 @@ export default function SettingsPage() {
     resetState();
     logout();
   };
-  const [notifEnabled, setNotifEnabled] = useState(profile?.notifications_enabled || false);
-  const [notifLoading, setNotifLoading] = useState(false);
+  // Push Notifications is a placeholder for now: the switch remembers its
+  // position on this device and nothing else happens when it moves. Push is
+  // being rebuilt from scratch.
+  const [notifEnabled, setNotifEnabled] = useState(
+    () => typeof localStorage !== "undefined" && localStorage.getItem(NOTIF_PREF_KEY) === "true"
+  );
   const [backupLoading, setBackupLoading] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteEmail, setDeleteEmail] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  // iOS home-screen detection (push only works when installed on iOS)
-  const isIOS = typeof navigator !== "undefined" && /iPhone|iPad|iPod/.test(navigator.userAgent);
-  const isStandalone = typeof window !== "undefined" &&
-    (window.navigator?.standalone || window.matchMedia?.("(display-mode: standalone)")?.matches);
-  const [iosBannerDismissed, setIosBannerDismissed] = useState(
-    typeof localStorage !== "undefined" && localStorage.getItem("levli_ios_banner_dismissed") === "true"
-  );
-  const showIOSBanner = isIOS && !isStandalone && !iosBannerDismissed && notifEnabled;
-  const dismissIOSBanner = () => {
-    setIosBannerDismissed(true);
-    localStorage.setItem("levli_ios_banner_dismissed", "true");
-  };
 
   const MenuItem = ({ icon, label, hint, onPress, href, to, danger }) => {
     const inner = (
@@ -116,38 +108,11 @@ export default function SettingsPage() {
     if (val) sound.success();
   };
 
-  const handleNotifications = async (val) => {
-    if (notifLoading) return;
-    if (val) {
-      // Turning ON: subscribe to push, send confirmation if new
-      setNotifLoading(true);
-      try {
-        const { subObj, isNew } = await subscribeToPush();
-        setNotifEnabled(true);
-        await setProfile({ ...profile, notifications_enabled: true });
-        if (isNew) {
-          try {
-            await base44.functions.invoke("send-confirmation-push", { subscription: subObj });
-          } catch (e) {
-            console.error("Confirmation push failed:", e);
-          }
-        }
-      } catch (e) {
-        setNotifEnabled(false);
-        toast.error(`Could not enable notifications: ${e.message}`);
-      } finally {
-        setNotifLoading(false);
-      }
-    } else {
-      // Turning OFF: silently unsubscribe, no notification
-      setNotifEnabled(false);
-      await setProfile({ ...profile, notifications_enabled: false });
-      try { await unsubscribeFromPush(); } catch (e) { console.error("Unsubscribe failed:", e); }
-    }
-  };
-
-  const handleNotifToggle = async (field, value) => {
-    await setProfile({ ...profile, [field]: value });
+  // Placeholder only: the switch keeps its position on this device. Nothing is
+  // requested, subscribed to, or sent.
+  const handleNotifications = (val) => {
+    setNotifEnabled(val);
+    try { localStorage.setItem(NOTIF_PREF_KEY, val ? "true" : "false"); } catch { /* private mode */ }
   };
 
   // Every record the account holds, in one CSV. The PDF report (doses, side
@@ -261,11 +226,7 @@ export default function SettingsPage() {
                   <span className="text-xs text-gray-500 dark:text-gray-400">Get a gentle reminder on the morning of your scheduled shot.</span>
                 </div>
               </div>
-              {notifLoading ? (
-                <Loader2 size={20} className="animate-spin text-indigo-500 flex-shrink-0" />
-              ) : (
-                <Toggle value={notifEnabled} onChange={handleNotifications} />
-              )}
+              <Toggle value={notifEnabled} onChange={handleNotifications} />
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -279,72 +240,6 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-
-        {/* iOS Add to Home Screen banner */}
-        {showIOSBanner && (
-          <div className="px-4 mb-4">
-            <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl p-4 border border-indigo-100 dark:border-indigo-500/20">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
-                  <Share size={ICON_SIZE_ROW} className="text-indigo-600 dark:text-indigo-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">Add Levli to your Home Screen</p>
-                  <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 leading-relaxed">
-                    Push reminders only work on iPhone when Levli is installed to your home screen. Tap the Share button in Safari, then "Add to Home Screen".
-                  </p>
-                  <button onClick={dismissIOSBanner} className="text-xs text-indigo-500 dark:text-indigo-400 font-medium mt-2 underline">
-                    Got it
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Individual notification toggles — only visible when push is enabled */}
-        {notifEnabled && (
-          <div className="px-4 mb-4">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 px-1">Notifications</p>
-            <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300 block">Shot Reminders</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Reminds you on the day of your scheduled dose.</span>
-                </div>
-                <Toggle value={profile?.notif_shot_reminders !== false} onChange={(v) => handleNotifToggle('notif_shot_reminders', v)} />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300 block">Symptom &amp; Mood Check-ins</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">A gentle nudge to log how you're feeling, a few times a week.</span>
-                </div>
-                <Toggle value={!!profile?.notif_checkin_reminders} onChange={(v) => handleNotifToggle('notif_checkin_reminders', v)} />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300 block">Weight Logging</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Weekly reminder to log your weight.</span>
-                </div>
-                <Toggle value={!!profile?.notif_weight_reminders} onChange={(v) => handleNotifToggle('notif_weight_reminders', v)} />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300 block">Medication Inventory Alerts</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Notifies you when you're running low on doses.</span>
-                </div>
-                <Toggle value={profile?.notif_inventory_alerts !== false} onChange={(v) => handleNotifToggle('notif_inventory_alerts', v)} />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300 block">Re-engagement Nudges</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">A supportive check-in if you haven't opened the app in a few days.</span>
-                </div>
-                <Toggle value={!!profile?.notif_reengagement} onChange={(v) => handleNotifToggle('notif_reengagement', v)} />
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Your data */}
         <div className="px-4 mb-4">
@@ -429,7 +324,6 @@ export default function SettingsPage() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl px-4 shadow-sm border border-gray-100 dark:border-gray-800 divide-y divide-gray-100 dark:divide-white/[0.07]">
             <MenuItem icon={<Mail size={ICON_SIZE_ROW} className="text-gray-500 dark:text-gray-400" />} label="Contact support" hint={SUPPORT_EMAIL} href={`mailto:${SUPPORT_EMAIL}`} />
             <MenuItem icon={<MessageSquare size={ICON_SIZE_ROW} className="text-gray-500 dark:text-gray-400" />} label="Leave feedback" href={`mailto:${FEEDBACK_EMAIL}`} />
-            {isDeveloper && <MenuItem icon={<Bell size={ICON_SIZE_ROW} className="text-indigo-500" />} label="Push Notification Test" to="/push-test" />}
           </div>
         </div>
 
@@ -458,7 +352,7 @@ export default function SettingsPage() {
       <ConfirmDialog
         open={deleteOpen}
         title="Delete your account?"
-        message="This permanently deletes your account and every record in it — doses, side effects, weight, nutrition, journal entries, photos, inventory, reminders. It cannot be undone. Export your data first if you want a copy."
+        message="This permanently deletes your account and every record in it — doses, side effects, weight, nutrition, journal entries, photos, inventory. It cannot be undone. Export your data first if you want a copy."
         confirmLabel={deleteLoading ? "Deleting…" : "Delete everything"}
         cancelLabel="Keep my account"
         destructive

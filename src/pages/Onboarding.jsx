@@ -138,26 +138,6 @@ export default function Onboarding() {
   };
 
   const next = async () => {
-    // After the schedule step (5), request notification permission — this is
-    // where the value of the permission is obvious to the user ("we'll remind
-    // you on this day").  If the user denies or the browser doesn't support
-    // push (e.g. iOS without home-screen install), we continue silently; the
-    // Settings page shows the iOS home-screen banner if needed.
-    if (step === 5) {
-      try {
-        const { subscribeToPush } = await import("@/lib/pushSubscription");
-        const { subObj, isNew } = await subscribeToPush();
-        await setProfile({
-          ...profile,
-          notifications_enabled: true,
-          notif_shot_reminders: true,
-          notif_inventory_alerts: true,
-        });
-      } catch (e) {
-        console.log("Notification permission not granted:", e.message);
-      }
-    }
-
     if (step < TOTAL_STEPS - 1) {
       setStep(step + 1);
       return;
@@ -176,7 +156,6 @@ export default function Onboarding() {
     const freqOption = FREQUENCY_OPTIONS.find((f) => f.label === frequency);
     const daysBetween = freqOption ? freqOption.days : "7";
 
-    // Auto-enable weight reminders if the user opted into weight tracking
     const weightOptedIn = tracking.includes("weight");
 
     await setProfile({
@@ -189,7 +168,6 @@ export default function Onboarding() {
       age_confirmed_at: ageConfirmed ? new Date().toISOString() : "",
       onboarding_completed: true,
       weight_tracking_opted_in: weightOptedIn,
-      notif_weight_reminders: weightOptedIn,
     });
     navigate("/");
   };
@@ -201,7 +179,7 @@ export default function Onboarding() {
   const ctaLabel =
     step === 0 ? "Get started" :
     step === 4 ? "Allow & continue" :
-    step === 5 ? "Allow reminders" :
+    step === 5 ? "Next" :
     step === 7 ? "Go to Home" : "Next";
 
   const secondaryAction =
@@ -295,7 +273,7 @@ function MedicationStep({ selectedMeds, setSelectedMeds }) {
         <h1 className="text-2xl sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Which medication are you on?
         </h1>
-        <p className="text-gray-500 text-sm">This helps us tailor your dose schedule and inventory reminders.</p>
+        <p className="text-gray-500 text-sm">This helps us tailor your dose schedule and inventory tracking.</p>
       </div>
       <div className="flex flex-wrap gap-2 justify-center">
         {MED_OPTIONS.map((opt) => {
@@ -330,7 +308,7 @@ function ScheduleStep({ doseAmount, setDoseAmount, frequency, setFrequency, shot
           Let's set your shot schedule.
         </h1>
         <p className="text-gray-500 text-sm px-2">
-          We'll gently remind you — no more wondering "did I already take it this week?"
+          Set it once here, and Levli works out your next dose date from it.
         </p>
       </div>
       {/* Dose amount */}
@@ -478,7 +456,7 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
         <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside leading-relaxed">
           <li><span className="font-medium">What:</span> what you log — doses, symptoms and side effects, weight, nutrition, journal entries and progress photos.</li>
           <li><span className="font-medium">Where:</span> in your own account, in our encrypted cloud database. Only your sign-in can read it. It is never sold, never used for advertising, and never shared with another person unless you grant them caregiver access.</li>
-          <li><span className="font-medium">Why:</span> to show your history, trends and reports back to you, and to send the reminders you ask for. Nothing else.</li>
+          <li><span className="font-medium">Why:</span> to show your history, trends and reports back to you. Nothing else.</li>
           <li><span className="font-medium">Your control:</span> export everything as CSV or PDF, or delete your account and all of its data, from Settings at any time.</li>
         </ul>
       </div>

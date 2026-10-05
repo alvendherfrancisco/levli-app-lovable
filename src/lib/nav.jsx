@@ -20,7 +20,7 @@ export const MORE_ITEMS = [
   { path: "/medications", label: "Meds", description: "Your regimens and repeat schedules", kind: "meds" },
   { path: "/inventory", label: "Stock", description: "Pens, vials and expiry dates", kind: "lucide", Icon: Boxes },
   { path: "/profile", label: "Profile", description: "Height, goal weight and units", kind: "lucide", Icon: User },
-  { path: "/settings", label: "Settings", description: "Reminders, theme and your data", kind: "lucide", Icon: Settings },
+  { path: "/settings", label: "Settings", description: "Theme, sounds and your data", kind: "lucide", Icon: Settings },
 ];
 
 export const ALL_NAV_ITEMS = [...PRIMARY_TABS, ...MORE_ITEMS];

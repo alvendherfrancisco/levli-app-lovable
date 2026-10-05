@@ -48,7 +48,6 @@ export const MOL = {
 
 // Default capability profile for an approved injectable peptide
 const DEFAULT_CAPS = {
-  supports_dose_reminders: true,
   supports_inventory: false,
   supports_refill_prediction: false,
   supports_injection_site_rotation: true,
@@ -76,8 +75,8 @@ const DEFAULT_CAPS = {
 const caps = (overrides = {}) => ({ ...DEFAULT_CAPS, ...overrides });
 
 // Selectable compounded / generic product names. They sit alongside brand
-// products on their catalogue entry, so routes, PK, reminders and delivery
-// methods all resolve through the same data — but they are deliberately absent
+// products on their catalogue entry, so routes, PK and delivery methods all
+// resolve through the same data — but they are deliberately absent
 // from dose_max (compounded strengths vary by pharmacy, so dose entry stays
 // flexible) and they accept a free-text concentration on the logged shot.
 export const COMPOUNDED_SEMAGLUTIDE = "Semaglutide (generic / compounded)";

@@ -206,7 +206,7 @@ export default function MedicationModal({ open, onClose, editing }) {
       notes,
       regimen_source: "user-entered",
     };
-    // A regimen marked stopped ends today, so reminders pause with it.
+    // A regimen marked stopped ends today, so its schedule pauses with it.
     if (status === "discontinued" && !editing?.discontinued_date) payload.discontinued_date = todayInput();
 
     try {

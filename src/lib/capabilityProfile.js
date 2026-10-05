@@ -8,7 +8,6 @@
 import { NAME_TO_ENTRY } from "@/lib/medicationCatalogue";
 
 const DEFAULT_PROFILE = {
-  supports_dose_reminders: false,
   supports_inventory: false,
   supports_refill_prediction: false,
   supports_injection_site_rotation: false,

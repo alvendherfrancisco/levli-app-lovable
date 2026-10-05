@@ -58,7 +58,7 @@ export default function RepeatScheduleCard({ schedule, onEdit }) {
             <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-0.5">{describeRepeat(schedule)}</p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{detail}</p>
             <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-0.5">
-              {active && nextKey ? `Next dose ${shotDateFromKey(nextKey)}` : "Paused — no reminders"}
+              {active && nextKey ? `Next dose ${shotDateFromKey(nextKey)}` : "Paused"}
             </p>
           </div>
         </div>

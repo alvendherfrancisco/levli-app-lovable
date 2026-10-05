@@ -17,11 +17,11 @@ export default function MedicationStatusNote({ medication, totalShots = 0 }) {
 
   let line;
   if (status === "paused") {
-    line = `You paused ${brand}. Its schedule and reminders are on hold.`;
+    line = `You paused ${brand}. Its schedule is on hold.`;
   } else if (status === "archived") {
     line = `${brand} is archived, so it is off your schedule. Its ${totalShots} shot log${totalShots === 1 ? "" : "s"} are kept.`;
   } else {
-    line = `You marked ${brand} as stopped${medication.discontinued_date ? ` on ${medication.discontinued_date}` : ""}. Reminders for it are paused.`;
+    line = `You marked ${brand} as stopped${medication.discontinued_date ? ` on ${medication.discontinued_date}` : ""}. Its schedule is paused.`;
   }
 
   return (

@@ -77,7 +77,7 @@
     "discontinued_date": {
       "type": "string",
       "format": "date",
-      "description": "Date the user marked this medication as stopped. Reminders pause and the adherence window ends here."
+      "description": "Date the user marked this medication as stopped. Its schedule pauses and the adherence window ends here."
     },
     "archived_date": {
       "type": "string",
