@@ -1,5 +1,5 @@
 import React from "react";
-import { sound } from "@/lib/sounds";
+import OptionChips from "@/components/OptionChips";
 
 /** Today, as the value a date input expects ("YYYY-MM-DD"). */
 const pad = (n) => String(n).padStart(2, "0");
@@ -24,23 +24,22 @@ const chipClass = (selected) =>
 export default function StartDateField({ value, onChange, error }) {
   const today = shift(0);
   const yesterday = shift(-1);
-  const set = (key) => { sound.tap(); onChange(key); };
+
+  // The date itself is required, so today/yesterday are a shortcut: one of them
+  // is picked or nothing is, and tapping the picked one changes nothing.
+  const shortcut = value === today ? today : value === yesterday ? yesterday : null;
 
   return (
-    <div>
-      <label htmlFor="start-date" className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
-        Start date
-      </label>
-
-      <div className="flex flex-wrap gap-2 mb-2">
-        <button type="button" onClick={() => set(today)} aria-pressed={value === today} className={chipClass(value === today)}>
-          Today
-        </button>
-        <button type="button" onClick={() => set(yesterday)} aria-pressed={value === yesterday} className={chipClass(value === yesterday)}>
-          Yesterday
-        </button>
-      </div>
-
+    <OptionChips
+      label="Start date"
+      options={[{ value: today, label: "Today" }, { value: yesterday, label: "Yesterday" }]}
+      value={shortcut}
+      onChange={onChange}
+      required
+      soundOnSelect
+      wrapClass="flex flex-wrap gap-2 mb-2"
+      labelClass="text-sm font-semibold text-gray-700 dark:text-gray-300"
+    >
       <input
         id="start-date"
         type="date"
@@ -56,6 +55,6 @@ export default function StartDateField({ value, onChange, error }) {
       )}
 
       {error && <p className="text-sm font-medium text-red-600 dark:text-red-400 mt-2">{error}</p>}
-    </div>
+    </OptionChips>
   );
 }

@@ -1,7 +1,6 @@
 import React from "react";
-import { Check } from "lucide-react";
 import { OTHER_SCHEDULE } from "@/lib/medicationRegimen";
-import { sound } from "@/lib/sounds";
+import OptionChips from "@/components/OptionChips";
 
 /**
  * How often the medication is taken, as plain choices. A known product starts on
@@ -16,36 +15,17 @@ const CHOICES = [
   { value: OTHER_SCHEDULE, label: "Other" },
 ];
 
-const chipClass = (selected) =>
-  `inline-flex min-h-[44px] items-center gap-1 rounded-xl border-2 px-3 text-sm font-semibold ${
-    selected
-      ? "bg-indigo-600 border-indigo-600 text-white"
-      : "bg-white dark:bg-white/[0.05] border-gray-200 dark:border-white/[0.12] text-gray-900 dark:text-[#E8E9F0]"
-  }`;
-
 export default function ScheduleField({ value, onChange, other, onOtherChange, suggested, error }) {
   return (
-    <div>
-      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">How often</span>
-
-      <div className="flex flex-wrap gap-2">
-        {CHOICES.map((o) => {
-          const selected = value === o.value;
-          return (
-            <button
-              key={o.value}
-              type="button"
-              onClick={() => { sound.tap(); onChange(o.value); }}
-              aria-pressed={selected}
-              className={chipClass(selected)}
-            >
-              {selected && <Check size={14} strokeWidth={3} />}
-              {o.label}
-            </button>
-          );
-        })}
-      </div>
-
+    <OptionChips
+      label="How often"
+      options={CHOICES}
+      value={value}
+      onChange={onChange}
+      required
+      soundOnSelect
+      helper={suggested ? "Suggested from the label — change it if your prescriber says otherwise." : undefined}
+    >
       {value === OTHER_SCHEDULE && (
         <div className="mt-2">
           <label htmlFor="schedule-other" className="text-xs font-medium text-gray-600 dark:text-[#9A9DAE] mb-1.5 block">
@@ -63,13 +43,7 @@ export default function ScheduleField({ value, onChange, other, onOtherChange, s
         </div>
       )}
 
-      {suggested && (
-        <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-2 leading-snug">
-          Suggested from the label — change it if your prescriber says otherwise.
-        </p>
-      )}
-
       {error && <p className="text-sm font-medium text-red-600 dark:text-red-400 mt-2">{error}</p>}
-    </div>
+    </OptionChips>
   );
 }

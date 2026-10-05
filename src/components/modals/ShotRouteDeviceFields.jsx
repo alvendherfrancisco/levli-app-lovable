@@ -27,13 +27,16 @@ export default function ShotRouteDeviceFields({
   return (
     <div className="space-y-4">
       <div>
-        <label htmlFor="shot-route" className={LABEL_CLASS}>Route</label>
+        <label htmlFor="shot-route" className={LABEL_CLASS}>Route (optional)</label>
         <select
           id="shot-route"
           value={route}
           onChange={(e) => { sound.tap(); onRouteChange(e.target.value); }}
           className={selectClass}
         >
+          {/* A dropdown clears by choosing the empty option, which is the one
+              path a tap on the selected value cannot express. */}
+          <option value="">—</option>
           {routeOptions.map((r) => (
             <option key={r.value} value={r.value}>{r.label}</option>
           ))}
