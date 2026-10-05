@@ -10,13 +10,6 @@ const shift = (days) => {
   return dayKey(d);
 };
 
-const chipClass = (selected) =>
-  `min-h-[44px] rounded-xl border-2 px-3 text-sm font-semibold ${
-    selected
-      ? "bg-indigo-600 border-indigo-600 text-white"
-      : "bg-white dark:bg-white/[0.05] border-gray-200 dark:border-white/[0.12] text-gray-900 dark:text-[#E8E9F0]"
-  }`;
-
 /**
  * The date of the first dose: pre-filled with today, with Today and Yesterday
  * as one-tap choices and a date picker for anything earlier.

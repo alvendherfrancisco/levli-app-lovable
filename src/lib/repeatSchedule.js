@@ -206,6 +206,7 @@ export function buildShotFromSchedule(schedule, dayKey, site) {
     time: inputTimeToShotTime(schedule.time),
     site: site || "",
     notes: schedule.notes || "",
-    pain: 0,
+    // No pain is recorded for a confirmed repeat dose: the field is left unset
+    // rather than claiming a deliberate "no pain".
   };
 }

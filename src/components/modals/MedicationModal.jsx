@@ -13,6 +13,8 @@ import DoseStrengthPicker from "@/components/medications/DoseStrengthPicker";
 import ScheduleField from "@/components/medications/ScheduleField";
 import StartDateField from "@/components/medications/StartDateField";
 import IndicationField from "@/components/medications/IndicationField";
+import ClearFieldButton from "@/components/ClearFieldButton";
+import OptionChips from "@/components/OptionChips";
 
 const pad = (n) => String(n).padStart(2, "0");
 function todayInput() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
@@ -32,12 +34,9 @@ function scheduleFromStored(stored) {
 }
 
 /** The status chips inside "More details". */
-const statusChipClass = (selected) =>
-  `min-h-[44px] rounded-xl border-2 px-3 text-sm font-semibold ${
-    selected
-      ? "bg-indigo-600 border-indigo-600 text-white"
-      : "bg-white dark:bg-white/[0.05] border-gray-200 dark:border-white/[0.12] text-gray-900 dark:text-[#E8E9F0]"
-  }`;
+const STATUS_CHIP_CLASS = "inline-flex items-center gap-1.5 min-h-[44px] rounded-xl border-2 px-3 text-sm font-semibold";
+const STATUS_SELECTED_CLASS = "bg-indigo-600 border-indigo-600 text-white";
+const STATUS_UNSELECTED_CLASS = "bg-white dark:bg-white/[0.05] border-gray-200 dark:border-white/[0.12] text-gray-900 dark:text-[#E8E9F0]";
 
 /**
  * Add / Edit Medication — one screen. The four things logged most often (which
@@ -196,7 +195,8 @@ export default function MedicationModal({ open, onClose, editing }) {
       prescribed_dose: doseNum,
       dose_unit: unit || "mg",
       frequency: scheduleText(schedule, scheduleOther),
-      indication: indication === "Other" ? indicationOther.trim() : indication,
+      // A cleared indication is saved empty, never as the word "undefined".
+      indication: (indication === "Other" ? indicationOther.trim() : indication) || "",
       start_date: startDate,
       planned_end_date: plannedEndDate || null,
       titration_stage: doseStep,
@@ -338,9 +338,12 @@ export default function MedicationModal({ open, onClose, editing }) {
                 />
 
                 <div>
-                  <label htmlFor="end-date" className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
-                    Planned end (optional)
-                  </label>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <label htmlFor="end-date" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Planned end (optional)
+                    </label>
+                    <ClearFieldButton show={!!plannedEndDate} onClear={() => { setPlannedEndDate(""); clearError("plannedEndDate"); }} />
+                  </div>
                   <input
                     id="end-date"
                     type="date"
@@ -352,9 +355,12 @@ export default function MedicationModal({ open, onClose, editing }) {
                 </div>
 
                 <div>
-                  <label htmlFor="dose-step" className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
-                    Dose step from your doctor (optional)
-                  </label>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <label htmlFor="dose-step" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Dose step from your doctor (optional)
+                    </label>
+                    <ClearFieldButton show={!!doseStep} onClear={() => setDoseStep("")} />
+                  </div>
                   <input
                     id="dose-step"
                     type="text"
@@ -368,9 +374,12 @@ export default function MedicationModal({ open, onClose, editing }) {
                 </div>
 
                 <div>
-                  <label htmlFor="prescriber-name" className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
-                    Prescriber name
-                  </label>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <label htmlFor="prescriber-name" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Prescriber name
+                    </label>
+                    <ClearFieldButton show={!!prescriberName} onClear={() => setPrescriberName("")} />
+                  </div>
                   <input
                     id="prescriber-name"
                     type="text"
@@ -382,9 +391,12 @@ export default function MedicationModal({ open, onClose, editing }) {
                 </div>
 
                 <div>
-                  <label htmlFor="prescriber-contact" className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
-                    Prescriber contact
-                  </label>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <label htmlFor="prescriber-contact" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Prescriber contact
+                    </label>
+                    <ClearFieldButton show={!!prescriberContact} onClear={() => setPrescriberContact("")} />
+                  </div>
                   <input
                     id="prescriber-contact"
                     type="text"
@@ -395,22 +407,19 @@ export default function MedicationModal({ open, onClose, editing }) {
                   />
                 </div>
 
-                <div>
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Status</span>
-                  <div className="flex flex-wrap gap-2">
-                    {statusOptionsFor(status).map((s) => (
-                      <button
-                        key={s.value}
-                        type="button"
-                        onClick={() => { sound.tap(); setStatus(s.value); }}
-                        aria-pressed={status === s.value}
-                        className={statusChipClass(status === s.value)}
-                      >
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {/* Required: one of these is always the status, so tapping the
+                    chosen one again leaves it as it is. */}
+                <OptionChips
+                  label="Status"
+                  options={statusOptionsFor(status)}
+                  value={status}
+                  onChange={setStatus}
+                  required
+                  soundOnSelect
+                  chipClass={STATUS_CHIP_CLASS}
+                  selectedClass={STATUS_SELECTED_CLASS}
+                  unselectedClass={STATUS_UNSELECTED_CLASS}
+                />
 
                 <div>
                   <label htmlFor="med-notes" className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Notes</label>

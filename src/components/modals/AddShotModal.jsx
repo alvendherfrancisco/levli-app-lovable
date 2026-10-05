@@ -23,6 +23,8 @@ import { chipsForMedication, withCustomDose } from "@/lib/doseOptions";
 import ShotSuccessPanel from "@/components/modals/ShotSuccessPanel";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import OptionChips from "@/components/OptionChips";
+import ClearFieldButton from "@/components/ClearFieldButton";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
 import { sound } from "@/lib/sounds";
@@ -76,7 +78,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const defaultMed = profile?.default_medication || "Ozempic®";
   const now = new Date();
 
-  const [pain, setPain] = useState(0);
+  // Not set until it is moved: 0 is then a deliberate "no pain" rather than
+  // the untouched state of an optional field.
+  const [pain, setPain] = useState(null);
   // Starts empty: what is offered comes from the user's own medications, which
   // the opening effect resolves before anything is shown as selected.
   const [medication, setMedication] = useState("");
@@ -121,7 +125,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const [clinicLocation, setClinicLocation] = useState("");
   const [premedication, setPremedication] = useState(false);
   const [sprayCount, setSprayCount] = useState("");
-  const [nostril, setNostril] = useState("both");
+  const [nostril, setNostril] = useState("");
   const [priming, setPriming] = useState(false);
   const [takenWithFood, setTakenWithFood] = useState(null);
   const [patchSite, setPatchSite] = useState("");
@@ -218,9 +222,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setConfirmDelete(false);
     setMedicationId("");
     setCustomName("");
-    setConcentration(""); setNotes(""); setPain(0);
+    setConcentration(""); setNotes(""); setPain(null);
     setInfusionDuration(""); setClinicLocation(""); setPremedication(false);
-    setSprayCount(""); setNostril("both"); setPriming(false);
+    setSprayCount(""); setNostril(""); setPriming(false);
     setTakenWithFood(null);
     setPatchSite(""); setApplicationDate(toInputDate(n)); setBodyArea(""); setApplicationNotes("");
     setInsertionDate(toInputDate(n)); setPumpRate(""); setSiteChangeDate(toInputDate(n));
@@ -246,12 +250,12 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       setDeviceType(editingShot.device_type || "");
       setDefaults({ route: getDefaultRoute(editMedication), device: getDefaultDeviceType(editMedication, editRoute) });
       setNotes(editingShot.notes || "");
-      setPain(editingShot.pain ?? 0);
+      setPain(editingShot.pain ?? null);
       setInfusionDuration(editingShot.infusion_duration != null ? String(editingShot.infusion_duration) : "");
       setClinicLocation(editingShot.clinic_location || "");
       setPremedication(!!editingShot.premedication);
       setSprayCount(editingShot.spray_count != null ? String(editingShot.spray_count) : "");
-      setNostril(editingShot.nostril || "both");
+      setNostril(editingShot.nostril || "");
       setPriming(!!editingShot.priming);
       setTakenWithFood(editingShot.taken_with_food);
       setPatchSite(editingShot.patch_site || "");
@@ -354,6 +358,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // selected), its unit and its route. All of them stay editable.
   const selectMedication = (picked) => {
     const name = picked.medication_name;
+    // The medication is required: tapping the one already chosen keeps it as it
+    // is (and only closes the list) rather than resetting the dose.
+    if (name === medication) { setShowMedDropdown(false); return; }
     const { dose: nextDose, unit } = getDoseDefault({
       medication: name, medications, shots, legacyCustomDoses: profile?.custom_doses || [],
     });
@@ -475,11 +482,11 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       dose: doseNum, dose_unit: doseUnit,
       drugClass: isCustom ? (DRUG_CLASS[finalMedication] || "") : (DRUG_CLASS[medication] || "GLP-1"),
       molecularClass: getMolecularClass(finalMedication),
-      route: activeRoute, device_type: deviceType || undefined,
+      route: route || "", device_type: deviceType || undefined,
       concentration: isCompounded ? concentration.trim() || undefined : undefined,
       date: formatShotDate(d), time: toShotTime(d),
       site: isInjectable ? (site || recommendedSite) : "",
-      pain: pain || 0, notes,
+      pain: pain == null ? undefined : pain, notes,
     };
     // Route-specific fields
     if (activeRoute === "intravenous_infusion") {
@@ -489,7 +496,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     }
     if (activeRoute === "nasal") {
       payload.spray_count = parseInt(sprayCount) || undefined;
-      payload.nostril = nostril;
+      payload.nostril = nostril || undefined;
       payload.priming = priming;
     }
     if (activeRoute === "oral_tablet" || activeRoute === "oral_capsule") {
@@ -859,6 +866,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                           </InputField>
                           <InputField label="Nostril">
                             <select value={nostril} onChange={(e) => setNostril(e.target.value)} className={inputClass}>
+                              <option value="">—</option>
                               <option value="both">Both</option><option value="left">Left</option><option value="right">Right</option>
                             </select>
                           </InputField>
@@ -870,20 +878,20 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                       )}
 
                       {(activeRoute === "oral_tablet" || activeRoute === "oral_capsule") && (
-                        <InputField label="Taken with food?">
-                          <div className="flex gap-2">
-                            {[
-                              { v: true, label: "Yes" },
-                              { v: false, label: "No" },
-                              { v: null, label: "Not recorded" },
-                            ].map((opt) => (
-                              <button key={String(opt.v)} onClick={() => setTakenWithFood(opt.v)}
-                                className={`flex-1 py-2.5 rounded-xl text-sm font-medium border ${takenWithFood === opt.v ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30" : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.1]"}`}>
-                                {opt.label}
-                              </button>
-                            ))}
-                          </div>
-                        </InputField>
+                        <OptionChips
+                          label="Taken with food?"
+                          options={[
+                            { value: true, label: "Yes" },
+                            { value: false, label: "No" },
+                            { value: null, label: "Not recorded" },
+                          ]}
+                          value={takenWithFood}
+                          onChange={setTakenWithFood}
+                          chipClass="flex-1 min-w-0 py-2.5 rounded-xl text-sm font-medium border text-center inline-flex items-center justify-center gap-1.5"
+                          selectedClass="bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30"
+                          unselectedClass="bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.1]"
+                          wrapClass="flex gap-2"
+                        />
                       )}
 
                       {activeRoute === "transdermal" && (
@@ -967,18 +975,23 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                         />
                       )}
 
-                      {/* Pain Level */}
+                      {/* Pain Level — optional, and empty until it is moved */}
                       <div>
-                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Pain Level: <span className="text-indigo-600">{pain}/10</span></label>
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            Pain Level: <span className="text-indigo-600">{pain == null ? "Not set" : `${pain}/10`}</span>
+                          </label>
+                          <ClearFieldButton show={pain != null} onClear={() => setPain(null)} />
+                        </div>
                         <div className="px-1">
                           <input
                             type="range" min="0" max="10"
-                            value={pain}
+                            value={pain ?? 0}
                             onChange={(e) => setPain(Number(e.target.value))}
                             className="pain-slider w-full"
-                            style={{ "--pain-fill": `${Math.round((pain / 10) * 100)}%` }}
+                            style={{ "--pain-fill": `${Math.round(((pain ?? 0) / 10) * 100)}%` }}
                             aria-label="Pain level"
-                            aria-valuetext={`${pain} out of 10`}
+                            aria-valuetext={pain == null ? "Not set" : `${pain} out of 10`}
                           />
                           <div className="flex justify-between text-xs text-gray-400 mt-1"><span>0 – No Pain</span><span>10 – Severe</span></div>
                         </div>

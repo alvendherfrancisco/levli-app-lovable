@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Check } from "lucide-react";
 import { MEDICATION_OPTIONS } from "@/lib/medicationRegimen";
 import { plainBrandName } from "@/lib/medicationConfig";
 import { sound } from "@/lib/sounds";
@@ -52,6 +52,7 @@ export default function MedicationNamePicker({ selectedName, isCustom, onSelect,
               aria-pressed={selected}
               className={chipClass(selected)}
             >
+              {selected && <Check size={14} strokeWidth={3} className="flex-shrink-0" />}
               <span className="text-sm font-semibold">{plainBrandName(o.value)}</span>
               <span className={subClass(selected)}>· {o.generic}</span>
             </button>
@@ -64,6 +65,7 @@ export default function MedicationNamePicker({ selectedName, isCustom, onSelect,
           aria-pressed={isCustom}
           className={chipClass(isCustom)}
         >
+          {isCustom && <Check size={14} strokeWidth={3} className="flex-shrink-0" />}
           <span className="text-sm font-semibold">Other</span>
           <span className={subClass(isCustom)}>· type the name</span>
         </button>

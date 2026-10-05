@@ -5,6 +5,7 @@ import { todayKey } from "@/lib/dateUtils";
 import { getRecentMedication } from "@/lib/medicationData";
 import { classifyRedFlag } from "@/lib/redFlags";
 import { SIDE_EFFECT_SYMPTOMS, SEVERITY_LEVELS, symptomByKey } from "@/lib/sideEffectSymptoms";
+import OptionChips from "@/components/OptionChips";
 import SideEffectChecklist from "@/components/sideEffects/SideEffectChecklist";
 import UrgentHelpCard from "@/components/sideEffects/UrgentHelpCard";
 import useModal from "@/hooks/useModal";
@@ -68,7 +69,8 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
           symptom: symptom.label,
           symptom_key: symptom.key,
           symptom_category: symptom.category,
-          severity,
+          // Cleared severity is left off the record rather than sent as empty.
+          severity: severity || undefined,
           onset_date: date,
           day_key: date,
           resolved: false,
@@ -138,22 +140,17 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
             <SideEffectChecklist selected={selected} onToggle={toggle} />
           </div>
 
-          {/* Severity */}
-          <div>
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Severity</label>
-            <div className="flex gap-2">
-              {SEVERITY_LEVELS.map((s) => (
-                <button key={s.value} onClick={() => setSeverity(s.value)}
-                  className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${
-                    severity === s.value
-                      ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30"
-                      : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.1]"
-                  }`}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Severity — optional: tapping the chosen one again clears it. */}
+          <OptionChips
+            label="Severity"
+            options={SEVERITY_LEVELS.map((s) => ({ value: s.value, label: s.label }))}
+            value={severity}
+            onChange={setSeverity}
+            chipClass="flex-1 min-w-0 py-2 rounded-xl text-sm font-medium border transition-colors inline-flex items-center justify-center gap-1.5"
+            selectedClass="bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30"
+            unselectedClass="bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.1]"
+            wrapClass="flex gap-2"
+          />
 
           {/* Date */}
           <div>

@@ -5,6 +5,7 @@ import useModal from "@/hooks/useModal";
 import { useAppState } from "@/lib/AppState";
 import DoseChips from "@/components/modals/DoseChips";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import OptionChips from "@/components/OptionChips";
 import { chipsForMedication, withCustomDose } from "@/lib/doseOptions";
 import { addDaysToKey, shiftWeekday, shotDateFromKey } from "@/lib/repeatSchedule";
 import { sound } from "@/lib/sounds";
@@ -137,25 +138,23 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Titrating up? Changing this updates every remaining repeat dose.</p>
           </div>
 
-          {/* Day of week */}
+          {/* Day of week — a required choice: the day can be moved to another
+              one, but the last selected day cannot be removed. */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Repeat day</label>
-            <div className="flex gap-1.5 justify-between">
-              {WEEKDAYS.map((dow) => {
-                const selected = startDate && new Date(startDate + "T00:00").getDay() === dow;
-                return (
-                  <button
-                    key={dow}
-                    onClick={() => { sound.tap(); setStartDate(shiftWeekday(startDate, dow)); }}
-                    className={`w-10 h-10 rounded-full text-sm font-medium transition-all active:scale-95 ${selected
-                      ? "bg-indigo-600 text-white"
-                      : "bg-gray-100 dark:bg-white/[0.06] text-gray-500 dark:text-[#9A9DAE]"}`}
-                  >
-                    {WEEKDAY_LABELS[dow]}
-                  </button>
-                );
-              })}
-            </div>
+            <OptionChips
+              label="Repeat day"
+              options={WEEKDAYS.map((dow) => ({ value: dow, label: WEEKDAY_LABELS[dow] }))}
+              value={startDate ? new Date(startDate + "T00:00").getDay() : null}
+              onChange={(dow) => { if (dow != null) setStartDate(shiftWeekday(startDate, dow)); }}
+              required
+              showCheck={false}
+              soundOnSelect
+              blockedMessage="Pick at least one day."
+              chipClass="w-10 h-10 rounded-full text-sm font-medium transition-all active:scale-95 inline-flex items-center justify-center"
+              selectedClass="bg-indigo-600 text-white"
+              unselectedClass="bg-gray-100 dark:bg-white/[0.06] text-gray-500 dark:text-[#9A9DAE]"
+              wrapClass="flex gap-1.5 justify-between"
+            />
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
               Next dose {startDate ? shotDateFromKey(startDate) : "—"}
             </p>
@@ -172,20 +171,18 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
 
           {/* Course length */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">How long?</label>
-            <div className="flex gap-2">
-              {[{ v: "weeks", l: "Number of weeks" }, { v: "until_change", l: "Until I change it" }].map((o) => (
-                <button
-                  key={o.v}
-                  onClick={() => setMode(o.v)}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border ${mode === o.v
-                    ? "bg-indigo-600 text-white border-indigo-600"
-                    : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.1]"}`}
-                >
-                  {o.l}
-                </button>
-              ))}
-            </div>
+            <OptionChips
+              label="How long?"
+              options={[{ value: "weeks", label: "Number of weeks" }, { value: "until_change", label: "Until I change it" }]}
+              value={mode}
+              onChange={setMode}
+              required
+              soundOnSelect
+              chipClass="flex-1 min-w-0 py-2.5 rounded-xl text-sm font-medium border text-center inline-flex items-center justify-center gap-1.5"
+              selectedClass="bg-indigo-600 text-white border-indigo-600"
+              unselectedClass="bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.1]"
+              wrapClass="flex gap-2"
+            />
             {mode === "weeks" && (
               <div className="flex items-center gap-2 mt-3">
                 <input
