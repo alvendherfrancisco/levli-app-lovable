@@ -5,7 +5,7 @@ import {
   MG_VIAL_NOTE, NON_STANDARD_DOSE_CONFIRM, NON_STANDARD_DOSE_MESSAGE,
   PRESCRIBER_ONLY_NOTE, isLabelStrength,
 } from "@/lib/medicationRegimen";
-import { haptic } from "@/lib/haptics";
+import { sound } from "@/lib/sounds";
 
 const UNITS = ["mg", "mcg", "units", "IU", "mL"];
 
@@ -48,7 +48,7 @@ export default function DoseStrengthPicker({
   const showUnits = unitOpen || !unit;
 
   const pick = (v) => {
-    haptic("light");
+    sound.tap();
     setOtherTouched(false);
     onChange(String(v));
   };
@@ -61,7 +61,7 @@ export default function DoseStrengthPicker({
           <span className="text-sm text-gray-600 dark:text-[#9A9DAE]">{unit || "unit"}</span>
           <button
             type="button"
-            onClick={() => { haptic("light"); setUnitOpen((v) => !v); }}
+            onClick={() => { sound.tap(); setUnitOpen((v) => !v); }}
             aria-expanded={showUnits}
             className="min-h-[44px] px-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400"
           >
@@ -76,7 +76,7 @@ export default function DoseStrengthPicker({
             <button
               key={u}
               type="button"
-              onClick={() => { haptic("light"); onUnitChange(u); setUnitOpen(false); }}
+              onClick={() => { sound.tap(); onUnitChange(u); setUnitOpen(false); }}
               aria-pressed={unit === u}
               className={chipClass(unit === u)}
             >
@@ -105,7 +105,7 @@ export default function DoseStrengthPicker({
           })}
           <button
             type="button"
-            onClick={() => { haptic("light"); setOtherTouched(true); }}
+            onClick={() => { sound.tap(); setOtherTouched(true); }}
             className={otherChipClass(otherTouched)}
           >
             Other dose

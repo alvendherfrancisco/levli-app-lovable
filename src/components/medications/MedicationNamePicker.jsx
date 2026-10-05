@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { MEDICATION_OPTIONS } from "@/lib/medicationRegimen";
 import { plainBrandName } from "@/lib/medicationConfig";
-import { haptic } from "@/lib/haptics";
+import { sound } from "@/lib/sounds";
 
 /**
  * Quick-choice medication picker: a row of tappable brand chips (brand beside
@@ -32,7 +32,7 @@ export default function MedicationNamePicker({ selectedName, isCustom, onSelect,
   }, [query]);
 
   const pick = (selection) => {
-    haptic("light");
+    sound.tap();
     if (selection.isCustom) setQuery("");
     onSelect(selection);
   };

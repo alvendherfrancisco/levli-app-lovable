@@ -9,7 +9,7 @@ import SideEffectChecklist from "@/components/sideEffects/SideEffectChecklist";
 import UrgentHelpCard from "@/components/sideEffects/UrgentHelpCard";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
-import { haptic } from "@/lib/haptics";
+import { sound } from "@/lib/sounds";
 
 const PHARMACOVIGILANCE_LINKS = [
   { label: "UK — MHRA Yellow Card", url: "https://yellowcard.mhra.gov.uk/" },
@@ -92,7 +92,7 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
   };
 
   const handleDelete = async (id) => {
-    haptic("warning");
+    sound.delete();
     try {
       await deleteAdverseEvent(id);
       toast.deleted("Side effect removed");

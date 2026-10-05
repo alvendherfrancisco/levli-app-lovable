@@ -9,7 +9,7 @@ import { todayKey } from "@/lib/dateUtils";
 import { checkWeight } from "@/lib/measure";
 import { useToast } from "@/hooks/useToast";
 import { toast } from "@/lib/toast";
-import { haptic } from "@/lib/haptics";
+import { sound } from "@/lib/sounds";
 
 // Card order — also the order of the value signature used for the saved flash.
 const METRIC_LABELS = ["Weight", "Calories", "Protein", "Fiber", "Carbs", "Water", "Exercise", "Progress"];
@@ -122,7 +122,7 @@ export default function MetricsGrid({ dayKey }) {
       icon: <IonIcon name="camera" size={20} className="text-purple-500 dark:text-purple-400" />, label: "Progress",
       value: photo ? "✓" : "–", unit: "pic", color: "bg-purple-100 dark:bg-purple-500/10",
       ariaLabel: addLabel("Progress", photo ? "photo logged today" : "no photo today"),
-      onAdd: () => setMetricModal({ label: "Progress", unit: "pic", current: photo || "–", dayKey: dk, onSave: async (v, newDayKey) => { await addProgressPhotoRecord(newDayKey || dk, v); toast.success("Progress photo added"); }, onDelete: async () => { haptic("warning"); await deleteLatestProgressPhoto(dk); toast.deleted("Progress photo deleted"); } }),
+      onAdd: () => setMetricModal({ label: "Progress", unit: "pic", current: photo || "–", dayKey: dk, onSave: async (v, newDayKey) => { await addProgressPhotoRecord(newDayKey || dk, v); toast.success("Progress photo added"); }, onDelete: async () => { sound.delete(); await deleteLatestProgressPhoto(dk); toast.deleted("Progress photo deleted"); } }),
     },
   ];
 

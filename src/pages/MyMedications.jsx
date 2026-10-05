@@ -8,7 +8,7 @@ import MedicationModal from "@/components/modals/MedicationModal";
 import RepeatScheduleCard from "@/components/medications/RepeatScheduleCard";
 import RepeatScheduleModal from "@/components/modals/RepeatScheduleModal";
 import LinkShotsToMedsCard from "@/components/medications/LinkShotsToMedsCard";
-import { haptic } from "@/lib/haptics";
+import { sound } from "@/lib/sounds";
 
 export default function MyMedications() {
   const { medications, deleteMedication, shots, repeatSchedules } = useAppState();
@@ -22,7 +22,7 @@ export default function MyMedications() {
 
   const handleDelete = async (id) => {
     if (!confirm("Remove this medication from your regimen?")) return;
-    haptic("warning");
+    sound.delete();
     await deleteMedication(id);
   };
 

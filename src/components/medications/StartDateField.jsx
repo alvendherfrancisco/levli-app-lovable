@@ -1,5 +1,5 @@
 import React from "react";
-import { haptic } from "@/lib/haptics";
+import { sound } from "@/lib/sounds";
 
 /** Today, as the value a date input expects ("YYYY-MM-DD"). */
 const pad = (n) => String(n).padStart(2, "0");
@@ -24,7 +24,7 @@ const chipClass = (selected) =>
 export default function StartDateField({ value, onChange, error }) {
   const today = shift(0);
   const yesterday = shift(-1);
-  const set = (key) => { haptic("light"); onChange(key); };
+  const set = (key) => { sound.tap(); onChange(key); };
 
   return (
     <div>

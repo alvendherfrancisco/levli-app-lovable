@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { PRIMARY_TABS, MORE_ITEMS, ALL_NAV_ITEMS, MORE_PATHS, NavIcon } from "@/lib/nav";
-import { haptic } from "@/lib/haptics";
+import { sound } from "@/lib/sounds";
 
 /**
  * Phones (below 1024px): a five-item bottom tab bar — Home, Shots, Insights,
@@ -33,7 +33,7 @@ export default function BottomTabBar() {
               <Link
                 key={item.path}
                 to={item.path}
-                onClick={() => haptic("light")}
+                onClick={() => sound.tap()}
                 aria-current={isActive ? "page" : undefined}
                 className={`flex items-center gap-3 px-3 min-h-[44px] rounded-xl transition-all font-medium text-base ${
                   isActive
@@ -66,7 +66,7 @@ export default function BottomTabBar() {
               <li key={item.path} className="flex-1 min-w-0">
                 <Link
                   to={item.path}
-                  onClick={() => haptic("light")}
+                  onClick={() => sound.tap()}
                   aria-current={isActive ? "page" : undefined}
                   className={`relative flex flex-col items-center justify-center gap-1 pt-2 pb-1.5 min-h-[52px] rounded-xl transition-colors ${
                     isActive

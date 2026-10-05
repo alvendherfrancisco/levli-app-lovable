@@ -1,4 +1,4 @@
-import { haptic } from "@/lib/haptics";
+import { sound } from "@/lib/sounds";
 
 /**
  * The app's toast store. It holds at most ONE toast, so a new one replaces
@@ -33,10 +33,10 @@ export function dismissToast(id) {
 }
 
 function show(type, message, options = {}) {
-  // The vibration matches what the card says: a save lands, a delete or a
-  // failure warns.
-  if (type === "success") haptic("success");
-  if (type === "error" || type === "deleted") haptic("warning");
+  // A failure is the only toast that speaks up. A save or a delete stays
+  // silent: the action behind it has already played its own sound, and a save
+  // must only ever be heard once.
+  if (type === "error") sound.warning();
   const hasAction = typeof options.onAction === "function";
   publish({
     id: nextId++,

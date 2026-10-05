@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ChevronLeft, Moon, Lock, Mail, Bell, Database, FileText, MessageSquare, ChevronRight, Download, Upload, Loader2, LogOut, UserPlus, X, Share, ShieldCheck, Trash2, FileDown, AlertTriangle, BookOpen, Info, Vibrate } from "lucide-react";
+import { ChevronLeft, Moon, Lock, Mail, Bell, Database, FileText, MessageSquare, ChevronRight, Download, Upload, Loader2, LogOut, UserPlus, X, Share, ShieldCheck, Trash2, FileDown, AlertTriangle, BookOpen, Info, Volume2 } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import { subscribeToPush, unsubscribeFromPush } from "@/lib/pushSubscription";
 import { ICON_SIZE_ROW } from "@/lib/iconConstants";
 import { APP_VERSION, SUPPORT_EMAIL, FEEDBACK_EMAIL, DISCLAIMER_TEXT } from "@/lib/appInfo";
-import { getHapticsPreference, setHapticsPreference, haptic } from "@/lib/haptics";
+import { getSoundPreference, setSoundPreference, sound } from "@/lib/sounds";
 import { buildFullExportCsv, downloadTextFile } from "@/lib/dataExport";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { toast } from "@/lib/toast";
@@ -17,7 +17,7 @@ import { toast } from "@/lib/toast";
 function Toggle({ value, onChange }) {
   return (
     <button
-      onClick={() => { haptic("medium"); onChange(!value); }}
+      onClick={() => { sound.tap(); onChange(!value); }}
       aria-pressed={value}
       className={`w-12 h-7 rounded-full transition-colors relative flex-shrink-0 ${value ? "bg-indigo-500" : "bg-gray-300 dark:bg-gray-600"}`}
     >
@@ -54,7 +54,7 @@ export default function SettingsPage() {
   };
 
   const handleRevoke = async (id) => {
-    haptic("warning");
+    sound.delete();
     await revokeProxyAccess(id);
     toast.deleted("Access revoked");
   };
@@ -108,10 +108,12 @@ export default function SettingsPage() {
     await setDarkMode(val);
   };
 
-  const [hapticsOn, setHapticsOn] = useState(getHapticsPreference());
-  const handleHaptics = (val) => {
-    setHapticsPreference(val);
-    setHapticsOn(val);
+  const [soundOn, setSoundOn] = useState(getSoundPreference());
+  const handleSound = (val) => {
+    setSoundPreference(val);
+    setSoundOn(val);
+    // Switching it on plays the chime once, so the choice is audible.
+    if (val) sound.success();
   };
 
   const handleNotifications = async (val) => {
@@ -267,13 +269,13 @@ export default function SettingsPage() {
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0"><Vibrate size={ICON_SIZE_ROW} className="text-gray-500 dark:text-gray-400" /></div>
+                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0"><Volume2 size={ICON_SIZE_ROW} className="text-gray-500 dark:text-gray-400" /></div>
                 <div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300 block">Haptic feedback</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">A light tap when you log a dose, save or get a reminder error.</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300 block">Sound effects</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Soft tones when you tap, save something or get a warning.</span>
                 </div>
               </div>
-              <Toggle value={hapticsOn} onChange={handleHaptics} />
+              <Toggle value={soundOn} onChange={handleSound} />
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import React from "react";
 import { Check } from "lucide-react";
 import { OTHER_SCHEDULE } from "@/lib/medicationRegimen";
-import { haptic } from "@/lib/haptics";
+import { sound } from "@/lib/sounds";
 
 /**
  * How often the medication is taken, as plain choices. A known product starts on
@@ -35,7 +35,7 @@ export default function ScheduleField({ value, onChange, other, onOtherChange, s
             <button
               key={o.value}
               type="button"
-              onClick={() => { haptic("light"); onChange(o.value); }}
+              onClick={() => { sound.tap(); onChange(o.value); }}
               aria-pressed={selected}
               className={chipClass(selected)}
             >

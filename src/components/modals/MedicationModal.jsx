@@ -7,7 +7,7 @@ import {
   findMedicationOption, isLabelStrength, scheduleText, statusOptionsFor, validateRegimenForm,
   DOSE_STEP_HELPER, OTHER_SCHEDULE,
 } from "@/lib/medicationRegimen";
-import { haptic } from "@/lib/haptics";
+import { sound } from "@/lib/sounds";
 import MedicationNamePicker from "@/components/medications/MedicationNamePicker";
 import DoseStrengthPicker from "@/components/medications/DoseStrengthPicker";
 import ScheduleField from "@/components/medications/ScheduleField";
@@ -182,7 +182,7 @@ export default function MedicationModal({ open, onClose, editing }) {
       startDate, plannedEndDate,
     });
     if (problem) {
-      haptic("warning");
+      sound.warning();
       setErrors({ [problem.field]: problem.message });
       if (["plannedEndDate"].includes(problem.field)) setShowDetails(true);
       return;
@@ -220,7 +220,7 @@ export default function MedicationModal({ open, onClose, editing }) {
         const linked = await linkShotsToMedication(payload.medication_name, rec.id);
         toast.success(linked ? `Medication added — ${linked} shot log${linked === 1 ? "" : "s"} linked` : "Medication added");
       }
-      haptic("success");
+      sound.success();
       setSaving(false);
       setTimeout(() => onClose(), 300);
     } catch (err) {
@@ -314,7 +314,7 @@ export default function MedicationModal({ open, onClose, editing }) {
           <div className="border-t border-gray-100 dark:border-white/[0.08] pt-3">
             <button
               type="button"
-              onClick={() => { haptic("medium"); setShowDetails((v) => !v); }}
+              onClick={() => { if (showDetails) sound.close(); else sound.open(); setShowDetails((v) => !v); }}
               aria-expanded={showDetails}
               className="w-full min-h-[44px] flex items-center justify-between gap-2"
             >
@@ -402,7 +402,7 @@ export default function MedicationModal({ open, onClose, editing }) {
                       <button
                         key={s.value}
                         type="button"
-                        onClick={() => { haptic("light"); setStatus(s.value); }}
+                        onClick={() => { sound.tap(); setStatus(s.value); }}
                         aria-pressed={status === s.value}
                         className={statusChipClass(status === s.value)}
                       >
