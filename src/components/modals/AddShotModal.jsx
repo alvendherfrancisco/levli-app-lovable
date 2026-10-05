@@ -54,6 +54,18 @@ function toShotTime(d) {
   return `${h % 12 || 12}:${pad(m)} ${ampm}`;
 }
 
+/**
+ * Whether an element is one that raises the on-screen keyboard. Only these
+ * matter for scrolling clear of it and for putting it away again — a date,
+ * time, slider or checkbox field never opens a keyboard.
+ */
+function isTypingField(el) {
+  if (!el) return false;
+  if (el.tagName === "TEXTAREA") return true;
+  if (el.tagName !== "INPUT") return false;
+  return !["range", "checkbox", "radio", "date", "time", "file", "color", "button", "submit"].includes(el.type);
+}
+
 export default function AddShotModal({ open, onClose, editingShot, initialValues }) {
   const { addShot, updateShot, deleteShot, profile, setProfile, getRecommendedSite, shots, medications,
     repeatSchedules, addRepeatSchedule, updateRepeatSchedule } = useAppState();
@@ -92,6 +104,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // Bumped every time the warning shows, so its highlight replays each time.
   const [dupNonce, setDupNonce] = useState(0);
   const [reporting, setReporting] = useState(false);
+  // True while a keyboard-raising field holds focus, so the content gets tail
+  // space to be scrolled clear of the keyboard.
+  const [typing, setTyping] = useState(false);
 
   // Repeat schedule (weekly repeat of the dose being logged)
   const [repeatOn, setRepeatOn] = useState(false);
@@ -410,6 +425,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   };
 
   const handleSave = async () => {
+    // Saving puts the keyboard away.
+    if (isTypingField(document.activeElement)) document.activeElement.blur();
     const doseNum = parseFloat(dose);
     const isCustom = medication === CUSTOM_MEDICATION_NAME;
     const finalMedication = isCustom ? customName.trim() : medication;
@@ -574,7 +591,22 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
             onFocusCapture={(e) => {
               // With the keyboard open the focused field scrolls into view.
               const el = e.target;
+              setTyping(isTypingField(el));
               setTimeout(() => { try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch { /* ignore */ } }, 180);
+            }}
+            onBlurCapture={() => {
+              // Let the next focus land first, then see who holds focus now.
+              setTimeout(() => {
+                const el = document.activeElement;
+                setTyping(isTypingField(el) && !!scrollRef.current?.contains(el));
+              }, 0);
+            }}
+            onPointerDownCapture={(e) => {
+              // A tap anywhere that is not a field puts the keyboard away.
+              const active = document.activeElement;
+              if (!isTypingField(active)) return;
+              if (e.target?.closest?.("input, textarea, select")) return;
+              active.blur();
             }}
           >
 
@@ -964,6 +996,10 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
               )}
             </>
           )}
+
+          {/* While the keyboard is up, this tail space lets the focused field
+              scroll clear of it instead of sitting behind it. */}
+          {typing && <div className="h-28" aria-hidden="true" />}
 
           </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { DOSE_UNIT } from "@/lib/doseOptions";
 import { CUSTOM_DOSE_COLOR, getDoseColor, getDoseStyle } from "@/lib/doseColors";
@@ -16,6 +16,18 @@ export default function DoseChips({ medication, options = [], value, unit = DOSE
   const [otherOpen, setOtherOpen] = useState(!isChipValue && numeric > 0);
   const [custom, setCustom] = useState(!isChipValue && numeric > 0 ? String(numeric) : "");
   const [saving, setSaving] = useState(false);
+  // The "Other" field takes focus only when the user taps the chip themselves,
+  // never just because the panel happened to be open as the sheet appeared.
+  const doseInputRef = useRef(null);
+  const focusOnOpen = useRef(false);
+
+  // A layout effect runs in the same task as the tap, which is what lets iOS
+  // raise the keyboard for a focus it treats as deliberate.
+  useLayoutEffect(() => {
+    if (!otherOpen || !focusOnOpen.current) return;
+    focusOnOpen.current = false;
+    try { doseInputRef.current?.focus({ preventScroll: true }); } catch { /* ignore */ }
+  }, [otherOpen]);
 
   const customDose = parseFloat(custom);
   const canSave = !saving && !isNaN(customDose) && customDose > 0;
@@ -66,7 +78,13 @@ export default function DoseChips({ medication, options = [], value, unit = DOSE
           onClick={() => {
             sound.tap();
             setCustom(isChipValue ? "" : numeric > 0 ? String(numeric) : "");
-            setOtherOpen(true);
+            // A deliberate tap on "Other", so the field may take focus here.
+            if (otherOpen) {
+              try { doseInputRef.current?.focus({ preventScroll: true }); } catch { /* ignore */ }
+            } else {
+              focusOnOpen.current = true;
+              setOtherOpen(true);
+            }
           }}
           style={{ ...(otherOpen ? { "--tw-ring-color": CUSTOM_DOSE_COLOR } : {}) }}
           className={`${chipClass(otherOpen)} gap-1 border bg-white dark:bg-white/[0.04] ${
@@ -84,7 +102,7 @@ export default function DoseChips({ medication, options = [], value, unit = DOSE
         <div className="mt-2">
           <div className="flex items-center gap-2 min-h-[48px] border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] rounded-xl px-3 py-2">
             <input
-              type="number" inputMode="decimal" min="0" step="0.01" autoFocus aria-label="Dose amount"
+              type="number" inputMode="decimal" min="0" step="0.01" ref={doseInputRef} aria-label="Dose amount"
               value={custom}
               onChange={(e) => {
                 setCustom(e.target.value);
