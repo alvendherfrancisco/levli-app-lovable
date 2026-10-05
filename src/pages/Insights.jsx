@@ -124,7 +124,7 @@ const WEIGHT_RANGES = { "30 Days": 30, "180 Days": 180, "1 Year": 365 };
 const MED_RANGES = { "7 Days": 7, "30 Days": 30, "90 Days": 90 };
 
 export default function Insights() {
-  const { shots, weightHistory, profile, dayMetrics, progressPhotosList, addProgressPhotoRecord, updateProgressPhotoRecord, deleteProgressPhotoRecord } = useAppState();
+  const { shots, weightHistory, profile, dayMetrics, progressPhotosList, addProgressPhotoRecord, updateProgressPhotoRecord, deleteProgressPhotoRecord, getWeight } = useAppState();
   const { isPremium, openPaywall } = useSubscription();
   const [weightRange, setWeightRange] = useState("180 Days");
   const [medRange, setMedRange] = useState("30 Days");
@@ -159,8 +159,9 @@ export default function Insights() {
     : 0;
 
   const latestPhotoDate = latestPhoto ? formatPhotoDate(latestPhoto.day_key) : null;
+  // Uses getWeight so each entry is converted from the unit it was logged in.
   const getWeightLabel = (dayKey) => {
-    const w = dayMetrics[dayKey]?.weight;
+    const w = getWeight(dayKey);
     return w != null ? `${w.toFixed(1)} ${weightUnit}` : null;
   };
 

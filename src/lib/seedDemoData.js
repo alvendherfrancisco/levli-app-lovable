@@ -119,7 +119,7 @@ export async function seedDemoDataIfNeeded() {
 
       const d = new Date(today);
       d.setDate(d.getDate() - offset);
-      dayMetricsMap[dayKey(d)] = { day_key: dayKey(d), weight: currentWeight };
+      dayMetricsMap[dayKey(d)] = { day_key: dayKey(d), weight: currentWeight, weight_unit: "kg" };
     }
 
     // Last 30 days: nutrition + exercise, merged with the daily weight entries
@@ -131,7 +131,7 @@ export async function seedDemoDataIfNeeded() {
         ...(dayMetricsMap[key] || { day_key: key }),
         calories: randRange(1600, 1900),
         protein: randRange(70, 90),
-        water: randRange(1500, 2000),
+        water: randRange(50, 70),
         fiber: randRange(18, 25),
         carbs: randRange(130, 180),
         exercise_min: randRange(0, 45),
