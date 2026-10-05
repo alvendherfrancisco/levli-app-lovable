@@ -9,6 +9,9 @@ import {
   heightCmOf, heightCmFromParts, heightPartsFromCm,
   checkHeight, checkGoal, fromKg, weightUnitLabel,
 } from "@/lib/measure";
+import {
+  getIntervalDays, effectiveDaysBetween, intervalWarning, plainBrandName,
+} from "@/lib/medicationConfig";
 import PageContainer from "@/components/PageContainer";
 
 // Only allow digits, one leading decimal, and basic numeric chars
@@ -22,7 +25,7 @@ function numericOnly(value, { allowDecimal = true, max = null, min = 0 } = {}) {
 }
 
 export default function Profile() {
-  const { profile, setProfile } = useAppState();
+  const { profile, setProfile, shots } = useAppState();
   const [local, setLocal] = useState({ ...profile });
   const [saved, setSaved] = useState({});
   const [saving, setSaving] = useState({});
@@ -34,6 +37,27 @@ export default function Profile() {
 
   const heightUnit = local.height_unit || "in";
   const weightUnit = local.weight_unit || "lb";
+
+  // The days between shots come from the medication itself. A prescriber's
+  // override replaces it, and is flagged when it is shorter than the label allows.
+  const [overrideOn, setOverrideOn] = useState(!!profile?.days_between_override);
+  const currentMedication = shots?.[0]?.medication || local.default_medication || "";
+  const labelInterval = getIntervalDays(currentMedication);
+  const effectiveInterval = effectiveDaysBetween(local, currentMedication);
+  const overrideWarning = intervalWarning(currentMedication, local.days_between_override);
+
+  const toggleOverride = async () => {
+    if (overrideOn) {
+      setLocal((p) => ({ ...p, days_between_override: "" }));
+      try {
+        await setProfile({ ...profile, days_between_override: "" });
+        toast.success("Profile updated successfully!");
+      } catch (err) {
+        toast.error("Failed to update profile");
+      }
+    }
+    setOverrideOn((v) => !v);
+  };
 
   // Height and goal are edited in the display unit and stored canonically
   // (cm / kg). These inputs are re-derived whenever the profile or the chosen
@@ -114,7 +138,7 @@ export default function Profile() {
     const updates = Array.isArray(fields) ? fields : [fields];
     const key = updates.join("+");
     // Validate numeric fields before saving
-    const numericFields = ["height_ft", "height_in", "goal_weight", "days_between"];
+    const numericFields = ["height_ft", "height_in", "goal_weight", "days_between", "days_between_override"];
     let hasError = false;
     updates.forEach((f) => {
       if (numericFields.includes(f)) {
@@ -260,18 +284,38 @@ export default function Profile() {
           </div>
           <div className="border-b-2 border-indigo-500 w-10 mb-4" />
 
-          <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2">Days Between Shots</label>
-          <div className="flex items-center gap-2 mb-1">
-            <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 ${errors.days_between ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
-              <input type="text" inputMode="numeric" value={local.days_between || ""} placeholder="7"
-              onChange={(e) => setLocal({ ...local, days_between: numericOnly(e.target.value, { allowDecimal: false, max: 90 }) })}
-              className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white" />
-              <span className="text-gray-400 text-sm ml-1">days</span>
-            </div>
-            <SaveBtn fields={["days_between"]} />
-          </div>
-          {errors.days_between ? <p className="text-xs text-red-500 mb-1">Please enter a whole number (1–90).</p> : null}
-          <p className="text-xs text-gray-400 dark:text-gray-500">This affects how your next shot date is calculated</p>
+          <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-1">Days Between Shots</label>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+            {labelInterval
+              ? <>From <span className="font-medium text-gray-600 dark:text-gray-300">{plainBrandName(currentMedication)}</span> — this product is dosed every {labelInterval} day{labelInterval === 1 ? "" : "s"}.</>
+              : "Log a shot and Levli will use that medication's own interval."}
+          </p>
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+            Your next shot date is worked out {effectiveInterval} day{effectiveInterval === 1 ? "" : "s"} after the last one
+            {profile?.days_between_override ? " (your prescriber's override)" : ""}.
+          </p>
+          <button onClick={toggleOverride} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-2">
+            {overrideOn ? "Use the label interval instead" : "Override with my prescriber's interval"}
+          </button>
+          {overrideOn && (
+            <>
+              <div className="flex items-center gap-2 mb-1">
+                <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 ${errors.days_between_override ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
+                  <input type="text" inputMode="numeric" value={local.days_between_override || ""} placeholder={String(labelInterval || 7)}
+                  onChange={(e) => setLocal({ ...local, days_between_override: numericOnly(e.target.value, { allowDecimal: false, max: 90 }) })}
+                  className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white" />
+                  <span className="text-gray-400 text-sm ml-1">days</span>
+                </div>
+                <SaveBtn fields={["days_between_override"]} />
+              </div>
+              {errors.days_between_override ? <p className="text-xs text-red-500 mb-1">Please enter a whole number (1–90).</p> : null}
+              {overrideWarning ? (
+                <p className="text-xs font-medium text-orange-600 dark:text-orange-400">{overrideWarning}</p>
+              ) : (
+                <p className="text-xs text-gray-400 dark:text-gray-500">Only set this if your prescriber told you to use a different interval.</p>
+              )}
+            </>
+          )}
         </div>
 
         {/* Measurement Units */}

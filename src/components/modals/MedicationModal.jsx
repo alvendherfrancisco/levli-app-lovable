@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { X, Save } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
-import { MEDICATIONS } from "@/lib/medicationData";
+import { describeAllowedDoses, getMedicationPickerNames, plainBrandName } from "@/lib/medicationConfig";
 import { toast } from "sonner";
 
 const pad = (n) => String(n).padStart(2, "0");
 function todayInput() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 
 export default function MedicationModal({ open, onClose, editing }) {
-  const { addMedication, updateMedication } = useAppState();
+  const { addMedication, updateMedication, linkShotsToMedication } = useAppState();
   const [medicationName, setMedicationName] = useState("");
   const [prescribedDose, setPrescribedDose] = useState("");
   const [doseUnit, setDoseUnit] = useState("mg");
@@ -48,6 +48,10 @@ export default function MedicationModal({ open, onClose, editing }) {
 
   if (!open) return null;
 
+  // The label's own strengths for the chosen product, so the dose entered here
+  // matches what the user's pen or pen label actually offers.
+  const labelDoses = describeAllowedDoses(medicationName);
+
   const handleSave = async () => {
     if (!medicationName.trim()) { toast.error("Medication name is required"); return; }
     setSaving(true);
@@ -69,10 +73,13 @@ export default function MedicationModal({ open, onClose, editing }) {
     try {
       if (editing) {
         await updateMedication(editing.id, payload);
+        await linkShotsToMedication(payload.medication_name, editing.id);
         toast.success("Medication updated");
       } else {
-        await addMedication(payload);
-        toast.success("Medication added");
+        const rec = await addMedication(payload);
+        // Every shot log for this medication is linked to the new record.
+        const linked = await linkShotsToMedication(payload.medication_name, rec.id);
+        toast.success(linked ? `Medication added — ${linked} shot log${linked === 1 ? "" : "s"} linked` : "Medication added");
       }
       setSaving(false);
       setTimeout(() => onClose(), 300);
@@ -104,7 +111,12 @@ export default function MedicationModal({ open, onClose, editing }) {
           <Field label="Medication name">
             <input type="text" list="med-list" value={medicationName} onChange={(e) => setMedicationName(e.target.value)} placeholder="e.g. Ozempic®"
               className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
-            <datalist id="med-list">{MEDICATIONS.map((m) => <option key={m} value={m} />)}</datalist>
+            <datalist id="med-list">{getMedicationPickerNames().map((m) => <option key={m} value={m} />)}</datalist>
+            {labelDoses && (
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                US label strengths for {plainBrandName(medicationName)}: {labelDoses}
+              </p>
+            )}
           </Field>
           <div className="flex flex-col sm:flex-row gap-3">
             <Field label="Prescribed dose">

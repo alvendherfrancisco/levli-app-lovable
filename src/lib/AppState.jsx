@@ -217,6 +217,7 @@ export function AppStateProvider({ children }) {
   const SHOT_FIELDS = [
     "medication", "medication_id", "dose", "dose_unit", "drug_class", "molecular_class",
     "route", "device_type", "concentration", "date", "time", "site", "pain", "notes",
+    "dose_source",
     "reconstitution_date", "in_use_expiry",
     "infusion_duration", "clinic_location", "premedication",
     "spray_count", "nostril", "priming",
@@ -242,6 +243,12 @@ export function AppStateProvider({ children }) {
       payload.timezone = "";
     }
     payload.logged_at_utc = new Date().toISOString();
+    // Every shot is linked to its medication record in Meds where one exists.
+    if (!payload.medication_id && payload.medication) {
+      const regimen = medications.find((m) => m.medication_name === payload.medication && m.status === "active")
+        || medications.find((m) => m.medication_name === payload.medication);
+      if (regimen) payload.medication_id = regimen.id;
+    }
     const rec = await base44.entities.Shot.create(payload);
     setShots((prev) => [rec, ...prev].sort((a, b) => parseShotDate(b.date) - parseShotDate(a.date)));
     // Decrement matching inventory
@@ -413,6 +420,21 @@ export function AppStateProvider({ children }) {
     setMedications((prev) => prev.filter((m) => m.id !== id));
   };
 
+  // Links existing shot logs to a medication record, so every shot points at
+  // the regimen it belongs to. Used when Meds is filled in from shot history.
+  const linkShotsToMedication = async (medicationName, medicationId) => {
+    const unlinked = shots.filter((s) => s.medication === medicationName && !s.medication_id);
+    if (!unlinked.length) return 0;
+    const saved = await base44.entities.Shot.bulkUpdate(
+      unlinked.slice(0, 500).map((s) => ({ id: s.id, medication_id: medicationId }))
+    );
+    const list = Array.isArray(saved) ? saved : (saved?.records || saved?.items || []);
+    const byId = {};
+    list.forEach((r) => { if (r?.id) byId[r.id] = r; });
+    setShots((prev) => prev.map((s) => (byId[s.id] ? { ...s, ...byId[s.id] } : s)));
+    return list.length;
+  };
+
   // ── AdverseEvent CRUD ──────────────────────────────────────────────────────
   const addAdverseEvent = async (data) => {
     const rec = await base44.entities.AdverseEvent.create(data);
@@ -485,6 +507,7 @@ export function AppStateProvider({ children }) {
       unit_check_status: next.unit_check_status || "",
       units_migrated_at: next.units_migrated_at || "",
       days_between: next.days_between,
+      days_between_override: next.days_between_override || "",
       liquid_unit: next.liquid_unit, height_unit: next.height_unit,
       weight_unit: next.weight_unit, default_medication: next.default_medication,
       notifications_enabled: !!next.notifications_enabled,
@@ -663,7 +686,7 @@ export function AppStateProvider({ children }) {
       // Journal
       journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry,
       // Medications (regimen)
-      medications, addMedication, updateMedication, deleteMedication,
+      medications, addMedication, updateMedication, deleteMedication, linkShotsToMedication,
       // Canonical measurements + one-time unit check
       weightUnit: wDisplayUnit, heightCm: heightCmOf(profile), getWeightKg, unitCheck,
       convertAssumedKg, undoUnitConversion, keepWeightsAsLogged,

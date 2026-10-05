@@ -9,7 +9,7 @@ import AddShotModal from "@/components/modals/AddShotModal";
 import { useAppState } from "@/lib/AppState";
 import { addDaysToShotDate, daysAgoLabel } from "@/lib/dateUtils";
 import { useSubscription } from "@/lib/SubscriptionContext";
-import { getDosingInterval } from "@/lib/medicationData";
+import { effectiveDaysBetween } from "@/lib/medicationConfig";
 import { calcAdherence } from "@/lib/adherence";
 
 export default function Shots() {
@@ -24,7 +24,7 @@ export default function Shots() {
   const hiddenCount = isPremium ? 0 : Math.max(0, shots.length - FREE_LIMIT);
 
   const last = shots[0] || null;
-  const daysBetween = (last && getDosingInterval(last.medication)) || parseInt(profile?.days_between || "7") || 7;
+  const daysBetween = effectiveDaysBetween(profile, last?.medication);
   const nextDate = last ? addDaysToShotDate(last.date, daysBetween) : null;
 
   // Adherence for the most recent medication over the last 90 days

@@ -16,13 +16,21 @@
       "description": "Unit the dose was logged in (mg, mcg, units, IU, mL, sprays, tablets, applications)",
       "default": "mg"
     },
+    "dose_source": {
+      "type": "string",
+      "enum": [
+        "label",
+        "custom"
+      ],
+      "description": "Where the dose came from: a strength picked from the medication's label list ('label'), or typed by the user for an 'Other / custom (prescriber-directed)' entry ('custom'). A custom dose is never used for exposure modelling."
+    },
     "concentration": {
       "type": "string",
       "description": "Free-text concentration for compounded / generic products (e.g. '2.5 mg/mL')"
     },
     "drug_class": {
       "type": "string",
-      "description": "Generic active ingredient (derived from catalogue)"
+      "description": "Generic active ingredient (derived from the central medications config)"
     },
     "molecular_class": {
       "type": "string",

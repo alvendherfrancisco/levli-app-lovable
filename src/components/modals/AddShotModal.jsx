@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Save, Star, ChevronDown, Trash2 } from "lucide-react";
+import CustomMedicationFields from "@/components/modals/CustomMedicationFields";
+import {
+  CUSTOM_MEDICATION_NAME, getIntervalDays, getMedicationConfig, getMedicationPickerNames,
+  describeAllowedDoses, validateDosePair,
+} from "@/lib/medicationConfig";
 import { useAppState } from "@/lib/AppState";
 import { MEDICATIONS, DRUG_CLASS, isInvestigational, getDoseMax, getMolecularClass, isCompoundedGeneric } from "@/lib/medicationData";
 import { getDeliveryMethods, getDeliveryMethodLabel, RETIRED_DELIVERY_METHODS } from "@/lib/deliveryMethods";
@@ -55,6 +60,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
 
   const [pain, setPain] = useState(0);
   const [medication, setMedication] = useState(defaultMed);
+  // Drug name for an "Other / custom (prescriber-directed)" entry.
+  const [customName, setCustomName] = useState("");
   const [medicationId, setMedicationId] = useState("");
   const [dose, setDose] = useState("2.50");
   const [doseUnit, setDoseUnit] = useState("mg");
@@ -97,6 +104,11 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const [reconstitutionDate, setReconstitutionDate] = useState("");
   const [inUseExpiry, setInUseExpiry] = useState("");
 
+  // "Other / custom (prescriber-directed)": the user types the drug and dose,
+  // and nothing about it can be checked against a label.
+  const isCustomProduct = medication === CUSTOM_MEDICATION_NAME;
+  // Only once-weekly products can use the weekly repeat; a daily product cannot.
+  const isWeeklyMedication = getIntervalDays(medication) === 7;
   const caps = getCapabilityProfile(medication);
   const capabilityWarning = getCapabilityWarning(medication);
   const activeRoute = route || getDefaultRoute(medication);
@@ -105,7 +117,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // Compounded / generic products take a free-text concentration and a simple
   // delivery toggle instead of the full device list.
   const isCompounded = isCompoundedGeneric(medication);
-  const isInjectable = INJECTABLE_ROUTES.includes(activeRoute);
+  const isInjectable = !isCustomProduct && INJECTABLE_ROUTES.includes(activeRoute);
   const siteOptions = activeRoute === "intramuscular" ? imSites : activeRoute === "intradermal" ? idSites : scSites;
   const isReconstituted = activeRoute === "reconstituted_vial" || caps?.supports_reconstitution;
   const brandPen = isBrandPen(medication);
@@ -156,6 +168,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setError(""); setSaved(false); setReporting(false); setDuplicatePrompt(null);
     confirmedDupRef.current = false;
     setMedicationId("");
+    setCustomName("");
     setConcentration(""); setNotes(""); setPain(0);
     setInfusionDuration(""); setClinicLocation(""); setPremedication(false);
     setSprayCount(""); setNostril("both"); setPriming(false);
@@ -168,7 +181,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setShowDetails(false);
 
     if (editingShot) {
-      setMedication(editingShot.medication || defaultMed);
+      const customEntry = editingShot.dose_source === "custom";
+      setMedication(customEntry ? CUSTOM_MEDICATION_NAME : (editingShot.medication || defaultMed));
+      setCustomName(customEntry ? (editingShot.medication || "") : "");
       setMedicationId(editingShot.medication_id || "");
       setDose(String(editingShot.dose ?? "2.50"));
       setDoseUnit(editingShot.dose_unit || "mg");
@@ -251,6 +266,19 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // Switching medication re-applies that product's defaults (dose, route,
   // device and its active regimen).
   const selectMedication = (med) => {
+    // "Other / custom" has no label data — the user types the name and dose.
+    if (med === CUSTOM_MEDICATION_NAME) {
+      setMedication(med);
+      setCustomName("");
+      setDose("");
+      setDoseUnit("mg");
+      setMedicationId("");
+      setRoute("");
+      setDeviceType("");
+      setRepeatOn(false);
+      setShowMedDropdown(false);
+      return;
+    }
     const { dose: nextDose, unit } = getDoseDefault({ medication: med, medications, shots });
     setMedication(med);
     setDose(String(nextDose));
@@ -307,15 +335,36 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
 
   // Saves a custom dose on the profile so it becomes a chip next time.
   const addCustomDose = async (value) => {
+    // A strength the label does not list is never offered as a chip for this
+    // medication — the same message the save path shows.
+    const check = validateDosePair(medication, value);
+    if (!check.valid) {
+      setError(check.message);
+      return;
+    }
     await setProfile({ ...profile, custom_doses: withCustomDose(profile?.custom_doses || [], medication, value) });
     setDose(String(value));
   };
 
   const handleSave = async () => {
     const doseNum = parseFloat(dose);
+    const isCustom = medication === CUSTOM_MEDICATION_NAME;
+    const finalMedication = isCustom ? customName.trim() : medication;
+    if (isCustom && !finalMedication) {
+      setError("Enter the medication name your prescriber gave you.");
+      return;
+    }
     if (isNaN(doseNum) || doseNum <= 0) {
       setError("Please enter a valid dose.");
       return;
+    }
+    if (!isCustom) {
+      // Only a strength the label lists for this medication can be saved.
+      const check = validateDosePair(medication, doseNum);
+      if (!check.valid) {
+        setError(check.message);
+        return;
+      }
     }
     if (!editingShot && repeatOn && repeatMode === "weeks" && !(parseInt(repeatWeeks, 10) >= 1)) {
       setError("Enter how many weeks to repeat this dose for.");
@@ -329,10 +378,12 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setError(""); setDuplicatePrompt(null);
     const d = new Date(date + "T" + time);
     const payload = {
-      medication, medication_id: medicationId || undefined,
+      medication: finalMedication,
+      dose_source: isCustom ? "custom" : "label",
+      medication_id: isCustom ? undefined : (medicationId || undefined),
       dose: doseNum, dose_unit: doseUnit,
-      drugClass: DRUG_CLASS[medication] || "GLP-1",
-      molecularClass: getMolecularClass(medication),
+      drugClass: isCustom ? (DRUG_CLASS[finalMedication] || "") : (DRUG_CLASS[medication] || "GLP-1"),
+      molecularClass: getMolecularClass(finalMedication),
       route: activeRoute, device_type: deviceType || undefined,
       concentration: isCompounded ? concentration.trim() || undefined : undefined,
       date: formatShotDate(d), time: toShotTime(d),
@@ -428,7 +479,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
           {saved ? (
             <ShotSuccessPanel
               title={editingShot ? "Shot updated" : "Shot logged"}
-              detail={`${dose} ${doseUnitLabel(doseUnit)} · ${medication}`}
+              detail={`${dose} ${doseUnitLabel(doseUnit)} · ${medication === CUSTOM_MEDICATION_NAME ? customName : medication}`}
               onReportSideEffect={() => setReporting(true)}
             />
           ) : (
@@ -468,14 +519,25 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                     )}
                     {showMedDropdown && (
                       <div className="absolute z-10 mt-1 w-full bg-white dark:bg-[#1e2130] border border-gray-200 dark:border-white/[0.08] rounded-xl shadow-lg max-h-64 overflow-y-auto">
-                        {MEDICATIONS.map((m) => (
-                          <button key={m} onClick={() => selectMedication(m)}
-                            className={`w-full px-4 py-3 text-left text-sm dark:text-[#E8E9F0] ${medication === m ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-medium" : "hover:bg-gray-50 dark:hover:bg-white/[0.05]"}`}>
-                            <span className="block">{m}</span>
-                            <span className="text-xs text-gray-400 dark:text-gray-500 block">{getMolecularClassLabel(m)}</span>
-                            {isInvestigational(m) ? <span className="text-xs text-orange-600 dark:text-orange-400">investigational — not approved</span> : null}
-                          </button>
-                        ))}
+                        {getMedicationPickerNames().map((m) => {
+                          const entry = getMedicationConfig(m);
+                          const custom = m === CUSTOM_MEDICATION_NAME;
+                          return (
+                            <button key={m} onClick={() => selectMedication(m)}
+                              className={`w-full px-4 py-3 text-left text-sm dark:text-[#E8E9F0] ${medication === m ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-medium" : "hover:bg-gray-50 dark:hover:bg-white/[0.05]"}`}>
+                              <span className="block">{m}</span>
+                              {!custom && (
+                                <span className="text-xs text-gray-400 dark:text-gray-500 block">
+                                  {entry?.genericName ? `${entry.genericName} · ` : ""}
+                                  {entry?.allowedDoses?.length ? describeAllowedDoses(m) : "dose typed by you"}
+                                </span>
+                              )}
+                              {entry?.indicationNote && !custom && (
+                                <span className="text-[11px] text-gray-400 dark:text-gray-500 block mt-0.5">{entry.indicationNote}</span>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -526,8 +588,21 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                   </div>
                 )}
 
-                {/* Dose — large single-select chips, driven by src/lib/doseOptions.js */}
+                {/* Dose — the strengths the label lists for the chosen product.
+                    An "Other / custom" entry instead asks for the drug name and dose. */}
                 <div>
+                  {isCustomProduct ? (
+                    <CustomMedicationFields
+                      name={customName}
+                      onNameChange={setCustomName}
+                      dose={dose}
+                      onDoseChange={setDose}
+                      unit={doseUnit}
+                      onUnitChange={setDoseUnit}
+                      inputClass={inputClass}
+                    />
+                  ) : (
+                    <>
                   <DoseChips
                     key={medication}
                     medication={medication}
@@ -551,6 +626,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                     <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
                       You also logged {ingredientDup.existingBrand} ({ingredientDup.generic}) on {ingredientDup.lastDoseDate}. Two forms of the same active ingredient can duplicate your dose.
                     </p>
+                  )}
+                    </>
                   )}
                 </div>
 
@@ -738,8 +815,14 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                         </>
                       )}
 
-                      {/* Repeat this dose — weekly repeat schedule */}
-                      {!editingShot && (
+                      {/* Repeat this dose — weekly repeat schedule. A daily product
+                          has no weekly repeat, so the option is not offered. */}
+                      {!editingShot && !isWeeklyMedication && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          Repeats run on a weekly cycle, so they are not offered for a daily medication. Log each daily dose from the dose card.
+                        </p>
+                      )}
+                      {!editingShot && isWeeklyMedication && (
                         <RepeatOptionsField
                           enabled={repeatOn}
                           onToggle={setRepeatOn}

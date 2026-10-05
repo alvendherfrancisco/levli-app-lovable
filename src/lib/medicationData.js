@@ -7,6 +7,7 @@
 // sourced from the catalogue for maintainability.
 
 import { parseShotDate, fromDayKey } from "@/lib/dateUtils";
+import { getIntervalDays, getMedicationConfig } from "@/lib/medicationConfig";
 import {
   MEDICATION_CATALOGUE,
   NAME_TO_ENTRY,
@@ -149,6 +150,10 @@ export const DOSE_MAX = (() => {
 })();
 
 export function getDoseMax(medication) {
+  // The central medications config is the source of truth for the products it
+  // covers; the catalogue supplies the rest.
+  const entry = getMedicationConfig(medication);
+  if (entry?.verified && entry.maxDoseMg != null) return entry.maxDoseMg;
   return DOSE_MAX[medication] || 100;
 }
 
@@ -171,6 +176,10 @@ export function isInvestigational(medicationOrClass) {
 }
 
 export function getDosingInterval(medication) {
+  // The label-verified interval from the central medications config comes
+  // first; the catalogue covers anything the config does not list.
+  const fromConfig = getIntervalDays(medication);
+  if (fromConfig) return fromConfig;
   const generic = DRUG_CLASS[medication] || medication;
   return DOSING_INTERVAL_DAYS[generic] || null;
 }
@@ -194,6 +203,17 @@ export const MISSED_DOSE_RULES = (() => {
 })();
 
 export function getMissedDoseRule(medication) {
+  // A verified product's rule is the label wording held in the central config;
+  // everything else falls back to the catalogue.
+  const entry = getMedicationConfig(medication);
+  if (entry?.verified && entry.missedDoseRule) {
+    return {
+      weekly: entry.dosingIntervalDays === 7,
+      retitrationDays: entry.retitrationDays ?? 0,
+      advice: entry.missedDoseRule,
+      source: entry.source,
+    };
+  }
   const generic = DRUG_CLASS[medication] || medication;
   return MISSED_DOSE_RULES[generic] || null;
 }

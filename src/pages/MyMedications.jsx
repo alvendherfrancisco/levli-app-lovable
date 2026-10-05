@@ -7,6 +7,7 @@ import { useAppState } from "@/lib/AppState";
 import MedicationModal from "@/components/modals/MedicationModal";
 import RepeatScheduleCard from "@/components/medications/RepeatScheduleCard";
 import RepeatScheduleModal from "@/components/modals/RepeatScheduleModal";
+import LinkShotsToMedsCard from "@/components/medications/LinkShotsToMedsCard";
 
 export default function MyMedications() {
   const { medications, deleteMedication, shots, repeatSchedules } = useAppState();
@@ -41,6 +42,7 @@ export default function MyMedications() {
       </div>
 
       <div className="max-w-3xl mx-auto pt-4 px-4">
+        <LinkShotsToMedsCard />
         <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
           Track your prescribed regimens. Titration stages show only what you or your prescriber entered — Levli never generates a schedule.
         </p>

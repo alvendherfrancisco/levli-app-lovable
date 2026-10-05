@@ -1,59 +1,64 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Dose colours — ONE central config.
-// A dose is recognised by its colour everywhere: the chips in Add Shot, the
-// badges on shot / history / repeat cards, the Insights markers and legend,
-// and the shot-day notification.
 //
-//   • Ozempic follows its pen label colours.
-//   • Every other medication follows a low-to-high ladder by dose step, where
-//     step 1 is the lowest strength in that medication's own list.
-//   • A custom dose that is not a standard step uses neutral slate.
+// A neutral sequential palette: light indigo at the lowest dose through to a
+// burnt orange at the highest. No red is used for a dose, because red reads as
+// "error" rather than "lower number". Colour is never the only signal — every
+// place a dose colour is shown also shows the dose as text (chips, badges,
+// chart legends), and getDoseLabel() supplies that text.
+//
+// The dose step comes from the central medications config, so the colour ladder
+// always matches the label's strength list.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { DOSE_UNIT, getDoseList } from "@/lib/doseOptions";
+import { getAllowedDoses } from "@/lib/medicationConfig";
 
-// Ozempic pen label colours.
-export const OZEMPIC_DOSE_COLORS = {
-  0.25: "#F26A72", // light red
-  0.5: "#E11D2A",  // red
-  1: "#0E6B73",    // teal
-  2: "#D9A826",    // gold
-};
-
-// Low → high ladder, step 1 first.
+// Low → high ladder, step 1 first. Neutral and warm, never red.
 export const DOSE_LADDER = [
-  "#38BDF8", // step 1 — sky blue
-  "#14B8A6", // step 2 — teal
-  "#22C55E", // step 3 — green
-  "#EAB308", // step 4 — amber
-  "#F97316", // step 5 — orange
-  "#DC2626", // step 6 — deep red
+  "#818CF8", // step 1 — light indigo
+  "#6366F1", // step 2 — indigo
+  "#4338CA", // step 3 — deep indigo
+  "#0E7490", // step 4 — cyan
+  "#0D9488", // step 5 — teal
+  "#C2410C", // step 6 — burnt orange
 ];
 
-// Custom doses that match no standard step.
+// Doses that are not a standard step (typed doses, compounded strengths).
 export const CUSTOM_DOSE_COLOR = "#64748B";
 
 const DARK_TEXT = "#1F2937";
 const LIGHT_TEXT = "#FFFFFF";
 
-const normaliseMedication = (medication) =>
-  String(medication || "").replace(/[®™]/g, "").trim().toLowerCase();
-
-/** The dose's step (1 = lowest strength), or null when it isn't a standard step. */
+/** The dose's step (1 = lowest listed strength), or null when it isn't listed. */
 export function getDoseStep(medication, dose) {
   const value = Number(dose);
   if (!value) return null;
-  const index = getDoseList(medication).findIndex((d) => Number(d) === value);
+  const index = getAllowedDoses(medication).findIndex((d) => Number(d.value) === value);
   return index === -1 ? null : index + 1;
 }
 
 /** The colour that represents this dose. */
 export function getDoseColor(medication, dose) {
-  if (normaliseMedication(medication) === "ozempic") {
-    return OZEMPIC_DOSE_COLORS[Number(dose)] || CUSTOM_DOSE_COLOR;
-  }
   const step = getDoseStep(medication, dose);
   return (step && DOSE_LADDER[step - 1]) || CUSTOM_DOSE_COLOR;
+}
+
+/**
+ * The dose as text — always shown next to the colour so the colour is never the
+ * only signal.
+ */
+export function getDoseLabel(medication, dose, unit) {
+  const value = Number(dose);
+  if (!Number.isFinite(value) || value <= 0) return "";
+  const resolvedUnit = unit || getAllowedDoses(medication)[0]?.unit || "mg";
+  return `${value} ${resolvedUnit}`;
+}
+
+/** How the label describes this strength (initiation / titration only / standard). */
+export function getDoseRole(medication, dose) {
+  const value = Number(dose);
+  const match = getAllowedDoses(medication).find((d) => Number(d.value) === value);
+  return match?.role || null;
 }
 
 /** White or dark text, whichever reads better on that colour. */
@@ -82,7 +87,8 @@ export function getDoseLegend(shots = []) {
       key,
       medication: s.medication || "",
       dose: Number(s.dose),
-      unit: s.dose_unit || DOSE_UNIT,
+      unit: s.dose_unit || "mg",
+      label: getDoseLabel(s.medication, s.dose, s.dose_unit),
       color: getDoseColor(s.medication, s.dose),
     });
   });

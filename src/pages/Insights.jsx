@@ -8,6 +8,7 @@ import { useAppState } from "@/lib/AppState";
 import { parseShotDate, todayKey, toDayKey } from "@/lib/dateUtils";
 import { isInvestigational, getHalfLifeDays, getDosingInterval } from "@/lib/medicationData";
 import { heightCmOf, shownBmi } from "@/lib/measure";
+import { isExposureEligible } from "@/lib/medicationConfig";
 import { steadyStateFraction, accumulationRatio, PK_CALCULATION_VERSION } from "@/lib/pkCalculations";
 import { toast } from "sonner";
 import UpsellBanner from "@/components/UpsellBanner";
@@ -24,10 +25,14 @@ const CLASS_COLORS = { Semaglutide: "#14B8A6", Tirzepatide: "#6366F1", Liragluti
 // Investigational classes are excluded so no curve is shown for unapproved products.
 function buildMedLevelData(shots, days) {
   if (!shots.length) return { data: [], classes: [], disabled: false, steadyState: null, accumRatio: null, markers: [], doseLegend: [] };
+  // Only label-verified doses are modelled. An "Other / custom" entry, a
+  // compounded strength or an unapproved product is never used for the estimate.
+  const modellable = shots.filter((s) => isExposureEligible(s.medication, s.dose_source));
+  if (!modellable.length) return { data: [], classes: [], disabled: true, steadyState: null, accumRatio: null, markers: [], doseLegend: [] };
   const now = new Date(); now.setHours(0,0,0,0);
   const mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const classesSet = new Set();
-  shots.forEach((s) => { if (s.drug_class || s.drugClass) classesSet.add(s.drug_class || s.drugClass); });
+  modellable.forEach((s) => { if (s.drug_class || s.drugClass) classesSet.add(s.drug_class || s.drugClass); });
   const classes = [...classesSet].filter((c) => !isInvestigational(c) && getHalfLifeDays(getBrandForGeneric(c, shots), getRouteForClass(c, shots)));
   if (!classes.length) return { data: [], classes: [], disabled: true, steadyState: null, accumRatio: null, markers: [], doseLegend: [] };
   const points = [];
@@ -36,7 +41,7 @@ function buildMedLevelData(shots, days) {
     const point = { day: `${mNames[t.getMonth()]} ${t.getDate()}` };
     classes.forEach((cls) => {
       let level = 0;
-      shots.forEach((s) => {
+      modellable.forEach((s) => {
         if ((s.drug_class || s.drugClass) !== cls) return;
         const sd = parseShotDate(s.date);
         if (!sd) return;
@@ -64,7 +69,7 @@ function buildMedLevelData(shots, days) {
 
   // Dose markers: every shot in the window, coloured by its dose, plus the
   // matching legend.
-  const shotsInRange = shots.filter((s) => {
+  const shotsInRange = modellable.filter((s) => {
     const sd = parseShotDate(s.date);
     if (!sd) return false;
     const daysSince = Math.round((now - sd) / 86400000);

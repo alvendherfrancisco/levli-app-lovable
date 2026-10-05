@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Save } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
-import { MEDICATIONS } from "@/lib/medicationData";
+import { getMedicationPickerNames } from "@/lib/medicationConfig";
 import { toast } from "sonner";
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -102,7 +102,7 @@ export default function InventoryModal({ open, onClose, editing }) {
           <Field label="Product name">
             <input type="text" list="med-list" value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="e.g. Ozempic®"
               className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
-            <datalist id="med-list">{MEDICATIONS.map((m) => <option key={m} value={m} />)}</datalist>
+            <datalist id="med-list">{getMedicationPickerNames().map((m) => <option key={m} value={m} />)}</datalist>
           </Field>
           <div className="flex flex-col sm:flex-row gap-3">
             <Field label="Lot number">

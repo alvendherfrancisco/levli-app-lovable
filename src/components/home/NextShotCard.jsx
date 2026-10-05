@@ -2,13 +2,15 @@ import React from "react";
 import { Syringe } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { addDaysToShotDate, daysUntilShotDate } from "@/lib/dateUtils";
-import { getDosingInterval, getMissedDoseRule } from "@/lib/medicationData";
+import { getMissedDoseRule } from "@/lib/medicationData";
+import { effectiveDaysBetween } from "@/lib/medicationConfig";
 import DoseBadge from "@/components/DoseBadge";
 
 export default function NextShotCard() {
   const { shots, profile } = useAppState();
   const lastMed = shots[0]?.medication;
-  const daysBetween = (lastMed && getDosingInterval(lastMed)) || parseInt(profile?.days_between || "7") || 7;
+  // Prescriber override, then the medication's label interval, then the default.
+  const daysBetween = effectiveDaysBetween(profile, lastMed);
   const missedRule = lastMed ? getMissedDoseRule(lastMed) : null;
 
   if (shots.length === 0) {

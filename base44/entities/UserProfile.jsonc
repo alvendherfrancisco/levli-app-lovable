@@ -24,6 +24,10 @@
     "days_between": {
       "type": "string"
     },
+    "days_between_override": {
+      "type": "string",
+      "description": "Prescriber-directed override for the days between shots. Empty means the app uses the medication's own interval from the central medications config."
+    },
     "liquid_unit": {
       "type": "string"
     },

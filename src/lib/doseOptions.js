@@ -1,44 +1,67 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Dose chips — ONE central config.
-// Edit the numbers below to change the tappable dose chips shown in the app.
-// Every value is in mg, listed in ascending order. Products that aren't listed
-// here still get the "Other" chip, so a dose can always be logged.
-// ─────────────────────────────────────────────────────────────────────────────
+// Dose chips — the picker's view of the central medications config.
+//
+// There are NO dose numbers in this file. The lists come from
+// src/lib/medicationConfig, which is the single place a dose is defined.
+//
+// The user's own saved doses are still offered for products whose strengths are
+// not fixed by a label (compounded / generic). For a product with a verified
+// label list, a saved dose the label does not list is ignored here and blocked
+// in the picker.
 
-import { COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE } from "@/lib/medicationCatalogue";
+import {
+  MEDICATION_CONFIG,
+  getAllowedDoses,
+  allowsAnyDose,
+  getDoseValues,
+  getDoseUnit,
+  isVerifiedMedication,
+  validateDosePair,
+} from "@/lib/medicationConfig";
 
 export const DOSE_UNIT = "mg";
 
-export const DOSE_LISTS = {
-  "Ozempic®": [0.25, 0.5, 1, 2],
-  "Wegovy®": [0.25, 0.5, 1, 1.7, 2.4],
-  "Rybelsus®": [3, 7, 14],
-  "Mounjaro®": [2.5, 5, 7.5, 10, 12.5, 15],
-  "Zepbound®": [2.5, 5, 7.5, 10, 12.5, 15],
-  "Saxenda®": [0.6, 1.2, 1.8, 2.4, 3],
-  "Victoza®": [0.6, 1.2, 1.8],
-  "Trulicity®": [0.75, 1.5, 3, 4.5],
-  [COMPOUNDED_SEMAGLUTIDE]: [0.25, 0.5, 1, 1.7, 2, 2.4],
-  [COMPOUNDED_TIRZEPATIDE]: [2.5, 5, 7.5, 10, 12.5, 15],
-};
+/** Every medication's label strengths, keyed by product name (read-only). */
+export const DOSE_LISTS = (() => {
+  const map = {};
+  MEDICATION_CONFIG.forEach((entry) => {
+    if (entry.allowedDoses?.length) {
+      map[entry.brandName] = entry.allowedDoses.map((d) => d.value).sort((a, b) => a - b);
+    }
+  });
+  return map;
+})();
 
-/** The configured strengths for a medication (empty when it has no list yet). */
+/** The configured strengths for a medication (empty when it has none). */
 export function getDoseList(medication) {
-  return DOSE_LISTS[medication] || [];
+  return [...getDoseValues(medication)];
+}
+
+/** The unit shown with this medication's doses. */
+export function doseUnitFor(medication) {
+  return getDoseUnit(medication);
 }
 
 /** Custom doses the user has saved for a medication, ascending. */
 export function getCustomDoses(customDoses = [], medication) {
-  return customDoses
+  const saved = customDoses
     .filter((c) => c && c.medication === medication && Number(c.dose) > 0)
-    .map((c) => Number(c.dose))
+    .map((c) => Number(c.dose));
+  // A saved dose the label does not list for this product is never offered.
+  const usable = isVerifiedMedication(medication)
+    ? saved.filter((d) => validateDosePair(medication, d).valid)
+    : saved;
+  return [...new Set(usable)].sort((a, b) => a - b);
+}
+
+/** Every chip offered: the label strengths plus the user's own valid doses. */
+export function getDoseChips(medication, customDoses = []) {
+  return [...new Set([...getDoseList(medication), ...getCustomDoses(customDoses, medication)])]
     .sort((a, b) => a - b);
 }
 
-/** Every chip offered: the configured strengths plus the user's own doses. */
-export function getDoseChips(medication, customDoses = []) {
-  return Array.from(new Set([...getDoseList(medication), ...getCustomDoses(customDoses, medication)]))
-    .sort((a, b) => a - b);
+/** true when the picker should accept a typed dose instead of only chips. */
+export function medicationAllowsAnyDose(medication) {
+  return allowsAnyDose(medication);
 }
 
 /** Adds a custom dose to the stored list, returning the new list to save. */
@@ -49,3 +72,6 @@ export function withCustomDose(customDoses = [], medication, dose) {
   );
   return [...kept, { medication, dose: value }];
 }
+
+// Re-exported so screens have one import for dose rules.
+export { validateDosePair, getAllowedDoses };
