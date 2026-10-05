@@ -441,7 +441,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                 </div>
               )}
 
-              <div className="px-5 pb-4 space-y-4">
+              <div className="px-5 pb-4 space-y-3">
                 {/* Medication — prominent only when more than one is in play */}
                 <div>
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Medication</label>
@@ -538,7 +538,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                     onAddCustom={addCustomDose}
                   />
                   {doseChanged && (
-                    <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mt-2">
+                    <p className="text-[13px] font-medium text-amber-600 dark:text-amber-400 mt-1.5 leading-snug">
                       Dose changed from {previousShot.dose} {doseUnitLabel(previousShot.dose_unit || "mg")} to {dose} {doseUnitLabel(doseUnit)}.
                     </p>
                   )}
