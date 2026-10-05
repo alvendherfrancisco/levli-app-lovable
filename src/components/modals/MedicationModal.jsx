@@ -1,78 +1,160 @@
-import React, { useState, useEffect } from "react";
-import { X, Save } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { X, Save, ShieldCheck } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
-import { describeAllowedDoses, getMedicationPickerNames, plainBrandName } from "@/lib/medicationConfig";
 import useModal from "@/hooks/useModal";
 import { toast } from "sonner";
+import { findMedicationOption, labelledSchedule, isLabelStrength, scheduleText, statusOptionsFor, validateRegimenForm,
+  DOSE_STEP_HELPER, INDICATION_OPTIONS, OTHER_SCHEDULE, PRESCRIBER_ONLY_NOTE, REGIMEN_FOOTER } from "@/lib/medicationRegimen";
+import MedicationNamePicker from "@/components/medications/MedicationNamePicker";
+import DoseStrengthPicker from "@/components/medications/DoseStrengthPicker";
+import ScheduleField from "@/components/medications/ScheduleField";
+import IndicationField from "@/components/medications/IndicationField";
 
 const pad = (n) => String(n).padStart(2, "0");
-function todayInput() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function todayInput() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
 
+const inputClass = "w-full min-h-[60px] rounded-2xl border-2 border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-4 py-3 text-base outline-none focus:border-indigo-400 dark:[color-scheme:dark]";
+
+/** A stored frequency string as the form's schedule choice. */
+function scheduleFromStored(stored, name) {
+  const text = String(stored || "").trim();
+  const labelled = labelledSchedule(name);
+  if (!text) return labelled;
+  if (labelled && text.toLowerCase() === labelled.toLowerCase()) return labelled;
+  return OTHER_SCHEDULE;
+}
+
+/**
+ * Add / Edit Medication. Plain-language choices, large tap targets and only the
+ * strengths the product's own label lists. Nothing here suggests or adjusts a
+ * dose: a dose that is not a label strength is kept, once the user has checked
+ * it against their prescription.
+ */
 export default function MedicationModal({ open, onClose, editing }) {
   const { addMedication, updateMedication, linkShotsToMedication } = useAppState();
-  const [medicationName, setMedicationName] = useState("");
-  const [prescribedDose, setPrescribedDose] = useState("");
-  const [doseUnit, setDoseUnit] = useState("mg");
-  const [frequency, setFrequency] = useState("");
+
+  const [selectedName, setSelectedName] = useState("");
+  const [isCustom, setIsCustom] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [dose, setDose] = useState("");
+  const [doseConfirmed, setDoseConfirmed] = useState(false);
+  const [unit, setUnit] = useState("mg");
+  const [schedule, setSchedule] = useState("");
+  const [scheduleOther, setScheduleOther] = useState("");
   const [indication, setIndication] = useState("");
+  const [indicationOther, setIndicationOther] = useState("");
   const [startDate, setStartDate] = useState(todayInput());
   const [plannedEndDate, setPlannedEndDate] = useState("");
-  const [titrationStage, setTitrationStage] = useState("");
+  const [doseStep, setDoseStep] = useState("");
   const [prescriberName, setPrescriberName] = useState("");
   const [prescriberContact, setPrescriberContact] = useState("");
   const [status, setStatus] = useState("active");
   const [notes, setNotes] = useState("");
+  const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) {
-      if (editing) {
-        setMedicationName(editing.medication_name || "");
-        setPrescribedDose(editing.prescribed_dose != null ? String(editing.prescribed_dose) : "");
-        setDoseUnit(editing.dose_unit || "mg");
-        setFrequency(editing.frequency || "");
-        setIndication(editing.indication || "");
-        setStartDate(editing.start_date || todayInput());
-        setPlannedEndDate(editing.planned_end_date || "");
-        setTitrationStage(editing.titration_stage || "");
-        setPrescriberName(editing.prescriber_name || "");
-        setPrescriberContact(editing.prescriber_contact || "");
-        setStatus(editing.status || "active");
-        setNotes(editing.notes || "");
-      } else {
-        setMedicationName(""); setPrescribedDose(""); setDoseUnit("mg"); setFrequency("");
-        setIndication(""); setStartDate(todayInput()); setPlannedEndDate(""); setTitrationStage("");
-        setPrescriberName(""); setPrescriberContact(""); setStatus("active"); setNotes("");
-      }
+    if (!open) return;
+    setErrors({});
+    if (editing) {
+      const stored = editing.medication_name || "";
+      const option = findMedicationOption(stored);
+      const storedFrequency = String(editing.frequency || "").trim();
+      const labelled = labelledSchedule(stored);
+      const storedIndication = String(editing.indication || "").trim();
+      setSelectedName(option ? option.value : "");
+      setIsCustom(!option);
+      setCustomName(option ? "" : stored);
+      setDose(editing.prescribed_dose != null ? String(editing.prescribed_dose) : "");
+      setDoseConfirmed(false);
+      setUnit(editing.dose_unit || option?.unit || "mg");
+      setSchedule(scheduleFromStored(storedFrequency, stored));
+      setScheduleOther(storedFrequency && storedFrequency.toLowerCase() !== labelled.toLowerCase() ? storedFrequency : "");
+      setIndication(INDICATION_OPTIONS.includes(storedIndication) ? storedIndication : storedIndication ? "Other" : "");
+      setIndicationOther(INDICATION_OPTIONS.includes(storedIndication) ? "" : storedIndication);
+      setStartDate(editing.start_date || todayInput());
+      setPlannedEndDate(editing.planned_end_date || "");
+      setDoseStep(editing.titration_stage || "");
+      setPrescriberName(editing.prescriber_name || "");
+      setPrescriberContact(editing.prescriber_contact || "");
+      setStatus(editing.status || "active");
+      setNotes(editing.notes || "");
+    } else {
+      setSelectedName(""); setIsCustom(false); setCustomName("");
+      setDose(""); setDoseConfirmed(false); setUnit("mg");
+      setSchedule(""); setScheduleOther("");
+      setIndication(""); setIndicationOther("");
+      setStartDate(todayInput()); setPlannedEndDate(""); setDoseStep("");
+      setPrescriberName(""); setPrescriberContact(""); setStatus("active"); setNotes("");
     }
   }, [open, editing]);
 
   const sheetRef = useModal({ open, onDismiss: onClose });
-
   if (!open) return null;
 
-  // The label's own strengths for the chosen product, so the dose entered here
-  // matches what the user's pen or pen label actually offers.
-  const labelDoses = describeAllowedDoses(medicationName);
+  const option = isCustom ? null : findMedicationOption(selectedName);
+  const ready = isCustom || !!option;
+  const clearError = (field) => setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+
+  const handleSelect = ({ name, isCustom: custom }) => {
+    setErrors({});
+    setDose(""); setDoseConfirmed(false);
+    if (custom) {
+      setIsCustom(true);
+      setSelectedName("");
+      setCustomName(name);
+      setUnit("mg");
+      setSchedule("");
+      setScheduleOther("");
+      return;
+    }
+    const picked = findMedicationOption(name);
+    setIsCustom(false);
+    setSelectedName(name);
+    setCustomName("");
+    setUnit(picked?.unit || "mg");
+    setSchedule(picked?.schedule || "");
+    setScheduleOther("");
+  };
 
   const handleSave = async () => {
-    if (!medicationName.trim()) { toast.error("Medication name is required"); return; }
+    const finalName = isCustom ? customName.trim() : selectedName;
+    const picked = findMedicationOption(finalName);
+    const doseText = String(dose ?? "").trim();
+    const doseNum = Number(doseText);
+    const standard = !isCustom && isLabelStrength(finalName, doseText);
+
+    const problem = validateRegimenForm({
+      selectedName, isCustom, customName, dose, doseConfirmed, isStandardDose: standard,
+      startDate, plannedEndDate,
+    });
+    if (problem) {
+      setErrors({ [problem.field]: problem.message });
+      toast.error(problem.message);
+      return;
+    }
+
     setSaving(true);
     const payload = {
-      medication_name: medicationName,
-      prescribed_dose: parseFloat(prescribedDose) || null,
-      dose_unit: doseUnit,
-      frequency,
-      indication,
-      start_date: startDate || null,
+      medication_name: finalName,
+      generic_name: picked?.generic || "",
+      route: picked?.route || "",
+      prescribed_dose: doseNum,
+      dose_unit: isCustom ? unit : (picked?.unit || "mg"),
+      frequency: scheduleText(schedule, scheduleOther),
+      indication: indication === "Other" ? indicationOther.trim() : indication,
+      start_date: startDate,
       planned_end_date: plannedEndDate || null,
-      titration_stage: titrationStage,
+      titration_stage: doseStep,
       prescriber_name: prescriberName,
       prescriber_contact: prescriberContact,
       status,
       notes,
       regimen_source: "user-entered",
     };
+    // A regimen marked stopped ends today, so reminders pause with it.
+    if (status === "discontinued" && !editing?.discontinued_date) payload.discontinued_date = todayInput();
+
     try {
       if (editing) {
         await updateMedication(editing.id, payload);
@@ -92,13 +174,6 @@ export default function MedicationModal({ open, onClose, editing }) {
     }
   };
 
-  const Field = ({ label, children }) => (
-    <div>
-      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">{label}</label>
-      {children}
-    </div>
-  );
-
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={onClose} aria-hidden="true" />
@@ -114,81 +189,147 @@ export default function MedicationModal({ open, onClose, editing }) {
           <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
           <div className="flex items-center justify-between px-5 pb-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0]">{editing ? "Edit Medication" : "Add Medication"}</h2>
-            <button onClick={onClose}><X size={22} className="text-gray-400" /></button>
+            <button onClick={onClose} aria-label="Close" className="w-11 h-11 flex items-center justify-center rounded-full">
+              <X size={22} className="text-gray-400" />
+            </button>
           </div>
         </div>
-        <div className="px-5 pb-4 space-y-4">
-          <Field label="Medication name">
-            <input type="text" list="med-list" value={medicationName} onChange={(e) => setMedicationName(e.target.value)} placeholder="e.g. Ozempic®"
-              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
-            <datalist id="med-list">{getMedicationPickerNames().map((m) => <option key={m} value={m} />)}</datalist>
-            {labelDoses && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                US label strengths for {plainBrandName(medicationName)}: {labelDoses}
-              </p>
-            )}
-          </Field>
+
+        <div className="px-5 pb-5 space-y-5">
+          <MedicationNamePicker
+            selectedName={selectedName}
+            isCustom={isCustom}
+            onSelect={handleSelect}
+            error={errors.name}
+          />
+
+          {isCustom && (
+            <div>
+              <label htmlFor="custom-med-name" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">
+                Medication name
+              </label>
+              <input
+                id="custom-med-name"
+                type="text"
+                value={customName}
+                autoComplete="off"
+                onChange={(e) => { setCustomName(e.target.value); clearError("name"); }}
+                placeholder="Type the name from your prescription"
+                className={inputClass}
+              />
+            </div>
+          )}
+
+          {!ready ? (
+            <div className="rounded-2xl border border-gray-200 dark:border-white/[0.12] bg-gray-50 dark:bg-white/[0.04] px-4 py-4 text-base text-gray-700 dark:text-[#9A9DAE]">
+              Choose your medication above to see the strengths shown on your pen.
+            </div>
+          ) : (
+            <>
+              {option?.routeLabel && (
+                <div className="flex items-center gap-3 rounded-2xl bg-gray-50 dark:bg-white/[0.04] px-4 py-3.5">
+                  <ShieldCheck size={20} className="text-indigo-500 flex-shrink-0" />
+                  <span className="text-base text-gray-700 dark:text-[#9A9DAE]">
+                    Route: <span className="font-semibold text-gray-900 dark:text-[#E8E9F0]">{option.routeLabel}</span>
+                  </span>
+                </div>
+              )}
+
+              <DoseStrengthPicker
+                option={option}
+                value={dose}
+                onChange={(v) => { setDose(v); setDoseConfirmed(false); clearError("dose"); }}
+                confirmed={doseConfirmed}
+                onConfirmedChange={(v) => { setDoseConfirmed(v); clearError("dose"); }}
+                unit={unit}
+                onUnitChange={setUnit}
+                error={errors.dose}
+              />
+
+              <ScheduleField
+                option={option}
+                value={schedule}
+                onChange={(v) => { setSchedule(v); clearError("schedule"); }}
+                other={scheduleOther}
+                onOtherChange={setScheduleOther}
+                error={errors.schedule}
+              />
+
+              <IndicationField
+                value={indication}
+                onChange={setIndication}
+                other={indicationOther}
+                onOtherChange={setIndicationOther}
+                error={errors.indication}
+              />
+            </>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-3">
-            <Field label="Prescribed dose">
-              <input type="number" min="0" step="0.25" value={prescribedDose} onChange={(e) => setPrescribedDose(e.target.value)}
-                className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
-            </Field>
-            <Field label="Unit">
-              <select value={doseUnit} onChange={(e) => setDoseUnit(e.target.value)}
-                className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300">
-                {["mg", "mcg", "units", "IU", "mL"].map((u) => <option key={u} value={u}>{u}</option>)}
-              </select>
-            </Field>
+            <div className="flex-1">
+              <label htmlFor="start-date" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">Start date</label>
+              <input id="start-date" type="date" value={startDate}
+                onChange={(e) => { setStartDate(e.target.value); clearError("startDate"); }} className={inputClass} />
+              {errors.startDate && <p className="text-base font-medium text-red-600 dark:text-red-400 mt-2">{errors.startDate}</p>}
+            </div>
+            <div className="flex-1">
+              <label htmlFor="end-date" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">Planned end (optional)</label>
+              <input id="end-date" type="date" value={plannedEndDate}
+                onChange={(e) => { setPlannedEndDate(e.target.value); clearError("plannedEndDate"); }} className={inputClass} />
+              {errors.plannedEndDate && <p className="text-base font-medium text-red-600 dark:text-red-400 mt-2">{errors.plannedEndDate}</p>}
+            </div>
           </div>
-          <Field label="Frequency">
-            <input type="text" value={frequency} onChange={(e) => setFrequency(e.target.value)} placeholder="e.g. once weekly"
-              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
-          </Field>
-          <Field label="Indication (as prescribed)">
-            <input type="text" value={indication} onChange={(e) => setIndication(e.target.value)} placeholder="e.g. Type 2 diabetes"
-              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
-          </Field>
+
+          <div>
+            <label htmlFor="dose-step" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">
+              Dose step from your doctor (optional)
+            </label>
+            <input id="dose-step" type="text" value={doseStep} autoComplete="off"
+              onChange={(e) => setDoseStep(e.target.value)} placeholder="e.g. starter dose" className={inputClass} />
+            <p className="text-sm text-gray-500 dark:text-[#9A9DAE] mt-2">{DOSE_STEP_HELPER}</p>
+            <p className="text-sm text-gray-500 dark:text-[#9A9DAE] mt-1">{PRESCRIBER_ONLY_NOTE} Levli does not generate a titration schedule.</p>
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-3">
-            <Field label="Start date">
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
-            </Field>
-            <Field label="Planned end (optional)">
-              <input type="date" value={plannedEndDate} onChange={(e) => setPlannedEndDate(e.target.value)}
-                className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
-            </Field>
+            <div className="flex-1">
+              <label htmlFor="prescriber-name" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">Prescriber name</label>
+              <input id="prescriber-name" type="text" value={prescriberName} autoComplete="off"
+                onChange={(e) => setPrescriberName(e.target.value)} className={inputClass} />
+            </div>
+            <div className="flex-1">
+              <label htmlFor="prescriber-contact" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">Prescriber contact</label>
+              <input id="prescriber-contact" type="text" value={prescriberContact} autoComplete="off"
+                onChange={(e) => setPrescriberContact(e.target.value)} className={inputClass} />
+            </div>
           </div>
-          <Field label="Titration stage (as directed by prescriber)">
-            <input type="text" value={titrationStage} onChange={(e) => setTitrationStage(e.target.value)} placeholder="e.g. 1.0 mg maintenance"
-              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
-            <p className="text-xs text-gray-400 mt-1">Enter only what your prescriber told you. Levli does not generate titration schedules.</p>
-          </Field>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Field label="Prescriber name">
-              <input type="text" value={prescriberName} onChange={(e) => setPrescriberName(e.target.value)}
-                className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
-            </Field>
-            <Field label="Prescriber contact">
-              <input type="text" value={prescriberContact} onChange={(e) => setPrescriberContact(e.target.value)}
-                className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
-            </Field>
+
+          <div>
+            <span className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">Status</span>
+            <div className="grid grid-cols-3 gap-2">
+              {statusOptionsFor(status).map((s) => (
+                <button key={s.value} type="button" onClick={() => setStatus(s.value)} aria-pressed={status === s.value}
+                  className={`min-h-[60px] rounded-2xl border-2 px-2 text-base font-semibold ${status === s.value
+                    ? "bg-indigo-600 border-indigo-600 text-white"
+                    : "bg-white dark:bg-white/[0.05] border-gray-200 dark:border-white/[0.12] text-gray-900 dark:text-[#E8E9F0]"}`}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <Field label="Status">
-            <select value={status} onChange={(e) => setStatus(e.target.value)}
-              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300">
-              {["active", "paused", "discontinued", "switched"].map((s) => <option key={s} value={s} className="capitalize">{s}</option>)}
-            </select>
-          </Field>
-          <Field label="Notes">
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-300" />
-          </Field>
+
+          <div>
+            <label htmlFor="med-notes" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">Notes</label>
+            <textarea id="med-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
+              className="w-full rounded-2xl border-2 border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-4 py-3 text-base outline-none focus:border-indigo-400" />
+          </div>
         </div>
+
         <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
           <button onClick={handleSave} disabled={saving}
-            className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
-            <Save size={16} /> {saving ? "Saving…" : editing ? "Update" : "Save"}
+            className="w-full min-h-[56px] bg-indigo-600 text-white rounded-2xl font-semibold text-base flex items-center justify-center gap-2 disabled:opacity-60">
+            <Save size={18} /> {saving ? "Saving…" : editing ? "Update" : "Save"}
           </button>
+          <p className="text-xs text-gray-500 dark:text-[#9A9DAE] text-center mt-2.5 leading-snug">{REGIMEN_FOOTER}</p>
         </div>
       </div>
     </div>
