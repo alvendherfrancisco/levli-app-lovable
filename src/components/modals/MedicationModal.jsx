@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { X, ChevronLeft, ChevronRight, Save } from "lucide-react";
+import { X, Save } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import useModal from "@/hooks/useModal";
 import { toast } from "sonner";
-import { findMedicationOption, indicationFromStored, isLabelStrength, labelledSchedule, scheduleText,
-  summariseRegimen, validateRegimenForm, OTHER_SCHEDULE, REGIMEN_FOOTER } from "@/lib/medicationRegimen";
-import { helperCls, primaryBtnCls, secondaryBtnCls } from "@/components/medications/formStyles";
-import MedicationStep from "@/components/medications/steps/MedicationStep";
-import DoseStep from "@/components/medications/steps/DoseStep";
-import WhenStep from "@/components/medications/steps/WhenStep";
-import DoctorStep from "@/components/medications/steps/DoctorStep";
-import ReviewStep from "@/components/medications/steps/ReviewStep";
-import MedicationSavedPanel from "@/components/medications/MedicationSavedPanel";
+import { findMedicationOption, labelledSchedule, isLabelStrength, scheduleText, statusOptionsFor, validateRegimenForm,
+  DOSE_STEP_HELPER, INDICATION_OPTIONS, OTHER_SCHEDULE } from "@/lib/medicationRegimen";
+import MedicationNamePicker from "@/components/medications/MedicationNamePicker";
+import DoseStrengthPicker from "@/components/medications/DoseStrengthPicker";
+import ScheduleField from "@/components/medications/ScheduleField";
+import IndicationField from "@/components/medications/IndicationField";
 
 const pad = (n) => String(n).padStart(2, "0");
 function todayInput() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+
+const inputClass = "w-full min-h-[60px] rounded-2xl border-2 border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-4 py-3 text-base outline-none focus:border-indigo-400 dark:[color-scheme:dark]";
+
+/** The single line shown under the save button. */
+const FOOTER_NOTE = "This app is a tracker, not medical advice.";
 
 /** A stored frequency string as the form's schedule choice. */
 function scheduleFromStored(stored, name) {
@@ -25,20 +27,16 @@ function scheduleFromStored(stored, name) {
   return OTHER_SCHEDULE;
 }
 
-const STEP_COUNT = 5;
-/** Which step owns each validation message, so a fix is always one step away. */
-const FIELD_STEP = { name: 1, dose: 2, startDate: 3, plannedEndDate: 3 };
-
 /**
- * Add / Edit Medication as a five-step flow: one question per screen, plain
- * words, large text and controls that respect the phone's font-size setting.
- * Nothing here suggests or adjusts a dose — a dose that is not a label strength
- * is kept, once the user has checked it against their own prescription.
+ * Add / Edit Medication — one scrollable form. Plain-language choices, tap
+ * targets that respect the phone's font setting and only the strengths the
+ * product's own label lists. Nothing here suggests or adjusts a dose: a dose
+ * that is not a label strength is kept, once the user has checked it against
+ * their prescription.
  */
 export default function MedicationModal({ open, onClose, editing }) {
   const { addMedication, updateMedication, linkShotsToMedication } = useAppState();
 
-  const [step, setStep] = useState(1);
   const [selectedName, setSelectedName] = useState("");
   const [isCustom, setIsCustom] = useState(false);
   const [customName, setCustomName] = useState("");
@@ -58,23 +56,16 @@ export default function MedicationModal({ open, onClose, editing }) {
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [summary, setSummary] = useState("");
-  const [linkedCount, setLinkedCount] = useState(0);
 
   useEffect(() => {
     if (!open) return;
     setErrors({});
-    setStep(1);
-    setSaved(false);
-    setSummary("");
-    setLinkedCount(0);
     if (editing) {
       const stored = editing.medication_name || "";
       const option = findMedicationOption(stored);
       const storedFrequency = String(editing.frequency || "").trim();
       const labelled = labelledSchedule(stored);
-      const indicationParts = indicationFromStored(editing.indication);
+      const storedIndication = String(editing.indication || "").trim();
       setSelectedName(option ? option.value : "");
       setIsCustom(!option);
       setCustomName(option ? "" : stored);
@@ -83,8 +74,8 @@ export default function MedicationModal({ open, onClose, editing }) {
       setUnit(editing.dose_unit || option?.unit || "mg");
       setSchedule(scheduleFromStored(storedFrequency, stored));
       setScheduleOther(storedFrequency && storedFrequency.toLowerCase() !== labelled.toLowerCase() ? storedFrequency : "");
-      setIndication(indicationParts.value);
-      setIndicationOther(indicationParts.other);
+      setIndication(INDICATION_OPTIONS.includes(storedIndication) ? storedIndication : storedIndication ? "Other" : "");
+      setIndicationOther(INDICATION_OPTIONS.includes(storedIndication) ? "" : storedIndication);
       setStartDate(editing.start_date || todayInput());
       setPlannedEndDate(editing.planned_end_date || "");
       setDoseStep(editing.titration_stage || "");
@@ -106,24 +97,8 @@ export default function MedicationModal({ open, onClose, editing }) {
   if (!open) return null;
 
   const option = isCustom ? null : findMedicationOption(selectedName);
+  const ready = isCustom || !!option;
   const clearError = (field) => setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
-
-  const check = () => {
-    const finalName = isCustom ? customName.trim() : selectedName;
-    const picked = findMedicationOption(finalName);
-    const doseText = String(dose ?? "").trim();
-    return {
-      picked,
-      finalName,
-      doseNum: Number(doseText),
-      standard: !isCustom && isLabelStrength(finalName, doseText),
-      problem: validateRegimenForm({
-        selectedName, isCustom, customName, dose, doseConfirmed,
-        isStandardDose: !isCustom && isLabelStrength(finalName, doseText),
-        startDate, plannedEndDate,
-      }),
-    };
-  };
 
   const handleSelect = ({ name, isCustom: custom }) => {
     // Choosing what is already selected only closes the list — nothing is reset.
@@ -143,32 +118,25 @@ export default function MedicationModal({ open, onClose, editing }) {
     setIsCustom(false);
     setSelectedName(name);
     setCustomName("");
+    // Unit and frequency arrive from the product; both stay editable.
     setUnit(picked?.unit || "mg");
     setSchedule(picked?.schedule || "");
     setScheduleOther("");
   };
 
-  // One question per screen: only this step's own answer is required to move on.
-  const goNext = () => {
-    const { problem } = check();
-    if (problem && FIELD_STEP[problem.field] === step) {
-      setErrors({ [problem.field]: problem.message });
-      return;
-    }
-    setErrors({});
-    setStep((s) => Math.min(s + 1, STEP_COUNT));
-  };
-
-  const goBack = () => {
-    setErrors({});
-    setStep((s) => Math.max(s - 1, 1));
-  };
-
   const handleSave = async () => {
-    const { picked, finalName, doseNum, problem } = check();
+    const finalName = isCustom ? customName.trim() : selectedName;
+    const picked = findMedicationOption(finalName);
+    const doseText = String(dose ?? "").trim();
+    const doseNum = Number(doseText);
+    const standard = !isCustom && isLabelStrength(finalName, doseText);
+
+    const problem = validateRegimenForm({
+      selectedName, isCustom, customName, dose, doseConfirmed, isStandardDose: standard,
+      startDate, plannedEndDate,
+    });
     if (problem) {
       setErrors({ [problem.field]: problem.message });
-      setStep(FIELD_STEP[problem.field] || 1);
       return;
     }
 
@@ -193,21 +161,21 @@ export default function MedicationModal({ open, onClose, editing }) {
     // A regimen marked stopped ends today, so reminders pause with it.
     if (status === "discontinued" && !editing?.discontinued_date) payload.discontinued_date = todayInput();
 
-    const line = summariseRegimen({ option: picked, isCustom, customName, dose, unit, schedule, scheduleOther, startDate });
     try {
       if (editing) {
         await updateMedication(editing.id, payload);
         await linkShotsToMedication(payload.medication_name, editing.id);
+        toast.success("Medication updated");
       } else {
         const rec = await addMedication(payload);
         // Every shot log for this medication is linked to the new record.
-        setLinkedCount(await linkShotsToMedication(payload.medication_name, rec.id) || 0);
+        const linked = await linkShotsToMedication(payload.medication_name, rec.id);
+        toast.success(linked ? `Medication added — ${linked} shot log${linked === 1 ? "" : "s"} linked` : "Medication added");
       }
-      setSummary(line);
-      setSaved(true);
       setSaving(false);
+      setTimeout(() => onClose(), 300);
     } catch (err) {
-      toast.error("That didn't save. Please check your connection and try again.");
+      toast.error("Failed to save medication");
       setSaving(false);
     }
   };
@@ -221,160 +189,148 @@ export default function MedicationModal({ open, onClose, editing }) {
         aria-modal="true"
         aria-label={editing ? "Edit Medication" : "Add Medication"}
         tabIndex={-1}
-        className="relative bg-white dark:bg-[#0f1117] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[520px] max-h-[92dvh] overflow-y-auto overflow-x-hidden no-scrollbar sheet-lock animate-in slide-in-from-bottom sm:mx-4 dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)] outline-none"
+        className="relative bg-white dark:bg-[#0f1117] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[520px] max-h-[92dvh] overflow-y-auto overflow-x-hidden no-scrollbar sheet-lock animate-in slide-in-from-bottom sm:mx-4 dark:shadow-[0_-8px_40px_rgba(0,0,0,0.5)] outline-none"
       >
         <div className="sticky top-0 z-10 bg-white dark:bg-[#0f1117]">
-          <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-gray-400 dark:bg-white/40 rounded-full" /></div>
-          {!saved && (
-            <>
-              <div className="flex items-center justify-between gap-3 px-5 pb-3">
-                <div className="min-w-0">
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">
-                    {editing ? "Edit medication" : "Add medication"}
-                  </p>
-                  <p className="text-lg text-gray-700 dark:text-gray-200">Step {step} of {STEP_COUNT}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex items-center gap-2 min-h-[48px] min-w-[48px] px-3 rounded-2xl border-2 border-gray-400 dark:border-white/40 text-lg font-semibold text-gray-900 dark:text-white flex-shrink-0"
-                >
-                  <X size={24} aria-hidden="true" /> Close
-                </button>
-              </div>
-              <div className="px-5 pb-3">
-                <div
-                  className="h-2.5 w-full rounded-full bg-gray-200 dark:bg-white/25"
-                  role="progressbar"
-                  aria-label={`Step ${step} of ${STEP_COUNT}`}
-                  aria-valuemin={1}
-                  aria-valuemax={STEP_COUNT}
-                  aria-valuenow={step}
-                >
-                  <div className="h-2.5 rounded-full bg-indigo-600" style={{ width: `${(step / STEP_COUNT) * 100}%` }} />
-                </div>
-              </div>
-            </>
-          )}
+          <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
+          <div className="flex items-center justify-between px-5 pb-4">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0]">{editing ? "Edit Medication" : "Add Medication"}</h2>
+            <button onClick={onClose} aria-label="Close" className="w-11 h-11 flex items-center justify-center rounded-full">
+              <X size={22} className="text-gray-400" />
+            </button>
+          </div>
         </div>
 
-        <div className="px-5 pb-6">
-          {saved ? (
-            <MedicationSavedPanel editing={!!editing} summary={summary} linkedCount={linkedCount} />
+        <div className="px-5 pb-5 space-y-5">
+          <MedicationNamePicker
+            selectedName={selectedName}
+            isCustom={isCustom}
+            onSelect={handleSelect}
+            error={errors.name}
+          />
+
+          {isCustom && (
+            <div>
+              <label htmlFor="custom-med-name" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">
+                Medication name
+              </label>
+              <input
+                id="custom-med-name"
+                type="text"
+                value={customName}
+                autoComplete="off"
+                onChange={(e) => { setCustomName(e.target.value); clearError("name"); }}
+                placeholder="Type the name from your prescription"
+                className={inputClass}
+              />
+            </div>
+          )}
+
+          {!ready ? (
+            <div className="rounded-2xl border border-gray-200 dark:border-white/[0.12] bg-gray-50 dark:bg-white/[0.04] px-4 py-4 text-base text-gray-700 dark:text-[#9A9DAE]">
+              Choose your medication above to see the strengths shown on your pen.
+            </div>
           ) : (
             <>
-              {step === 1 && (
-                <MedicationStep
-                  selectedName={selectedName}
-                  isCustom={isCustom}
-                  customName={customName}
-                  onSelect={handleSelect}
-                  onCustomNameChange={(v) => { setCustomName(v); clearError("name"); }}
-                  option={option}
-                  error={errors.name}
-                />
-              )}
+              <DoseStrengthPicker
+                option={option}
+                value={dose}
+                onChange={(v) => { setDose(v); setDoseConfirmed(false); clearError("dose"); }}
+                confirmed={doseConfirmed}
+                onConfirmedChange={(v) => { setDoseConfirmed(v); clearError("dose"); }}
+                unit={unit}
+                onUnitChange={setUnit}
+                error={errors.dose}
+              />
 
-              {step === 2 && (
-                <DoseStep
-                  option={option}
-                  value={dose}
-                  onChange={(v) => { setDose(v); setDoseConfirmed(false); clearError("dose"); }}
-                  confirmed={doseConfirmed}
-                  onConfirmedChange={(v) => { setDoseConfirmed(v); clearError("dose"); }}
-                  unit={unit}
-                  onUnitChange={setUnit}
-                  error={errors.dose}
-                />
-              )}
+              <ScheduleField
+                option={option}
+                value={schedule}
+                onChange={(v) => { setSchedule(v); clearError("schedule"); }}
+                other={scheduleOther}
+                onOtherChange={setScheduleOther}
+                error={errors.schedule}
+              />
 
-              {step === 3 && (
-                <WhenStep
-                  option={option}
-                  schedule={schedule}
-                  onScheduleChange={setSchedule}
-                  scheduleOther={scheduleOther}
-                  onScheduleOtherChange={setScheduleOther}
-                  startDate={startDate}
-                  onStartDateChange={(v) => { setStartDate(v); clearError("startDate"); }}
-                  endDate={plannedEndDate}
-                  onEndDateChange={(v) => { setPlannedEndDate(v); clearError("plannedEndDate"); }}
-                  status={status}
-                  onStatusChange={setStatus}
-                  errors={errors}
-                />
-              )}
-
-              {step === 4 && (
-                <DoctorStep
-                  prescriberName={prescriberName}
-                  onPrescriberNameChange={setPrescriberName}
-                  prescriberContact={prescriberContact}
-                  onPrescriberContactChange={setPrescriberContact}
-                  doseStep={doseStep}
-                  onDoseStepChange={setDoseStep}
-                  notes={notes}
-                  onNotesChange={setNotes}
-                  indication={indication}
-                  onIndicationChange={setIndication}
-                  indicationOther={indicationOther}
-                  onIndicationOtherChange={setIndicationOther}
-                />
-              )}
-
-              {step === 5 && (
-                <ReviewStep
-                  option={option}
-                  isCustom={isCustom}
-                  customName={customName}
-                  dose={dose}
-                  unit={unit}
-                  schedule={schedule}
-                  scheduleOther={scheduleOther}
-                  startDate={startDate}
-                  endDate={plannedEndDate}
-                  status={status}
-                  indication={indication}
-                  indicationOther={indicationOther}
-                  prescriberName={prescriberName}
-                  prescriberContact={prescriberContact}
-                  doseStep={doseStep}
-                  notes={notes}
-                />
-              )}
-
-              <p className={`${helperCls} mt-8 text-center`}>{REGIMEN_FOOTER}</p>
+              <IndicationField
+                value={indication}
+                onChange={setIndication}
+                other={indicationOther}
+                onOtherChange={setIndicationOther}
+                error={errors.indication}
+              />
             </>
           )}
+
+          {/* Date fields stay inside the sheet's padding: stacked on a phone,
+              side by side only where there is room, and each one allowed to
+              shrink (min-w-0) so a native date input can never spill out. */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 min-w-0">
+              <label htmlFor="start-date" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">Start date</label>
+              <input id="start-date" type="date" value={startDate}
+                onChange={(e) => { setStartDate(e.target.value); clearError("startDate"); }}
+                className={`${inputClass} box-border w-full min-w-0`} />
+              {errors.startDate && <p className="text-base font-medium text-red-600 dark:text-red-400 mt-2">{errors.startDate}</p>}
+            </div>
+            <div className="flex-1 min-w-0">
+              <label htmlFor="end-date" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">Planned end (optional)</label>
+              <input id="end-date" type="date" value={plannedEndDate}
+                onChange={(e) => { setPlannedEndDate(e.target.value); clearError("plannedEndDate"); }}
+                className={`${inputClass} box-border w-full min-w-0`} />
+              {errors.plannedEndDate && <p className="text-base font-medium text-red-600 dark:text-red-400 mt-2">{errors.plannedEndDate}</p>}
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="dose-step" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">
+              Dose step from your doctor (optional)
+            </label>
+            <input id="dose-step" type="text" value={doseStep} autoComplete="off"
+              onChange={(e) => setDoseStep(e.target.value)} placeholder="e.g. starter dose" className={inputClass} />
+            <p className="text-sm text-gray-500 dark:text-[#9A9DAE] mt-2">{DOSE_STEP_HELPER}</p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 min-w-0">
+              <label htmlFor="prescriber-name" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">Prescriber name</label>
+              <input id="prescriber-name" type="text" value={prescriberName} autoComplete="off"
+                onChange={(e) => setPrescriberName(e.target.value)} className={inputClass} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <label htmlFor="prescriber-contact" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">Prescriber contact</label>
+              <input id="prescriber-contact" type="text" value={prescriberContact} autoComplete="off"
+                onChange={(e) => setPrescriberContact(e.target.value)} className={inputClass} />
+            </div>
+          </div>
+
+          <div>
+            <span className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">Status</span>
+            <div className="grid grid-cols-3 gap-2">
+              {statusOptionsFor(status).map((s) => (
+                <button key={s.value} type="button" onClick={() => setStatus(s.value)} aria-pressed={status === s.value}
+                  className={`min-h-[60px] rounded-2xl border-2 px-2 text-base font-semibold ${status === s.value
+                    ? "bg-indigo-600 border-indigo-600 text-white"
+                    : "bg-white dark:bg-white/[0.05] border-gray-200 dark:border-white/[0.12] text-gray-900 dark:text-[#E8E9F0]"}`}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="med-notes" className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 block">Notes</label>
+            <textarea id="med-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
+              className="w-full rounded-2xl border-2 border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-4 py-3 text-base outline-none focus:border-indigo-400" />
+          </div>
         </div>
 
-        <div
-          className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-200 dark:border-white/[0.12] space-y-3"
-          style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}
-        >
-          {saved ? (
-            <button type="button" onClick={onClose} className={primaryBtnCls}>Done</button>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={step === STEP_COUNT ? handleSave : goNext}
-                disabled={saving}
-                className={primaryBtnCls}
-              >
-                {step === STEP_COUNT
-                  ? <Save size={26} aria-hidden="true" />
-                  : <ChevronRight size={26} aria-hidden="true" />}
-                {step === STEP_COUNT ? (saving ? "Saving…" : "Save medication") : "Next"}
-              </button>
-              {step > 1 && (
-                <button type="button" onClick={goBack} className={secondaryBtnCls}>
-                  <ChevronLeft size={26} aria-hidden="true" />
-                  {step === STEP_COUNT ? "Go back and change" : "Back"}
-                </button>
-              )}
-            </>
-          )}
+        <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
+          <button onClick={handleSave} disabled={saving}
+            className="w-full min-h-[56px] bg-indigo-600 text-white rounded-2xl font-semibold text-base flex items-center justify-center gap-2 disabled:opacity-60">
+            <Save size={18} /> {saving ? "Saving…" : editing ? "Update" : "Save"}
+          </button>
+          <p className="text-xs text-gray-500 dark:text-[#9A9DAE] text-center mt-2.5 leading-snug">{FOOTER_NOTE}</p>
         </div>
       </div>
     </div>
