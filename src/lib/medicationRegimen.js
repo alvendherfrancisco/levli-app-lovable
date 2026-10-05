@@ -14,6 +14,7 @@
 import {
   MEDICATION_CONFIG, getAllowedDoses, getDoseUnit, getIntervalDays, plainBrandName,
 } from "@/lib/medicationConfig";
+import { formatLocaleDate, fromDayKey } from "@/lib/dateUtils";
 
 /** The products the picker offers, in the order it shows them. */
 const PICKER_IDS = [
@@ -166,9 +167,30 @@ export function validateRegimenForm({
     const end = parseDate(plannedEndDate);
     if (!end) return { field: "plannedEndDate", message: "Check the planned end date." };
     if (end.getTime() <= start.getTime()) {
-      return { field: "plannedEndDate", message: "The planned end date must be after the start date." };
+      return { field: "plannedEndDate", message: "The stop date needs to be after the first dose date." };
     }
   }
 
   return null;
+}
+
+/** A date key ("YYYY-MM-DD") written out plainly, e.g. "Oct 6, 2026". */
+export function plainDateLabel(key) {
+  return key ? formatLocaleDate(fromDayKey(key)) : "";
+}
+
+/**
+ * The one-line summary of what is about to be saved, e.g.
+ * "Ozempic (semaglutide), 1 mg, once weekly, starting Oct 6, 2026".
+ */
+export function summariseRegimen({ option, isCustom, customName, dose, unit, schedule, scheduleOther, startDate }) {
+  const name = option ? option.label : String(customName || "").trim();
+  const doseText = String(dose ?? "").trim();
+  const when = scheduleText(schedule, scheduleOther);
+  return [
+    name,
+    doseText ? `${doseText} ${isCustom ? unit : option?.unit || "mg"}` : "",
+    when ? when.toLowerCase() : "",
+    startDate ? `starting ${plainDateLabel(startDate)}` : "",
+  ].filter(Boolean).join(", ");
 }

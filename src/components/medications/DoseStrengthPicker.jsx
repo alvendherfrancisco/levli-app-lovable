@@ -4,21 +4,17 @@ import {
   MG_VIAL_NOTE, NON_STANDARD_DOSE_CONFIRM, NON_STANDARD_DOSE_MESSAGE,
   STRENGTH_BUTTON_LIMIT, isLabelStrength,
 } from "@/lib/medicationRegimen";
+import { choiceCls, helperCls, inputCls, labelCls, otherChoiceCls } from "@/components/medications/formStyles";
+import FieldError from "@/components/medications/FieldError";
 
 const UNITS = ["mg", "mcg", "units", "IU", "mL"];
-
-const bigChoice = (selected) =>
-  `min-h-[60px] rounded-2xl border-2 px-3 text-lg font-semibold ${
-    selected
-      ? "bg-indigo-600 border-indigo-600 text-white"
-      : "bg-white dark:bg-white/[0.05] border-gray-200 dark:border-white/[0.12] text-gray-900 dark:text-[#E8E9F0]"
-  }`;
 
 /**
  * The dose field. A known product offers only the strengths its label lists —
  * as large buttons when there are six or fewer, otherwise a dropdown — plus
  * "Other dose (as prescribed)" for a dose the prescriber directed. A dose that
  * is not a label strength is never blocked: it asks for one confirmation tick.
+ * When a dose is typed, the unit sits beside it and the keyboard is numeric.
  */
 export default function DoseStrengthPicker({
   option, value, onChange, confirmed, onConfirmedChange, unit, onUnitChange, error,
@@ -39,41 +35,28 @@ export default function DoseStrengthPicker({
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-3 mb-2">
-        <span className="text-base font-semibold text-gray-800 dark:text-gray-200">Dose</span>
-        {hasStrengths ? (
-          <span className="text-base font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/[0.06] rounded-xl px-3 py-1.5">
-            {option.unit}
-          </span>
-        ) : (
-          <select
-            value={unit}
-            onChange={(e) => onUnitChange(e.target.value)}
-            aria-label="Dose unit"
-            className="min-h-[48px] rounded-xl border-2 border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-3 text-base outline-none focus:border-indigo-400"
-          >
-            {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-          </select>
-        )}
-      </div>
+      <span className={labelCls}>Dose</span>
 
       {hasStrengths && (strengths.length <= STRENGTH_BUTTON_LIMIT ? (
-        <div className="grid grid-cols-2 gap-2">
-          {strengths.map((d) => {
-            const selected = standard && Number(typed) === d.value;
-            return (
-              <button key={d.value} type="button" onClick={() => pick(d.value)} aria-pressed={selected} className={bigChoice(selected)}>
-                {d.value} {d.unit}
-              </button>
-            );
-          })}
+        <div className="grid grid-cols-2 gap-3">
+          {strengths.map((d) => (
+            <button
+              key={d.value}
+              type="button"
+              onClick={() => pick(d.value)}
+              aria-pressed={standard && Number(typed) === d.value}
+              className={choiceCls(standard && Number(typed) === d.value)}
+            >
+              {d.value} {d.unit}
+            </button>
+          ))}
         </div>
       ) : (
         <select
           value={standard ? typed : ""}
           onChange={(e) => pick(e.target.value)}
           aria-label="Dose strength"
-          className="w-full min-h-[60px] rounded-2xl border-2 border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-4 text-lg outline-none focus:border-indigo-400"
+          className={inputCls}
         >
           <option value="">Choose the strength on your pen</option>
           {strengths.map((d) => <option key={d.value} value={d.value}>{d.value} {d.unit}</option>)}
@@ -81,54 +64,66 @@ export default function DoseStrengthPicker({
       ))}
 
       {hasStrengths && !otherTouched && (
-        <button
-          type="button"
-          onClick={() => setOtherTouched(true)}
-          className="mt-2 w-full min-h-[56px] rounded-2xl border-2 border-dashed border-gray-300 dark:border-white/[0.18] text-base font-semibold text-gray-700 dark:text-gray-300"
-        >
+        <button type="button" onClick={() => setOtherTouched(true)} className={`${otherChoiceCls} mt-3`}>
           Other dose (as prescribed)
         </button>
       )}
 
       {showOther && (
-        <div className={hasStrengths || otherTouched ? "mt-2" : ""}>
-          <label htmlFor="other-dose" className="text-sm font-medium text-gray-600 dark:text-[#9A9DAE] mb-1.5 block">
+        <div className={hasStrengths ? "mt-4" : ""}>
+          <label htmlFor="other-dose" className="text-lg font-semibold text-gray-900 dark:text-white mb-2 block">
             {hasStrengths ? "Dose your prescriber directed" : "Dose from your prescription"}
           </label>
-          <input
-            id="other-dose"
-            type="number"
-            min="0"
-            step="0.25"
-            inputMode="decimal"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="e.g. 1.75"
-            className="w-full min-h-[60px] rounded-2xl border-2 border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-4 py-3 text-lg outline-none focus:border-indigo-400"
-          />
+          <div className="flex items-center gap-3">
+            <input
+              id="other-dose"
+              type="number"
+              min="0"
+              step="0.25"
+              inputMode="decimal"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="e.g. 1.75"
+              className={`${inputCls} flex-1 min-w-0`}
+            />
+            {hasStrengths ? (
+              <span className="min-h-[56px] flex items-center px-4 rounded-2xl bg-gray-200 dark:bg-white/[0.16] text-lg font-bold text-gray-900 dark:text-white flex-shrink-0">
+                {option.unit}
+              </span>
+            ) : (
+              <select
+                value={unit}
+                onChange={(e) => onUnitChange(e.target.value)}
+                aria-label="Dose unit"
+                className="min-h-[56px] rounded-2xl border-2 border-gray-400 dark:border-white/40 bg-white dark:bg-white/[0.08] text-gray-900 dark:text-white px-3 text-lg font-semibold outline-none focus:border-indigo-500 flex-shrink-0"
+              >
+                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              </select>
+            )}
+          </div>
         </div>
       )}
 
       {needsConfirm && (
-        <div className="mt-3 rounded-2xl border border-orange-200 dark:border-orange-500/25 bg-orange-50 dark:bg-orange-500/10 p-4">
-          <p className="text-base text-orange-800 dark:text-orange-200 leading-snug">{NON_STANDARD_DOSE_MESSAGE}</p>
-          <label className="flex items-start gap-3 mt-3 cursor-pointer min-h-[44px]">
+        <div className="mt-4 rounded-2xl border-2 border-orange-400 dark:border-orange-400/50 bg-orange-50 dark:bg-orange-500/15 p-4">
+          <p className="text-lg text-orange-900 dark:text-orange-100 leading-snug">{NON_STANDARD_DOSE_MESSAGE}</p>
+          <label className="flex items-start gap-3 mt-3 cursor-pointer min-h-[56px]">
             <input
               type="checkbox"
               checked={confirmed}
               onChange={(e) => onConfirmedChange(e.target.checked)}
-              className="w-7 h-7 mt-0.5 accent-indigo-600 flex-shrink-0"
+              className="w-8 h-8 mt-0.5 accent-indigo-600 flex-shrink-0"
             />
-            <span className="text-base text-gray-900 dark:text-[#E8E9F0]">{NON_STANDARD_DOSE_CONFIRM}</span>
+            <span className="text-lg font-semibold text-gray-900 dark:text-white">{NON_STANDARD_DOSE_CONFIRM}</span>
           </label>
         </div>
       )}
 
-      {!hasStrengths && <p className="text-base text-gray-600 dark:text-[#9A9DAE] mt-2">{CUSTOM_MEDICATION_WARNING}</p>}
+      {!hasStrengths && <p className={`${helperCls} mt-3`}>{CUSTOM_MEDICATION_WARNING}</p>}
 
-      {unit === "mg" && <p className="text-sm text-gray-500 dark:text-[#9A9DAE] mt-2 leading-snug">{MG_VIAL_NOTE}</p>}
+      {(hasStrengths || unit === "mg") && <p className={`${helperCls} mt-3`}>{MG_VIAL_NOTE}</p>}
 
-      {error && <p className="text-base font-medium text-red-600 dark:text-red-400 mt-2">{error}</p>}
+      <FieldError message={error} />
     </div>
   );
 }
