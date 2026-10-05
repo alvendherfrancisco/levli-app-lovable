@@ -8,6 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { convertWeight } from "@/lib/units";
+import { heightCmOf, heightText, shownBmi, toKg } from "@/lib/measure";
 import { parseShotDate, toDayKey, todayKey, fromDayKey, calendarDaysBetween } from "@/lib/dateUtils";
 import { getDosingInterval } from "@/lib/medicationData";
 import { calcAdherence } from "@/lib/adherence";
@@ -15,10 +16,14 @@ import { RANGE_OPTIONS, DEFAULT_RANGE, CORE_IDS, OPTIONAL_IDS } from "@/lib/repo
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-// BMI is shown only inside this band. Outside it the number is almost always a
-// unit or data-entry mismatch rather than a real measurement, so it is left out.
-export const BMI_MIN_PLAUSIBLE = 15;
-export const BMI_MAX_PLAUSIBLE = 80;
+// Adult BMI is shown only inside this band. Outside it the number is almost
+// always a unit or data-entry mismatch rather than a measurement, so it is left
+// out and the user is asked to check their units instead.
+export const BMI_MIN_PLAUSIBLE = 12;
+export const BMI_MAX_PLAUSIBLE = 70;
+// While an unanswered kg/lb question is outstanding, a very low value is not
+// shown as a number either.
+const BMI_SUSPICIOUS_LOW = 15;
 
 export function addDaysToKey(key, days) {
   const d = fromDayKey(key);
@@ -93,34 +98,26 @@ export function journalDayKey(entry) {
   return d ? toDayKey(d) : "";
 }
 
+/** Canonical height in metres (0 when the profile has no usable height). */
 export function heightMetres(profile = {}) {
-  const unit = profile.height_unit || "in";
-  const a = parseFloat(profile.height_ft) || 0;
-  const b = parseFloat(profile.height_in) || 0;
-  if (unit === "cm") return a > 0 ? a / 100 : 0;
-  const totalInches = a * 12 + b;
-  return totalInches > 0 ? totalInches * 0.0254 : 0;
+  const cm = heightCmOf(profile);
+  return cm ? cm / 100 : 0;
 }
 
 export function heightLabel(profile = {}) {
-  const unit = profile.height_unit || "in";
-  const a = parseFloat(profile.height_ft) || 0;
-  const b = parseFloat(profile.height_in) || 0;
-  if (unit === "cm") return a > 0 ? `${Math.round(a)} cm` : null;
-  const totalInches = a * 12 + b;
-  if (totalInches <= 0) return null;
-  return `${a} ft ${b} in (${Math.round(totalInches * 2.54)} cm)`;
+  return heightText(heightCmOf(profile), profile.height_unit || "in");
 }
 
 /** BMI for a weight in the given unit — null when height is missing or the result is implausible. */
 export function plausibleBmi(profile, weight, unit) {
-  const h = heightMetres(profile);
-  if (weight == null || !h) return null;
+  const cm = heightCmOf(profile);
+  if (weight == null || !cm) return null;
   const kg = convertWeight(weight, unit, "kg");
   if (kg == null || !Number.isFinite(kg)) return null;
-  const bmi = kg / (h * h);
-  if (!Number.isFinite(bmi) || bmi < BMI_MIN_PLAUSIBLE || bmi > BMI_MAX_PLAUSIBLE) return null;
-  return Math.round(bmi * 10) / 10;
+  const bmi = shownBmi(kg, cm);
+  if (bmi == null) return null;
+  const outstanding = !profile?.unit_check_status || profile.unit_check_status === "pending";
+  return outstanding && bmi < BMI_SUSPICIOUS_LOW ? null : bmi;
 }
 
 /** Resolves the chosen date range into inclusive "YYYY-MM-DD" keys. */
@@ -193,7 +190,7 @@ function round1(n) {
   return Math.round(n * 10) / 10;
 }
 
-export function summarizeWeight(series, profile, profileUnit, reportUnit) {
+export function summarizeWeight(series, profile, profileUnit, reportUnit, range) {
   if (!series.length) {
     return {
       count: 0, start: null, end: null, change: null, changePct: null,
@@ -204,12 +201,17 @@ export function summarizeWeight(series, profile, profileUnit, reportUnit) {
   const end = series[series.length - 1];
   const change = round1(end.value - start.value);
   const changePct = start.value > 0 ? round1(((end.value - start.value) / start.value) * 100) : null;
-  const days = series.length >= 2 ? calendarDaysBetween(start.dayKey, end.dayKey) : 0;
-  const weeks = series.length >= 2 ? Math.max(1, round1(days / 7)) : null;
-  const perWeek = weeks ? round1(change / weeks) : null;
 
-  const goalRaw = parseFloat(profile?.goal_weight);
-  const goal = Number.isFinite(goalRaw) && goalRaw > 0 ? round1(convertWeight(goalRaw, profileUnit, reportUnit)) : null;
+  // The period is counted from the SAME start and end dates as the header
+  // range, so the two can never disagree. The weekly rate uses the exact span.
+  const rangeDays = Number.isFinite(range?.days) && range.days > 0 ? range.days : null;
+  const weeksExact = rangeDays ? rangeDays / 7 : null;
+  const weeks = series.length >= 2 && weeksExact ? Math.max(1, Math.round(weeksExact)) : null;
+  const perWeek = series.length >= 2 && weeksExact ? round1(change / weeksExact) : null;
+
+  // The goal is stored in kilograms and converted for display only.
+  const goalKg = parseFloat(profile?.goal_weight_kg) || toKg(profile?.goal_weight, profileUnit);
+  const goal = Number.isFinite(goalKg) && goalKg > 0 ? round1(convertWeight(goalKg, "kg", reportUnit)) : null;
   let goalDistance = null;
   if (goal != null) {
     const diff = round1(end.value - goal);
@@ -555,7 +557,7 @@ export function buildReport(state, options) {
   });
 
   const series = buildWeightSeries(weightHistory, range, profileUnit, unit);
-  const weight = summarizeWeight(series, profile, profileUnit, unit);
+  const weight = summarizeWeight(series, profile, profileUnit, unit, range);
   const doses = doseRows(shotsInRange);
   const changes = doseChangeSummary([...doses].reverse(), new Set(doses.map((d) => d.medication)).size > 1);
   const adherence = adherenceFor(shots, shotsInRange, medicationFilter, range.days);
@@ -598,7 +600,9 @@ export function buildReport(state, options) {
       bmi,
     },
     // `series` carries the plotted points through to the chart and the PDF.
-    weight: { ...weight, series },
+    // `notEnough` is set when a trend cannot be drawn, so the preview and the
+    // PDF say the same thing.
+    weight: { ...weight, series, notEnough: series.length < 2 },
     doses: { rows: doses, changes, adherence, count: doses.length },
     sideEffects: { rows: sideEffects, frequency: sideEffectFrequency(sideEffects), total: sideEffects.length },
     optional,

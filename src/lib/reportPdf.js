@@ -58,31 +58,34 @@ function note(doc, text, y, size = 8) {
   return y + lines.length * 3.8 + 2;
 }
 
-/** Two-column key/value block. */
+/**
+ * Two-column key/value block. Long labels wrap onto the next line (the row
+ * grows) — text is never cut off with an ellipsis.
+ */
 function keyValues(doc, pairs, y) {
   doc.setFontSize(8.5);
+  const lineH = 3.6;
   const rowH = 5.4;
   const colW = PAGE.contentW / 2;
-  for (let i = 0; i < pairs.length; i += 2) {
-    y = ensure(doc, y, rowH);
-    const pair = pairs[i];
+  const valueW = 34;
+
+  const drawPair = (pair, left) => {
+    const labelW = colW - valueW - 4;
     doc.setFont("helvetica", "normal");
     doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
-    doc.text(fitText(doc, pair[0], colW - 26), PAGE.margin, y);
+    const labelLines = doc.splitTextToSize(String(pair[0] ?? ""), labelW);
+    doc.text(labelLines, left, y);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(INK[0], INK[1], INK[2]);
-    doc.text(fitText(doc, pair[1], 24), PAGE.margin + colW - 24, y);
+    const valueLines = doc.splitTextToSize(String(pair[1] ?? ""), valueW - 2);
+    doc.text(valueLines, left + colW - valueW, y);
+    return Math.max(labelLines.length, valueLines.length);
+  };
 
+  for (let i = 0; i < pairs.length; i += 2) {
     const second = pairs[i + 1];
-    if (second) {
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
-      doc.text(fitText(doc, second[0], colW - 26), PAGE.margin + colW, y);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(INK[0], INK[1], INK[2]);
-      doc.text(fitText(doc, second[1], 24), PAGE.margin + PAGE.contentW - 24, y);
-    }
-    y += rowH;
+    const rows = Math.max(drawPair(pairs[i], PAGE.margin), second ? drawPair(second, PAGE.margin + colW) : 1);
+    y += Math.max(rowH, rows * lineH + 1.4);
   }
   return y + 2;
 }
@@ -110,38 +113,46 @@ function table(doc, { x = PAGE.margin, y, width = PAGE.contentW, columns, rows, 
   y = ensure(doc, y, rowH * 2);
   y = drawHead(y);
 
+  // Cells wrap onto extra lines and the row grows to fit — long text is never
+  // cut off, so nothing that was logged is missing from the printed report.
   rows.forEach((row, index) => {
-    if (y + rowH > PAGE.bottom) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(fontSize);
+    const cells = cols.map((c) => doc.splitTextToSize(String(c.text(row) ?? ""), c.w - 3));
+    const lines = Math.max(1, ...cells.map((cell) => cell.length));
+    const height = Math.max(rowH, lines * 3.6 + 2.6);
+
+    if (y + height > PAGE.bottom) {
       y = newPage(doc);
       y = drawHead(y);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(fontSize);
     }
     if (index % 2 === 1) {
       doc.setFillColor(250, 250, 252);
-      doc.rect(x, y, width, rowH, "F");
+      doc.rect(x, y, width, height, "F");
     }
     let cx = x + 1.5;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(fontSize);
-    cols.forEach((c) => {
+    cols.forEach((c, ci) => {
       const maxW = c.w - 3;
-      const text = fitText(doc, c.text(row), maxW);
+      const cellLines = cells[ci];
       if (c.badge) {
         const colour = c.colour ? c.colour(row) : CUSTOM_DOSE_COLOR;
         const rgb = hexToRgb(colour);
-        const badgeW = Math.min(maxW, doc.getTextWidth(text) + 3.4);
+        const badgeW = Math.min(maxW, doc.getTextWidth(cellLines[0] || "") + 3.4);
         doc.setFillColor(rgb[0], rgb[1], rgb[2]);
         doc.roundedRect(cx, y + 1.4, badgeW, 3.9, 0.9, 0.9, "F");
         const ink = hexToRgb(getDoseTextColor(colour));
         doc.setTextColor(ink[0], ink[1], ink[2]);
-        doc.text(text, cx + 1.7, y + rowH - 2.1);
+        doc.text(cellLines[0] || "", cx + 1.7, y + rowH - 2.1);
         doc.setTextColor(INK[0], INK[1], INK[2]);
       } else {
         doc.setTextColor(INK[0], INK[1], INK[2]);
-        doc.text(text, cx, y + rowH - 2.1);
+        doc.text(cellLines, cx, y + rowH - 2.1);
       }
       cx += c.w;
     });
-    y += rowH;
+    y += height;
   });
 
   return y + 3;
@@ -244,7 +255,7 @@ export async function buildReportPdf(report) {
   ], y);
 
   if (report.header.bmi == null && report.header.heightLabel) {
-    y = note(doc, "BMI is omitted because the height and weight on file do not produce a plausible value. Check the height and weight units in Profile.", y, 7.5);
+    y = note(doc, "The height and weight on file do not produce a plausible BMI, so it is not shown. Check your height and weight units in Profile.", y, 7.5);
   }
 
   // ── 2. Weight progress ─────────────────────────────────────────────────────
@@ -292,7 +303,7 @@ export async function buildReportPdf(report) {
         });
         y = note(doc, "Solid line: logged weight entries (one point per entry, no values filled in). Dashed line: 7-day rolling average. Coloured ticks: dose dates, matching the dose colours in the app.", y, 7.5);
       } else {
-        y = note(doc, "Only one weight entry in this range, so no trend line is drawn.", y);
+        y = note(doc, "Not enough entries in this range.", y);
       }
 
       if (weight.gaps.length) {
@@ -506,8 +517,10 @@ export async function buildReportPdf(report) {
   return doc;
 }
 
+/** Direction-aware goal wording — "below goal" only when the reading is below it. */
 function goalText(goalDistance, unit) {
   if (!goalDistance) return "Goal not set";
-  if (goalDistance.direction === "at") return "At goal";
-  return `${goalDistance.value} ${unit} ${goalDistance.direction} goal`;
+  if (goalDistance.direction === "at") return "Goal reached";
+  if (goalDistance.direction === "above") return `${goalDistance.value} ${unit} to goal`;
+  return `${goalDistance.value} ${unit} below goal`;
 }

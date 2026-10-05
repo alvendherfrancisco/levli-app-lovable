@@ -67,13 +67,21 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
+  // Only distinct tick values are drawn, so a narrow band can never show the
+  // same number twice.
+  const ticks = [];
   for (let i = 0; i <= 3; i++) {
     const value = lo + ((hi - lo) * i) / 3;
-    const gy = Y(value);
+    const label = String(Math.round(value * 10) / 10);
+    if (ticks.some((tick) => tick.label === label)) continue;
+    ticks.push({ value, label });
+  }
+  ticks.forEach((tick) => {
+    const gy = Y(tick.value);
     line(doc, plotX, gy, plotX + plotW, gy, GRID);
     doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
-    doc.text(`${Math.round(value * 10) / 10}`, plotX - 2, gy + 1, { align: "right" });
-  }
+    doc.text(tick.label, plotX - 2, gy + 1, { align: "right" });
+  });
 
   doc.setFontSize(7);
   doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
@@ -124,6 +132,11 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
   lx += 32;
 
   let doseRowY = legendY + 6.4;
+  if (markers.length) {
+    doc.setTextColor(INK[0], INK[1], INK[2]);
+    doc.text("Coloured ticks", lx, doseRowY + 2.6);
+    lx += doc.getTextWidth("Coloured ticks") + 3;
+  }
   markers.forEach((marker) => {
     const width = 4 + doc.getTextWidth(marker.label) + 5;
     if (lx + width > plotX + plotW) {

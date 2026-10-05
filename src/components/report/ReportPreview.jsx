@@ -22,10 +22,12 @@ function Section({ title, children }) {
   );
 }
 
+/** Direction-aware goal wording — "below goal" only when the reading is below it. */
 function goalText(goalDistance, unit) {
   if (!goalDistance) return "Not set";
-  if (goalDistance.direction === "at") return "At goal";
-  return `${goalDistance.value} ${unit} ${goalDistance.direction} goal`;
+  if (goalDistance.direction === "at") return "Goal reached";
+  if (goalDistance.direction === "above") return `${goalDistance.value} ${unit} to goal`;
+  return `${goalDistance.value} ${unit} below goal`;
 }
 
 /**
@@ -80,9 +82,13 @@ export default function ReportPreview({ report }) {
                 ["Entries", String(weight.count)],
                 ["Period", weight.weeks ? `${weight.weeks} weeks` : "—"],
               ]} />
-              <div className="mt-4">
-                <WeightDoseChart series={weight.series} rows={report.doses.rows} unit={unit} range={report.range} />
-              </div>
+              {weight.count >= 2 ? (
+                <div className="mt-4">
+                  <WeightDoseChart series={weight.series} rows={report.doses.rows} unit={unit} range={report.range} />
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 mt-3">Not enough entries in this range.</p>
+              )}
               {weight.gaps.length > 0 && (
                 <div className="mt-3 space-y-1">
                   {weight.gaps.map((gap) => (

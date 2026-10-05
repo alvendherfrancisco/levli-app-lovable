@@ -183,7 +183,7 @@ function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
 }
 
 // ── Generic (Weight, and any future metric) ───────────────────────────────────
-function GenericMetricModal({ open, onClose, label, unit, value, onSave }) {
+function GenericMetricModal({ open, onClose, label, unit, value, onSave, validate }) {
   const [val, setVal] = useState("");
   const [error, setError] = useState("");
   useEffect(() => { if (open) { setVal(value && value !== "–" ? String(value) : ""); setError(""); } }, [open, value]);
@@ -194,6 +194,11 @@ function GenericMetricModal({ open, onClose, label, unit, value, onSave }) {
     if (!val || isNaN(parseFloat(val)) || parseFloat(val) < 0) {
       setError(`Please enter a valid ${label.toLowerCase()} value.`);
       return;
+    }
+    // An implausible value is never saved and never shown as a number.
+    if (validate) {
+      const message = validate(val);
+      if (message) { setError(message); return; }
     }
     onSave(val);
     onClose();
@@ -235,12 +240,12 @@ function GenericMetricModal({ open, onClose, label, unit, value, onSave }) {
   );
 }
 
-export default function AddMetricModal({ open, onClose, label, unit, value, dayKey, onSave, onDelete }) {
+export default function AddMetricModal({ open, onClose, label, unit, value, dayKey, onSave, onDelete, validate }) {
   if (label === "Exercise") {
     return <ExerciseModal open={open} onClose={onClose} value={value} onSave={onSave} onDelete={onDelete || (() => onSave("0"))} />;
   }
   if (label === "Progress") {
     return <ProgressModal open={open} onClose={onClose} value={value} dayKey={dayKey} onSave={onSave} onDelete={onDelete || (() => onSave("–"))} />;
   }
-  return <GenericMetricModal open={open} onClose={onClose} label={label} unit={unit} value={value} onSave={onSave} />;
+  return <GenericMetricModal open={open} onClose={onClose} label={label} unit={unit} value={value} onSave={onSave} validate={validate} />;
 }

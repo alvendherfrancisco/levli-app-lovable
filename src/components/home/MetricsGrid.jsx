@@ -6,6 +6,7 @@ import { useAppState } from "@/lib/AppState";
 import AddNutritionModal from "@/components/modals/AddNutritionModal";
 import AddMetricModal from "@/components/modals/AddMetricModal";
 import { todayKey } from "@/lib/dateUtils";
+import { checkWeight } from "@/lib/measure";
 import { useToast } from "@/hooks/useToast";
 import { toast } from "sonner";
 
@@ -33,7 +34,15 @@ export default function MetricsGrid({ dayKey }) {
     {
       icon: <WeightFilledIcon size={20} className="text-amber-500 dark:text-amber-400" />, label: "Weight",
       value: weight != null ? String(weight) : "–", unit: weightUnit, color: "bg-amber-50 dark:bg-amber-500/10",
-      onAdd: () => setMetricModal({ label: "Weight", unit: weightUnit, current: weight != null ? String(weight) : "", onSave: async (v) => { await saveWeight(dk, v); weight != null ? toast.success("Weight updated successfully!") : toast.success("Weight added successfully!"); } }),
+      // The unit is shown next to the input, and a value outside the plausible
+      // adult range is not saved.
+      onAdd: () => setMetricModal({
+        label: "Weight",
+        unit: weightUnit,
+        current: weight != null ? String(weight) : "",
+        validate: (v) => { const check = checkWeight(v, weightUnit); return check.ok ? "" : check.message; },
+        onSave: async (v) => { await saveWeight(dk, v); weight != null ? toast.success("Weight updated successfully!") : toast.success("Weight added successfully!"); },
+      }),
     },
     {
       icon: <IonIcon name="flame" size={20} className="text-orange-500 dark:text-orange-400" />, label: "Calories",
@@ -90,6 +99,7 @@ export default function MetricsGrid({ dayKey }) {
           dayKey={metricModal.dayKey}
           onSave={metricModal.onSave}
           onDelete={metricModal.onDelete}
+          validate={metricModal.validate}
         />
       )}
     </>

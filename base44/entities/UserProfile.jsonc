@@ -2,13 +2,24 @@
   "type": "object",
   "properties": {
     "height_ft": {
-      "type": "string"
+      "type": "string",
+      "description": "Legacy display entry for feet. Canonical height lives in height_cm."
     },
     "height_in": {
-      "type": "string"
+      "type": "string",
+      "description": "Legacy display entry for inches. Canonical height lives in height_cm."
+    },
+    "height_cm": {
+      "type": "number",
+      "description": "Canonical height in CENTIMETRES. Displayed as cm or ft/in according to height_unit."
     },
     "goal_weight": {
-      "type": "string"
+      "type": "string",
+      "description": "Legacy goal entry in the display unit. Canonical goal lives in goal_weight_kg."
+    },
+    "goal_weight_kg": {
+      "type": "number",
+      "description": "Canonical goal weight in KILOGRAMS."
     },
     "days_between": {
       "type": "string"
@@ -17,10 +28,12 @@
       "type": "string"
     },
     "height_unit": {
-      "type": "string"
+      "type": "string",
+      "description": "Display preference for height: cm or in."
     },
     "weight_unit": {
-      "type": "string"
+      "type": "string",
+      "description": "Display preference for weight: kg or lb. Never the storage unit."
     },
     "default_medication": {
       "type": "string"
@@ -33,6 +46,14 @@
     },
     "onboarding_completed": {
       "type": "boolean"
+    },
+    "units_migrated_at": {
+      "type": "string",
+      "description": "ISO timestamp when legacy height/goal values were converted to canonical cm/kg."
+    },
+    "unit_check_status": {
+      "type": "string",
+      "description": "One-time kg/lb check flow: '' (not asked), 'pending', 'converted', 'kept_lb'."
     },
     "birthdate": {
       "type": "string",

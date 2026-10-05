@@ -1,15 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { toDayKey, todayKey, parseShotDate } from "@/lib/dateUtils";
-import { convertWeight } from "@/lib/units";
 import { getPendingDoses, buildShotFromSchedule } from "@/lib/repeatSchedule";
-import { seedDemoDataIfNeeded } from "@/lib/seedDemoData";
+import {
+  kgOfEntry, toKg, fromKg, roundKg, heightCmOf,
+  detectUnitMismatch, heightCmFromParts,
+} from "@/lib/measure";
 import { useAuth } from "@/lib/AuthContext";
 
 const AppStateContext = createContext(null);
 
 const DEFAULT_PROFILE = {
-  height_ft: "5", height_in: "8", goal_weight: "160", days_between: "7",
+  // Canonical measurements (kg / cm). A new profile starts empty rather than
+  // with a made-up height and goal.
+  height_cm: null, goal_weight_kg: null,
+  height_ft: "", height_in: "", goal_weight: "",
+  unit_check_status: "", units_migrated_at: "",
+  days_between: "7",
   liquid_unit: "oz", height_unit: "in", weight_unit: "lb",
   default_medication: "Ozempic®", notifications_enabled: false, dark_mode: false,
   birthdate: "", gdpr_consent_date: "", gdpr_privacy_policy_version: "",
@@ -49,11 +56,50 @@ export function AppStateProvider({ children }) {
     document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
+  // ── One-time migration onto canonical units (kg / cm) ───────────────────────
+  // Legacy rows keep their weight, expressed in kilograms, and record the unit
+  // they were entered in. Nothing is deleted and nothing is reinterpreted.
+  const migrateUnits = async () => {
+    try {
+      const profiles = await base44.entities.UserProfile.list("", 1);
+      const p = profiles[0] || null;
+      if (!p || p.units_migrated_at) return;
+      const prefUnit = p.weight_unit || "lb";
+      const cm = parseFloat(p.height_cm) || heightCmOf(p) || null;
+      const goalKg = parseFloat(p.goal_weight_kg) || toKg(p.goal_weight, prefUnit) || null;
+      const stamp = new Date().toISOString();
+
+      await base44.entities.UserProfile.update(p.id, {
+        height_cm: cm, goal_weight_kg: goalKg, units_migrated_at: stamp,
+      });
+      setProfileState((prev) => ({ ...prev, height_cm: cm, goal_weight_kg: goalKg, units_migrated_at: stamp }));
+
+      const metrics = await base44.entities.DayMetric.list("-day_key", 500);
+      const updates = metrics
+        .filter((m) => m.weight != null && (m.weight_unit || prefUnit) !== "kg")
+        .map((row) => {
+          const kg = kgOfEntry(row, prefUnit);
+          if (kg == null) return null;
+          return {
+            id: row.id,
+            weight: kg,
+            weight_unit: "kg",
+            weight_source_unit: row.weight_unit || prefUnit,
+            weight_unit_check: row.weight_unit_check || "migrated",
+          };
+        })
+        .filter(Boolean);
+      if (updates.length) await base44.entities.DayMetric.bulkUpdate(updates);
+    } catch (err) {
+      console.error("Unit migration failed:", err);
+    }
+  };
+
   // ── Load all data once authenticated ────────────────────────────────────────
   useEffect(() => {
     if (!isAuthenticated) return;
     (async () => {
-      await seedDemoDataIfNeeded();
+      await migrateUnits();
       loadShots();
       loadJournal();
       loadProfile();
@@ -188,6 +234,14 @@ export function AppStateProvider({ children }) {
     // Backward-compat: drug_class may arrive as drugClass
     if (shot.drugClass && !payload.drug_class) payload.drug_class = shot.drugClass;
     if (shot.molecularClass && !payload.molecular_class) payload.molecular_class = shot.molecularClass;
+    // The local date/time is kept exactly as logged, and the device timezone
+    // plus the UTC instant are recorded with it so the entry stays unambiguous.
+    try {
+      payload.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    } catch (e) {
+      payload.timezone = "";
+    }
+    payload.logged_at_utc = new Date().toISOString();
     const rec = await base44.entities.Shot.create(payload);
     setShots((prev) => [rec, ...prev].sort((a, b) => parseShotDate(b.date) - parseShotDate(a.date)));
     // Decrement matching inventory
@@ -253,14 +307,23 @@ export function AppStateProvider({ children }) {
   const getSideEffects = (dayKey) => dayMetrics[dayKey]?.side_effects || "";
   const saveSideEffects = (dayKey, text) => saveDayMetric(dayKey, { side_effects: text });
 
+  // Weight is stored in kilograms; the profile unit is applied for display only.
   const displayWeightUnit = profile?.weight_unit || "lb";
+  const getWeightKg = (dayKey) => kgOfEntry(dayMetrics[dayKey], displayWeightUnit);
   const getWeight = (dayKey) => {
-    const m = dayMetrics[dayKey];
-    if (!m || m.weight == null) return null;
-    const storedUnit = m.weight_unit || displayWeightUnit;
-    return convertWeight(m.weight, storedUnit, displayWeightUnit);
+    const kg = getWeightKg(dayKey);
+    return kg == null ? null : fromKg(kg, displayWeightUnit);
   };
-  const saveWeight = (dayKey, val) => saveDayMetric(dayKey, { weight: parseFloat(val) || null, weight_unit: displayWeightUnit });
+  const saveWeight = (dayKey, val) => {
+    const kg = toKg(val, displayWeightUnit);
+    if (kg == null) return saveDayMetric(dayKey, { weight: null });
+    return saveDayMetric(dayKey, {
+      weight: kg,
+      weight_unit: "kg",
+      weight_source_unit: displayWeightUnit,
+      weight_unit_check: "",
+    });
+  };
 
   const getExercise = (dayKey) => dayMetrics[dayKey]?.exercise_min ?? null;
   const saveExercise = (dayKey, val) => saveDayMetric(dayKey, { exercise_min: parseFloat(val) || 0 });
@@ -417,8 +480,11 @@ export function AppStateProvider({ children }) {
     if (next.dark_mode !== undefined) setDarkModeState(!!next.dark_mode);
     if (next.onboarding_completed !== undefined) setOnboardingCompleted(!!next.onboarding_completed);
     const payload = {
-      height_ft: next.height_ft, height_in: next.height_in,
-      goal_weight: next.goal_weight, days_between: next.days_between,
+      height_cm: next.height_cm ?? null,
+      goal_weight_kg: next.goal_weight_kg ?? null,
+      unit_check_status: next.unit_check_status || "",
+      units_migrated_at: next.units_migrated_at || "",
+      days_between: next.days_between,
       liquid_unit: next.liquid_unit, height_unit: next.height_unit,
       weight_unit: next.weight_unit, default_medication: next.default_medication,
       notifications_enabled: !!next.notifications_enabled,
@@ -483,8 +549,79 @@ export function AppStateProvider({ children }) {
   const wDisplayUnit = profile?.weight_unit || "lb";
   const weightHistory = Object.entries(dayMetrics)
     .filter(([, m]) => m.weight != null)
-    .map(([key, m]) => ({ date: key, weight: convertWeight(m.weight, m.weight_unit || wDisplayUnit, wDisplayUnit) }))
+    .map(([key, m]) => {
+      const kg = kgOfEntry(m, wDisplayUnit);
+      return { date: key, weight: fromKg(kg, wDisplayUnit), kg };
+    })
+    .filter((row) => row.weight != null)
     .sort((a, b) => a.date.localeCompare(b.date));
+
+  // ── One-time kg/lb check ───────────────────────────────────────────────────
+  // Entries kept in pounds that read as a believable weight in kilograms are
+  // flagged once. The user decides; nothing is converted silently.
+  const unitCheck = (() => {
+    const status = profile?.unit_check_status || "";
+    if (status && status !== "pending") return { status, needsPrompt: false, count: 0 };
+    const cm = heightCmOf(profile);
+    const asPounds = Object.values(dayMetrics)
+      .filter((m) => m && m.weight != null && (m.weight_source_unit || m.weight_unit || "lb") === "lb")
+      .map((m) => fromKg(kgOfEntry(m, "lb"), "lb"));
+    const mismatch = detectUnitMismatch(asPounds, "lb", cm);
+    return { status, needsPrompt: mismatch.needsPrompt, count: mismatch.count, heightCm: cm };
+  })();
+
+  const updateDayMetricRows = async (updates) => {
+    if (!updates.length) return;
+    const saved = await base44.entities.DayMetric.bulkUpdate(updates);
+    const list = Array.isArray(saved) ? saved : (saved?.records || saved?.items || []);
+    setDayMetrics((prev) => {
+      const next = { ...prev };
+      list.forEach((rec) => {
+        if (rec?.day_key) next[rec.day_key] = { ...(next[rec.day_key] || {}), ...rec };
+      });
+      return next;
+    });
+  };
+
+  // Reads the flagged entries as kilograms instead of pounds. One tap, reversible.
+  const convertAssumedKg = async () => {
+    const updates = Object.values(dayMetrics)
+      .filter((m) => m && m.weight != null && (m.weight_source_unit || m.weight_unit || "lb") === "lb")
+      .map((m) => {
+        const currentKg = kgOfEntry(m, "lb");
+        const asTyped = fromKg(currentKg, "lb");
+        if (currentKg == null || asTyped == null) return null;
+        return {
+          id: m.id,
+          weight: roundKg(asTyped),
+          weight_unit: "kg",
+          weight_unit_check: "converted",
+          weight_revert_value: currentKg,
+          weight_revert_unit: "kg",
+        };
+      })
+      .filter(Boolean);
+    await updateDayMetricRows(updates);
+    await setProfile({ ...profile, unit_check_status: "converted" });
+    return updates.length;
+  };
+
+  const undoUnitConversion = async () => {
+    const updates = Object.values(dayMetrics)
+      .filter((m) => m && m.weight_unit_check === "converted" && m.weight_revert_value != null)
+      .map((m) => ({
+        id: m.id,
+        weight: m.weight_revert_value,
+        weight_unit: m.weight_revert_unit || "kg",
+        weight_unit_check: "undone",
+      }));
+    await updateDayMetricRows(updates);
+    // Back to "not yet answered", so the prompt can be raised again.
+    await setProfile({ ...profile, unit_check_status: "pending" });
+    return updates.length;
+  };
+
+  const keepWeightsAsLogged = () => setProfile({ ...profile, unit_check_status: "kept_lb" });
 
   // Adverse events grouped by day_key for display
   const adverseEventsByDay = adverseEvents.reduce((acc, e) => {
@@ -527,6 +664,9 @@ export function AppStateProvider({ children }) {
       journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry,
       // Medications (regimen)
       medications, addMedication, updateMedication, deleteMedication,
+      // Canonical measurements + one-time unit check
+      weightUnit: wDisplayUnit, heightCm: heightCmOf(profile), getWeightKg, unitCheck,
+      convertAssumedKg, undoUnitConversion, keepWeightsAsLogged,
       // AdverseEvents
       adverseEvents, adverseEventsByDay, addAdverseEvent, updateAdverseEvent, deleteAdverseEvent,
       // Inventory

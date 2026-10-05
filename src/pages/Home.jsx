@@ -12,6 +12,8 @@ import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import { useAppState } from "@/lib/AppState";
 import { toDayKey } from "@/lib/dateUtils";
 import LockedFeatureCard from "@/components/LockedFeatureCard";
+import FirstRunCard from "@/components/home/FirstRunCard";
+import UnitCheckPrompt from "@/components/home/UnitCheckPrompt";
 import { useSubscription } from "@/lib/SubscriptionContext";
 
 export default function Home() {
@@ -37,6 +39,7 @@ export default function Home() {
 
       <div className="max-w-3xl mx-auto pt-4">
         <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+        <FirstRunCard onAddShot={() => { setShotPreset(null); setShowShot(true); }} />
         <RepeatDoseCard onEdit={(preset) => { setShotPreset(preset); setShowShot(true); }} />
         <NextShotCard />
         <MetricsGrid dayKey={dk} />
@@ -116,6 +119,7 @@ export default function Home() {
 
       <AddShotModal open={showShot} onClose={() => { setShowShot(false); setShotPreset(null); }} initialValues={shotPreset} />
       <SideEffectsModal open={showSideEffects} onClose={() => setShowSideEffects(false)} dayKey={dk} />
+      <UnitCheckPrompt />
     </PageContainer>
   );
 }

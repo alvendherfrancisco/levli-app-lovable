@@ -51,6 +51,14 @@
     "time": {
       "type": "string"
     },
+    "timezone": {
+      "type": "string",
+      "description": "IANA timezone the dose was logged in at the time of logging (e.g. Europe/London)."
+    },
+    "logged_at_utc": {
+      "type": "string",
+      "description": "UTC timestamp the entry was saved, so a local date/time can always be placed on the absolute timeline."
+    },
     "site": {
       "type": "string",
       "description": "Injection/patch/application site"

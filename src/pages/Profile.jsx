@@ -5,6 +5,10 @@ import IonIcon from "@/components/IonIcon";
 import { SyringeIcon, ScaleIcon } from "@/components/CustomIcons";
 import { useAppState } from "@/lib/AppState";
 import { toast } from "sonner";
+import {
+  heightCmOf, heightCmFromParts, heightPartsFromCm,
+  checkHeight, checkGoal, fromKg, weightUnitLabel,
+} from "@/lib/measure";
 import PageContainer from "@/components/PageContainer";
 
 // Only allow digits, one leading decimal, and basic numeric chars
@@ -29,6 +33,82 @@ export default function Profile() {
   }, [profile]);
 
   const heightUnit = local.height_unit || "in";
+  const weightUnit = local.weight_unit || "lb";
+
+  // Height and goal are edited in the display unit and stored canonically
+  // (cm / kg). These inputs are re-derived whenever the profile or the chosen
+  // unit changes, so switching kg↔lb re-renders every screen in that unit.
+  const [heightInput, setHeightInput] = useState({ cm: "", ft: "", inch: "" });
+  const [goalInput, setGoalInput] = useState("");
+  const [savingHeight, setSavingHeight] = useState(false);
+  const [savingGoal, setSavingGoal] = useState(false);
+  const [heightSaved, setHeightSaved] = useState(false);
+  const [goalSaved, setGoalSaved] = useState(false);
+
+  useEffect(() => {
+    const cm = heightCmOf(profile);
+    const parts = cm ? heightPartsFromCm(cm) : { ft: "", inch: "" };
+    setHeightInput({
+      cm: cm ? String(Math.round(cm)) : "",
+      ft: cm ? String(parts.ft) : "",
+      inch: cm ? String(parts.inch) : "",
+    });
+    const goal = fromKg(profile?.goal_weight_kg, weightUnit);
+    setGoalInput(goal == null ? "" : String(goal));
+  }, [profile?.height_cm, profile?.height_ft, profile?.height_in,
+      profile?.goal_weight_kg, profile?.goal_weight, heightUnit, weightUnit]);
+
+  const flashSaved = (setter) => {
+    setter(true);
+    setTimeout(() => setter(false), 1500);
+  };
+
+  const saveHeight = async () => {
+    const cm = heightUnit === "cm"
+      ? parseFloat(heightInput.cm)
+      : heightCmFromParts(heightInput.ft, heightInput.inch);
+    const check = checkHeight(cm);
+    if (!check.ok) {
+      setErrors((p) => ({ ...p, height: check.message }));
+      return;
+    }
+    setErrors((p) => ({ ...p, height: null }));
+    setSavingHeight(true);
+    try {
+      await setProfile({ ...profile, height_cm: check.cm });
+      toast.success("Profile updated successfully!");
+      flashSaved(setHeightSaved);
+    } catch (err) {
+      toast.error("Failed to update profile");
+    }
+    setSavingHeight(false);
+  };
+
+  const saveGoal = async () => {
+    if (goalInput === "") {
+      setErrors((p) => ({ ...p, goal_weight: null }));
+      setSavingGoal(true);
+      await setProfile({ ...profile, goal_weight_kg: null });
+      setSavingGoal(false);
+      flashSaved(setGoalSaved);
+      return;
+    }
+    const check = checkGoal(goalInput, weightUnit);
+    if (!check.ok) {
+      setErrors((p) => ({ ...p, goal_weight: check.message }));
+      return;
+    }
+    setErrors((p) => ({ ...p, goal_weight: null }));
+    setSavingGoal(true);
+    try {
+      await setProfile({ ...profile, goal_weight_kg: check.kg });
+      toast.success("Profile updated successfully!");
+      flashSaved(setGoalSaved);
+    } catch (err) {
+      toast.error("Failed to update profile");
+    }
+    setSavingGoal(false);
+  };
 
   const handleSave = async (fields) => {
     const updates = Array.isArray(fields) ? fields : [fields];
@@ -124,43 +204,50 @@ export default function Profile() {
           <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2">Height</label>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             {heightUnit === "cm" ?
-            <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 min-w-[120px] ${errors.height_ft ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
-                <input type="text" inputMode="decimal" value={local.height_ft || ""} placeholder="0.0"
-              onChange={(e) => setLocal({ ...local, height_ft: numericOnly(e.target.value) })}
+            <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 min-w-[120px] ${errors.height ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
+                <input type="text" inputMode="decimal" value={heightInput.cm} placeholder="0"
+              onChange={(e) => { setHeightInput({ ...heightInput, cm: numericOnly(e.target.value) }); setErrors((p) => ({ ...p, height: null })); }}
               className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white min-w-0" />
                 <span className="text-gray-400 text-sm ml-1">cm</span>
               </div> :
             <>
-                <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 min-w-[80px] ${errors.height_ft ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
-                  <input type="text" inputMode="decimal" value={local.height_ft || ""} placeholder="0"
-                onChange={(e) => setLocal({ ...local, height_ft: numericOnly(e.target.value, { allowDecimal: false }) })}
+                <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 min-w-[80px] ${errors.height ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
+                  <input type="text" inputMode="decimal" value={heightInput.ft} placeholder="0"
+                onChange={(e) => { setHeightInput({ ...heightInput, ft: numericOnly(e.target.value, { allowDecimal: false }) }); setErrors((p) => ({ ...p, height: null })); }}
                 className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white min-w-0" />
                   <span className="text-gray-400 text-sm ml-1">ft</span>
                 </div>
-                <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 min-w-[80px] ${errors.height_in ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
-                  <input type="text" inputMode="decimal" value={local.height_in || ""} placeholder="0.0"
-                onChange={(e) => setLocal({ ...local, height_in: numericOnly(e.target.value, { max: 11.9 }) })}
+                <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 min-w-[80px] ${errors.height ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
+                  <input type="text" inputMode="decimal" value={heightInput.inch} placeholder="0"
+                onChange={(e) => { setHeightInput({ ...heightInput, inch: numericOnly(e.target.value, { max: 11.9 }) }); setErrors((p) => ({ ...p, height: null })); }}
                 className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white min-w-0" />
                   <span className="text-gray-400 text-sm ml-1">in</span>
                 </div>
               </>
             }
-            <SaveBtn fields={heightUnit === "cm" ? ["height_ft"] : ["height_ft", "height_in"]} />
+            <button onClick={saveHeight} disabled={savingHeight}
+              className="px-4 py-2.5 rounded-xl font-semibold text-sm bg-indigo-600 text-white min-w-[60px] flex items-center justify-center disabled:opacity-60">
+              {savingHeight ? <Loader2 size={14} className="animate-spin" /> : heightSaved ? <Check size={16} /> : "Save"}
+            </button>
           </div>
-          {(errors.height_ft || errors.height_in) && <p className="text-xs text-red-500 mb-2">Please enter a valid number.</p>}
-          {!errors.height_ft && !errors.height_in && <div className="mb-4" />}
+          {errors.height && <p className="text-xs text-orange-500 mt-1">{errors.height}</p>}
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Stored as centimetres.</p>
 
           <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2">Goal Weight</label>
           <div className="flex items-center gap-2">
             <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 ${errors.goal_weight ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
-              <input type="text" inputMode="decimal" value={local.goal_weight || ""} placeholder="0.0"
-              onChange={(e) => setLocal({ ...local, goal_weight: numericOnly(e.target.value) })}
+              <input type="text" inputMode="decimal" value={goalInput} placeholder="0.0"
+              onChange={(e) => { setGoalInput(numericOnly(e.target.value)); setErrors((p) => ({ ...p, goal_weight: null })); }}
               className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white" />
-              <span className="text-gray-400 text-sm ml-1">{local.weight_unit || "lb"}</span>
+              <span className="text-gray-400 text-sm ml-1">{weightUnitLabel(weightUnit)}</span>
             </div>
-            <SaveBtn fields={["goal_weight"]} />
+            <button onClick={saveGoal} disabled={savingGoal}
+              className="px-4 py-2.5 rounded-xl font-semibold text-sm bg-indigo-600 text-white min-w-[60px] flex items-center justify-center disabled:opacity-60">
+              {savingGoal ? <Loader2 size={14} className="animate-spin" /> : goalSaved ? <Check size={16} /> : "Save"}
+            </button>
           </div>
-          {errors.goal_weight && <p className="text-xs text-red-500 mt-1">Please enter a valid number.</p>}
+          {errors.goal_weight && <p className="text-xs text-orange-500 mt-1">{errors.goal_weight}</p>}
+          <p className="text-xs text-gray-400 dark:text-gray-500">Stored as kilograms.</p>
         </div>
 
         {/* Shot Preferences */}

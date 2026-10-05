@@ -19,7 +19,7 @@ export default function WeightDoseChart({ series = [], rows = [], unit, range })
       <p className="text-sm text-gray-500">
         {points.length === 0
           ? "No weight entries in this range."
-          : "Only one weight entry in this range, so no trend line is drawn."}
+          : "Not enough entries in this range."}
       </p>
     );
   }
@@ -70,9 +70,9 @@ export default function WeightDoseChart({ series = [], rows = [], unit, range })
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <DoseLegend items={legend} labelClassName="text-xs text-gray-600" align="start" />
+      <DoseLegend items={legend} title="Coloured ticks" labelClassName="text-xs text-gray-600" align="start" />
       <p className="text-[11px] text-gray-500 mt-2">
-        Solid line: logged weight entries (one point per entry, no values filled in) · Dashed: 7-day rolling average · Coloured bars: dose dates
+        Solid line: logged weight entries (one point per entry, no values filled in) · Dashed: 7-day rolling average · Coloured ticks: dose dates, matching the dose colours in the app.
       </p>
     </div>
   );

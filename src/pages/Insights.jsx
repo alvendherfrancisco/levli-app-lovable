@@ -5,8 +5,9 @@ import ProgressPhotoCard from "@/components/insights/ProgressPhotoCard";
 import AddMetricModal from "@/components/modals/AddMetricModal";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useAppState } from "@/lib/AppState";
-import { parseShotDate, todayKey } from "@/lib/dateUtils";
+import { parseShotDate, todayKey, toDayKey } from "@/lib/dateUtils";
 import { isInvestigational, getHalfLifeDays, getDosingInterval } from "@/lib/medicationData";
+import { heightCmOf, shownBmi } from "@/lib/measure";
 import { steadyStateFraction, accumulationRatio, PK_CALCULATION_VERSION } from "@/lib/pkCalculations";
 import { toast } from "sonner";
 import UpsellBanner from "@/components/UpsellBanner";
@@ -97,34 +98,40 @@ function getRouteForClass(cls, shots) {
 
 function buildWeightData(weightHistory, daysBack) {
   if (!weightHistory.length) return [];
-  const now = new Date(); now.setHours(23,59,59,999);
-  const cutoff = new Date(); cutoff.setHours(0,0,0,0); cutoff.setDate(cutoff.getDate() - daysBack);
   const mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const raw = weightHistory
-    .filter(({ date }) => {
-      const [y, m, d] = date.split("-").map(Number);
-      const local = new Date(y, m - 1, d);
-      return local >= cutoff && local <= now;
-    })
-    .map(({ date, weight }) => {
-      const [y, m, d] = date.split("-").map(Number);
-      const local = new Date(y, m - 1, d);
-      return { date: `${mNames[local.getMonth()]} ${local.getDate()}`, weight, _isoDate: date };
+  const byDay = {};
+  weightHistory.forEach(({ date, weight }) => { if (weight != null) byDay[date] = weight; });
+
+  // A continuous day-by-day axis from the start of the selected range up to
+  // TODAY. Days with no entry carry null, so the chart shows a real gap and
+  // never ends at the last entry.
+  const end = new Date(); end.setHours(0,0,0,0);
+  const start = new Date(end); start.setDate(start.getDate() - (daysBack - 1));
+  const points = [];
+  for (const day = new Date(start); day <= end; day.setDate(day.getDate() + 1)) {
+    const key = toDayKey(day);
+    points.push({
+      date: `${mNames[day.getMonth()]} ${day.getDate()}`,
+      weight: byDay[key] != null ? byDay[key] : null,
+      _isoDate: key,
     });
-  // 7-day rolling average
-  const withAvg = raw.map((point, i) => {
-    const window = raw.slice(Math.max(0, i - 6), i + 1);
+  }
+
+  // 7-day rolling average over the logged entries themselves.
+  const entries = points.filter((p) => p.weight != null);
+  entries.forEach((point, i) => {
+    const window = entries.slice(Math.max(0, i - 6), i + 1);
     const avg = window.reduce((a, p) => a + p.weight, 0) / window.length;
-    return { ...point, rollingAvg: Math.round(avg * 10) / 10 };
+    point.rollingAvg = Math.round(avg * 10) / 10;
   });
-  return withAvg;
+  return points;
 }
 
 const WEIGHT_RANGES = { "30 Days": 30, "180 Days": 180, "1 Year": 365 };
 const MED_RANGES = { "7 Days": 7, "30 Days": 30, "90 Days": 90 };
 
 export default function Insights() {
-  const { shots, weightHistory, profile, dayMetrics, progressPhotosList, addProgressPhotoRecord, updateProgressPhotoRecord, deleteProgressPhotoRecord, getWeight } = useAppState();
+  const { shots, weightHistory, profile, dayMetrics, progressPhotosList, addProgressPhotoRecord, updateProgressPhotoRecord, deleteProgressPhotoRecord, getWeight, unitCheck } = useAppState();
   const { isPremium, openPaywall } = useSubscription();
   const [weightRange, setWeightRange] = useState("180 Days");
   const [medRange, setMedRange] = useState("30 Days");
@@ -189,15 +196,19 @@ export default function Insights() {
     toast.success("Progress photo deleted successfully!");
   };
 
-  // ── Weight stats ────────────────────────────────────────────────────────────
-  const weightLoss = weightData.length >= 2
-    ? weightData[0].weight - weightData[weightData.length - 1].weight
+  // ── Weight stats (over the entries actually logged) ─────────────────────────
+  const weightEntries = weightData.filter((p) => p.weight != null);
+  const firstEntry = weightEntries[0] || null;
+  const lastEntry = weightEntries[weightEntries.length - 1] || null;
+
+  const weightLoss = weightEntries.length >= 2
+    ? firstEntry.weight - lastEntry.weight
     : null;
 
-  const actualWeeks = weightData.length >= 2
+  const actualWeeks = weightEntries.length >= 2
     ? Math.max(1, (() => {
-        const [y1,m1,d1] = weightData[0]._isoDate.split("-").map(Number);
-        const [y2,m2,d2] = weightData[weightData.length-1]._isoDate.split("-").map(Number);
+        const [y1,m1,d1] = firstEntry._isoDate.split("-").map(Number);
+        const [y2,m2,d2] = lastEntry._isoDate.split("-").map(Number);
         const msElapsed = new Date(y2,m2-1,d2) - new Date(y1,m1-1,d1);
         return msElapsed / (7 * 86400000);
       })())
@@ -205,35 +216,22 @@ export default function Insights() {
   const ratePerWeek = weightLoss != null ? (weightLoss / actualWeeks) : null;
 
   // Percentage weight change: [(baseline - current) / baseline] × 100
-  const baselineWeight = weightData.length ? weightData[0].weight : null;
-  const currentWeight = weightData.length ? weightData[weightData.length - 1].weight : null;
+  const baselineWeight = firstEntry ? firstEntry.weight : null;
+  const currentWeight = lastEntry ? lastEntry.weight : null;
   const pctWeightChange = (baselineWeight != null && currentWeight != null && baselineWeight > 0)
     ? Math.round(((baselineWeight - currentWeight) / baselineWeight) * 1000) / 10
     : null;
 
-  // ── BMI ─────────────────────────────────────────────────────────────────────
-  const latestWeight = weightHistory.length ? weightHistory[weightHistory.length - 1].weight : null;
-  const heightFt = parseFloat(profile?.height_ft) || 0;
-  const heightIn = parseFloat(profile?.height_in) || 0;
-  const heightUnit = profile?.height_unit || "in";
-
-  let heightM = 0;
-  if (heightUnit === "cm") {
-    heightM = heightFt / 100;
-  } else {
-    const totalInches = heightFt * 12 + heightIn;
-    heightM = totalInches * 0.0254;
-  }
-
-  const weightKg = latestWeight
-    ? (weightUnit === "kg" ? latestWeight : latestWeight * 0.453592)
-    : null;
-
-  const bmi = weightKg && heightM > 0
-    ? (weightKg / (heightM * heightM)).toFixed(1)
-    : null;
-
-  const heightMissing = heightM === 0 && latestWeight != null;
+  // ── BMI — canonical values, shown only when the result is plausible ─────────
+  const latestWeightKg = weightHistory.length ? weightHistory[weightHistory.length - 1].kg : null;
+  const heightCm = heightCmOf(profile);
+  const rawBmi = shownBmi(latestWeightKg, heightCm);
+  // A very low value while the kg/lb question is still open is not shown as a
+  // number — the user is asked to check their units instead.
+  const bmiSuspicious = !!(unitCheck?.needsPrompt && rawBmi != null && rawBmi < 15);
+  const bmi = bmiSuspicious ? null : rawBmi;
+  const heightMissing = !heightCm && latestWeightKg != null;
+  const bmiNeedsCheck = bmiSuspicious || !!(latestWeightKg != null && heightCm && bmi == null);
 
   return (
     <PageContainer bottomInset="banner">
@@ -289,10 +287,19 @@ export default function Insights() {
               <Gauge size={14} className="text-orange-500 dark:text-orange-400 mx-auto mb-1" style={{filter:"drop-shadow(0 0 6px rgba(249,115,22,0.4))"}} />
               <p className="text-gray-500 dark:text-[#9A9DAE] text-[11px]">Current BMI</p>
               <p className="font-bold text-orange-600 dark:text-orange-400 text-sm">
-                {bmi || (heightMissing ? <span className="text-[10px] font-medium">Add height in Profile</span> : "—")}
+                {bmi || (bmiNeedsCheck ? <span className="text-[10px] font-medium">Not shown — check units</span> : heightMissing ? <span className="text-[10px] font-medium">Add height in Profile</span> : "—")}
               </p>
             </div>
           </div>
+
+          {bmiNeedsCheck && (
+            <div className="mb-3 rounded-xl border border-orange-200 dark:border-orange-500/20 bg-orange-50 dark:bg-orange-500/10 px-3 py-2">
+              <p className="text-[12px] text-orange-700 dark:text-orange-300">
+                The height and weight on file do not produce a plausible BMI, so no number is shown. Check your height and weight units in Profile.
+              </p>
+              <Link to="/profile" className="mt-1.5 inline-block text-xs font-semibold text-indigo-600 dark:text-indigo-400">Fix in Profile</Link>
+            </div>
+          )}
 
           {bmi && (
             <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">
@@ -300,7 +307,7 @@ export default function Insights() {
             </p>
           )}
 
-          {weightData.length >= 2 ? (
+          {weightEntries.length >= 2 ? (
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={weightData}>
@@ -323,7 +330,7 @@ export default function Insights() {
               </p>
             </div>
           )}
-          <p className="text-[11px] text-gray-400 dark:text-[#9A9DAE] mt-2">Solid line: daily entries · Dashed: 7-day rolling average</p>
+          <p className="text-[11px] text-gray-400 dark:text-[#9A9DAE] mt-2">Solid line: daily entries · Dashed: 7-day rolling average · Days with no entry are left blank</p>
         </div>
 
         {/* Progress Pictures Panel */}

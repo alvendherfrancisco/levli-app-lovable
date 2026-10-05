@@ -29,15 +29,18 @@ export default function NextShotCard() {
   const progress = Math.max(0, Math.min(1, (daysBetween - daysLeft) / daysBetween));
   const circumference = 2 * Math.PI * 34;
 
-  const isDue = daysLeft <= 0;
+  // "Today!" and the ring belong to the due date only. A date already past is
+  // reported as overdue, never as due today.
+  const dueToday = daysLeft === 0;
   const daysLate = Math.max(0, -daysLeft);
   const isLate = daysLeft < 0;
   const isRetitration = missedRule && missedRule.retitrationDays && daysLate > missedRule.retitrationDays;
-  const ringColor = isDue ? "#14B8A6" : "#6366F1";
-  const ringGlow = isDue ? "0 0 14px 3px rgba(20,184,166,0.35)" : "0 0 14px 3px rgba(99,102,241,0.35)";
+  const ringColor = dueToday ? "#14B8A6" : "#6366F1";
+  const ringGlow = dueToday ? "0 0 14px 3px rgba(20,184,166,0.35)" : "0 0 14px 3px rgba(99,102,241,0.35)";
 
   let daysLabel;
-  if (isDue) daysLabel = "Today!";
+  if (isLate) daysLabel = `Overdue by ${daysLate} day${daysLate === 1 ? "" : "s"}`;
+  else if (dueToday) daysLabel = "Today!";
   else if (daysLeft === 1) daysLabel = "Tomorrow";
   else daysLabel = `In ${daysLeft}d`;
 
@@ -73,7 +76,7 @@ export default function NextShotCard() {
             />
           </svg>
           <span className="absolute inset-0 flex items-center justify-center text-[10px] text-gray-500 dark:text-[#9A9DAE] font-medium text-center leading-tight px-1">
-            {isDue ? "Now!" : `${daysLeft}d left`}
+            {dueToday ? "Now!" : isLate ? `${daysLate}d late` : `${daysLeft}d left`}
           </span>
         </div>
       </div>
