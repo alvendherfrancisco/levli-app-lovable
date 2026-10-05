@@ -1,5 +1,6 @@
 import React from "react";
 import { Syringe, MapPin, Calendar, Activity } from "lucide-react";
+import DoseBadge from "@/components/DoseBadge";
 
 export default function ShotCard({ medication, dose, dose_unit, drugClass, drug_class, date, time, site, pain }) {
   const dc = drugClass || drug_class || "GLP-1";
@@ -17,7 +18,7 @@ export default function ShotCard({ medication, dose, dose_unit, drugClass, drug_
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-gray-900 dark:text-[#E8E9F0] truncate min-w-0">{medication}</span>
-            <span className="text-indigo-600 dark:text-indigo-400 font-semibold whitespace-nowrap flex-shrink-0">{dose} {unit}</span>
+            <DoseBadge medication={medication} dose={dose} unit={unit} />
             {/* Drug class badge: solid teal in light, low-opacity tint in dark */}
             <span className="text-xs px-2 py-0.5 rounded-lg font-medium whitespace-nowrap flex-shrink-0 bg-teal-100 text-teal-700 dark:text-teal-400 dark:border dark:border-teal-500/20 dark:bg-transparent">
               {dc}

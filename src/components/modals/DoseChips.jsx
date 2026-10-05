@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
 import { DOSE_UNIT } from "@/lib/doseOptions";
+import { CUSTOM_DOSE_COLOR, getDoseColor, getDoseStyle, getDoseTextColor } from "@/lib/doseColors";
 
 /**
- * Large single-select dose chips. The "Other" chip opens a small numeric entry
- * so a compounded dose can be logged, saved and offered as a chip next time.
+ * Large single-select dose chips, filled with each dose's own colour (see
+ * src/lib/doseColors.js). The "Other" chip opens a small numeric entry so a
+ * compounded dose can be logged, saved and offered as a chip next time.
  */
-export default function DoseChips({ options = [], value, unit = DOSE_UNIT, onSelect, onAddCustom }) {
+export default function DoseChips({ medication, options = [], value, unit = DOSE_UNIT, onSelect, onAddCustom }) {
   const numeric = Number(value) || 0;
   const isChipValue = options.includes(numeric);
   const [otherOpen, setOtherOpen] = useState(!isChipValue && numeric > 0);
@@ -16,11 +18,10 @@ export default function DoseChips({ options = [], value, unit = DOSE_UNIT, onSel
   const customDose = parseFloat(custom);
   const canSave = !saving && !isNaN(customDose) && customDose > 0;
 
+  // The selected chip is ringed in its own colour; every chip keeps its fill.
   const chipClass = (selected) =>
-    `px-4 py-3 rounded-xl text-lg font-bold border transition-all active:scale-95 ${
-      selected
-        ? "bg-indigo-600 text-white border-indigo-600"
-        : "bg-white dark:bg-white/[0.05] text-gray-700 dark:text-[#E8E9F0] border-gray-200 dark:border-white/[0.1]"
+    `px-4 py-3 rounded-xl text-lg font-bold transition-all active:scale-95 ${
+      selected ? "ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#0f1117]" : ""
     }`;
 
   const handleAdd = async () => {
@@ -42,21 +43,31 @@ export default function DoseChips({ options = [], value, unit = DOSE_UNIT, onSel
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {options.map((v) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => { setOtherOpen(false); onSelect(v); }}
-            className={chipClass(!otherOpen && numeric === v)}
-          >
-            {v}
-          </button>
-        ))}
+        {options.map((v) => {
+          const color = getDoseColor(medication, v);
+          const selected = !otherOpen && numeric === v;
+          return (
+            <button
+              key={v}
+              type="button"
+              onClick={() => { setOtherOpen(false); onSelect(v); }}
+              style={{ ...getDoseStyle(medication, v), ...(selected ? { "--tw-ring-color": color } : {}) }}
+              className={chipClass(selected)}
+            >
+              {v}
+            </button>
+          );
+        })}
         <button
           type="button"
           onClick={() => {
             setCustom(isChipValue ? "" : numeric > 0 ? String(numeric) : "");
             setOtherOpen(true);
+          }}
+          style={{
+            background: CUSTOM_DOSE_COLOR,
+            color: getDoseTextColor(CUSTOM_DOSE_COLOR),
+            ...(otherOpen ? { "--tw-ring-color": CUSTOM_DOSE_COLOR } : {}),
           }}
           className={`${chipClass(otherOpen)} flex items-center gap-1`}
         >

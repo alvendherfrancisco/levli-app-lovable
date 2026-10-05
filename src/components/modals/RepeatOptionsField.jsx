@@ -3,6 +3,7 @@ import { Repeat, CalendarClock } from "lucide-react";
 import {
   addDaysToKey, weekdayName, weekdayOfKey, shotDateFromKey, inputTimeToShotTime,
 } from "@/lib/repeatSchedule";
+import DoseBadge from "@/components/DoseBadge";
 
 const PRESETS = [4, 8, 12, 26, 52];
 
@@ -87,12 +88,15 @@ export default function RepeatOptionsField({
 
           <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-3 flex items-start gap-2">
             <CalendarClock size={16} className="text-indigo-500 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-indigo-700 dark:text-indigo-300">
-              {dose || "—"} {doseUnit} every {weekday} at {inputTimeToShotTime(time)}, starting {shotDateFromKey(startKey)}
-              {mode === "weeks"
-                ? ` · ${weeksNum} weeks, last dose ${shotDateFromKey(endKey)}`
-                : " · until you change it"}
-            </p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {dose ? <DoseBadge medication={medication} dose={Number(dose)} unit={doseUnit} /> : null}
+              <p className="text-xs text-indigo-700 dark:text-indigo-300">
+                every {weekday} at {inputTimeToShotTime(time)}, starting {shotDateFromKey(startKey)}
+                {mode === "weeks"
+                  ? ` · ${weeksNum} weeks, last dose ${shotDateFromKey(endKey)}`
+                  : " · until you change it"}
+              </p>
+            </div>
           </div>
 
           <p className="text-[11px] text-gray-400 dark:text-gray-500">

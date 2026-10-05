@@ -9,6 +9,7 @@ import AddShotModal from "@/components/modals/AddShotModal";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import { useAppState } from "@/lib/AppState";
 import { parseShotDate, toDayKey, fromDayKey } from "@/lib/dateUtils";
+import { getDoseColor } from "@/lib/doseColors";
 
 const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -97,7 +98,8 @@ export default function History() {
             {Array.from({ length: firstDayOfWeek }).map((_, i) => <div key={`e${i}`} />)}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
-              const hasShot = !!shotDayMap[day];
+              const dayShot = shotDayMap[day]?.[0];
+              const dotColor = dayShot ? getDoseColor(dayShot.medication, dayShot.dose) : null;
               const isSelected = day === selectedDay;
               const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
               const isFuture = isCurrentMonth && day > today.getDate();
@@ -108,7 +110,7 @@ export default function History() {
                   isSelected ? "border-2 border-indigo-500 text-indigo-600 dark:bg-indigo-500/10" : isToday ? "text-indigo-600" : "text-gray-700 dark:text-gray-300"
                 }`}>
                   {day}
-                  {hasShot && <div className="w-2 h-2 bg-teal-500 rounded-full mt-0.5" style={{boxShadow:"0 0 6px 2px rgba(74,222,128,0.5)"}} />}
+                  {dayShot && <div className="w-2 h-2 rounded-full mt-0.5" style={{ background: dotColor, boxShadow: `0 0 6px 2px ${dotColor}80` }} />}
                 </button>
               );
             })}

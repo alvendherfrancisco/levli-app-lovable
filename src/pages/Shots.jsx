@@ -4,6 +4,7 @@ import { Settings, FileText, Syringe, Clock, CalendarCheck, ClipboardCheck, Load
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import ShotCard from "@/components/shots/ShotCard";
+import DoseBadge from "@/components/DoseBadge";
 import AddShotModal from "@/components/modals/AddShotModal";
 import { useAppState } from "@/lib/AppState";
 import { addDaysToShotDate, daysAgoLabel } from "@/lib/dateUtils";
@@ -64,8 +65,8 @@ export default function Shots() {
             </div>
             {last ? (
               <>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{last.dose} {last.dose_unit || "mg"}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">{daysAgoLabel(last.date)}</p>
+                <DoseBadge medication={last.medication} dose={last.dose} unit={last.dose_unit || "mg"} className="text-base px-2 py-0.5" />
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{daysAgoLabel(last.date)}</p>
               </>
             ) : <p className="text-sm text-gray-400 dark:text-gray-500">No shots yet</p>}
           </div>

@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { parseShotDate } from "@/lib/dateUtils";
+import { getDoseColor } from "@/lib/doseColors";
 
 const SITE_COLORS = [
   "#6366F1", "#14B8A6", "#F59E0B", "#3B82F6", "#EC4899",
@@ -64,9 +65,9 @@ export default function SiteRotationChart({ shots, range }) {
       <div className="mt-3">
         <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">Recent rotation (newest first)</p>
         <div className="flex flex-wrap gap-2">
-          {rotation.map((s, i) => (
+          {rotation.map((s) => (
             <div key={s.id} className="flex items-center gap-1.5 bg-gray-50 dark:bg-white/[0.05] rounded-lg px-2 py-1">
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: SITE_COLORS[i % SITE_COLORS.length] }} />
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: getDoseColor(s.medication, s.dose) }} />
               <span className="text-xs text-gray-600 dark:text-gray-300">{s.site}</span>
               <span className="text-[10px] text-gray-400">{s.date}</span>
             </div>

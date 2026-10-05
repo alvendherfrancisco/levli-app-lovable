@@ -2,6 +2,7 @@ import React from "react";
 import { Repeat, Pause, Play, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAppState } from "@/lib/AppState";
+import DoseBadge from "@/components/DoseBadge";
 import {
   describeRepeat, shotDateFromKey, getNextOccurrence, summarizeSchedule, nextOnOrAfter,
 } from "@/lib/repeatSchedule";
@@ -46,8 +47,9 @@ export default function RepeatScheduleCard({ schedule, onEdit }) {
             <Repeat size={18} className="text-indigo-600 dark:text-indigo-400" />
           </div>
           <div className="min-w-0">
-            <p className="font-bold text-gray-900 dark:text-white text-sm break-words">
-              {schedule.dose} {schedule.dose_unit || "mg"} {schedule.medication}
+            <p className="font-bold text-gray-900 dark:text-white text-sm break-words flex items-center gap-1.5 flex-wrap">
+              <DoseBadge medication={schedule.medication} dose={schedule.dose} unit={schedule.dose_unit || "mg"} className="text-sm" />
+              {schedule.medication}
             </p>
             <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-0.5">{describeRepeat(schedule)}</p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{detail}</p>

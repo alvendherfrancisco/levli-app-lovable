@@ -106,6 +106,7 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
           <div>
             <DoseChips
               key={schedule.medication}
+              medication={schedule.medication}
               options={getDoseChips(schedule.medication, profile?.custom_doses || [])}
               value={parseFloat(dose)}
               unit={unit}

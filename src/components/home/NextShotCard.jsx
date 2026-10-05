@@ -3,6 +3,7 @@ import { Syringe } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { addDaysToShotDate, daysUntilShotDate } from "@/lib/dateUtils";
 import { getDosingInterval, getMissedDoseRule } from "@/lib/medicationData";
+import DoseBadge from "@/components/DoseBadge";
 
 export default function NextShotCard() {
   const { shots, profile } = useAppState();
@@ -50,7 +51,10 @@ export default function NextShotCard() {
           <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 mt-0.5">{daysLabel}</p>
           <div className="mt-2 border-t border-gray-100 dark:border-gray-800 pt-2">
             <p className="text-xs text-gray-400 dark:text-[#9A9DAE]">Last Dose</p>
-            <p className="text-sm font-semibold text-gray-700 dark:text-[#E8E9F0]">{last.date} · {last.dose} mg</p>
+            <p className="text-sm font-semibold text-gray-700 dark:text-[#E8E9F0] flex items-center gap-1.5 flex-wrap">
+              {last.date}
+              <DoseBadge medication={last.medication} dose={last.dose} unit={last.dose_unit || "mg"} />
+            </p>
           </div>
         </div>
         <div className="relative w-20 h-20 flex-shrink-0">

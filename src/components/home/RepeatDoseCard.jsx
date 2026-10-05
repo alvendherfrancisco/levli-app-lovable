@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Check, Loader2, Repeat, Pencil, SkipForward, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useAppState } from "@/lib/AppState";
+import DoseBadge from "@/components/DoseBadge";
 import { todayKey } from "@/lib/dateUtils";
 import {
   shotDateFromKey, inputTimeToShotTime, shotTimeToInput, describeRepeat, getNextOccurrence,
@@ -75,12 +76,15 @@ export default function RepeatDoseCard({ onEdit }) {
                 <p className="text-sm font-bold text-indigo-900 dark:text-indigo-200">
                   {isToday ? "Shot day — ready when you are" : `${daysLate} day${daysLate === 1 ? "" : "s"} late`}
                 </p>
-                <p className="text-xs text-indigo-700/80 dark:text-indigo-300/80 mt-0.5">
-                  {schedule.dose} {schedule.dose_unit || "mg"} {schedule.medication} ·{" "}
-                  {isToday
-                    ? `due today at ${inputTimeToShotTime(schedule.time)}`
-                    : `was due ${shotDateFromKey(dayKey)}`}
-                </p>
+                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                  <DoseBadge medication={schedule.medication} dose={schedule.dose} unit={schedule.dose_unit || "mg"} />
+                  <p className="text-xs text-indigo-700/80 dark:text-indigo-300/80">
+                    {schedule.medication} ·{" "}
+                    {isToday
+                      ? `due today at ${inputTimeToShotTime(schedule.time)}`
+                      : `was due ${shotDateFromKey(dayKey)}`}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -135,8 +139,10 @@ export default function RepeatDoseCard({ onEdit }) {
                   <Repeat size={18} className="text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                    Repeating {schedule.dose} {schedule.dose_unit || "mg"} {schedule.medication}
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 min-w-0">
+                    Repeating
+                    <DoseBadge medication={schedule.medication} dose={schedule.dose} unit={schedule.dose_unit || "mg"} />
+                    <span className="truncate">{schedule.medication}</span>
                   </p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
                     {describeRepeat(schedule)}

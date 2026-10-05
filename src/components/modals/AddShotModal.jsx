@@ -530,6 +530,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                 <div>
                   <DoseChips
                     key={medication}
+                    medication={medication}
                     options={doseChips}
                     value={doseNum}
                     unit={doseUnit}

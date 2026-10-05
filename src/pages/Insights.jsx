@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Settings, TrendingDown, Syringe, HelpCircle, Zap, Gauge, Camera, Image, Clock, Plus, ArrowRight, Maximize2, Minimize2, Crown, MapPin } from "lucide-react";
 import ProgressPhotoCard from "@/components/insights/ProgressPhotoCard";
 import AddMetricModal from "@/components/modals/AddMetricModal";
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useAppState } from "@/lib/AppState";
 import { parseShotDate, todayKey } from "@/lib/dateUtils";
 import { isInvestigational, getHalfLifeDays, getDosingInterval } from "@/lib/medicationData";
@@ -11,6 +11,8 @@ import { steadyStateFraction, accumulationRatio, PK_CALCULATION_VERSION } from "
 import { toast } from "sonner";
 import UpsellBanner from "@/components/UpsellBanner";
 import SiteRotationChart from "@/components/insights/SiteRotationChart";
+import DoseLegend from "@/components/insights/DoseLegend";
+import { getDoseColor, getDoseLegend } from "@/lib/doseColors";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import PageContainer from "@/components/PageContainer";
 import { ICON_SIZE_ROW } from "@/lib/iconConstants";
@@ -20,13 +22,13 @@ const CLASS_COLORS = { Semaglutide: "#14B8A6", Tirzepatide: "#6366F1", Liragluti
 // Builds one curve per drug class using BRAND-SPECIFIC half-lives.
 // Investigational classes are excluded so no curve is shown for unapproved products.
 function buildMedLevelData(shots, days) {
-  if (!shots.length) return { data: [], classes: [], disabled: false, steadyState: null, accumRatio: null };
+  if (!shots.length) return { data: [], classes: [], disabled: false, steadyState: null, accumRatio: null, markers: [], doseLegend: [] };
   const now = new Date(); now.setHours(0,0,0,0);
   const mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const classesSet = new Set();
   shots.forEach((s) => { if (s.drug_class || s.drugClass) classesSet.add(s.drug_class || s.drugClass); });
   const classes = [...classesSet].filter((c) => !isInvestigational(c) && getHalfLifeDays(getBrandForGeneric(c, shots), getRouteForClass(c, shots)));
-  if (!classes.length) return { data: [], classes: [], disabled: true, steadyState: null, accumRatio: null };
+  if (!classes.length) return { data: [], classes: [], disabled: true, steadyState: null, accumRatio: null, markers: [], doseLegend: [] };
   const points = [];
   for (let i = days; i >= 0; i--) {
     const t = new Date(now); t.setDate(t.getDate() - i);
@@ -58,7 +60,24 @@ function buildMedLevelData(shots, days) {
   const interval = getDosingInterval(primaryBrand) || (primaryClass === "Liraglutide" ? 1 : 7);
   const ssFraction = primaryHL ? steadyStateFraction(primaryHL, interval, shots.length) : null;
   const accum = primaryHL ? accumulationRatio(primaryHL, interval) : null;
-  return { data: points, classes, disabled: false, steadyState: ssFraction, accumRatio: accum, primaryClass, primaryHL, interval };
+
+  // Dose markers: every shot in the window, coloured by its dose, plus the
+  // matching legend.
+  const shotsInRange = shots.filter((s) => {
+    const sd = parseShotDate(s.date);
+    if (!sd) return false;
+    const daysSince = Math.round((now - sd) / 86400000);
+    return daysSince >= 0 && daysSince <= days;
+  });
+  const markers = shotsInRange.map((s) => {
+    const sd = parseShotDate(s.date);
+    return { key: s.id, day: `${mNames[sd.getMonth()]} ${sd.getDate()}`, color: getDoseColor(s.medication, s.dose) };
+  });
+
+  return {
+    data: points, classes, disabled: false, steadyState: ssFraction, accumRatio: accum,
+    primaryClass, primaryHL, interval, markers, doseLegend: getDoseLegend(shotsInRange),
+  };
 }
 
 // Helper: find the most common brand for a generic class in the user's shots
@@ -432,9 +451,14 @@ export default function Insights() {
                       {medLevel.classes.map((cls) => (
                         <Area key={cls} type="monotone" dataKey={cls} stroke={CLASS_COLORS[cls] || "#6366F1"} fill={CLASS_COLORS[cls] || "#6366F1"} fillOpacity={0.08} strokeWidth={2} />
                       ))}
+                      {medLevel.markers.map((m) => (
+                        <ReferenceLine key={m.key} x={m.day} stroke={m.color} strokeWidth={1.5} strokeOpacity={0.45} />
+                      ))}
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
+                {/* Dose colour legend for the shot markers */}
+                <DoseLegend items={medLevel.doseLegend} />
                 {/* Steady-state & accumulation metrics */}
                 {medLevel.steadyState != null && (
                   <div className="grid grid-cols-2 gap-2 mt-3">

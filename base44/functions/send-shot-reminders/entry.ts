@@ -57,6 +57,39 @@ function greet(firstName: string): string {
   return firstName ? `Hi ${firstName}` : "Hi there";
 }
 
+// Dose colour dot for the shot-day notification. A push notification has no
+// way to colour text, so a colour-matched dot stands in for the app's central
+// dose colours (src/lib/doseColors.js): Ozempic follows its pen label colours,
+// every other medication a low-to-high ladder by dose step, and a custom dose
+// is neutral. Keep this table in step with src/lib/doseOptions.js.
+const OZEMPIC_DOSE_DOTS: Record<number, string> = {
+  0.25: '🟥', 0.5: '🔴', 1: '🟩', 2: '🟨',
+};
+const DOSE_LADDER_DOTS = ['🔵', '🟩', '🟢', '🟡', '🟠', '🔴'];
+const CUSTOM_DOSE_DOT = '⚪';
+
+const DOSE_LISTS: Record<string, number[]> = {
+  'Ozempic®': [0.25, 0.5, 1, 2],
+  'Wegovy®': [0.25, 0.5, 1, 1.7, 2.4],
+  'Rybelsus®': [3, 7, 14],
+  'Mounjaro®': [2.5, 5, 7.5, 10, 12.5, 15],
+  'Zepbound®': [2.5, 5, 7.5, 10, 12.5, 15],
+  'Saxenda®': [0.6, 1.2, 1.8, 2.4, 3],
+  'Victoza®': [0.6, 1.2, 1.8],
+  'Trulicity®': [0.75, 1.5, 3, 4.5],
+  'Semaglutide (generic / compounded)': [0.25, 0.5, 1, 1.7, 2, 2.4],
+  'Tirzepatide (generic / compounded)': [2.5, 5, 7.5, 10, 12.5, 15],
+};
+
+function doseDot(medication: any, dose: any): string {
+  const value = Number(dose);
+  if (!value) return CUSTOM_DOSE_DOT;
+  const name = String(medication || '').replace(/[®™]/g, '').trim().toLowerCase();
+  if (name === 'ozempic') return OZEMPIC_DOSE_DOTS[value] || CUSTOM_DOSE_DOT;
+  const step = (DOSE_LISTS[String(medication || '')] || []).findIndex((d) => d === value);
+  return step === -1 ? CUSTOM_DOSE_DOT : (DOSE_LADDER_DOTS[step] || CUSTOM_DOSE_DOT);
+}
+
 // ── Repeat schedules ────────────────────────────────────────────────────────
 // An occurrence stays unresolved until a Shot for that medication exists inside
 // its weekly window. Levli never logs a dose on the user's behalf.
@@ -207,7 +240,7 @@ export default async function(req) {
               const medication = dueSchedule.medication || "your medication";
               const doseLabel = dueSchedule.dose != null ? `${dueSchedule.dose} ${dueSchedule.dose_unit || 'mg'} ` : '';
               const body = isToday
-                ? `${greet(firstName)}, one tap confirms your ${doseLabel}${medication} dose 💊`
+                ? `${greet(firstName)}, one tap confirms your ${doseLabel}${medication} dose ${doseDot(dueSchedule.medication, dueSchedule.dose)}`
                 : `${greet(firstName)}, your ${doseLabel}${medication} dose is ${duePending.daysLate} day${duePending.daysLate === 1 ? '' : 's'} overdue — confirm it when you can.`;
               const payload = JSON.stringify({ title: isToday ? 'Dose day' : 'Levli Reminder', body, url: `/?confirm=${dueSchedule.id}` });
               const result = await sendPushToUserSubs(base44, userSubs, payload, vapidConfig, {
