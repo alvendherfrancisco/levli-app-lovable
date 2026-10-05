@@ -39,9 +39,9 @@ export function rememberSplashPlayed() {
  * Is the splash the only thing on screen?
  *
  * It is until the launch has finished, and it comes back while the session is
- * being torn down on the way out — the browser takes a round trip to the
- * platform's logout endpoint before it lands on the login screen, and covering
- * that moment is what keeps the signed-out app from painting first.
+ * being torn down on the way out — the same sequence plays over the sign-out,
+ * and the app leaves for the login screen when it has finished. Covering that
+ * moment is what keeps the signed-out app from painting first.
  */
 export function showsSplash({ launchDone, isLoggingOut }) {
   return !launchDone || !!isLoggingOut;
@@ -52,17 +52,15 @@ export function showsSplash({ launchDone, isLoggingOut }) {
  *
  * Only once the session has resolved — and, for a signed-in person, once the
  * profile has loaded too, since that decides whether the app opens on Home or
- * on onboarding. Signing out is never ready: the browser is leaving for the
- * login screen, and the splash should hold the screen until it does.
+ * on onboarding. A sign-out does not go through this at all: there the splash
+ * plays its whole sequence and the app leaves when it has finished.
  */
 export function isLaunchReady({
   isLoadingAuth,
   isLoadingPublicSettings,
   isAuthenticated,
   onboardingCompleted,
-  isLoggingOut,
 }) {
-  if (isLoggingOut) return false;
   if (isLoadingAuth || isLoadingPublicSettings) return false;
   return !isAuthenticated || onboardingCompleted !== null;
 }

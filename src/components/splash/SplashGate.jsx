@@ -22,9 +22,18 @@ import {
  * stays finished (see src/lib/launchGate.js), so an auth-state event, a token
  * refresh, a remount or the reloads login and logout cause never start it
  * again.
+ *
+ * Signing out borrows the same screen on purpose: the whole sequence plays over
+ * the teardown and the app leaves for the login screen when it is done.
  */
 export default function SplashGate({ children }) {
-  const { isLoadingAuth, isLoadingPublicSettings, isAuthenticated, isLoggingOut } = useAuth();
+  const {
+    isLoadingAuth,
+    isLoadingPublicSettings,
+    isAuthenticated,
+    isLoggingOut,
+    completeLogout,
+  } = useAuth();
   const { onboardingCompleted } = useAppState();
   const [launchDone, setLaunchDone] = useState(splashAlreadyPlayed);
 
@@ -36,14 +45,22 @@ export default function SplashGate({ children }) {
   if (showsSplash({ launchDone, isLoggingOut })) {
     return (
       <SplashScreen
-        ready={isLaunchReady({
-          isLoadingAuth,
-          isLoadingPublicSettings,
-          isAuthenticated,
-          onboardingCompleted,
-          isLoggingOut,
-        })}
+        // A sign-out runs the same sequence as a launch but never leaves on its
+        // own: it plays to the end, and only then does the app go to the login
+        // screen. Leaving earlier would paint the splash frozen, because a page
+        // that is already navigating away does not animate.
+        ready={
+          isLoggingOut
+            ? false
+            : isLaunchReady({
+                isLoadingAuth,
+                isLoadingPublicSettings,
+                isAuthenticated,
+                onboardingCompleted,
+              })
+        }
         onFinish={finish}
+        onSequenceEnd={isLoggingOut ? completeLogout : undefined}
       />
     );
   }

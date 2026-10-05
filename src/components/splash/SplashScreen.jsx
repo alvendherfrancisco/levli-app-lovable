@@ -15,8 +15,13 @@ import SplashSparkles from "@/components/splash/SplashSparkles";
  *
  * With "Reduce Motion" the same composition is shown as a single fade — the
  * static logo — and nothing moves.
+ *
+ * A sign-out borrows the same screen: the sequence plays through in full, then
+ * onSequenceEnd tells the app to leave for the login screen. Playing it before
+ * the navigation is what keeps it animated — a document that is already leaving
+ * paints its splash frozen.
  */
-export default function SplashScreen({ ready = true, onFinish }) {
+export default function SplashScreen({ ready = true, onFinish, onSequenceEnd }) {
   const reduced = usePrefersReducedMotion();
   const dark = useLiveDarkTheme();
   const [exiting, setExiting] = useState(false);
@@ -25,8 +30,10 @@ export default function SplashScreen({ ready = true, onFinish }) {
   const startedAt = useRef(Date.now());
   const readyRef = useRef(ready);
   const finishRef = useRef(onFinish);
+  const sequenceEndRef = useRef(onSequenceEnd);
   readyRef.current = ready;
   finishRef.current = onFinish;
+  sequenceEndRef.current = onSequenceEnd;
 
   const steps = reduced ? [SPLASH_TIMING.reducedHold] : SPLASH_STEPS;
   const sequenceEnd = steps[steps.length - 1];
@@ -40,10 +47,14 @@ export default function SplashScreen({ ready = true, onFinish }) {
     return () => clearTimeout(timer);
   }, [ready, exiting, reduced]);
 
-  // Startup ran long: bob gently rather than sitting on a frozen frame.
+  // The sequence has played out. If startup ran long, bob gently rather than
+  // sitting on a frozen frame; either way the caller is told once, which is how
+  // a sign-out knows its animation has run before it leaves for the login
+  // screen.
   useEffect(() => {
     const remaining = sequenceEnd - (Date.now() - startedAt.current);
     const timer = setTimeout(() => {
+      sequenceEndRef.current?.();
       if (!readyRef.current) setBobbing(true);
     }, Math.max(0, remaining));
     return () => clearTimeout(timer);
