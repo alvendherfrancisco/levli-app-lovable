@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useNavigate, Navigate, Link } from "react-router-dom";
+import { DISCLAIMER_TEXT, PRIVACY_POLICY_VERSION } from "@/lib/appInfo";
 import OnboardingScreen from "@/components/onboarding/OnboardingScreen";
 import SignUpStep from "@/components/onboarding/SignUpStep";
 import {
@@ -25,7 +26,6 @@ import { COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE } from "@/lib/medication
 import { Check } from "lucide-react";
 
 const TOTAL_STEPS = 8;
-const PRIVACY_POLICY_VERSION = "1.0";
 
 function isMinor(birthdate) {
   if (!birthdate) return false;
@@ -86,6 +86,7 @@ export default function Onboarding() {
   const [tracking, setTracking] = useState([]);
   const [units, setUnits] = useState({ weight_unit: "lb", height_unit: "in", liquid_unit: "oz" });
   const [gdprConsented, setGdprConsented] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [parentalConsentName, setParentalConsentName] = useState("");
@@ -105,6 +106,7 @@ export default function Onboarding() {
       setTracking(data.tracking || []);
       setUnits(data.units || { weight_unit: "lb", height_unit: "in", liquid_unit: "oz" });
       setGdprConsented(!!data.gdprConsented);
+      setAgeConfirmed(!!data.ageConfirmed);
       setBirthdate(data.birthdate || "");
       setParentalConsentName(data.parentalConsentName || "");
       setFirstName(data.firstName || "");
@@ -119,7 +121,7 @@ export default function Onboarding() {
 
   const canContinue = (() => {
     if (step === 2) return selectedMeds.length > 0;
-    if (step === 4) return gdprConsented && birthdate;
+    if (step === 4) return gdprConsented && birthdate && ageConfirmed && !isMinor(birthdate);
     if (step === 5) return frequency !== null;
     return true;
   })();
@@ -130,7 +132,7 @@ export default function Onboarding() {
     sessionStorage.setItem("onboarding_signup_state", JSON.stringify({
       step: 4,
       selectedMeds, doseAmount, frequency, shotDay, tracking, units,
-      gdprConsented, birthdate, parentalConsentName,
+      gdprConsented, birthdate, ageConfirmed, parentalConsentName,
       ...extra,
     }));
   };
@@ -162,7 +164,6 @@ export default function Onboarding() {
     }
     // Completion — record consents + save profile
     if (gdprConsented) await recordConsent(PRIVACY_POLICY_VERSION);
-    if (isMinor(birthdate) && parentalConsentName.trim()) await recordParentalConsent(parentalConsentName);
 
     const realMeds = selectedMeds.filter((m) => m !== "Other");
     let defaultMed = "Ozempic®";
@@ -185,6 +186,7 @@ export default function Onboarding() {
       days_between: daysBetween,
       ...units,
       birthdate,
+      age_confirmed_at: ageConfirmed ? new Date().toISOString() : "",
       onboarding_completed: true,
       weight_tracking_opted_in: weightOptedIn,
       notif_weight_reminders: weightOptedIn,
@@ -228,8 +230,8 @@ export default function Onboarding() {
           setGdprConsented={setGdprConsented}
           birthdate={birthdate}
           setBirthdate={setBirthdate}
-          parentalConsentName={parentalConsentName}
-          setParentalConsentName={setParentalConsentName}
+          ageConfirmed={ageConfirmed}
+          setAgeConfirmed={setAgeConfirmed}
         />
       )}
       {step === 5 && (
@@ -456,7 +458,7 @@ function TrackingStep({ tracking, setTracking, units, setUnits }) {
   );
 }
 
-function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate, parentalConsentName, setParentalConsentName }) {
+function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate, ageConfirmed, setAgeConfirmed }) {
   const minor = isMinor(birthdate);
   return (
     <div className="flex flex-col flex-1">
@@ -465,11 +467,23 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
         <h1 className="text-2xl sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Your data stays yours.
         </h1>
-        <p className="text-gray-500 text-sm leading-relaxed px-3">
-          Everything you log is private to you. Levli is a personal tracking companion — it doesn't replace your care team, and it never shares your journey without your say-so.
+        <p className="text-gray-600 text-sm leading-relaxed px-3">
+          Levli is a personal logbook. It doesn't replace your care team, and it never shares your journey without your say-so.
         </p>
       </div>
-      {/* GDPR consent */}
+
+      {/* Exactly what is stored, where, and why */}
+      <div className="bg-gray-50 rounded-2xl p-3.5 border border-gray-100 mb-3">
+        <p className="text-sm font-semibold text-gray-700 mb-1.5">What Levli stores, and why</p>
+        <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside leading-relaxed">
+          <li><span className="font-medium">What:</span> what you log — doses, symptoms and side effects, weight, nutrition, journal entries and progress photos.</li>
+          <li><span className="font-medium">Where:</span> in your own account, in our encrypted cloud database. Only your sign-in can read it. It is never sold, never used for advertising, and never shared with another person unless you grant them caregiver access.</li>
+          <li><span className="font-medium">Why:</span> to show your history, trends and reports back to you, and to send the reminders you ask for. Nothing else.</li>
+          <li><span className="font-medium">Your control:</span> export everything as CSV or PDF, or delete your account and all of its data, from Settings at any time.</li>
+        </ul>
+      </div>
+
+      {/* Health-data consent */}
       <label className="flex items-start gap-3 cursor-pointer bg-gray-50 rounded-2xl p-3.5 border border-gray-100 mb-3">
         <input
           type="checkbox"
@@ -478,10 +492,12 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
           className="w-5 h-5 mt-0.5 accent-indigo-600 flex-shrink-0"
         />
         <span className="text-sm text-gray-600">
-          I consent to Levli processing my special-category health data as described in the Privacy Policy.
+          I consent to Levli processing my health data as described above and in the{" "}
+          <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>.
         </span>
       </label>
-      {/* Birthdate */}
+
+      {/* Birthdate — used to check the app's 18+ requirement */}
       <div className="mb-3">
         <label className="text-sm font-semibold text-gray-600 mb-2 block">Date of birth</label>
         <input
@@ -491,22 +507,31 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
           className="w-full border-2 border-gray-200 bg-white rounded-xl px-4 py-3 text-base text-gray-700 outline-none focus:border-indigo-500 transition-colors"
         />
       </div>
-      {/* Parental consent (if minor) */}
-      {minor && (
-        <div className="mb-3">
-          <label className="text-sm font-semibold text-gray-600 mb-2 block">Parent / guardian name</label>
-          <input
-            type="text"
-            value={parentalConsentName}
-            onChange={(e) => setParentalConsentName(e.target.value)}
-            placeholder="Full name"
-            className="w-full border-2 border-gray-200 bg-white rounded-xl px-4 py-3 text-base text-gray-700 outline-none focus:border-indigo-500 transition-colors"
-          />
-          <p className="text-xs text-gray-400 mt-1.5">
-            A parent or guardian must consent for you to use Levli with health data tracking.
+
+      {/* Adult-only confirmation */}
+      {minor ? (
+        <div className="rounded-2xl border border-orange-200 bg-orange-50 p-3.5 mb-3">
+          <p className="text-sm font-semibold text-orange-800">Levli is for adults aged 18 and over.</p>
+          <p className="text-xs text-orange-700 mt-1 leading-relaxed">
+            The date of birth entered is under 18, so Levli can't be used for health tracking. Please check the date, or come back when you're 18.
           </p>
         </div>
+      ) : (
+        <label className="flex items-start gap-3 cursor-pointer bg-gray-50 rounded-2xl p-3.5 border border-gray-100 mb-3">
+          <input
+            type="checkbox"
+            checked={ageConfirmed}
+            onChange={(e) => setAgeConfirmed(e.target.checked)}
+            className="w-5 h-5 mt-0.5 accent-indigo-600 flex-shrink-0"
+          />
+          <span className="text-sm text-gray-600">I confirm that I am 18 years or older.</span>
+        </label>
       )}
+
+      <p className="text-xs text-gray-600 leading-relaxed px-1">
+        {DISCLAIMER_TEXT} Read the{" "}
+        <Link to="/medical-disclaimer" className="text-indigo-600 underline">full medical disclaimer</Link>.
+      </p>
     </div>
   );
 }

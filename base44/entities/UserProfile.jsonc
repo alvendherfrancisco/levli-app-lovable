@@ -62,7 +62,7 @@
     "birthdate": {
       "type": "string",
       "format": "date",
-      "description": "Account holder's date of birth (used for paediatric account detection)"
+      "description": "Account holder's date of birth (used for the 18+ age gate)"
     },
     "gdpr_consent_date": {
       "type": "string",
@@ -71,6 +71,10 @@
     "gdpr_privacy_policy_version": {
       "type": "string",
       "description": "Version identifier of the privacy policy the user consented to"
+    },
+    "age_confirmed_at": {
+      "type": "string",
+      "description": "ISO timestamp when the user confirmed in onboarding that they are 18 or older"
     },
     "parental_consent_date": {
       "type": "string",

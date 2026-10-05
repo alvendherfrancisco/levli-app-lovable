@@ -1,0 +1,33 @@
+{
+  "name": "Levli — Personal Logbook",
+  "short_name": "Levli",
+  "description": "A personal logbook and tracker for medication doses, symptoms, weight and nutrition. Not medical advice.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "categories": ["health", "medical", "lifestyle"],
+  "icons": [
+    {
+      "src": "/levli-logo-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/4c3b30fc1_generated_image.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/149916f22_generated_image.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

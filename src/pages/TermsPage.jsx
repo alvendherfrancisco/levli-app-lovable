@@ -16,17 +16,10 @@ export default function TermsPage() {
     <div className="bg-gray-50 dark:bg-gray-950 min-h-screen w-full">
       <div className="w-full flex items-center gap-3 px-5 pt-6 pb-4 bg-gray-50 dark:bg-gray-950 sticky top-0 z-30 border-b border-gray-100 dark:border-gray-800">
         <button onClick={() => navigate(-1)}><ChevronLeft size={24} className="text-gray-600 dark:text-gray-400" /></button>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Terms & Conditions</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Terms of Use</h1>
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-4">
-        {/* Placeholder banner */}
-        
-
-
-
-
-        
 
         <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Last updated: June 30, 2026</p>
 
@@ -78,11 +71,11 @@ export default function TermsPage() {
 
         <Section title="9. Contact">
           <p>For questions about these terms, contact us at:</p>
-          <p className="text-blue-600 dark:text-blue-400 font-medium mt-1">legal@levli.app <span className="text-gray-400 dark:text-gray-500 text-xs">(placeholder — replace with your actual contact)</span></p>
+          <p className="text-blue-600 dark:text-blue-400 font-medium mt-1">support@levli.app</p>
         </Section>
 
         <div className="py-6 text-center">
-          <p className="text-xs text-gray-400 dark:text-gray-600">© 2026 Levli · Placeholder terms and conditions</p>
+          <p className="text-xs text-gray-400 dark:text-gray-600">© 2026 Levli · Terms of Use, version 1.0</p>
         </div>
       </div>
     </div>);

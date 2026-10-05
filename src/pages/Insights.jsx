@@ -20,6 +20,7 @@ import DoseLegend from "@/components/insights/DoseLegend";
 import { getDoseColor, getDoseLegend } from "@/lib/doseColors";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import PageContainer from "@/components/PageContainer";
+import AppFooterDisclaimer from "@/components/AppFooterDisclaimer";
 import { ICON_SIZE_ROW } from "@/lib/iconConstants";
 
 const CLASS_COLORS = { Semaglutide: "#14B8A6", Tirzepatide: "#6366F1", Liraglutide: "#F59E0B" };
@@ -646,6 +647,7 @@ export default function Insights() {
         <SideEffectsPanel />
 
         <UpsellBanner />
+        <AppFooterDisclaimer />
       </div>
     </PageContainer>
   );

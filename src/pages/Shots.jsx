@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Settings, FileText, Syringe, Clock, CalendarCheck, ClipboardCheck, Loader2, Crown } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
+import AppFooterDisclaimer from "@/components/AppFooterDisclaimer";
 import Fab from "@/components/Fab";
 import ShotCard from "@/components/shots/ShotCard";
 import DoseBadge from "@/components/DoseBadge";
@@ -147,9 +148,7 @@ export default function Shots() {
         </div>
       </div>
 
-      <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center px-4">
-        Levli is a personal logbook, not medical advice. Consult your prescriber for dosing decisions.
-      </p>
+      <AppFooterDisclaimer />
 
       <Fab onClick={openNew} label="Add Shot" />
 

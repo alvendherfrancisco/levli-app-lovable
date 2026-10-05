@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Settings, Plus, BookOpen, Clock, Heart } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
+import AppFooterDisclaimer from "@/components/AppFooterDisclaimer";
 import JournalEntryModal from "@/components/modals/JournalEntryModal";
 import { useAppState } from "@/lib/AppState";
 import { JOURNAL_CATEGORIES, categoryMeta, normaliseCategory, sortJournalNewestFirst } from "@/lib/journalMeta";
@@ -182,6 +183,7 @@ export default function Journal() {
         onDelete={editingEntry ? () => handleDelete(editingEntry.id) : null}
         initialEntry={editingEntry}
       />
+      <AppFooterDisclaimer />
     </PageContainer>
   );
 }

@@ -30,10 +30,15 @@ export default function PaywallModal({ open, onClose }) {
   if (!open) return null;
 
   const handleCheckout = async () => {
-    if (window.self !== window.top) {
-      alert("Checkout works only from a published app. Please open the app in a new tab to subscribe.");
+    // In a framed preview the checkout page must open in its own tab, and the
+    // tab has to be opened in the click handler so the popup is not blocked.
+    const isFramed = window.self !== window.top;
+    const checkoutTab = isFramed ? window.open("", "_blank") : null;
+    if (isFramed && !checkoutTab) {
+      toast.error("Allow popups to continue to checkout.");
       return;
     }
+    if (checkoutTab) checkoutTab.opener = null;
     setBusy(true);
     try {
       const res = await base44.functions.invoke("create-checkout-session", {
@@ -43,12 +48,15 @@ export default function PaywallModal({ open, onClose }) {
         appOrigin: window.location.origin,
       });
       if (res.data?.url) {
-        window.location.href = res.data.url;
+        if (checkoutTab) checkoutTab.location.replace(res.data.url);
+        else window.location.assign(res.data.url);
       } else {
+        checkoutTab?.close();
         toast.error("Could not start checkout. Please try again.");
       }
     } catch (e) {
       console.error(e);
+      checkoutTab?.close();
       toast.error("Checkout failed. Please try again.");
     } finally {
       setBusy(false);

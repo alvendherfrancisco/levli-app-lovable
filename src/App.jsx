@@ -31,6 +31,8 @@ import SettingsPage from '@/pages/SettingsPage';
 import ReportPage from '@/pages/ReportPage';
 import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
 import TermsPage from '@/pages/TermsPage';
+import MedicalDisclaimerPage from '@/pages/MedicalDisclaimerPage';
+import AboutSourcesPage from '@/pages/AboutSourcesPage';
 import MyMedications from '@/pages/MyMedications';
 import InventoryPage from '@/pages/InventoryPage';
 import PushTest from '@/pages/PushTest';
@@ -88,6 +90,12 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<Onboarding />} />
+      {/* Legal pages are public: store reviewers and anyone following a link
+          must be able to read them without signing in. */}
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/medical-disclaimer" element={<MedicalDisclaimerPage />} />
+      <Route path="/about-sources" element={<AboutSourcesPage />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<EntryRedirect />} />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomeOrOnboarding />} />
@@ -103,8 +111,6 @@ const AuthenticatedApp = () => {
         <Route path="/push-test" element={<PushTest />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/report" element={<ReportErrorBoundary><ReportPage /></ReportErrorBoundary>} />
-        <Route path="/privacy" element={<PrivacyPolicyPage />} />
-        <Route path="/terms" element={<TermsPage />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

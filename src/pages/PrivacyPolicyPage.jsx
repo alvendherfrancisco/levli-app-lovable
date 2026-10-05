@@ -20,14 +20,6 @@ export default function PrivacyPolicyPage() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-4">
-        {/* Placeholder banner */}
-        
-
-
-
-
-        
-
         <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Last updated: June 30, 2026</p>
 
         <Section title="1. What Data We Collect">
@@ -68,19 +60,21 @@ export default function PrivacyPolicyPage() {
         </Section>
 
         <Section title="6. Data Retention & Deletion">
-          <p>Your data is retained for as long as your account is active. You may delete individual records at any time from within the app.</p>
+          <p>Your data is retained for as long as your account is active. You can export everything you have saved as CSV or PDF at any time from Settings → Your data, delete individual records in the app, or delete your account and all of its data from Settings → Delete my account and all data. Deletion removes your records from our servers.</p>
+          <p>Levli is for adults aged 18 and over. We do not collect data from children.</p>
+          <p>We do not use your health data for advertising, we do not sell it, and we do not run third-party analytics that receive the content of your health records.</p>
           <p>To request full deletion of your account and all associated data, email us at:</p>
-          <p className="text-blue-600 dark:text-blue-400 font-medium mt-1">privacy@levli.app <span className="text-gray-400 dark:text-gray-500 text-xs">(placeholder — replace with your actual contact)</span></p>
+          <p className="text-blue-600 dark:text-blue-400 font-medium mt-1">privacy@levli.app</p>
           <p>We will process deletion requests within 30 days.</p>
         </Section>
 
         <Section title="7. Contact">
           <p>For any privacy-related questions or concerns, contact us at:</p>
-          <p className="text-blue-600 dark:text-blue-400 font-medium mt-1">privacy@levli.app <span className="text-gray-400 dark:text-gray-500 text-xs">(placeholder)</span></p>
+          <p className="text-blue-600 dark:text-blue-400 font-medium mt-1">privacy@levli.app</p>
         </Section>
 
         <div className="py-6 text-center">
-          <p className="text-xs text-gray-400 dark:text-gray-600">© 2026 Levli · Placeholder privacy policy</p>
+          <p className="text-xs text-gray-400 dark:text-gray-600">© 2026 Levli · Privacy Policy, version 1.0</p>
         </div>
       </div>
     </div>);
