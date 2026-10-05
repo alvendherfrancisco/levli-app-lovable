@@ -107,6 +107,21 @@
       "type": "boolean",
       "default": false,
       "description": "Whether the user opted into weight tracking during onboarding"
+    },
+    "custom_doses": {
+      "type": "array",
+      "description": "Doses the user added themselves, one entry per medication, offered as dose chips next time",
+      "items": {
+        "type": "object",
+        "properties": {
+          "medication": {
+            "type": "string"
+          },
+          "dose": {
+            "type": "number"
+          }
+        }
+      }
     }
   },
   "name": "UserProfile",

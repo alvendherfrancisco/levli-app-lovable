@@ -21,6 +21,7 @@ const DEFAULT_PROFILE = {
   notif_inventory_alerts: true,
   notif_reengagement: false,
   weight_tracking_opted_in: false,
+  custom_doses: [],
 };
 
 export function AppStateProvider({ children }) {
@@ -435,6 +436,7 @@ export function AppStateProvider({ children }) {
       notif_inventory_alerts: next.notif_inventory_alerts !== undefined ? !!next.notif_inventory_alerts : true,
       notif_reengagement: !!next.notif_reengagement,
       weight_tracking_opted_in: !!next.weight_tracking_opted_in,
+      custom_doses: Array.isArray(next.custom_doses) ? next.custom_doses : [],
     };
     if (profileId) {
       await base44.entities.UserProfile.update(profileId, payload);

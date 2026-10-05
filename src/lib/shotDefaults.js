@@ -4,29 +4,12 @@
 
 import { getDoseMax, getMedicationRoutes, isCompoundedGeneric } from "@/lib/medicationData";
 import { ROUTE_LABELS } from "@/lib/medicationCatalogue";
+import { getDoseList } from "@/lib/doseOptions";
 
 export const INJECTABLE_ROUTES = ["subcutaneous", "intramuscular", "intradermal"];
 
-// Standard strength ladders (mg) for the branded pen products. Compounded /
-// generic products have no ladder — strength varies by pharmacy.
-const DOSE_LADDER = {
-  "Ozempic®": [0.25, 0.5, 1, 2],
-  "Wegovy®": [0.25, 0.5, 1, 1.7, 2.4],
-  "Rybelsus®": [3, 7, 14],
-  "Mounjaro®": [2.5, 5, 7.5, 10, 12.5, 15],
-  "Zepbound®": [2.5, 5, 7.5, 10, 12.5, 15],
-  "Saxenda®": [0.6, 1.2, 1.8, 2.4, 3],
-  "Victoza®": [0.6, 1.2, 1.8],
-  "Trulicity®": [0.75, 1.5, 3, 4.5],
-};
-
-/** Strength chips for a medication, never above its standard maximum. */
-export function getDoseLadder(medication, unit = "mg") {
-  if (unit !== "mg") return [];
-  const ladder = DOSE_LADDER[medication] || [];
-  const max = getDoseMax(medication);
-  return max < 100 ? ladder.filter((d) => d <= max) : ladder;
-}
+// Strength lists and dose chips live in the one central config:
+// src/lib/doseOptions.js
 
 // Brand products whose injection device fixes the route, so the Route field
 // is hidden and the route is set silently.
@@ -92,7 +75,7 @@ export function getDoseDefault({ medication, medications = [], shots = [] }) {
   const unit = regimen?.dose_unit || lastShot?.dose_unit || "mg";
   const raw = regimen?.prescribed_dose ?? lastShot?.dose;
   let dose = raw != null && Number(raw) > 0 ? Number(raw) : null;
-  if (dose == null) dose = getDoseLadder(medication, unit)[0] ?? 2.5;
+  if (dose == null) dose = getDoseList(medication)[0] ?? 2.5;
   const max = getDoseMax(medication);
   if (unit === "mg" && max < 100 && dose > max) dose = max;
   return { dose, unit };

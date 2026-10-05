@@ -5,14 +5,16 @@ import { MEDICATIONS, DRUG_CLASS, isInvestigational, getDoseMax, getMolecularCla
 import { getDeliveryMethods, getDeliveryMethodLabel, RETIRED_DELIVERY_METHODS } from "@/lib/deliveryMethods";
 import { getCapabilityProfile, getCapabilityWarning, getMolecularClassLabel } from "@/lib/capabilityProfile";
 import { detectDuplicateActiveIngredient } from "@/lib/drugSafety";
-import { convertDose, doseStep, doseUnitLabel } from "@/lib/units";
+import { convertDose, doseUnitLabel } from "@/lib/units";
 import { parseShotDate, formatShotDate, calendarDaysBetween } from "@/lib/dateUtils";
 import {
-  INJECTABLE_ROUTES, COMPOUNDED_DEVICES, getDoseLadder, getRouteChoices,
+  INJECTABLE_ROUTES, COMPOUNDED_DEVICES, getRouteChoices,
   getDefaultRoute, isBrandPen, activeRegimensFor, getDoseDefault, getSmartShotDefaults,
 } from "@/lib/shotDefaults";
 import { addDaysToKey } from "@/lib/repeatSchedule";
 import RepeatOptionsField from "@/components/modals/RepeatOptionsField";
+import DoseChips from "@/components/modals/DoseChips";
+import { getDoseChips, withCustomDose } from "@/lib/doseOptions";
 import ShotSuccessPanel from "@/components/modals/ShotSuccessPanel";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import { toast } from "sonner";
@@ -34,16 +36,6 @@ const idSites = [
   "Upper Back – Left", "Upper Back – Right",
 ];
 
-const DOSE_UNITS = ["mg", "mcg", "units", "IU", "mL", "sprays", "tablets", "applications"];
-
-// Colour of the big dose readout: red when above the typical maximum, amber
-// when it differs from the previous dose, neutral otherwise.
-const DOSE_TEXT = {
-  high: "text-red-600 dark:text-red-400",
-  changed: "text-amber-600 dark:text-amber-400",
-  normal: "text-gray-900 dark:text-[#E8E9F0]",
-};
-
 const pad = (n) => String(n).padStart(2, "0");
 function toInputDate(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 function toInputTime(d) { return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
@@ -54,7 +46,7 @@ function toShotTime(d) {
 }
 
 export default function AddShotModal({ open, onClose, editingShot, initialValues }) {
-  const { addShot, updateShot, deleteShot, profile, getRecommendedSite, shots, medications,
+  const { addShot, updateShot, deleteShot, profile, setProfile, getRecommendedSite, shots, medications,
     repeatSchedules, addRepeatSchedule, updateRepeatSchedule } = useAppState();
   const confirmedDupRef = useRef(false);
 
@@ -73,7 +65,6 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const [time, setTime] = useState(toInputTime(now));
   const [showMedDropdown, setShowMedDropdown] = useState(false);
   const [showSiteDropdown, setShowSiteDropdown] = useState(false);
-  const [showUnitDropdown, setShowUnitDropdown] = useState(false);
   const [route, setRoute] = useState("");
   const [deviceType, setDeviceType] = useState("");
   const [saving, setSaving] = useState(false);
@@ -156,8 +147,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     (previousShot.dose_unit || "mg") === doseUnit &&
     Number(previousShot.dose) !== doseNum
   );
-  const doseTone = aboveMax ? "high" : doseChanged ? "changed" : "normal";
-  const doseChips = getDoseLadder(medication, doseUnit);
+  const doseChips = getDoseChips(medication, profile?.custom_doses || []);
   const ingredientDup = editingShot ? { duplicate: false } : detectDuplicateActiveIngredient(medication, shots);
 
   useEffect(() => {
@@ -174,7 +164,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setInsertionDate(toInputDate(n)); setPumpRate(""); setSiteChangeDate(toInputDate(n));
     setReconstitutionDate(""); setInUseExpiry("");
     setDate(toInputDate(n)); setTime(toInputTime(n));
-    setShowMedDropdown(false); setShowSiteDropdown(false); setShowUnitDropdown(false);
+    setShowMedDropdown(false); setShowSiteDropdown(false);
     setShowDetails(false);
 
     if (editingShot) {
@@ -313,6 +303,12 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     if (days < 0 || days >= 3) return null;
     const label = days === 0 ? "less than a day" : days === 1 ? "1 day" : `${days} days`;
     return { label, medication: previousShot.medication };
+  };
+
+  // Saves a custom dose on the profile so it becomes a chip next time.
+  const addCustomDose = async (value) => {
+    await setProfile({ ...profile, custom_doses: withCustomDose(profile?.custom_doses || [], medication, value) });
+    setDose(String(value));
   };
 
   const handleSave = async () => {
@@ -530,39 +526,16 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                   </div>
                 )}
 
-                {/* Dose — large, colour-coded, with strength chips */}
+                {/* Dose — large single-select chips, driven by src/lib/doseOptions.js */}
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Dose</label>
-                  <div className="border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] rounded-xl px-4 py-2.5 flex items-center">
-                    <input type="number" value={dose} min="0" step={doseStep(doseUnit)}
-                      onChange={(e) => setDose(e.target.value)}
-                      className={`flex-1 outline-none bg-transparent text-3xl font-bold ${DOSE_TEXT[doseTone]}`} />
-                    <div className="relative">
-                      <button onClick={() => setShowUnitDropdown(!showUnitDropdown)} className="text-gray-400 text-sm flex items-center gap-1 ml-2">
-                        {doseUnitLabel(doseUnit)} <ChevronDown size={14} />
-                      </button>
-                      {showUnitDropdown && (
-                        <div className="absolute z-10 mt-1 right-0 bg-white dark:bg-[#1e2130] border border-gray-200 dark:border-white/[0.08] rounded-xl shadow-lg">
-                          {DOSE_UNITS.map((u) => (
-                            <button key={u} onClick={() => { setDoseUnit(u); setShowUnitDropdown(false); }}
-                              className={`block w-full px-4 py-2 text-sm text-left dark:text-[#E8E9F0] ${doseUnit === u ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-medium" : "hover:bg-gray-50 dark:hover:bg-white/[0.05]"}`}>
-                              {doseUnitLabel(u)}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {doseChips.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {doseChips.map((v) => (
-                        <button key={v} onClick={() => setDose(String(v))}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-semibold border ${doseNum === v ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-white/[0.05] text-gray-600 dark:text-gray-300 border-gray-200 dark:border-white/[0.1]"}`}>
-                          {v}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  <DoseChips
+                    key={medication}
+                    options={doseChips}
+                    value={doseNum}
+                    unit={doseUnit}
+                    onSelect={(v) => setDose(String(v))}
+                    onAddCustom={addCustomDose}
+                  />
                   {doseChanged && (
                     <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mt-2">
                       Dose changed from {previousShot.dose} {doseUnitLabel(previousShot.dose_unit || "mg")} to {dose} {doseUnitLabel(doseUnit)}.

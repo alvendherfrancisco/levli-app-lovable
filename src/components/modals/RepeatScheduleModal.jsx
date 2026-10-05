@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { X, Save, Pause, Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppState } from "@/lib/AppState";
+import DoseChips from "@/components/modals/DoseChips";
+import { getDoseChips, withCustomDose } from "@/lib/doseOptions";
 import { addDaysToKey, shiftWeekday, shotDateFromKey } from "@/lib/repeatSchedule";
 
-const UNITS = ["mg", "mcg", "units", "IU", "mL", "sprays", "tablets", "applications"];
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 0]; // Mon → Sun
 const WEEKDAY_LABELS = { 0: "S", 1: "M", 2: "T", 3: "W", 4: "T", 5: "F", 6: "S" };
 
@@ -12,7 +13,7 @@ const WEEKDAY_LABELS = { 0: "S", 1: "M", 2: "T", 3: "W", 4: "T", 5: "F", 6: "S" 
  * Edit / pause / cancel an active repeat schedule.
  */
 export default function RepeatScheduleModal({ open, onClose, schedule }) {
-  const { updateRepeatSchedule } = useAppState();
+  const { updateRepeatSchedule, profile, setProfile } = useAppState();
   const [dose, setDose] = useState("");
   const [unit, setUnit] = useState("mg");
   const [time, setTime] = useState("08:00");
@@ -37,6 +38,12 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
 
   const active = schedule.status === "active";
   const weeksNum = Math.max(1, parseInt(weeks, 10) || 12);
+
+  // Saves a custom dose on the profile so it becomes a chip next time.
+  const addCustomDose = async (value) => {
+    await setProfile({ ...profile, custom_doses: withCustomDose(profile?.custom_doses || [], schedule.medication, value) });
+    setDose(String(value));
+  };
 
   const handleSave = async () => {
     const doseNum = parseFloat(dose);
@@ -97,19 +104,14 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
         <div className="px-5 pb-4 space-y-5">
           {/* Dose */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Dose</label>
-            <div className="flex gap-2">
-              <input
-                type="number" min="0" step="0.01" value={dose} onChange={(e) => setDose(e.target.value)}
-                className="flex-1 border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300"
-              />
-              <select
-                value={unit} onChange={(e) => setUnit(e.target.value)}
-                className="border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-3 py-3 text-base outline-none"
-              >
-                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-              </select>
-            </div>
+            <DoseChips
+              key={schedule.medication}
+              options={getDoseChips(schedule.medication, profile?.custom_doses || [])}
+              value={parseFloat(dose)}
+              unit={unit}
+              onSelect={(v) => setDose(String(v))}
+              onAddCustom={addCustomDose}
+            />
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Titrating up? Changing this updates every remaining repeat dose.</p>
           </div>
 
