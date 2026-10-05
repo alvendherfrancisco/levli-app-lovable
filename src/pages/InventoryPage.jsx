@@ -6,6 +6,7 @@ import Fab from "@/components/Fab";
 import { useAppState } from "@/lib/AppState";
 import InventoryModal from "@/components/modals/InventoryModal";
 import { todayKey, fromDayKey, calendarDaysBetween } from "@/lib/dateUtils";
+import useModal from "@/hooks/useModal";
 import { toast } from "sonner";
 
 export default function InventoryPage() {
@@ -16,6 +17,7 @@ export default function InventoryPage() {
   const [excursion, setExcursion] = useState(false);
   const [storageNote, setStorageNote] = useState("");
   const today = todayKey();
+  const storageSheetRef = useModal({ open: !!storageModalFor, onDismiss: () => setStorageModalFor(null) });
 
   const openNew = () => { setEditing(null); setModalOpen(true); };
   const openEdit = (i) => { setEditing(i); setModalOpen(true); };
@@ -142,15 +144,15 @@ export default function InventoryPage() {
       {/* Storage log modal */}
       {storageModalFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setStorageModalFor(null)} />
-          <div className="relative bg-white dark:bg-[#0f1117] rounded-3xl w-full max-w-sm p-6 shadow-2xl">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0] mb-4">Storage Log — {storageModalFor.product_name}</h2>
+          <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={() => setStorageModalFor(null)} aria-hidden="true" />
+          <div ref={storageSheetRef} role="dialog" aria-modal="true" aria-label="Storage log" tabIndex={-1} className="relative bg-white dark:bg-[#0f1117] rounded-3xl w-full max-w-sm min-w-0 max-h-[92dvh] overflow-y-auto overflow-x-hidden no-scrollbar sheet-lock p-6 shadow-2xl outline-none">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0] mb-4 break-words">Storage Log — {storageModalFor.product_name}</h2>
             <label className="flex items-center gap-3 cursor-pointer mb-4">
               <input type="checkbox" checked={excursion} onChange={(e) => setExcursion(e.target.checked)} className="w-5 h-5 accent-indigo-600" />
               <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1"><Thermometer size={16} className="text-orange-500" /> Temperature excursion observed</span>
             </label>
             <textarea value={storageNote} onChange={(e) => setStorageNote(e.target.value)} rows={3} placeholder="Notes (optional)"
-              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-300 mb-4" />
+              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300 mb-4" />
             <button onClick={saveStorageLog} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold">Save Log</button>
           </div>
         </div>

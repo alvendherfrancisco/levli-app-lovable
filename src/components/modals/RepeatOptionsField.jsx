@@ -51,7 +51,7 @@ export default function RepeatOptionsField({
                   key={o.v}
                   type="button"
                   onClick={() => onModeChange(o.v)}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all active:scale-[0.98] ${mode === o.v
+                  className={`flex-1 min-w-0 py-2.5 rounded-xl text-sm font-medium border transition-all active:scale-[0.98] ${mode === o.v
                     ? "bg-indigo-600 text-white border-indigo-600"
                     : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.1]"}`}
                 >
@@ -79,7 +79,7 @@ export default function RepeatOptionsField({
                 <input
                   type="number" min="1" max="104" value={weeks}
                   onChange={(e) => onWeeksChange(e.target.value)}
-                  className="w-14 text-sm outline-none bg-transparent dark:text-[#E8E9F0]"
+                  className="w-16 text-base outline-none bg-transparent dark:text-[#E8E9F0]"
                 />
                 <span className="text-xs text-gray-400">weeks</span>
               </div>

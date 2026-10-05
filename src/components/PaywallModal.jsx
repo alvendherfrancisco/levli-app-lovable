@@ -3,6 +3,7 @@ import { X, Crown, Syringe, BarChart3, History, FileText, Droplet, Bell } from "
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useAppState } from "@/lib/AppState";
+import useModal from "@/hooks/useModal";
 import { toast } from "sonner";
 
 const PLANS = [
@@ -26,6 +27,8 @@ export default function PaywallModal({ open, onClose }) {
   const [selected, setSelected] = useState("yearly");
   const [busy, setBusy] = useState(false);
   const [showNoSub, setShowNoSub] = useState(false);
+
+  const sheetRef = useModal({ open, onDismiss: onClose });
 
   if (!open) return null;
 
@@ -82,7 +85,7 @@ export default function PaywallModal({ open, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] bg-white flex flex-col animate-in slide-in-from-bottom">
+    <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="Levli Premium" tabIndex={-1} className="fixed inset-0 z-[70] bg-white flex flex-col overflow-x-hidden sheet-lock animate-in slide-in-from-bottom outline-none">
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-6 pb-2">
         <button onClick={handleRestore} className="text-sm text-gray-500 hover:text-indigo-600">Restore</button>

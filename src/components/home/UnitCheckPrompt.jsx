@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AlertTriangle, Check, Undo2, X } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
+import useModal from "@/hooks/useModal";
 import { toast } from "sonner";
 
 /**
@@ -12,6 +13,11 @@ export default function UnitCheckPrompt() {
   const { unitCheck, convertAssumedKg, undoUnitConversion, keepWeightsAsLogged } = useAppState();
   const [busy, setBusy] = useState(false);
   const [converted, setConverted] = useState(0);
+
+  const sheetRef = useModal({
+    open: !!(unitCheck?.needsPrompt || converted),
+    onDismiss: () => { if (!converted) keepWeightsAsLogged(); },
+  });
 
   if (!unitCheck?.needsPrompt && !converted) return null;
 
@@ -30,8 +36,8 @@ export default function UnitCheckPrompt() {
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={() => !converted && keepWeightsAsLogged()} />
-      <div className="relative bg-white dark:bg-[#0f1117] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[480px] max-h-[90vh] overflow-y-auto p-5 pb-modal-footer">
+      <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={() => !converted && keepWeightsAsLogged()} aria-hidden="true" />
+      <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="Please check your weight unit" tabIndex={-1} className="relative bg-white dark:bg-[#0f1117] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[480px] max-h-[92dvh] overflow-y-auto overflow-x-hidden no-scrollbar sheet-lock p-5 outline-none" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <AlertTriangle size={18} className="text-orange-500 flex-shrink-0" />

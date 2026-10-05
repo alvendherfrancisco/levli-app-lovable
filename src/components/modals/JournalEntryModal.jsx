@@ -6,6 +6,7 @@ import RedFlagBanner from "@/components/RedFlagBanner";
 import UrgentHelpCard from "@/components/sideEffects/UrgentHelpCard";
 import { JOURNAL_CATEGORIES, MOOD_SCALE, moodFor } from "@/lib/journalMeta";
 import { SEVERITY_LEVELS } from "@/lib/sideEffectSymptoms";
+import useModal from "@/hooks/useModal";
 import { toast } from "sonner";
 
 function nowFormatted() {
@@ -46,6 +47,8 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
     setUrgentOpen(false);
   }, [open, initialEntry]);
 
+  const sheetRef = useModal({ open, onDismiss: onClose });
+
   if (!open) return null;
 
   const recentMed = getRecentMedication(shots, null);
@@ -70,8 +73,15 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white dark:bg-[#0f1117] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[520px] max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom sm:mx-4 dark:shadow-[0_-8px_40px_rgba(0,0,0,0.5)]">
+      <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={onClose} aria-hidden="true" />
+      <div
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={initialEntry ? "Edit Entry" : "New Journal Entry"}
+        tabIndex={-1}
+        className="relative bg-white dark:bg-[#0f1117] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[520px] max-h-[92dvh] overflow-y-auto overflow-x-hidden no-scrollbar sheet-lock animate-in slide-in-from-bottom sm:mx-4 dark:shadow-[0_-8px_40px_rgba(0,0,0,0.5)] outline-none"
+      >
         <div className="sticky top-0 z-10 bg-white dark:bg-[#0f1117]">
           <div className="flex justify-center pt-3 pb-1">
             <div className="w-10 h-1 bg-gray-300 dark:bg-white/20 rounded-full" />
@@ -168,8 +178,7 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
           </div>
         )}
 
-        <div className="h-24" />
-        <div className="sticky bottom-0 px-5 pb-modal-footer pt-2 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]">
+        <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
           <button onClick={handleSave} disabled={!text.trim()}
             className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
             <Save size={16} /> {initialEntry ? "Update Entry" : "Save Entry"}

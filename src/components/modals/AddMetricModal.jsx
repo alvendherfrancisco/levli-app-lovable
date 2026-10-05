@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import CameraCapture from "@/components/modals/CameraCapture";
 import SafeImage from "@/components/SafeImage";
+import useModal from "@/hooks/useModal";
 
 function numericOnly(value) {
   let v = value.replace(/[^0-9.]/g, "");
@@ -16,7 +17,7 @@ function numericOnly(value) {
 function ModalShell({ onClose, children, bottom = false }) {
   return (
     <div className={`fixed inset-0 z-[60] flex ${bottom ? "items-end" : "items-center"} justify-center px-6`}>
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={onClose} aria-hidden="true" />
       {children}
     </div>
   );
@@ -27,6 +28,8 @@ function ExerciseModal({ open, onClose, value, onSave, onDelete }) {
   const [val, setVal] = useState("");
   const [error, setError] = useState("");
   useEffect(() => { if (open) { setVal(value && value !== "0" ? String(value) : ""); setError(""); } }, [open, value]);
+
+  const sheetRef = useModal({ open, onDismiss: onClose });
 
   if (!open) return null;
 
@@ -39,7 +42,7 @@ function ExerciseModal({ open, onClose, value, onSave, onDelete }) {
 
   return (
     <ModalShell onClose={onClose}>
-      <div className="relative bg-white dark:bg-[#0f1117] rounded-3xl w-full max-w-sm p-6 shadow-2xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)] border border-transparent dark:border-white/[0.07]">
+      <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="Update Exercise" tabIndex={-1} className="relative bg-white dark:bg-[#0f1117] rounded-3xl w-full max-w-sm min-w-0 max-h-[92dvh] overflow-y-auto overflow-x-hidden no-scrollbar sheet-lock p-6 shadow-2xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)] border border-transparent dark:border-white/[0.07] outline-none">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-[#E8E9F0] mb-4">Update Exercise</h2>
         <label className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-2 block">Duration</label>
         <div className={`flex items-center border rounded-xl px-4 py-3 mb-1 dark:bg-white/[0.05] ${error ? "border-red-400" : "border-gray-200 dark:border-white/[0.1]"}`}>
@@ -84,6 +87,8 @@ function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
 
   useEffect(() => { if (open) { setImgUrl(hasExisting ? value : null); setPhotoDate(dayKey || ""); setUploading(false); setShowCamera(false); } }, [open]);
 
+  const sheetRef = useModal({ open, onDismiss: onClose });
+
   if (!open) return null;
 
   const uploadFile = async (file) => {
@@ -111,11 +116,11 @@ function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
 
   return (
     <ModalShell onClose={onClose} bottom>
-      <div className="relative bg-white dark:bg-[#0f1117] rounded-t-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom dark:shadow-[0_-8px_40px_rgba(0,0,0,0.5)] dark:border-t dark:border-white/[0.07]">
+      <div ref={sheetRef} role="dialog" aria-modal="true" aria-label={hasExisting ? "Edit Progress Picture" : "Add Progress Picture"} tabIndex={-1} className="relative bg-white dark:bg-[#0f1117] rounded-t-3xl w-full max-w-lg max-h-[92dvh] overflow-y-auto overflow-x-hidden no-scrollbar sheet-lock animate-in slide-in-from-bottom dark:shadow-[0_-8px_40px_rgba(0,0,0,0.5)] dark:border-t dark:border-white/[0.07] outline-none">
         <div className="sticky top-0 z-10 bg-white dark:bg-[#0f1117]">
           <div className="flex items-center justify-between px-5 pt-5 pb-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0]">{hasExisting ? "Edit Progress Picture" : "Add Progress Picture"}</h2>
-            <button onClick={onClose}><X size={22} className="text-gray-400" /></button>
+            <button onClick={onClose} aria-label="Close" className="w-11 h-11 flex items-center justify-center rounded-full"><X size={22} className="text-gray-400" /></button>
           </div>
         </div>
         <div className="px-5 pb-4">
@@ -156,10 +161,8 @@ function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
           </div>
         </div>
         {showCamera && <CameraCapture onCapture={handleCameraCapture} onClose={() => setShowCamera(false)} />}
-        <div className="border-t border-gray-100 dark:border-white/[0.08]" />
-        <div className="h-20" />
         {hasExisting ? (
-          <div className="sticky bottom-0 flex gap-3 px-5 pt-5 pb-8 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]">
+          <div className="sticky bottom-0 flex gap-3 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
             <button onClick={() => { onDelete(); onClose(); }}
               className="flex-1 py-3 bg-red-500/10 dark:bg-red-500/10 text-red-500 dark:text-red-400 border border-red-500/20 rounded-xl font-semibold flex items-center justify-center gap-2">
               <Trash2 size={18} /> Delete
@@ -170,7 +173,7 @@ function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
             </button>
           </div>
         ) : (
-          <div className="sticky bottom-0 px-5 pt-5 pb-8 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]">
+          <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
             <button disabled={uploading || !imgUrl || !photoDate} onClick={() => { if (imgUrl) { onSave(imgUrl, photoDate); onClose(); } }}
               className={`w-full py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 bg-indigo-600 text-white ${!imgUrl || uploading ? "opacity-60" : ""}`}>
               <Save size={18} /> Save
@@ -187,6 +190,8 @@ function GenericMetricModal({ open, onClose, label, unit, value, onSave, validat
   const [val, setVal] = useState("");
   const [error, setError] = useState("");
   useEffect(() => { if (open) { setVal(value && value !== "–" ? String(value) : ""); setError(""); } }, [open, value]);
+
+  const sheetRef = useModal({ open, onDismiss: onClose });
 
   if (!open) return null;
 
@@ -206,7 +211,7 @@ function GenericMetricModal({ open, onClose, label, unit, value, onSave, validat
 
   return (
     <ModalShell onClose={onClose}>
-      <div className="relative bg-white dark:bg-[#0f1117] rounded-3xl w-full max-w-sm p-6 shadow-2xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)] border border-transparent dark:border-white/[0.07]">
+      <div ref={sheetRef} role="dialog" aria-modal="true" aria-label={`Update ${label}`} tabIndex={-1} className="relative bg-white dark:bg-[#0f1117] rounded-3xl w-full max-w-sm min-w-0 max-h-[92dvh] overflow-y-auto overflow-x-hidden no-scrollbar sheet-lock p-6 shadow-2xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)] border border-transparent dark:border-white/[0.07] outline-none">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-[#E8E9F0] mb-4">Update {label}</h2>
         <label className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-2 block">{label}</label>
         <div className={`flex items-center border rounded-xl px-4 py-3 mb-1 dark:bg-white/[0.05] ${error ? "border-red-400" : "border-gray-200 dark:border-white/[0.1]"}`}>

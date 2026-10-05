@@ -80,9 +80,9 @@ export default function DoseChips({ medication, options = [], value, unit = DOSE
 
       {otherOpen && (
         <div className="mt-2">
-          <div className="flex items-center gap-2 border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] rounded-xl px-3 py-2">
+          <div className="flex items-center gap-2 min-h-[48px] border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] rounded-xl px-3 py-2">
             <input
-              type="number" inputMode="decimal" min="0" step="0.01" autoFocus
+              type="number" inputMode="decimal" min="0" step="0.01" autoFocus aria-label="Dose amount"
               value={custom}
               onChange={(e) => {
                 setCustom(e.target.value);
@@ -97,7 +97,7 @@ export default function DoseChips({ medication, options = [], value, unit = DOSE
             <span className="text-sm text-gray-400 dark:text-gray-500 flex-shrink-0">{unit}</span>
             <button
               type="button" onClick={handleAdd} disabled={!canSave}
-              className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold disabled:opacity-50 flex-shrink-0"
+              className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold disabled:opacity-50 flex-shrink-0 whitespace-nowrap"
             >
               {saving ? "Saving…" : "Add custom dosage"}
             </button>

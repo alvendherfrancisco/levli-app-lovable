@@ -8,6 +8,12 @@ const UNIT_CHOICES = ["mg", "mcg", "units", "IU", "mL"];
  * The "Other / custom (prescriber-directed)" entry fields: the user types the
  * drug name and the dose, and is told plainly that Levli cannot verify it.
  * A custom entry is excluded from exposure modelling.
+ *
+ * The dose row is a two-part row that always fits inside the sheet: the number
+ * input takes the remaining width (flex: 1 1 0, min-width: 0) and the unit
+ * select is a fixed 120px capped at 40%. Both are 48px tall with the same
+ * border and radius, and use a 16px font so iOS Safari does not zoom the page
+ * on focus (which is what used to shove the sheet sideways).
  */
 export default function CustomMedicationFields({
   name, onNameChange, dose, onDoseChange, unit, onUnitChange, inputClass,
@@ -17,15 +23,25 @@ export default function CustomMedicationFields({
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Medication name</label>
         <input type="text" value={name} onChange={(e) => onNameChange(e.target.value)}
-          placeholder="Type the name on your prescription" className={inputClass} />
+          placeholder="Type the name on your prescription" className={`${inputClass} min-w-0`} />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Dose</label>
-        <div className="flex gap-2">
-          <input type="number" min="0" step="any" inputMode="decimal" value={dose}
+        <div className="flex items-center gap-2">
+          <input
+            type="number" min="0" step="any" inputMode="decimal"
+            value={dose}
             onChange={(e) => onDoseChange(e.target.value)}
-            placeholder="e.g. 0.5" className={`${inputClass} flex-1 min-w-0`} />
-          <select value={unit} onChange={(e) => onUnitChange(e.target.value)} className={`${inputClass} w-28 flex-shrink-0`}>
+            placeholder="0.5"
+            aria-label="Dose amount"
+            className={`${inputClass} flex-1 basis-0 min-w-0 h-12`}
+          />
+          <select
+            value={unit}
+            onChange={(e) => onUnitChange(e.target.value)}
+            aria-label="Dose unit"
+            className="h-12 w-[120px] max-w-[40%] flex-shrink-0 min-w-0 text-base text-gray-900 dark:text-[#E8E9F0] bg-white dark:bg-white/[0.05] border border-gray-200 dark:border-white/[0.1] rounded-xl px-3 outline-none focus:border-indigo-300"
+          >
             {UNIT_CHOICES.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
         </div>

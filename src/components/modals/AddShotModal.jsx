@@ -22,6 +22,8 @@ import DoseChips from "@/components/modals/DoseChips";
 import { getDoseChips, withCustomDose } from "@/lib/doseOptions";
 import ShotSuccessPanel from "@/components/modals/ShotSuccessPanel";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import useModal from "@/hooks/useModal";
 import { toast } from "sonner";
 
 // SC injection sites
@@ -167,6 +169,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     const n = new Date();
     setError(""); setSaved(false); setReporting(false); setDuplicatePrompt(null);
     confirmedDupRef.current = false;
+    dirtyRef.current = false;
+    setConfirmDiscard(false);
     setMedicationId("");
     setCustomName("");
     setConcentration(""); setNotes(""); setPain(0);
@@ -260,6 +264,17 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       setDeviceType("");
     }
   }, [open, medication, activeRoute, deviceType]);
+
+  // Unsaved-input guard, plus the shared dialog behaviour (background scroll
+  // lock, focus trap, Escape and the hardware back button).
+  const dirtyRef = useRef(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const markEdited = () => { dirtyRef.current = true; };
+  const requestClose = () => {
+    if (!saved && dirtyRef.current) { setConfirmDiscard(true); return; }
+    onClose();
+  };
+  const sheetRef = useModal({ open, onDismiss: requestClose });
 
   if (!open) return null;
 
@@ -463,18 +478,38 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   return (
     <>
       <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
-        <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-        <div className="relative bg-white dark:bg-[#0f1117] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[520px] max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom sm:mx-4 dark:shadow-[0_-8px_40px_rgba(0,0,0,0.5)]">
-          <div className="sticky top-0 z-10 bg-white dark:bg-[#0f1117]">
+        <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={requestClose} aria-hidden="true" />
+        <div
+          ref={sheetRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-shot-title"
+          tabIndex={-1}
+          onChangeCapture={markEdited}
+          onInputCapture={markEdited}
+          onClickCapture={(e) => { if (!e.target.closest("[data-skip-dirty]")) markEdited(); }}
+          className="relative flex flex-col w-full sm:max-w-[520px] max-h-[92dvh] overflow-hidden sheet-lock bg-white dark:bg-[#0f1117] rounded-t-3xl sm:rounded-3xl animate-in slide-in-from-bottom sm:mx-4 dark:shadow-[0_-8px_40px_rgba(0,0,0,0.5)] outline-none"
+        >
+          <div className="shrink-0 bg-white dark:bg-[#0f1117]">
             <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
-            <div className="flex items-center justify-between px-5 pb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0]">{editingShot ? "Edit Shot Log" : "Add Shot Log"}</h2>
-              <div className="flex items-center gap-3">
-                {editingShot && !saved && <button onClick={handleDelete}><Trash2 size={20} className="text-red-400" /></button>}
-                <button onClick={onClose}><X size={22} className="text-gray-400" /></button>
+            <div className="flex items-center justify-between gap-2 px-5 pb-4">
+              <h2 id="add-shot-title" className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0] min-w-0 break-words">{editingShot ? "Edit Shot Log" : "Add Shot Log"}</h2>
+              <div className="flex items-center gap-1 shrink-0">
+                {editingShot && !saved && <button onClick={handleDelete} data-skip-dirty aria-label="Delete this shot" className="w-11 h-11 flex items-center justify-center rounded-full"><Trash2 size={20} className="text-red-400" /></button>}
+                <button onClick={requestClose} data-skip-dirty aria-label="Close" className="w-11 h-11 flex items-center justify-center rounded-full"><X size={22} className="text-gray-400" /></button>
               </div>
             </div>
           </div>
+
+          <div
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar overscroll-contain"
+            style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
+            onFocusCapture={(e) => {
+              // With the keyboard open the focused field scrolls into view.
+              const el = e.target;
+              setTimeout(() => { try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch { /* ignore */ } }, 180);
+            }}
+          >
 
           {saved ? (
             <ShotSuccessPanel
@@ -498,8 +533,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Medication</label>
                   <div className="relative">
                     {showMedSelector ? (
-                      <button onClick={() => setShowMedDropdown(!showMedDropdown)}
-                        className={`${inputClass} flex items-center justify-between text-left`}>
+                      <button onClick={() => setShowMedDropdown(!showMedDropdown)} data-skip-dirty
+                        className={`${inputClass} flex items-center justify-between gap-2 text-left min-w-0`}>
                         <div>
                           <span className="text-base block">{medication}</span>
                           <span className="text-xs text-gray-400 dark:text-gray-500">{getMolecularClassLabel(medication)}</span>
@@ -508,11 +543,11 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                       </button>
                     ) : (
                       <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <span className="text-lg font-semibold text-gray-900 dark:text-[#E8E9F0] block truncate">{medication}</span>
-                          <span className="text-xs text-gray-400 dark:text-gray-500">{getMolecularClassLabel(medication)}</span>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-lg font-semibold text-gray-900 dark:text-[#E8E9F0] block break-words [overflow-wrap:anywhere]">{medication}</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500 block break-words">{getMolecularClassLabel(medication)}</span>
                         </div>
-                        <button onClick={() => setShowMedDropdown(!showMedDropdown)} className="flex items-center gap-1 text-sm font-semibold text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                        <button onClick={() => setShowMedDropdown(!showMedDropdown)} data-skip-dirty className="flex items-center gap-1 text-sm font-semibold text-indigo-600 dark:text-indigo-400 flex-shrink-0 min-h-[44px] px-2">
                           Change <ChevronDown size={14} />
                         </button>
                       </div>
@@ -636,8 +671,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                   <div>
                     <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Injection site</label>
                     <div className="relative">
-                      <button onClick={() => setShowSiteDropdown(!showSiteDropdown)}
-                        className={`${inputClass} flex items-center justify-between text-left`}>
+                      <button onClick={() => setShowSiteDropdown(!showSiteDropdown)} data-skip-dirty
+                        className={`${inputClass} flex items-center justify-between gap-2 text-left min-w-0`}>
                         <span className="flex items-center gap-2 min-w-0">
                           <Star size={16} className="text-orange-400 flex-shrink-0" />
                           <span className="text-base font-semibold truncate">{site || recommendedSite}</span>
@@ -659,17 +694,17 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                 {/* Date & Time */}
                 <div>
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Date & time</label>
-                  <div className="flex gap-3">
-                    <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-                      className="flex-1 border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-4 py-2.5 text-base outline-none focus:border-indigo-300" />
-                    <input type="time" value={time} onChange={(e) => setTime(e.target.value)}
-                      className="flex-1 border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-4 py-2.5 text-base outline-none focus:border-indigo-300" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Shot date"
+                      className="w-full min-w-0 h-12 border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-3 text-base outline-none focus:border-indigo-300" />
+                    <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="Shot time"
+                      className="w-full min-w-0 h-12 border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-3 text-base outline-none focus:border-indigo-300" />
                   </div>
                 </div>
 
                 {/* Optional details, collapsed by default */}
                 <div className="border-t border-gray-100 dark:border-white/[0.08] pt-3">
-                  <button onClick={() => setShowDetails(!showDetails)} className="w-full flex items-center justify-between">
+                  <button onClick={() => setShowDetails(!showDetails)} data-skip-dirty className="w-full flex items-center justify-between gap-2 py-1">
                     <span className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                       Add details (optional)
                       {repeatOn && <span className="text-[11px] font-medium text-indigo-500 dark:text-indigo-400">· repeat active</span>}
@@ -861,7 +896,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Notes (optional)</label>
                         <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
                           placeholder={isCompounded ? "e.g. pharmacy name, how you felt" : "Add any notes or side effects experienced"}
-                          className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-sm resize-none h-24 outline-none focus:border-indigo-300" />
+                          className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base resize-none h-24 outline-none focus:border-indigo-300" />
                       </div>
                     </div>
                   )}
@@ -881,8 +916,12 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
             </>
           )}
 
-          <div className="h-24" />
-          <div className="sticky bottom-0 px-5 pb-modal-footer pt-2 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]">
+          </div>
+
+          <div
+            className="shrink-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]"
+            style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}
+          >
             {saved ? (
               <button onClick={onClose}
                 className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
@@ -897,6 +936,17 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDiscard}
+        title="Discard this shot?"
+        message="This log has unsaved changes. Closing it now will lose them."
+        confirmLabel="Discard"
+        cancelLabel="Keep editing"
+        destructive
+        onConfirm={() => { setConfirmDiscard(false); dirtyRef.current = false; onClose(); }}
+        onCancel={() => setConfirmDiscard(false)}
+      />
 
       <SideEffectsModal open={reporting} onClose={() => setReporting(false)} dayKey={date} />
     </>
