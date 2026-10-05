@@ -32,6 +32,7 @@
     --font-heading: ui-sans-serif, system-ui, sans-serif;
     --font-body: ui-sans-serif, system-ui, sans-serif;
     --font-display: ui-sans-serif, system-ui, sans-serif;
+    --font-round: "VAG Rounded Next Shine", ui-rounded, "SF Pro Rounded", "Nunito", system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -396,4 +397,262 @@ input[type="range"].pain-slider:active::-moz-range-thumb { transform: scale(1.1)
 @media (prefers-reduced-motion: reduce) {
   .confirm-card { animation-name: toastFadeIn; }
   .confirm-card[data-state="closed"] { animation-name: toastFadeOut; }
+}
+
+/* ── Launch splash ─────────────────────────────────────────────────────────
+   The first screen the app shows: the Levli droplet mascot, drawn as vector
+   shapes (see src/components/splash/), animated with transform and opacity
+   only. The timings come from src/lib/splashTiming.js and reach this file as
+   the --sp-* variables set on .splash, so the whole sequence is tuned in one
+   place; the colours are the named --splash-* tokens below.
+
+   With "Reduce Motion" the same composition is shown as a single fade: every
+   moving animation is dropped and the static logo simply fades in. */
+
+@font-face {
+  font-family: "VAG Rounded Next Shine";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("https://media.base44.com/files/public/builder-assets/wix-fonts/vag-rounded-next-shine-400-normal.woff2") format("woff2");
+}
+
+:root {
+  /* Splash palette — light: warm peach, lavender and mint over near-white. */
+  --splash-base: #fdfcff;
+  --splash-peach: #ffe7d3;
+  --splash-lavender: #e9e6ff;
+  --splash-mint: #d9f3ea;
+  --splash-word: #3730a3;
+  --splash-tag: #6b7280;
+  --splash-drop-light: #7c7cf5;
+  --splash-drop-mid: #4f46e5;
+  --splash-drop-deep: #3b35b8;
+  --splash-face: 255 255 255;
+  --splash-sparkle-amber: #f59e0b;
+  --splash-sparkle-teal: #14b8a6;
+  --splash-sparkle-periwinkle: #8b8cf8;
+  --splash-ripple: 79 70 229;
+  --splash-lift: 9vh; /* holds the mascot a little above the vertical middle */
+}
+
+/* Dark: the same soft glows over deep navy. */
+.splash--dark {
+  --splash-base: #0a1024;
+  --splash-peach: rgba(245, 158, 11, 0.17);
+  --splash-lavender: rgba(99, 102, 241, 0.24);
+  --splash-mint: rgba(20, 184, 166, 0.16);
+  --splash-word: #c7c8ff;
+  --splash-tag: #9aa1b9;
+  --splash-ripple: 165 166 255;
+}
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  background-color: var(--splash-base);
+}
+
+/* The wash: peach top-left, lavender through the middle, mint bottom-right,
+   each fading into the near-white (or navy) surface. */
+.splash__wash {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(120% 95% at 10% 5%, var(--splash-peach) 0%, rgba(255, 255, 255, 0) 58%),
+    radial-gradient(120% 95% at 52% 46%, var(--splash-lavender) 0%, rgba(255, 255, 255, 0) 64%),
+    radial-gradient(125% 100% at 92% 95%, var(--splash-mint) 0%, rgba(255, 255, 255, 0) 62%);
+  animation: splashFadeIn var(--sp-fade-in) ease-out both;
+}
+
+.splash__stage {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 2rem) 1.5rem calc(env(safe-area-inset-bottom, 0px) + 2rem + var(--splash-lift));
+}
+
+/* The droplet is the widest part of the mascot: about 35% of a phone screen. */
+.splash__mascot {
+  position: relative;
+  width: clamp(8rem, 38vw, 14rem);
+  aspect-ratio: 64 / 104;
+}
+
+.splash__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible; /* the droplet drops in from above its own box */
+}
+
+.splash__word {
+  margin: 1.25rem 0 0;
+  font-size: clamp(2rem, 8.5vw, 2.6rem);
+  line-height: 1.1;
+  color: var(--splash-word);
+  animation: splashRise var(--sp-word) cubic-bezier(0.2, 0.9, 0.3, 1) var(--sp-word-delay) both;
+}
+
+.splash__tag {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  color: var(--splash-tag);
+  animation: splashFadeIn var(--sp-tag) ease-out var(--sp-tag-delay) both;
+}
+
+/* ── Mascot parts ─────────────────────────────────────────────────────────── */
+.sp-stop-light { stop-color: var(--splash-drop-light); }
+.sp-stop-mid { stop-color: var(--splash-drop-mid); }
+.sp-stop-deep { stop-color: var(--splash-drop-deep); }
+.sp-gloss { fill: rgb(var(--splash-face) / 0.18); }
+.sp-glint { fill: rgb(var(--splash-face) / 0.45); }
+
+/* The droplet drops in, squashes as it lands and settles. */
+.sp-drop {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: splashDrop var(--sp-drop) cubic-bezier(0.22, 0.9, 0.3, 1) both;
+}
+
+/* The happy bob at the end of the sequence, and the gentle idle bob that keeps
+   going while the app is still loading. */
+.sp-bob {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: splashBob var(--sp-bob) cubic-bezier(0.34, 0.7, 0.3, 1) var(--sp-bob-delay) both;
+}
+
+.splash--idle .sp-bob {
+  animation: splashBobLoop var(--sp-bob-loop) ease-in-out infinite;
+}
+
+/* The soft ring that expands from under the droplet. */
+.sp-ripple {
+  fill: none;
+  stroke: rgb(var(--splash-ripple));
+  stroke-width: 2;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: splashRipple var(--sp-ripple) cubic-bezier(0.2, 0.8, 0.3, 1) var(--sp-ripple-delay) both;
+}
+
+/* The face: the eyes appear, blink once, then the smile curves in. */
+.sp-eye {
+  fill: rgb(var(--splash-face));
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: splashEyes var(--sp-eyes) ease-out var(--sp-eyes-delay) both;
+}
+
+.sp-smile {
+  fill: none;
+  stroke: rgb(var(--splash-face));
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  animation: splashSmile var(--sp-smile) cubic-bezier(0.2, 0.8, 0.3, 1) var(--sp-smile-delay) both;
+}
+
+/* ── The three sparkles ───────────────────────────────────────────────────── */
+.splash__sparkle {
+  position: absolute;
+  display: block;
+  animation:
+    splashSparklePop var(--sp-sparkle) cubic-bezier(0.2, 0.9, 0.3, 1) var(--sp-pop-delay) both,
+    splashTwinkle var(--sp-twinkle) ease-in-out var(--sp-twinkle-delay) infinite;
+}
+
+.splash__sparkle svg { display: block; width: 100%; height: auto; }
+
+.splash__sparkle--amber { top: 4%; right: -4%; width: 21%; }
+.splash__sparkle--amber svg { fill: var(--splash-sparkle-amber); }
+.splash__sparkle--teal { top: 37%; left: -7%; width: 16%; }
+.splash__sparkle--teal svg { fill: var(--splash-sparkle-teal); }
+.splash__sparkle--periwinkle { bottom: 12%; right: -2%; width: 18%; }
+.splash__sparkle--periwinkle svg { fill: var(--splash-sparkle-periwinkle); }
+
+/* ── Reduced motion: the static logo, a single fade ───────────────────────── */
+.splash--reduced .splash__wash,
+.splash--reduced .splash__sparkle,
+.splash--reduced .splash__word,
+.splash--reduced .splash__tag,
+.splash--reduced .sp-drop,
+.splash--reduced .sp-bob,
+.splash--reduced .sp-ripple,
+.splash--reduced .sp-eye,
+.splash--reduced .sp-smile { animation: none; }
+
+.splash--reduced { animation: splashFadeIn var(--sp-fade-in) ease-out both; }
+
+/* Last, so the way out always wins over the reduced-motion fade-in. */
+.splash--exiting {
+  animation: splashFadeOut var(--sp-exit) ease-in both;
+  pointer-events: none;
+}
+
+@keyframes splashFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes splashFadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+@keyframes splashDrop {
+  0%   { opacity: 0; transform: translateY(-38px) scale(0.94); }
+  55%  { opacity: 1; transform: translateY(0) scale(1.05, 0.93); }
+  76%  { transform: translateY(-4px) scale(0.97, 1.045); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes splashRipple {
+  0%   { opacity: 0; transform: scale(0.34); }
+  22%  { opacity: 0.5; }
+  100% { opacity: 0; transform: scale(1.55); }
+}
+
+@keyframes splashEyes {
+  0%   { opacity: 0; transform: scaleY(0.18); }
+  34%  { opacity: 1; transform: scaleY(1); }
+  58%  { opacity: 1; transform: scaleY(1); }
+  74%  { opacity: 1; transform: scaleY(0.12); }
+  100% { opacity: 1; transform: scaleY(1); }
+}
+
+@keyframes splashSmile {
+  from { opacity: 0; transform: scaleY(0.2); }
+  to   { opacity: 1; transform: scaleY(1); }
+}
+
+@keyframes splashSparklePop {
+  0%   { opacity: 0; transform: scale(0.25) rotate(-35deg); }
+  62%  { opacity: 1; transform: scale(1.08) rotate(5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes splashTwinkle {
+  0%   { opacity: 1; transform: scale(1) rotate(0deg); }
+  50%  { opacity: 0.55; transform: scale(0.9) rotate(-8deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes splashBob {
+  0%   { transform: translateY(0) scale(1); }
+  38%  { transform: translateY(-7px) scale(0.985, 1.03); }
+  70%  { transform: translateY(1px) scale(1.02, 0.98); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes splashBobLoop {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+@keyframes splashRise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

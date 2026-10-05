@@ -8,6 +8,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ReportErrorBoundary from '@/components/report/ReportErrorBoundary';
+import SplashGate from '@/components/splash/SplashGate';
 
 import { AppStateProvider, useAppState } from '@/lib/AppState';
 import { SubscriptionProvider } from '@/lib/SubscriptionContext';
@@ -131,7 +132,11 @@ function App() {
           <SubscriptionProvider>
           <Router>
             <ScrollToTop />
-            <AuthenticatedApp />
+            {/* The launch splash sits over the app while it starts up, then
+                cross-fades into whatever screen the app opens on. */}
+            <SplashGate>
+              <AuthenticatedApp />
+            </SplashGate>
           </Router>
           <ToastHost />
           </SubscriptionProvider>
