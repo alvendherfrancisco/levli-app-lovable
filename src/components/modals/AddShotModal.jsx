@@ -692,13 +692,18 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                 )}
 
                 {/* Date & Time */}
+                {/* flex row, 12px gap, each field flex-1 / min-width:0 with an
+                    explicit border-box so a native date/time input can never add
+                    its padding+border on top of its width and spill out of the
+                    sheet — the row stays inside the same px-5 gutter as the
+                    Medication, Dose and Injection site sections above it. */}
                 <div>
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Date & time</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="flex w-full gap-3">
                     <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Shot date"
-                      className="w-full min-w-0 h-12 border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-3 text-base outline-none focus:border-indigo-300" />
+                      className="flex-1 basis-0 w-full min-w-0 box-border h-12 text-center border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-2 text-base outline-none focus:border-indigo-300" />
                     <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="Shot time"
-                      className="w-full min-w-0 h-12 border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-3 text-base outline-none focus:border-indigo-300" />
+                      className="flex-1 basis-0 w-full min-w-0 box-border h-12 text-center border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-2 text-base outline-none focus:border-indigo-300" />
                   </div>
                 </div>
 
