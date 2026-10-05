@@ -1,20 +1,25 @@
 import React from "react";
 import DoseBadge from "@/components/DoseBadge";
+import { useReportTokens } from "@/components/report/ReportTheme";
 
 /**
  * Doses taken — newest first. The dose keeps its colour badge plus the dose
- * text, so it matches the same dose everywhere else in the app.
+ * text, so it matches the same dose everywhere else in the app and in the PDF.
  */
 export default function DoseTable({ rows, showPain, showDetail }) {
-  if (!rows.length) return <p className="text-sm text-gray-500">No doses logged in this range.</p>;
+  const t = useReportTokens();
+
+  if (!rows.length) {
+    return <p className="text-sm" style={{ color: t.muted }}>No doses logged in this range.</p>;
+  }
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs">
+      <table className="w-full text-sm">
         <thead>
-          <tr className="bg-gray-50 text-gray-500">
+          <tr style={{ background: t.tableHeadBg, color: t.muted }}>
             <th className="text-left p-2 font-medium whitespace-nowrap">Date</th>
-            <th className="text-left p-2 font-medium">Time</th>
+            <th className="text-left p-2 font-medium whitespace-nowrap">Time</th>
             <th className="text-left p-2 font-medium">Medication</th>
             <th className="text-left p-2 font-medium">Dose</th>
             <th className="text-left p-2 font-medium">Injection site</th>
@@ -24,7 +29,7 @@ export default function DoseTable({ rows, showPain, showDetail }) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-t border-gray-100 text-gray-700">
+            <tr key={row.id} className="border-t" style={{ borderColor: t.divider, color: t.ink }}>
               <td className="p-2 whitespace-nowrap">{row.dayLabel}</td>
               <td className="p-2 whitespace-nowrap">{row.time}</td>
               <td className="p-2">{row.medication}</td>

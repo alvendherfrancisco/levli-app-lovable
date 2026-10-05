@@ -1,13 +1,29 @@
 import React from "react";
+import { useReportTokens } from "@/components/report/ReportTheme";
 
-/** Label/value pairs on the report's white paper. */
+/**
+ * Label/value pairs on the report paper.
+ *
+ * Phones: two pairs per row, each stacked (label above, bold value below) so a
+ * label is never truncated with "…". From 640px up: label on the left, value on
+ * the right of one row. Long values wrap instead of pushing the card wider.
+ */
 export default function PaperPairs({ pairs }) {
+  const t = useReportTokens();
+
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
       {pairs.map(([label, value]) => (
-        <div key={label} className="flex items-baseline justify-between gap-2 min-w-0">
-          <span className="text-xs text-gray-500 truncate">{label}</span>
-          <span className="text-xs font-bold text-gray-900 whitespace-nowrap">{value}</span>
+        <div key={label} className="min-w-0 sm:flex sm:items-baseline sm:justify-between sm:gap-2">
+          <span className="block text-sm leading-snug break-words" style={{ color: t.muted }}>
+            {label}
+          </span>
+          <span
+            className="block text-sm font-bold leading-snug mt-0.5 sm:mt-0 break-words [overflow-wrap:anywhere]"
+            style={{ color: t.ink }}
+          >
+            {value}
+          </span>
         </div>
       ))}
     </div>

@@ -14,6 +14,8 @@ import ReportOptions from "@/components/report/ReportOptions";
 import ReportPreview from "@/components/report/ReportPreview";
 import ReportEmptyState from "@/components/report/ReportEmptyState";
 import ReportStatusScreen from "@/components/report/ReportStatusScreen";
+import PreviewModeToggle from "@/components/report/PreviewModeToggle";
+import { ReportThemeProvider } from "@/components/report/ReportTheme";
 
 const WEIGHT_UNITS = ["lb", "kg"];
 
@@ -41,6 +43,8 @@ export default function ReportPage() {
   });
   const [busy, setBusy] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  // "app" follows the live theme; "pdf" shows the always-light exported look.
+  const [previewMode, setPreviewMode] = useState("app");
   const [timedOut, setTimedOut] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -112,13 +116,24 @@ export default function ReportPage() {
   if (!isPremium) {
     return (
       <div className="bg-gray-50 dark:bg-gray-950 min-h-screen w-full">
-        <div className="w-full flex items-center justify-between px-5 pt-6 pb-4 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-30">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-indigo-600">
+        <header
+          className="w-full sticky top-0 z-30 grid items-center px-5 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800"
+          style={{
+            gridTemplateColumns: "1fr auto 1fr",
+            paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))",
+            paddingBottom: "0.75rem",
+          }}
+        >
+          <button
+            onClick={() => navigate(-1)}
+            aria-label="Back"
+            className="justify-self-start flex items-center gap-1 min-w-[44px] min-h-[44px] text-indigo-600 dark:text-indigo-400"
+          >
             <ChevronLeft size={22} /><span className="font-medium">Back</span>
           </button>
-          <h1 className="text-lg font-bold text-gray-900 dark:text-white">Report</h1>
-          <span className="w-6" />
-        </div>
+          <h1 className="text-center whitespace-nowrap text-[18px] font-semibold text-gray-900 dark:text-white">Report</h1>
+          <span aria-hidden="true" />
+        </header>
         <div className="max-w-lg mx-auto px-4 py-10 flex flex-col items-center text-center">
           <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mb-4">
             <Crown size={30} className="text-indigo-600" />
@@ -137,15 +152,31 @@ export default function ReportPage() {
 
   return (
     <div className="bg-gray-50 dark:bg-gray-950 min-h-screen w-full">
-      <div className="w-full flex items-center justify-between px-5 pt-6 pb-4 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-30">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-indigo-600">
+      <header
+        className="w-full sticky top-0 z-30 grid items-center px-5 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800"
+        style={{
+          gridTemplateColumns: "1fr auto 1fr",
+          paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))",
+          paddingBottom: "0.75rem",
+        }}
+      >
+        <button
+          onClick={() => navigate(-1)}
+          aria-label="Back"
+          className="justify-self-start flex items-center gap-1 min-w-[44px] min-h-[44px] text-indigo-600 dark:text-indigo-400"
+        >
           <ChevronLeft size={22} /><span className="font-medium">Back</span>
         </button>
-        <h1 className="text-lg font-bold text-gray-900 dark:text-white">Report</h1>
-        <button onClick={handleExport} disabled={busy || !report.hasAnyData} className="text-indigo-600 disabled:opacity-40">
-          {busy ? <Loader2 size={18} className="animate-spin" /> : <Download size={20} />}
+        <h1 className="text-center whitespace-nowrap text-[18px] font-semibold text-gray-900 dark:text-white">Report</h1>
+        <button
+          onClick={handleExport}
+          disabled={busy || !report.hasAnyData}
+          aria-label="Download or share PDF"
+          className="justify-self-end flex items-center justify-center min-w-[44px] min-h-[44px] text-indigo-600 dark:text-indigo-400 disabled:opacity-40"
+        >
+          {busy ? <Loader2 size={20} className="animate-spin" /> : <Download size={22} />}
         </button>
-      </div>
+      </header>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
         <ReportOptions
@@ -155,13 +186,19 @@ export default function ReportPage() {
           available={report.available}
         />
 
+        {report.hasAnyData && showPreview && (
+          <PreviewModeToggle mode={previewMode} onChange={setPreviewMode} />
+        )}
+
         {!report.hasAnyData ? (
           <ReportEmptyState rangeLabel={report.range.label} onAllTime={() => updateOptions({ rangeId: "all" })} />
         ) : showPreview ? (
-          <ReportPreview report={report} />
+          <ReportThemeProvider mode={previewMode}>
+            <ReportPreview report={report} />
+          </ReportThemeProvider>
         ) : null}
 
-        <div className="space-y-2 pb-4">
+        <div className="space-y-2" style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}>
           <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center px-2">{SHARE_NOTICE}</p>
           <button
             onClick={handleExport}

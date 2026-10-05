@@ -4,12 +4,16 @@
 // keep their colours on the report's white background.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const INK = [31, 41, 55];
-const MUTED = [120, 130, 145];
-const GRID = [234, 236, 240];
-const WEIGHT = [99, 102, 241];
-const AVERAGE = [139, 92, 246];
-const BAR = [79, 70, 229];
+import { PDF_RGB } from "@/components/report/reportTokens";
+
+// Every colour is taken from the shared PDF token set (always light), so the
+// chart inside the exported PDF can never pick up the app's dark theme.
+const INK = PDF_RGB.ink;
+const MUTED = PDF_RGB.muted;
+const GRID = PDF_RGB.grid;
+const WEIGHT = PDF_RGB.weightLine;
+const AVERAGE = PDF_RGB.avgLine;
+const BAR = PDF_RGB.barFill;
 
 export function hexToRgb(hex) {
   const value = String(hex || "").replace("#", "");

@@ -1,17 +1,22 @@
 import React from "react";
+import { useReportTokens } from "@/components/report/ReportTheme";
 
 /**
  * Side effects — newest first, with the most recent dose logged before each
  * entry. Timing data only; nothing is concluded from it.
  */
 export default function SideEffectsTable({ rows }) {
-  if (!rows.length) return <p className="text-sm text-gray-500">No side effects logged in this range.</p>;
+  const t = useReportTokens();
+
+  if (!rows.length) {
+    return <p className="text-sm" style={{ color: t.muted }}>No side effects logged in this range.</p>;
+  }
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs">
+      <table className="w-full text-sm">
         <thead>
-          <tr className="bg-gray-50 text-gray-500">
+          <tr style={{ background: t.tableHeadBg, color: t.muted }}>
             <th className="text-left p-2 font-medium whitespace-nowrap">Date</th>
             <th className="text-left p-2 font-medium">Side effect</th>
             <th className="text-left p-2 font-medium">Severity</th>
@@ -21,7 +26,7 @@ export default function SideEffectsTable({ rows }) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-t border-gray-100 text-gray-700">
+            <tr key={row.id} className="border-t" style={{ borderColor: t.divider, color: t.ink }}>
               <td className="p-2 whitespace-nowrap">{row.dayLabel}</td>
               <td className="p-2">{row.symptom}</td>
               <td className="p-2 capitalize">{row.severity || "—"}</td>

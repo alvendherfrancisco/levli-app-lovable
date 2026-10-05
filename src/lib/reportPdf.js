@@ -11,13 +11,16 @@ import { fromDayKey, toDayKey } from "@/lib/dateUtils";
 import { REPORT_FOOTER } from "@/lib/reportOptions";
 import { formatDayShort } from "@/lib/reportData";
 import { drawWeightChart, drawFrequencyBars, fitText, hexToRgb } from "@/lib/reportPdfCharts";
+import { PDF_RGB } from "@/components/report/reportTokens";
 
 const PAGE = { w: 210, h: 297, margin: 14, contentW: 182, bottom: 268 };
-const INK = [31, 41, 55];
-const MUTED = [122, 132, 148];
+// Every colour in the exported PDF comes from the shared PDF token set, which is
+// always light — nothing here can be darkened by the app's theme.
+const INK = PDF_RGB.ink;
+const MUTED = PDF_RGB.muted;
 
 function paintWhite(doc) {
-  doc.setFillColor(255, 255, 255);
+  doc.setFillColor(PDF_RGB.page[0], PDF_RGB.page[1], PDF_RGB.page[2]);
   doc.rect(0, 0, PAGE.w, PAGE.h, "F");
 }
 
@@ -42,7 +45,7 @@ function heading(doc, text, y) {
   doc.setFontSize(12.5);
   doc.setTextColor(INK[0], INK[1], INK[2]);
   doc.text(text, PAGE.margin, y);
-  doc.setDrawColor(99, 102, 241);
+  doc.setDrawColor(PDF_RGB.accent[0], PDF_RGB.accent[1], PDF_RGB.accent[2]);
   doc.setLineWidth(0.6);
   doc.line(PAGE.margin, y + 1.6, PAGE.margin + 22, y + 1.6);
   return y + 8;
@@ -97,11 +100,11 @@ function table(doc, { x = PAGE.margin, y, width = PAGE.contentW, columns, rows, 
   const cols = columns.map((c) => ({ ...c, w: (c.w / total) * width }));
 
   const drawHead = (top) => {
-    doc.setFillColor(243, 244, 248);
+    doc.setFillColor(PDF_RGB.tableHeadBg[0], PDF_RGB.tableHeadBg[1], PDF_RGB.tableHeadBg[2]);
     doc.rect(x, top, width, rowH, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(fontSize);
-    doc.setTextColor(88, 96, 110);
+    doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
     let cx = x + 1.5;
     cols.forEach((c) => {
       doc.text(fitText(doc, c.label, c.w - 3), cx, top + rowH - 2.1);
@@ -129,7 +132,7 @@ function table(doc, { x = PAGE.margin, y, width = PAGE.contentW, columns, rows, 
       doc.setFontSize(fontSize);
     }
     if (index % 2 === 1) {
-      doc.setFillColor(250, 250, 252);
+      doc.setFillColor(PDF_RGB.tableZebraBg[0], PDF_RGB.tableZebraBg[1], PDF_RGB.tableZebraBg[2]);
       doc.rect(x, y, width, height, "F");
     }
     let cx = x + 1.5;
@@ -162,7 +165,7 @@ function footer(doc) {
   const pages = doc.getNumberOfPages();
   for (let i = 1; i <= pages; i++) {
     doc.setPage(i);
-    doc.setDrawColor(226, 228, 234);
+    doc.setDrawColor(PDF_RGB.divider[0], PDF_RGB.divider[1], PDF_RGB.divider[2]);
     doc.setLineWidth(0.3);
     doc.line(PAGE.margin, PAGE.h - 16, PAGE.w - PAGE.margin, PAGE.h - 16);
     doc.setFont("helvetica", "normal");
@@ -495,7 +498,7 @@ export async function buildReportPdf(report) {
       if (dataUrl) {
         doc.addImage(dataUrl, "JPEG", px, y, cell, cell);
       } else {
-        doc.setDrawColor(226, 228, 234);
+        doc.setDrawColor(PDF_RGB.divider[0], PDF_RGB.divider[1], PDF_RGB.divider[2]);
         doc.rect(px, y, cell, cell);
         doc.setFontSize(7);
         doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
@@ -517,10 +520,14 @@ export async function buildReportPdf(report) {
   return doc;
 }
 
-/** Direction-aware goal wording — "below goal" only when the reading is below it. */
+/**
+ * Direction-aware goal wording, identical to the on-screen preview: above the
+ * goal weight there is still weight to lose, so it reads "70 lb to go"; at or
+ * past the goal it reads "Goal reached". Never "below goal" in the wrong
+ * direction.
+ */
 function goalText(goalDistance, unit) {
   if (!goalDistance) return "Goal not set";
-  if (goalDistance.direction === "at") return "Goal reached";
-  if (goalDistance.direction === "above") return `${goalDistance.value} ${unit} to goal`;
-  return `${goalDistance.value} ${unit} below goal`;
+  if (goalDistance.direction === "above") return `${goalDistance.value} ${unit} to go`;
+  return "Goal reached";
 }

@@ -145,6 +145,22 @@
   height: 0;
 }
 
+/* ── Doctor report: on-screen page and print ─────────────────────────────── */
+/* The exported report is always a light page (the PDF is drawn vector, never a
+   screenshot of the dark screen). These keep the preview's own colours when it
+   is printed or shared from the device, even in dark mode. */
+.report-page {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+  color-scheme: only light;
+}
+@media print {
+  .report-page {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+}
+
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;

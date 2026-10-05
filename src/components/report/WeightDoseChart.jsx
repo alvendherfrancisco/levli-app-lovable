@@ -4,19 +4,27 @@ import { fromDayKey, toDayKey } from "@/lib/dateUtils";
 import { formatDay, formatDayShort } from "@/lib/reportData";
 import { getDoseColor, getDoseLegend } from "@/lib/doseColors";
 import DoseLegend from "@/components/insights/DoseLegend";
+import { useReportTokens } from "@/components/report/ReportTheme";
 
 /**
  * Weight entries with their 7-day rolling average and a colour-coded dose
  * timeline on the same date axis. Only real entries are plotted — gaps stay
  * gaps, nothing is filled in.
+ *
+ * Every colour comes from the report tokens, so the chart follows the light or
+ * dark theme on screen and is redrawn from the light PDF tokens in "PDF look".
+ * Dose ticks are thin and semi-transparent, and always carry their dose text in
+ * the legend, so colour is never the only signal.
  */
 export default function WeightDoseChart({ series = [], rows = [], unit, range }) {
+  const t = useReportTokens();
+
   const points = (Array.isArray(series) ? series : [])
     .filter((p) => p && Number.isFinite(p.ts) && Number.isFinite(p.value));
 
   if (points.length < 2) {
     return (
-      <p className="text-sm text-gray-500">
+      <p className="text-sm" style={{ color: t.muted }}>
         {points.length === 0
           ? "No weight entries in this range."
           : "Not enough entries in this range."}
@@ -47,31 +55,53 @@ export default function WeightDoseChart({ series = [], rows = [], unit, range })
 
   return (
     <div>
-      <div className="h-56">
+      <div className="h-[220px] min-h-[220px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={points} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(140,145,160,0.25)" />
+            <CartesianGrid strokeDasharray="3 3" stroke={t.grid} />
             <XAxis
               dataKey="ts" type="number" domain={[fromTs, toTs]}
-              tick={{ fontSize: 10 }} stroke="#8A8F9E"
+              tick={{ fontSize: 12, fill: t.axis }} stroke={t.axis}
               tickFormatter={(ts) => (Number.isFinite(ts) ? formatDayShort(toDayKey(new Date(ts))) : "")}
             />
-            <YAxis tick={{ fontSize: 10 }} stroke="#8A8F9E" domain={["auto", "auto"]} width={40} />
+            <YAxis tick={{ fontSize: 12, fill: t.axis }} stroke={t.axis} domain={["auto", "auto"]} width={44} />
             <Tooltip
               labelFormatter={(ts) => (Number.isFinite(ts) ? formatDay(toDayKey(new Date(ts))) : "")}
               formatter={(value, name) => [`${value} ${unit}`, name === "rollingAvg" ? "7-day average" : "Weight"]}
-              contentStyle={{ background: "#FFFFFF", border: "1px solid #E5E7EB", borderRadius: 8, color: "#1F2937", fontSize: 12 }}
+              contentStyle={{
+                background: t.tooltipBg,
+                border: `1px solid ${t.tooltipBorder}`,
+                borderRadius: 8,
+                color: t.tooltipText,
+                fontSize: 14,
+              }}
+              itemStyle={{ color: t.tooltipText }}
+              labelStyle={{ color: t.tooltipText, fontWeight: 600 }}
             />
-            <Line type="monotone" dataKey="value" stroke="#6366F1" strokeWidth={2} dot={{ r: 3, fill: "#6366F1" }} />
-            <Line type="monotone" dataKey="rollingAvg" stroke="#8B5CF6" strokeWidth={2} strokeDasharray="4 4" dot={false} />
+            <Line type="monotone" dataKey="value" stroke={t.weightLine} strokeWidth={2} dot={{ r: 3, fill: t.weightLine }} />
+            <Line type="monotone" dataKey="rollingAvg" stroke={t.avgLine} strokeWidth={2} strokeDasharray="4 4" dot={false} />
             {markers.map((marker) => (
-              <ReferenceLine key={marker.key} x={marker.ts} stroke={marker.color} strokeWidth={1.5} strokeOpacity={0.6} />
+              <ReferenceLine
+                key={marker.key}
+                x={marker.ts}
+                stroke={marker.color}
+                strokeWidth={t.doseBarWidth}
+                strokeOpacity={t.doseBarOpacity}
+              />
             ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <DoseLegend items={legend} title="Coloured ticks" labelClassName="text-xs text-gray-600" align="start" />
-      <p className="text-[11px] text-gray-500 mt-2">
+      <DoseLegend
+        items={legend}
+        title="Dose dates"
+        align="start"
+        labelClassName="text-sm"
+        titleClassName="text-sm font-medium"
+        titleStyle={{ color: t.muted }}
+        labelStyle={{ color: t.muted }}
+      />
+      <p className="text-sm mt-2" style={{ color: t.muted }}>
         Solid line: logged weight entries (one point per entry, no values filled in) · Dashed: 7-day rolling average · Coloured ticks: dose dates, matching the dose colours in the app.
       </p>
     </div>
