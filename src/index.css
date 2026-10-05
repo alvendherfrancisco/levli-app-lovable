@@ -32,7 +32,6 @@
     --font-heading: ui-sans-serif, system-ui, sans-serif;
     --font-body: ui-sans-serif, system-ui, sans-serif;
     --font-display: ui-sans-serif, system-ui, sans-serif;
-    --font-round: "VAG Rounded Next Shine", ui-rounded, "SF Pro Rounded", "Nunito", system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -408,14 +407,6 @@ input[type="range"].pain-slider:active::-moz-range-thumb { transform: scale(1.1)
 
    With "Reduce Motion" the same composition is shown as a single fade: every
    moving animation is dropped and the static logo simply fades in. */
-
-@font-face {
-  font-family: "VAG Rounded Next Shine";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("https://media.base44.com/files/public/builder-assets/wix-fonts/vag-rounded-next-shine-400-normal.woff2") format("woff2");
-}
 
 :root {
   /* Splash palette — light: warm peach, lavender and mint over near-white. */

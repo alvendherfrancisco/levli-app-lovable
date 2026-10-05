@@ -72,7 +72,7 @@ export default function SplashScreen({ ready = true, onFinish }) {
           <SplashDroplet />
           <SplashSparkles />
         </div>
-        <p className="splash__word font-round">Levli</p>
+        <p className="splash__word font-body font-bold">Levli</p>
         <p className="splash__tag">Track your journey, simply.</p>
       </div>
     </div>
