@@ -11,7 +11,8 @@ import { heightCmOf, shownBmi } from "@/lib/measure";
 import { isExposureEligible } from "@/lib/medicationConfig";
 import SideEffectsPanel from "@/components/insights/SideEffectsPanel";
 import WellbeingPanel from "@/components/insights/WellbeingPanel";
-import { steadyStateFraction, accumulationRatio, PK_CALCULATION_VERSION } from "@/lib/pkCalculations";
+import { PK_CALCULATION_VERSION, superposition, recentDoses, steadyStateAmount, exposureSummary } from "@/lib/pkCalculations";
+import ExposureHowItWorks from "@/components/insights/ExposureHowItWorks";
 import { toast } from "sonner";
 import UpsellBanner from "@/components/UpsellBanner";
 import SiteRotationChart from "@/components/insights/SiteRotationChart";
@@ -25,49 +26,80 @@ const CLASS_COLORS = { Semaglutide: "#14B8A6", Tirzepatide: "#6366F1", Liragluti
 
 // Builds one curve per drug class using BRAND-SPECIFIC half-lives.
 // Investigational classes are excluded so no curve is shown for unapproved products.
+// Every number here comes from the doses actually logged; a class with no dose
+// inside the last five half-lives has nothing to model and is left out.
 function buildMedLevelData(shots, days) {
-  if (!shots.length) return { data: [], classes: [], disabled: false, steadyState: null, accumRatio: null, markers: [], doseLegend: [] };
+  const nothing = {
+    data: [], classes: [], disabled: false, empty: true, markers: [], doseLegend: [],
+    summary: null, primaryClass: null, primaryHL: null, interval: null, medication: null, doseUnit: "mg",
+  };
+  if (!shots.length) return { ...nothing, empty: false };
   // Only label-verified doses are modelled. An "Other / custom" entry, a
   // compounded strength or an unapproved product is never used for the estimate.
   const modellable = shots.filter((s) => isExposureEligible(s.medication, s.dose_source));
-  if (!modellable.length) return { data: [], classes: [], disabled: true, steadyState: null, accumRatio: null, markers: [], doseLegend: [] };
+  if (!modellable.length) return { ...nothing, disabled: true };
+
   const now = new Date(); now.setHours(0,0,0,0);
   const mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const classesSet = new Set();
-  modellable.forEach((s) => { if (s.drug_class || s.drugClass) classesSet.add(s.drug_class || s.drugClass); });
-  const classes = [...classesSet].filter((c) => !isInvestigational(c) && getHalfLifeDays(getBrandForGeneric(c, shots), getRouteForClass(c, shots)));
-  if (!classes.length) return { data: [], classes: [], disabled: true, steadyState: null, accumRatio: null, markers: [], doseLegend: [] };
+
+  // Group the logged doses by drug class, each keeping its own product's
+  // half-life and the interval from that product's label.
+  const groups = {};
+  modellable.forEach((s) => {
+    const cls = s.drug_class || s.drugClass;
+    if (!cls || isInvestigational(cls)) return;
+    const sd = parseShotDate(s.date);
+    if (!sd) return;
+    const route = s.route || getRouteForClass(cls, shots);
+    const halfLife = getHalfLifeDays(s.medication, route);
+    if (!halfLife) return;
+    if (!groups[cls]) {
+      groups[cls] = {
+        doses: [], halfLife, medication: s.medication,
+        interval: getDosingInterval(s.medication) || 7,
+        unit: s.dose_unit || "mg",
+      };
+    }
+    groups[cls].doses.push({ date: sd, dose: s.dose || 0, id: s.id, unit: s.dose_unit || "mg" });
+  });
+
+  const lastDoseIn = (cls) => recentDoses(groups[cls].doses, groups[cls].halfLife, now);
+  const activeClasses = Object.keys(groups).filter((cls) => lastDoseIn(cls).length > 0);
+  // No dose within the last five half-lives: there is nothing to model.
+  if (!activeClasses.length) return nothing;
+
+  // The 100% reference for each class is that class's current dose taken at its
+  // label interval, so the line rises when a bigger dose is logged.
+  const referenceAmount = {};
+  activeClasses.forEach((cls) => {
+    const latest = lastDoseIn(cls).reduce((a, b) => (b.date > a.date ? b : a));
+    referenceAmount[cls] = steadyStateAmount(latest.dose, groups[cls].halfLife, groups[cls].interval);
+  });
+
   const points = [];
   for (let i = days; i >= 0; i--) {
     const t = new Date(now); t.setDate(t.getDate() - i);
     const point = { day: `${mNames[t.getMonth()]} ${t.getDate()}` };
-    classes.forEach((cls) => {
-      let level = 0;
-      modellable.forEach((s) => {
-        if ((s.drug_class || s.drugClass) !== cls) return;
-        const sd = parseShotDate(s.date);
-        if (!sd) return;
-        const brand = s.medication;
-        const r = s.route || getRouteForClass(cls, shots);
-        const halfLife = getHalfLifeDays(brand, r);
-        if (!halfLife) return;
-        const daysSince = (t - sd) / 86400000;
-        if (daysSince >= 0 && daysSince < halfLife * 7) {
-          level += (s.dose || 0) * Math.pow(0.5, daysSince / halfLife);
-        }
-      });
-      point[cls] = Math.round(level * 100) / 100;
+    activeClasses.forEach((cls) => {
+      const g = groups[cls];
+      const amount = superposition(recentDoses(g.doses, g.halfLife, t), g.halfLife, t);
+      point[cls] = referenceAmount[cls]
+        ? Math.round((amount / referenceAmount[cls]) * 1000) / 10
+        : 0;
     });
     points.push(point);
   }
-  // Steady-state and accumulation for the primary class
-  const primaryClass = classes[0];
-  const primaryBrand = getBrandForGeneric(primaryClass, shots);
-  const primaryRoute = getRouteForClass(primaryClass, shots);
-  const primaryHL = getHalfLifeDays(primaryBrand, primaryRoute);
-  const interval = getDosingInterval(primaryBrand) || (primaryClass === "Liraglutide" ? 1 : 7);
-  const ssFraction = primaryHL ? steadyStateFraction(primaryHL, interval, shots.length) : null;
-  const accum = primaryHL ? accumulationRatio(primaryHL, interval) : null;
+
+  // The class with the most recent dose leads the summary.
+  const lastDoseDay = (cls) => lastDoseIn(cls).reduce((a, b) => (b.date > a.date ? b : a)).date;
+  const primaryClass = activeClasses.reduce(
+    (best, cls) => (lastDoseDay(cls) > lastDoseDay(best) ? cls : best), activeClasses[0]
+  );
+  const primary = groups[primaryClass];
+  const summary = exposureSummary({
+    doses: primary.doses, halfLifeDays: primary.halfLife,
+    intervalDays: primary.interval, atDate: now,
+  });
 
   // Dose markers: every shot in the window, coloured by its dose, plus the
   // matching legend.
@@ -83,21 +115,14 @@ function buildMedLevelData(shots, days) {
   });
 
   return {
-    data: points, classes, disabled: false, steadyState: ssFraction, accumRatio: accum,
-    primaryClass, primaryHL, interval, markers, doseLegend: getDoseLegend(shotsInRange),
+    data: points, classes: activeClasses, disabled: false, empty: false,
+    markers, doseLegend: getDoseLegend(shotsInRange),
+    summary, primaryClass, primaryHL: primary.halfLife, interval: primary.interval,
+    medication: primary.medication, doseUnit: primary.unit,
   };
 }
 
-// Helper: find the most common brand for a generic class in the user's shots
-function getBrandForGeneric(generic, shots) {
-  const brands = {};
-  shots.forEach((s) => {
-    if ((s.drug_class || s.drugClass) === generic) {
-      brands[s.medication] = (brands[s.medication] || 0) + 1;
-    }
-  });
-  return Object.keys(brands).sort((a, b) => brands[b] - brands[a])[0] || generic;
-}
+// Helper: the route most often used for a generic class in the user's shots
 function getRouteForClass(cls, shots) {
   const s = shots.find((x) => (x.drug_class || x.drugClass) === cls && x.route);
   return s?.route || "subcutaneous";
@@ -142,6 +167,7 @@ export default function Insights() {
   const { isPremium, openPaywall } = useSubscription();
   const [weightRange, setWeightRange] = useState("180 Days");
   const [medRange, setMedRange] = useState("30 Days");
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [siteRange, setSiteRange] = useState("30 Days");
   const [viewAllPhotos, setViewAllPhotos] = useState(false);
   const [photoModal, setPhotoModal] = useState(null);
@@ -434,7 +460,9 @@ export default function Insights() {
                 <p className="text-xs text-indigo-500">Illustrative relative-exposure estimate (not a blood-level measurement).</p>
               </div>
             </div>
-            <HelpCircle size={ICON_SIZE_ROW} className="text-indigo-400" />
+            <button onClick={() => setShowHowItWorks(true)} aria-label="How this works" className="flex-shrink-0">
+              <HelpCircle size={ICON_SIZE_ROW} className="text-indigo-400" />
+            </button>
           </div>
           <div className="border-b-2 border-indigo-500 w-12 mb-3" />
 
@@ -450,7 +478,12 @@ export default function Insights() {
           <div className="relative">
             <div className={isPremium ? "" : "blur-sm pointer-events-none select-none opacity-60"}>
           {shots.length > 0 ? (
-            medLevel.disabled ? (
+            medLevel.empty ? (
+              <div className="h-48 flex flex-col items-center justify-center bg-gray-50 dark:bg-white/[0.03] rounded-xl px-4 gap-2">
+                <p className="text-sm text-gray-400 dark:text-[#9A9DAE] text-center">No recent doses logged, so there's nothing to model.</p>
+                <button onClick={() => setShowHowItWorks(true)} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">How this works</button>
+              </div>
+            ) : medLevel.disabled ? (
               <div className="h-48 flex items-center justify-center bg-gray-50 dark:bg-white/[0.03] rounded-xl px-4">
                 <p className="text-sm text-gray-400 dark:text-[#9A9DAE] text-center">Exposure estimation is not available for this medication. This appears for investigational or unsupported products.</p>
               </div>
@@ -461,8 +494,8 @@ export default function Insights() {
                     <AreaChart data={medLevel.data}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
                       <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="#999" interval={Math.floor(medLevel.data.length / 5)} />
-                      <YAxis tick={{ fontSize: 10 }} stroke="#999" width={36} />
-                      <Tooltip formatter={(v, name) => [`${v} relative units`, name]} contentStyle={{ background: "rgba(20,22,32,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#E8E9F0" }} />
+                      <YAxis tick={{ fontSize: 10 }} stroke="#999" width={36} domain={[0, (dataMax) => Math.max(100, Math.ceil(dataMax))]} />
+                      <Tooltip formatter={(v, name) => [`${v}% of steady state`, name]} contentStyle={{ background: "rgba(20,22,32,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#E8E9F0" }} />
                       {medLevel.classes.map((cls) => (
                         <Area key={cls} type="monotone" dataKey={cls} stroke={CLASS_COLORS[cls] || "#6366F1"} fill={CLASS_COLORS[cls] || "#6366F1"} fillOpacity={0.08} strokeWidth={2} />
                       ))}
@@ -474,18 +507,24 @@ export default function Insights() {
                 </div>
                 {/* Dose colour legend for the shot markers */}
                 <DoseLegend items={medLevel.doseLegend} />
-                {/* Steady-state & accumulation metrics */}
-                {medLevel.steadyState != null && (
+                {/* Steady state and the most recent dose, both from the logged doses */}
+                {medLevel.summary?.hasRecentDose && (
                   <div className="grid grid-cols-2 gap-2 mt-3">
                     <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-2.5 text-center border border-transparent dark:border-indigo-500/15">
-                      <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Steady-state reached</p>
-                      <p className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">{Math.round(medLevel.steadyState * 100)}%</p>
-                      <p className="text-[10px] text-gray-400 dark:text-gray-500">of {medLevel.primaryClass} ({medLevel.interval}d interval)</p>
+                      <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Steady state reached</p>
+                      <p className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">{medLevel.summary.steadyStatePercent}%</p>
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                        of {medLevel.primaryClass} at {medLevel.summary.referenceDose} {medLevel.doseUnit} every {medLevel.interval}d
+                      </p>
                     </div>
                     <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-2.5 text-center border border-transparent dark:border-indigo-500/15">
-                      <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Accumulation ratio</p>
-                      <p className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">{medLevel.accumRatio != null ? medLevel.accumRatio.toFixed(2) : "—"}</p>
-                      <p className="text-[10px] text-gray-400 dark:text-gray-500">at steady state vs single dose</p>
+                      <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Last dose</p>
+                      <p className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">
+                        {medLevel.summary.lastDoseDaysAgo === 0 ? "Today" : `${medLevel.summary.lastDoseDaysAgo}d ago`}
+                      </p>
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                        {medLevel.summary.dosesInWindow} dose{medLevel.summary.dosesInWindow === 1 ? "" : "s"} inside the last 5 half-lives
+                      </p>
                     </div>
                   </div>
                 )}
@@ -507,9 +546,9 @@ export default function Insights() {
               </button>
             )}
           </div>
-          <p className="text-xs text-gray-400 dark:text-[#9A9DAE] text-center mt-2">Time vs modelled relative exposure (illustrative)</p>
+          <p className="text-xs text-gray-400 dark:text-[#9A9DAE] text-center mt-2">Time vs modelled exposure, as % of the steady-state level for your current dose</p>
           <p className="text-[11px] text-gray-400 dark:text-[#9A9DAE] text-center mt-1 px-2">Illustrative estimate only — not a blood-level measurement. Do not use it to adjust your dose. Confirm any decisions with your prescriber.</p>
-          <p className="text-[10px] text-gray-300 dark:text-gray-600 text-center mt-1">Calculation version: {PK_CALCULATION_VERSION}</p>
+          <button onClick={() => setShowHowItWorks(true)} className="w-full text-[10px] text-gray-300 dark:text-gray-600 text-center mt-1">How this works · model {PK_CALCULATION_VERSION}</button>
           {!medLevel.disabled && medLevel.classes.length > 0 && (
             <div className="flex items-center justify-center gap-3 mt-2 flex-wrap">
               {medLevel.classes.map((cls) => (
@@ -521,6 +560,14 @@ export default function Insights() {
             </div>
           )}
         </div>
+
+        <ExposureHowItWorks
+          open={showHowItWorks}
+          onClose={() => setShowHowItWorks(false)}
+          medication={medLevel.medication}
+          halfLifeDays={medLevel.primaryHL}
+          intervalDays={medLevel.interval}
+        />
 
         {/* Injection Site Rotation Panel */}
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
