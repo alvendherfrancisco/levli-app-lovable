@@ -1,7 +1,7 @@
 import React from "react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { fromDayKey, toDayKey } from "@/lib/dateUtils";
-import { formatDay, formatDayShort, NO_WEIGHT_LINE } from "@/lib/reportData";
+import { formatDay, formatDayShort } from "@/lib/reportData";
 import { getDoseColor, getDoseLegend } from "@/lib/doseColors";
 import DoseLegend from "@/components/insights/DoseLegend";
 import { useReportTokens } from "@/components/report/ReportTheme";
@@ -26,8 +26,8 @@ export default function WeightDoseChart({ series = [], rows = [], unit, range })
     return (
       <p className="text-sm" style={{ color: t.muted }}>
         {points.length === 0
-          ? NO_WEIGHT_LINE
-          : "One weight entry in this period, so there is no trend line."}
+          ? "No weight entries in this range."
+          : "Not enough entries in this range."}
       </p>
     );
   }
