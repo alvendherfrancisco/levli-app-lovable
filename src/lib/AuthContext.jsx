@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
 
   useEffect(() => {
@@ -136,6 +137,12 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     
     if (shouldRedirect) {
+      // The browser leaves for the login screen from the SDK's server-side
+      // logout endpoint, which takes a round trip. Mark the sign-out so the app
+      // can hold the launch screen over that moment rather than painting the
+      // signed-out app first; the document the logout lands on is a fresh load,
+      // so nothing has to be cleared after it.
+      setIsLoggingOut(true);
       // Use the SDK's logout method which handles token cleanup and redirect
       base44.auth.logout(redirectUrl);
     } else {
@@ -165,6 +172,7 @@ export const AuthProvider = ({ children }) => {
       appPublicSettings,
       authChecked,
       isNewUser,
+      isLoggingOut,
       logout,
       navigateToLogin,
       checkUserAuth,
