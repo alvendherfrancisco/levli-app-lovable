@@ -3,8 +3,8 @@ import { X, ChevronLeft, ChevronRight, Save } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import useModal from "@/hooks/useModal";
 import { toast } from "sonner";
-import { findMedicationOption, isLabelStrength, labelledSchedule, scheduleText, summariseRegimen,
-  validateRegimenForm, OTHER_SCHEDULE, REGIMEN_FOOTER } from "@/lib/medicationRegimen";
+import { findMedicationOption, indicationFromStored, isLabelStrength, labelledSchedule, scheduleText,
+  summariseRegimen, validateRegimenForm, OTHER_SCHEDULE, REGIMEN_FOOTER } from "@/lib/medicationRegimen";
 import { helperCls, primaryBtnCls, secondaryBtnCls } from "@/components/medications/formStyles";
 import MedicationStep from "@/components/medications/steps/MedicationStep";
 import DoseStep from "@/components/medications/steps/DoseStep";
@@ -74,7 +74,7 @@ export default function MedicationModal({ open, onClose, editing }) {
       const option = findMedicationOption(stored);
       const storedFrequency = String(editing.frequency || "").trim();
       const labelled = labelledSchedule(stored);
-      const storedIndication = String(editing.indication || "").trim();
+      const indicationParts = indicationFromStored(editing.indication);
       setSelectedName(option ? option.value : "");
       setIsCustom(!option);
       setCustomName(option ? "" : stored);
@@ -83,8 +83,8 @@ export default function MedicationModal({ open, onClose, editing }) {
       setUnit(editing.dose_unit || option?.unit || "mg");
       setSchedule(scheduleFromStored(storedFrequency, stored));
       setScheduleOther(storedFrequency && storedFrequency.toLowerCase() !== labelled.toLowerCase() ? storedFrequency : "");
-      setIndication(storedIndication && !["Type 2 diabetes", "Weight management", "Heart health"].includes(storedIndication) ? "Other" : storedIndication);
-      setIndicationOther(storedIndication && !["Type 2 diabetes", "Weight management", "Heart health"].includes(storedIndication) ? storedIndication : "");
+      setIndication(indicationParts.value);
+      setIndicationOther(indicationParts.other);
       setStartDate(editing.start_date || todayInput());
       setPlannedEndDate(editing.planned_end_date || "");
       setDoseStep(editing.titration_stage || "");
@@ -210,11 +210,6 @@ export default function MedicationModal({ open, onClose, editing }) {
       toast.error("That didn't save. Please check your connection and try again.");
       setSaving(false);
     }
-  };
-
-  const stepProps = {
-    option,
-    errors,
   };
 
   return (

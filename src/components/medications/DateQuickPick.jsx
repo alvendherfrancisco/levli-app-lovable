@@ -33,11 +33,11 @@ export default function DateQuickPick({ id, label, value, onChange, withNextMond
       <input id={id} type="date" value={value} onChange={(e) => onChange(e.target.value)} className={inputCls} />
 
       <div className="flex gap-3 mt-3">
-        <button type="button" onClick={() => onChange(today)} aria-pressed={value === today} className={choiceCls(value === today)}>
+        <button type="button" onClick={() => onChange(today)} aria-pressed={value === today} className={`${choiceCls(value === today)} flex-1`}>
           Today
         </button>
         {withNextMonday && (
-          <button type="button" onClick={() => onChange(monday)} aria-pressed={value === monday} className={choiceCls(value === monday)}>
+          <button type="button" onClick={() => onChange(monday)} aria-pressed={value === monday} className={`${choiceCls(value === monday)} flex-1`}>
             Next Monday
           </button>
         )}

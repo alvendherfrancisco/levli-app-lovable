@@ -136,42 +136,50 @@ export function validateRegimenForm({
   startDate, plannedEndDate,
 }) {
   if (isCustom && !String(customName || "").trim()) {
-    return { field: "name", message: "Type the medication name from your prescription." };
+    return { field: "name", message: "Please type the medication name from your prescription." };
   }
   if (!isCustom && !selectedName) {
-    return { field: "name", message: "Choose your medication from the list." };
+    return { field: "name", message: "Please choose your medication from the list." };
   }
 
   const doseText = String(dose ?? "").trim();
   const doseNum = Number(doseText);
   if (!doseText || !Number.isFinite(doseNum) || doseNum <= 0) {
-    return { field: "dose", message: "Enter your dose as a number greater than 0." };
+    return { field: "dose", message: "Please choose a dose to continue, or type the amount on your prescription." };
   }
   if (!isCustom && !isStandardDose && !doseConfirmed) {
     return { field: "dose", message: NON_STANDARD_DOSE_MESSAGE };
   }
 
   if (!startDate) {
-    return { field: "startDate", message: "Enter the date you started this medication." };
+    return { field: "startDate", message: "Please enter the date of your first dose." };
   }
   const start = parseDate(startDate);
-  if (!start) return { field: "startDate", message: "Check the start date." };
+  if (!start) return { field: "startDate", message: "Please check the first dose date." };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   if (start.getTime() - today.getTime() > MAX_FUTURE_DAYS * DAY_MS) {
-    return { field: "startDate", message: "That start date is more than a year away. Please check it." };
+    return { field: "startDate", message: "That date is more than a year away. Please check it." };
   }
 
   if (plannedEndDate) {
     const end = parseDate(plannedEndDate);
-    if (!end) return { field: "plannedEndDate", message: "Check the planned end date." };
+    if (!end) return { field: "plannedEndDate", message: "Please check the stop date." };
     if (end.getTime() <= start.getTime()) {
       return { field: "plannedEndDate", message: "The stop date needs to be after the first dose date." };
     }
   }
 
   return null;
+}
+
+/** A stored indication split into the dropdown choice and any typed reason. */
+export function indicationFromStored(stored) {
+  const text = String(stored || "").trim();
+  if (!text) return { value: "", other: "" };
+  if (INDICATION_OPTIONS.includes(text)) return { value: text, other: "" };
+  return { value: "Other", other: text };
 }
 
 /** A date key ("YYYY-MM-DD") written out plainly, e.g. "Oct 6, 2026". */
