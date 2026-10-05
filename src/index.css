@@ -287,6 +287,19 @@ input[type="range"].pain-slider:focus-visible::-moz-range-thumb {
 }
 input[type="range"].pain-slider:active::-moz-range-thumb { transform: scale(1.1); }
 
+/* ── Dark mode: the native time-picker glyph ────────────────────────────────
+   A time field's clock icon is drawn by the browser. It is black by default, so
+   on a dark surface `color-scheme: dark` (set on the field itself, next to the
+   other inputs) is what makes the browser paint it light in the first place.
+   The rule below only tunes that light glyph to the same weight as the
+   surrounding 70–80% secondary text. It deliberately does NOT invert the icon:
+   inverting an already-light glyph would paint it black again. Light mode is
+   untouched — this is scoped to .dark only. */
+.dark input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 0.75;
+  cursor: pointer;
+}
+
 /* Line clamp utility */
 .line-clamp-2 {
   display: -webkit-box;

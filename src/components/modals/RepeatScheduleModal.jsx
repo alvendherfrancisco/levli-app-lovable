@@ -155,7 +155,7 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Time of day</label>
             <input
               type="time" value={time} onChange={(e) => setTime(e.target.value)}
-              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300"
+              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300"
             />
           </div>
 
