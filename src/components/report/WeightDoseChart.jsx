@@ -10,40 +10,55 @@ import DoseLegend from "@/components/insights/DoseLegend";
  * timeline on the same date axis. Only real entries are plotted — gaps stay
  * gaps, nothing is filled in.
  */
-export default function WeightDoseChart({ series, rows, unit, range }) {
-  if (series.length < 2) {
+export default function WeightDoseChart({ series = [], rows = [], unit, range }) {
+  const points = (Array.isArray(series) ? series : [])
+    .filter((p) => p && Number.isFinite(p.ts) && Number.isFinite(p.value));
+
+  if (points.length < 2) {
     return (
       <p className="text-sm text-gray-500">
-        {series.length === 0
+        {points.length === 0
           ? "No weight entries in this range."
           : "Only one weight entry in this range, so no trend line is drawn."}
       </p>
     );
   }
 
-  const fromTs = fromDayKey(range.from).getTime();
-  const toTs = fromDayKey(range.to).getTime();
-  const markers = rows.map((row) => ({
-    key: row.id,
-    ts: fromDayKey(row.day).getTime(),
-    color: getDoseColor(row.medication, row.dose),
-  }));
-  const legend = getDoseLegend(rows.map((row) => ({ medication: row.medication, dose: row.dose, dose_unit: row.unit })));
+  // The axis spans the selected range, falling back to the entries themselves
+  // when the range is missing or unreadable.
+  const rangeFrom = range?.from ? fromDayKey(range.from).getTime() : NaN;
+  const rangeTo = range?.to ? fromDayKey(range.to).getTime() : NaN;
+  const fromTs = Number.isFinite(rangeFrom) ? rangeFrom : points[0].ts;
+  const toTs = Number.isFinite(rangeTo) && rangeTo > fromTs
+    ? rangeTo
+    : Math.max(points[points.length - 1].ts, fromTs + 86400000);
+
+  const markers = (Array.isArray(rows) ? rows : [])
+    .map((row) => ({
+      key: row.id,
+      ts: row.day ? fromDayKey(row.day).getTime() : NaN,
+      color: getDoseColor(row.medication, row.dose),
+    }))
+    .filter((marker) => Number.isFinite(marker.ts));
+
+  const legend = getDoseLegend((Array.isArray(rows) ? rows : []).map((row) => ({
+    medication: row.medication, dose: row.dose, dose_unit: row.unit,
+  })));
 
   return (
     <div>
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <LineChart data={points} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(140,145,160,0.25)" />
             <XAxis
               dataKey="ts" type="number" domain={[fromTs, toTs]}
               tick={{ fontSize: 10 }} stroke="#8A8F9E"
-              tickFormatter={(ts) => formatDayShort(toDayKey(new Date(ts)))}
+              tickFormatter={(ts) => (Number.isFinite(ts) ? formatDayShort(toDayKey(new Date(ts))) : "")}
             />
             <YAxis tick={{ fontSize: 10 }} stroke="#8A8F9E" domain={["auto", "auto"]} width={40} />
             <Tooltip
-              labelFormatter={(ts) => formatDay(toDayKey(new Date(ts)))}
+              labelFormatter={(ts) => (Number.isFinite(ts) ? formatDay(toDayKey(new Date(ts))) : "")}
               formatter={(value, name) => [`${value} ${unit}`, name === "rollingAvg" ? "7-day average" : "Weight"]}
               contentStyle={{ background: "#FFFFFF", border: "1px solid #E5E7EB", borderRadius: 8, color: "#1F2937", fontSize: 12 }}
             />

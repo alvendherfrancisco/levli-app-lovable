@@ -6,18 +6,22 @@ import { useAppState } from "@/lib/AppState";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import { buildReport, medicationList } from "@/lib/reportData";
 import {
-  CORE_IDS, DEFAULT_RANGE, SHARE_NOTICE, loadReportPrefs, normaliseSections, saveReportPrefs,
+  CORE_IDS, DEFAULT_RANGE, RANGE_OPTIONS, SHARE_NOTICE, loadReportPrefs, normaliseSections, saveReportPrefs,
 } from "@/lib/reportOptions";
 import { buildReportPdf } from "@/lib/reportPdf";
 import { reportFileName, shareOrDownloadPdf } from "@/lib/shareReport";
 import ReportOptions from "@/components/report/ReportOptions";
 import ReportPreview from "@/components/report/ReportPreview";
 import ReportEmptyState from "@/components/report/ReportEmptyState";
+import ReportStatusScreen from "@/components/report/ReportStatusScreen";
+
+const WEIGHT_UNITS = ["lb", "kg"];
 
 export default function ReportPage() {
   const navigate = useNavigate();
   const {
     shots, weightHistory, dayMetrics, adverseEvents, journalEntries, progressPhotosList, profile,
+    shotsLoading, loadShots, refreshProfile,
   } = useAppState();
   const { isPremium, openPaywall } = useSubscription();
 
@@ -25,23 +29,45 @@ export default function ReportPage() {
   const unitChosenByUser = useRef(!!prefs.current.weightUnit);
 
   const [options, setOptions] = useState({
-    rangeId: prefs.current.rangeId || DEFAULT_RANGE,
-    customFrom: prefs.current.customFrom || "",
-    customTo: prefs.current.customTo || "",
-    medication: prefs.current.medication || "all",
-    weightUnit: prefs.current.weightUnit || profile?.weight_unit || "lb",
-    name: prefs.current.name || "",
-    sections: normaliseSections(prefs.current.sections || []),
+    // Anything unusable in the remembered choices falls back to the defaults,
+    // so the page never depends on state saved by another screen.
+    rangeId: RANGE_OPTIONS.some((r) => r.id === prefs.current.rangeId) ? prefs.current.rangeId : DEFAULT_RANGE,
+    customFrom: typeof prefs.current.customFrom === "string" ? prefs.current.customFrom : "",
+    customTo: typeof prefs.current.customTo === "string" ? prefs.current.customTo : "",
+    medication: typeof prefs.current.medication === "string" ? prefs.current.medication : "all",
+    weightUnit: WEIGHT_UNITS.includes(prefs.current.weightUnit) ? prefs.current.weightUnit : "lb",
+    name: typeof prefs.current.name === "string" ? prefs.current.name : "",
+    sections: normaliseSections(prefs.current.sections),
   });
   const [busy, setBusy] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [timedOut, setTimedOut] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // The unit follows the Profile setting until it is changed here.
   useEffect(() => {
-    if (!unitChosenByUser.current && profile?.weight_unit) {
-      setOptions((prev) => ({ ...prev, weightUnit: profile.weight_unit }));
-    }
+    if (unitChosenByUser.current) return;
+    const stored = profile?.weight_unit;
+    if (!WEIGHT_UNITS.includes(stored)) return;
+    setOptions((prev) => (prev.weightUnit === stored ? prev : { ...prev, weightUnit: stored }));
   }, [profile?.weight_unit]);
+
+  // A load that never finishes says so after 15s instead of showing nothing.
+  useEffect(() => {
+    if (!shotsLoading) {
+      setTimedOut(false);
+      return undefined;
+    }
+    const timer = setTimeout(() => setTimedOut(true), 15000);
+    return () => clearTimeout(timer);
+  }, [shotsLoading, reloadKey]);
+
+  const retry = () => {
+    setTimedOut(false);
+    setReloadKey((key) => key + 1);
+    loadShots?.();
+    refreshProfile?.();
+  };
 
   const medications = useMemo(() => medicationList(shots), [shots]);
   const medication = options.medication === "all" || medications.includes(options.medication)
@@ -103,6 +129,10 @@ export default function ReportPage() {
         </div>
       </div>
     );
+  }
+
+  if (shotsLoading) {
+    return <ReportStatusScreen failed={timedOut} onRetry={retry} />;
   }
 
   return (

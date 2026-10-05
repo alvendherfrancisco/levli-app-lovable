@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ReportErrorBoundary from '@/components/report/ReportErrorBoundary';
 
 import { AppStateProvider, useAppState } from '@/lib/AppState';
 import { SubscriptionProvider } from '@/lib/SubscriptionContext';
@@ -99,7 +100,7 @@ const AuthenticatedApp = () => {
         </Route>
         <Route path="/push-test" element={<PushTest />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/report" element={<ReportPage />} />
+        <Route path="/report" element={<ReportErrorBoundary><ReportPage /></ReportErrorBoundary>} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsPage />} />
       </Route>

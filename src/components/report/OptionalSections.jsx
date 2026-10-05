@@ -1,13 +1,15 @@
 import React from "react";
 import SafeImage from "@/components/SafeImage";
 import PaperPairs from "@/components/report/PaperPairs";
+import SectionBoundary from "@/components/report/SectionBoundary";
 
+/** One optional section. If its content fails, only this section shows a message. */
 function Block({ title, children }) {
   return (
     <section className="pt-4 mt-4 border-t border-gray-200">
       <h3 className="text-sm font-bold text-gray-900 mb-1">{title}</h3>
       <div className="h-0.5 w-10 bg-indigo-600 rounded mb-3" />
-      {children}
+      <SectionBoundary title={title}>{children}</SectionBoundary>
     </section>
   );
 }

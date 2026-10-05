@@ -12,7 +12,8 @@ export const RANGE_OPTIONS = [
   { id: "custom", label: "Custom", days: null },
 ];
 
-export const DEFAULT_RANGE = "3m";
+// Default when nothing valid is remembered: the whole history.
+export const DEFAULT_RANGE = "all";
 
 // Core sections are always part of the report.
 export const CORE_SECTIONS = [
@@ -43,7 +44,8 @@ const STORE_KEY = "levli_report_prefs";
 export function loadReportPrefs() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   } catch {
     return {};
   }
@@ -57,7 +59,8 @@ export function saveReportPrefs(prefs) {
   }
 }
 
-/** Section list for a saved selection, core first. */
-export function normaliseSections(selected = []) {
-  return [...CORE_IDS, ...OPTIONAL_IDS.filter((id) => selected.includes(id))];
+/** Section list for a saved selection, core first. Anything unusable falls back to core. */
+export function normaliseSections(selected) {
+  const list = Array.isArray(selected) ? selected : [];
+  return [...CORE_IDS, ...OPTIONAL_IDS.filter((id) => list.includes(id))];
 }

@@ -40,25 +40,56 @@ export function formatDayShort(key) {
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
+const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Anything rendered as text — a non-string never reaches the report. */
+function asText(value, fallback = "") {
+  if (value == null) return fallback;
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return fallback;
+}
+
+/** A finite number, or null — guards numbers stored as strings. */
+function asNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** A "YYYY-MM-DD" key, or null when the value isn't one. */
+function asDayKey(value) {
+  return typeof value === "string" && DAY_KEY_RE.test(value) ? value : null;
+}
+
+/** Only ever hands a parseable string to the date parser, and rejects an unreadable date. */
+function parseDate(value) {
+  if (typeof value !== "string") return null;
+  const d = parseShotDate(value);
+  return d && Number.isFinite(d.getTime()) ? d : null;
+}
+
 /** Shot record → its "YYYY-MM-DD" day key. */
 export function shotDayKey(shot) {
-  const d = parseShotDate(shot?.date);
+  const explicit = asDayKey(shot?.date);
+  if (explicit) return explicit;
+  const d = parseDate(shot?.date);
   return d ? toDayKey(d) : "";
 }
 
 /** AdverseEvent → its "YYYY-MM-DD" day key (day_key, else parsed onset_date). */
 export function eventDayKey(event) {
   if (!event) return "";
-  if (event.day_key) return event.day_key;
-  if (!event.onset_date) return "";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(event.onset_date)) return event.onset_date;
-  const d = parseShotDate(event.onset_date);
+  const explicit = asDayKey(event.day_key) || asDayKey(event.onset_date);
+  if (explicit) return explicit;
+  const d = parseDate(event.onset_date);
   return d ? toDayKey(d) : "";
 }
 
 /** JournalEntry date ("Jun 29, 2026") → its day key. */
 export function journalDayKey(entry) {
-  const d = parseShotDate(entry?.date);
+  const explicit = asDayKey(entry?.date);
+  if (explicit) return explicit;
+  const d = parseDate(entry?.date);
   return d ? toDayKey(d) : "";
 }
 
@@ -84,8 +115,9 @@ export function heightLabel(profile = {}) {
 /** BMI for a weight in the given unit — null when height is missing or the result is implausible. */
 export function plausibleBmi(profile, weight, unit) {
   const h = heightMetres(profile);
+  if (weight == null || !h) return null;
   const kg = convertWeight(weight, unit, "kg");
-  if (!h || kg == null) return null;
+  if (kg == null || !Number.isFinite(kg)) return null;
   const bmi = kg / (h * h);
   if (!Number.isFinite(bmi) || bmi < BMI_MIN_PLAUSIBLE || bmi > BMI_MAX_PLAUSIBLE) return null;
   return Math.round(bmi * 10) / 10;
@@ -103,13 +135,16 @@ export function resolveRange({ rangeId, customFrom, customTo, dayKeys = [] }) {
     };
   }
   if (rangeId === "custom") {
-    const a = customFrom || addDaysToKey(today, -90);
-    const b = customTo || today;
+    // An unreadable date falls back to the last 90 days rather than breaking the range.
+    const a = asDayKey(customFrom) || addDaysToKey(today, -90);
+    const b = asDayKey(customTo) || today;
     const from = a <= b ? a : b;
     const to = a <= b ? b : a;
     return { from, to, label: `Custom (${formatDay(from)} – ${formatDay(to)})` };
   }
-  const option = RANGE_OPTIONS.find((r) => r.id === rangeId) || RANGE_OPTIONS[1];
+  const option = RANGE_OPTIONS.find((r) => r.id === rangeId)
+    || RANGE_OPTIONS.find((r) => r.id === DEFAULT_RANGE)
+    || RANGE_OPTIONS[0];
   const from = addDaysToKey(today, -(option.days - 1));
   return { from, to: today, label: option.label };
 }
@@ -120,13 +155,20 @@ export function resolveRange({ rangeId, customFrom, customTo, dayKeys = [] }) {
  */
 export function buildWeightSeries(weightHistory = [], range, profileUnit, reportUnit) {
   const points = weightHistory
-    .filter((w) => w.date >= range.from && w.date <= range.to)
-    .map((w) => ({
-      dayKey: w.date,
-      ts: fromDayKey(w.date).getTime(),
-      value: Math.round(convertWeight(w.weight, profileUnit, reportUnit) * 10) / 10,
-      label: formatDayShort(w.date),
-    }));
+    .filter((w) => w && asDayKey(w.date) && w.date >= range.from && w.date <= range.to)
+    .map((w) => {
+      const raw = typeof w.weight === "number" ? w.weight : parseFloat(w.weight);
+      const converted = Number.isFinite(raw) ? convertWeight(raw, profileUnit, reportUnit) : null;
+      return {
+        dayKey: w.date,
+        ts: fromDayKey(w.date).getTime(),
+        value: Number.isFinite(converted) ? Math.round(converted * 10) / 10 : null,
+        label: formatDayShort(w.date),
+      };
+    })
+    // A weight in an unreadable unit or an unparseable date is left out rather
+    // than plotted as NaN.
+    .filter((p) => Number.isFinite(p.ts) && Number.isFinite(p.value));
 
   // 7-day rolling average over the entries themselves, as on Insights.
   return points.map((point, i) => {
@@ -196,26 +238,30 @@ export function medicationList(shots = []) {
 }
 
 function routeLabel(shot) {
-  const route = (shot.route || "").replace(/_/g, " ");
-  return [route, shot.concentration].filter(Boolean).join(" · ");
+  const route = asText(shot.route).replace(/_/g, " ");
+  return [route, asText(shot.concentration)].filter(Boolean).join(" · ");
 }
 
 /** Dose table rows, newest first. */
 export function doseRows(shotsDesc = []) {
-  return shotsDesc.map((s) => ({
-    id: s.id,
-    day: shotDayKey(s),
-    dayLabel: formatDay(shotDayKey(s)),
-    time: s.time || "—",
-    medication: s.medication || "—",
-    dose: s.dose,
-    unit: s.dose_unit || "mg",
-    doseLabel: s.dose != null ? `${s.dose} ${s.dose_unit || "mg"}` : "—",
-    site: s.site || "—",
-    pain: s.pain ?? null,
-    detail: routeLabel(s),
-    notes: s.notes || "",
-  }));
+  return shotsDesc.map((s) => {
+    const dose = asNumber(s.dose);
+    const unit = asText(s.dose_unit, "mg");
+    return {
+      id: s.id,
+      day: shotDayKey(s),
+      dayLabel: formatDay(shotDayKey(s)),
+      time: asText(s.time, "—"),
+      medication: asText(s.medication, "—"),
+      dose,
+      unit,
+      doseLabel: dose != null ? `${dose} ${unit}` : "—",
+      site: asText(s.site, "—"),
+      pain: asNumber(s.pain),
+      detail: asText(routeLabel(s)),
+      notes: asText(s.notes),
+    };
+  });
 }
 
 /**
@@ -292,8 +338,8 @@ export function sideEffectRows(events = [], shotsDesc = [], dayMetrics = {}, ran
       day,
       dayLabel: formatDay(day),
       symptom: cleanSymptom(event.symptom),
-      severity: event.severity || "",
-      detail: event.duration || event.notes || "",
+      severity: asText(event.severity),
+      detail: asText(event.duration || event.notes),
       legacy: false,
     }));
 
@@ -345,7 +391,8 @@ function inRange(dayKey, range) {
 function weekBuckets(range) {
   const buckets = [];
   let start = range.from;
-  while (start <= range.to) {
+  // Capped so an extreme custom range can never hang the report.
+  while (start <= range.to && buckets.length < 520) {
     buckets.push({ start, end: addDaysToKey(start, 6) });
     start = addDaysToKey(start, 7);
   }
@@ -421,10 +468,10 @@ export function journalRows(journalEntries = [], range) {
       id: entry.id,
       day,
       dayLabel: formatDay(day),
-      time: entry.time || "",
-      mood: entry.mood || "",
-      category: entry.category || "",
-      text: entry.text || "",
+      time: asText(entry.time),
+      mood: asText(entry.mood),
+      category: asText(entry.category),
+      text: asText(entry.text),
     }))
     .sort((a, b) => b.day.localeCompare(a.day));
   return rows.length ? rows : null;
@@ -439,11 +486,13 @@ export function progressPictureRows(photos = [], range) {
 }
 
 export function injectionSiteData(shotsInRange = []) {
-  const withSite = shotsInRange.filter((s) => s.site);
+  const siteOf = (s) => asText(s.site).trim();
+  const painOf = (s) => asNumber(s.pain);
+  const withSite = shotsInRange.filter((s) => siteOf(s));
   if (!withSite.length) return null;
   const counts = new Map();
-  withSite.forEach((s) => counts.set(s.site, (counts.get(s.site) || 0) + 1));
-  const painShots = shotsInRange.filter((s) => (s.pain || 0) > 0);
+  withSite.forEach((s) => counts.set(siteOf(s), (counts.get(siteOf(s)) || 0) + 1));
+  const painShots = shotsInRange.filter((s) => (painOf(s) || 0) > 0);
 
   return {
     counts: [...counts.entries()]
@@ -455,13 +504,13 @@ export function injectionSiteData(shotsInRange = []) {
       .map((s) => ({
         id: s.id,
         dayLabel: formatDay(shotDayKey(s)),
-        pain: s.pain,
-        medication: s.medication || "—",
-        doseLabel: `${s.dose} ${s.dose_unit || "mg"}`,
+        pain: painOf(s),
+        medication: asText(s.medication, "—"),
+        doseLabel: asNumber(s.dose) != null ? `${asNumber(s.dose)} ${asText(s.dose_unit, "mg")}` : "—",
       }))
       .sort((a, b) => b.dayLabel.localeCompare(a.dayLabel)),
     painReported: painShots.length,
-    averagePain: painShots.length ? round1(painShots.reduce((a, s) => a + s.pain, 0) / painShots.length) : null,
+    averagePain: painShots.length ? round1(painShots.reduce((a, s) => a + (painOf(s) || 0), 0) / painShots.length) : null,
   };
 }
 
@@ -481,12 +530,14 @@ export function buildReport(state, options) {
   const shotsDesc = [...shots].sort((a, b) => (shotDayKey(b) || "").localeCompare(shotDayKey(a) || ""));
   const medications = medicationList(shots);
 
+  // Only real day keys take part in range resolution, so a stray value can
+  // never collapse the range.
   const dayKeys = [
     ...weightHistory.map((w) => w.date),
     ...shotsDesc.map(shotDayKey),
     ...adverseEvents.map(eventDayKey),
     ...Object.keys(dayMetrics),
-  ].filter(Boolean);
+  ].map((key) => asDayKey(key)).filter(Boolean);
 
   const range = resolveRange({
     rangeId: options.rangeId || DEFAULT_RANGE,
@@ -546,7 +597,8 @@ export function buildReport(state, options) {
       changePct: weight.changePct,
       bmi,
     },
-    weight,
+    // `series` carries the plotted points through to the chart and the PDF.
+    weight: { ...weight, series },
     doses: { rows: doses, changes, adherence, count: doses.length },
     sideEffects: { rows: sideEffects, frequency: sideEffectFrequency(sideEffects), total: sideEffects.length },
     optional,

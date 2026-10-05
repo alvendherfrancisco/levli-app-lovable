@@ -34,7 +34,7 @@ function line(doc, x1, y1, x2, y2, colour) {
  * Weight line chart with its dashed 7-day rolling average and a colour-coded
  * dose timeline on the same date axis. Only real entries are plotted.
  */
-export function drawWeightChart(doc, { x, y, w, h, series, markers = [], unit, fromTs, toTs, labelFor }) {
+export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], unit, fromTs, toTs, labelFor }) {
   const plotX = x + 11;
   const plotW = w - 11;
   const markerBand = 4;
@@ -42,14 +42,23 @@ export function drawWeightChart(doc, { x, y, w, h, series, markers = [], unit, f
   const plotH = h - markerBand - 12;
   const legendY = plotY + plotH + 7;
 
-  const values = series.flatMap((p) => [p.value, p.rollingAvg]).filter((v) => Number.isFinite(v));
+  // Only real points are drawn; anything unusable is left out.
+  const points = (Array.isArray(series) ? series : [])
+    .filter((p) => p && Number.isFinite(p.ts) && Number.isFinite(p.value));
+  if (points.length < 2) return 0;
+
+  const values = points.flatMap((p) => [p.value, p.rollingAvg]).filter((v) => Number.isFinite(v));
   const min = Math.min(...values);
   const max = Math.max(...values);
   const pad = (max - min) * 0.15 || 1;
   const lo = min - pad;
   const hi = max + pad;
-  const span = Math.max(1, toTs - fromTs);
-  const X = (ts) => plotX + ((ts - fromTs) / span) * plotW;
+  const axisFrom = Number.isFinite(fromTs) ? fromTs : points[0].ts;
+  const axisTo = Number.isFinite(toTs) && toTs > axisFrom
+    ? toTs
+    : Math.max(points[points.length - 1].ts, axisFrom + 86400000);
+  const span = Math.max(1, axisTo - axisFrom);
+  const X = (ts) => plotX + ((ts - axisFrom) / span) * plotW;
   const Y = (v) => plotY + plotH - ((v - lo) / (hi - lo)) * plotH;
 
   doc.setDrawColor(GRID[0], GRID[1], GRID[2]);
@@ -68,17 +77,17 @@ export function drawWeightChart(doc, { x, y, w, h, series, markers = [], unit, f
 
   doc.setFontSize(7);
   doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
-  doc.text(labelFor(fromTs), plotX, legendY + 4, { align: "left" });
-  doc.text(labelFor(toTs), plotX + plotW, legendY + 4, { align: "right" });
+  doc.text(labelFor(axisFrom), plotX, legendY + 4, { align: "left" });
+  doc.text(labelFor(axisTo), plotX + plotW, legendY + 4, { align: "right" });
   doc.text(`${unit}`, plotX - 2, plotY - 1.5, { align: "right" });
 
   // Weight line + entry dots
   doc.setLineWidth(0.5);
-  series.forEach((point, i) => {
+  points.forEach((point, i) => {
     if (!i) return;
-    line(doc, X(series[i - 1].ts), Y(series[i - 1].value), X(point.ts), Y(point.value), WEIGHT);
+    line(doc, X(points[i - 1].ts), Y(points[i - 1].value), X(point.ts), Y(point.value), WEIGHT);
   });
-  series.forEach((point) => {
+  points.forEach((point) => {
     doc.setFillColor(WEIGHT[0], WEIGHT[1], WEIGHT[2]);
     doc.circle(X(point.ts), Y(point.value), 0.65, "F");
   });
@@ -86,9 +95,9 @@ export function drawWeightChart(doc, { x, y, w, h, series, markers = [], unit, f
   // Dashed 7-day rolling average
   doc.setLineDashPattern([1.2, 0.9], 0);
   doc.setLineWidth(0.45);
-  series.forEach((point, i) => {
+  points.forEach((point, i) => {
     if (!i) return;
-    line(doc, X(series[i - 1].ts), Y(series[i - 1].rollingAvg), X(point.ts), Y(point.rollingAvg), AVERAGE);
+    line(doc, X(points[i - 1].ts), Y(points[i - 1].rollingAvg), X(point.ts), Y(point.rollingAvg), AVERAGE);
   });
   doc.setLineDashPattern([], 0);
 

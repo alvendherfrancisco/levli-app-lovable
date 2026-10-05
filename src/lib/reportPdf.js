@@ -193,7 +193,7 @@ function loadThumbnail(url, size = 260) {
 }
 
 function reportUnitLabel(row) {
-  return `${row.dose} ${row.unit}`;
+  return row.dose == null ? "—" : `${row.dose} ${row.unit}`;
 }
 
 export async function buildReportPdf(report) {
@@ -283,7 +283,7 @@ export async function buildReportPdf(report) {
           y,
           w: PAGE.contentW,
           h: chartHeight,
-          series: weight.series,
+          series: weight.series || [],
           markers,
           unit,
           fromTs: fromDayKey(report.range.from).getTime(),
