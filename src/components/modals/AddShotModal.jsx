@@ -81,6 +81,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  // Route and Device type as the app pre-filled them, so the "Add details
+  // (optional)" label can show a short summary once either is changed.
+  const [defaults, setDefaults] = useState({ route: "", device: "" });
   const [duplicatePrompt, setDuplicatePrompt] = useState(null);
   const [reporting, setReporting] = useState(false);
 
@@ -115,26 +118,37 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const caps = getCapabilityProfile(medication);
   const capabilityWarning = getCapabilityWarning(medication);
   const activeRoute = route || getDefaultRoute(medication);
-  const deliveryOptions = getDeliveryMethods(medication, activeRoute);
-  const isLegacyDevice = RETIRED_DELIVERY_METHODS.includes(deviceType);
-  // Compounded / generic products take a free-text concentration and a simple
-  // delivery toggle instead of the full device list.
+  // Compounded / generic products take a free-text concentration.
   const isCompounded = isCompoundedGeneric(medication);
   const isInjectable = !isCustomProduct && INJECTABLE_ROUTES.includes(activeRoute);
   const siteOptions = activeRoute === "intramuscular" ? imSites : activeRoute === "intradermal" ? idSites : scSites;
   const isReconstituted = activeRoute === "reconstituted_vial" || caps?.supports_reconstitution;
-  const brandPen = isBrandPen(medication);
 
-  // Route field: hidden for brand pens (their device fixes the route), shown
-  // when there is a genuine choice — always for compounded / generic products.
+  // Route and Device type sit inside "Add details (optional)" and are always
+  // offered — the main form keeps only what is logged every time. Route is
+  // pre-filled from the medication (a pen is subcutaneous, Rybelsus is oral) and
+  // stays changeable; Device type starts empty. A product with no catalogue
+  // routes (an "Other / custom" entry) gets the generic route choices.
   const routeChoices = getRouteChoices(medication);
-  const showRouteField =
-    (brandPen && editingShot && activeRoute !== getDefaultRoute(medication)) ||
-    (!brandPen && routeChoices.length > 1);
-  // Delivery method: hidden for brand pens, a two-option toggle for generics,
-  // and the existing list for other products.
-  const showDeliveryToggle = isCompounded && isInjectable;
-  const showDeliveryField = !brandPen && !isCompounded && deliveryOptions.length > 0;
+  const routeOptions = routeChoices.length ? routeChoices : ROUTE_CHOICES;
+  const routeLabel = routeOptions.find((r) => r.value === activeRoute)?.label || activeRoute;
+  // A device already on a record stays selectable even if it is no longer
+  // offered, so an old log is never silently rewritten.
+  const deviceOptions = getShotDeviceOptions(medication, activeRoute);
+  const deviceChoices = deviceType && !deviceOptions.some((d) => d.value === deviceType)
+    ? [...deviceOptions, {
+        value: deviceType,
+        label: getDeliveryMethodLabel(deviceType),
+        retired: RETIRED_DELIVERY_METHODS.includes(deviceType),
+      }]
+    : deviceOptions;
+  // What is set inside the optional section, shown beside its label.
+  const detailSummary = [
+    activeRoute !== defaults.route ? routeLabel : "",
+    deviceType && deviceType !== defaults.device
+      ? (deviceChoices.find((d) => d.value === deviceType)?.label || deviceType)
+      : "",
+  ].filter(Boolean);
 
   const recommendedSite = getRecommendedSite();
   const scheduleFor = (med) => repeatSchedules.find((s) => s.status === "active" && s.medication === med) || null;
@@ -194,8 +208,11 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       setDoseUnit(editingShot.dose_unit || "mg");
       setConcentration(editingShot.concentration || "");
       setSite(editingShot.site || recommendedSite);
-      setRoute(editingShot.route || getDefaultRoute(editingShot.medication || defaultMed));
+      const editMedication = editingShot.medication || defaultMed;
+      const editRoute = editingShot.route || getDefaultRoute(editMedication);
+      setRoute(editRoute);
       setDeviceType(editingShot.device_type || "");
+      setDefaults({ route: getDefaultRoute(editMedication), device: getDefaultDeviceType(editMedication, editRoute) });
       setNotes(editingShot.notes || "");
       setPain(editingShot.pain ?? 0);
       setInfusionDuration(editingShot.infusion_duration != null ? String(editingShot.infusion_duration) : "");
@@ -233,6 +250,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       setSite(smart.site);
       setRoute(smart.route);
       setDeviceType(smart.deviceType);
+      setDefaults({ route: smart.route, device: smart.deviceType });
       if (initialValues) {
         setMedication(initialValues.medication || smart.medication);
         setMedicationId(initialValues.medication_id || smart.medicationId);
@@ -241,6 +259,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
         setConcentration(initialValues.concentration || "");
         setRoute(initialValues.route || smart.route);
         setDeviceType(initialValues.device_type || smart.deviceType);
+        setDefaults({ route: initialValues.route || smart.route, device: initialValues.device_type || smart.deviceType });
         setNotes(initialValues.notes || "");
         setDate(initialValues.date || toInputDate(n));
         setTime(initialValues.time || toInputTime(n));
@@ -252,19 +271,6 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setRepeatMode("weeks");
     setRepeatWeeks("12");
   }, [open, editingShot]);
-
-  // Delivery method: when only one is valid for this medication/route it is
-  // selected automatically. Legacy retired values are left untouched so old
-  // records aren't altered.
-  useEffect(() => {
-    if (!open) return;
-    const options = getDeliveryMethods(medication, activeRoute);
-    if (options.length === 1) {
-      if (deviceType !== options[0].value) setDeviceType(options[0].value);
-    } else if (options.length === 0 && deviceType && !RETIRED_DELIVERY_METHODS.includes(deviceType)) {
-      setDeviceType("");
-    }
-  }, [open, medication, activeRoute, deviceType]);
 
   // Unsaved-input guard, plus the shared dialog behaviour (background scroll
   // lock, focus trap, Escape and the hardware back button).
@@ -291,18 +297,21 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       setMedicationId("");
       setRoute("");
       setDeviceType("");
+      setDefaults({ route: getDefaultRoute(med), device: "" });
       setRepeatOn(false);
       setShowMedDropdown(false);
       return;
     }
     const { dose: nextDose, unit } = getDoseDefault({ medication: med, medications, shots });
+    const nextRoute = getDefaultRoute(med);
     setMedication(med);
     setDose(String(nextDose));
     setDoseUnit(unit);
     setMedicationId(activeRegimensFor(medications, med)[0]?.id || "");
-    setRoute(getDefaultRoute(med));
+    setRoute(nextRoute);
+    setDefaults({ route: nextRoute, device: getDefaultDeviceType(med, nextRoute) });
     if (RETIRED_DELIVERY_METHODS.includes(deviceType)) setDeviceType("");
-    else if (isCompoundedGeneric(med) && !INJECTABLE_ROUTES.includes(getDefaultRoute(med))) setDeviceType("");
+    else if (isCompoundedGeneric(med) && !INJECTABLE_ROUTES.includes(nextRoute)) setDeviceType("");
     setRepeatOn(!!scheduleFor(med));
     setShowMedDropdown(false);
   };
@@ -594,36 +603,6 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                   )}
                 </div>
 
-                {/* Route — hidden for brand pens; fixed choices for generics */}
-                {showRouteField && (
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Route</label>
-                    <div className="flex flex-wrap gap-2">
-                      {routeChoices.map((rc) => (
-                        <button key={rc.value} onClick={() => setRoute(rc.value)}
-                          className={`px-3.5 py-2 rounded-xl border text-sm font-medium ${activeRoute === rc.value ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-white/[0.05] text-gray-600 dark:text-gray-300 border-gray-200 dark:border-white/[0.1]"}`}>
-                          {rc.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Delivery — a simple toggle for generics only */}
-                {showDeliveryToggle && (
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Delivery</label>
-                    <div className="flex gap-2">
-                      {COMPOUNDED_DEVICES.map((d) => (
-                        <button key={d.value} onClick={() => setDeviceType(d.value)}
-                          className={`flex-1 py-2.5 rounded-xl text-sm font-medium border ${deviceType === d.value ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30" : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.1]"}`}>
-                          {d.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Dose — the strengths the label lists for the chosen product.
                     An "Other / custom" entry instead asks for the drug name and dose. */}
                 <div>
@@ -713,6 +692,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                   <button onClick={() => setShowDetails(!showDetails)} data-skip-dirty className="w-full flex items-center justify-between gap-2 py-1">
                     <span className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                       Add details (optional)
+                      {detailSummary.length > 0 && (
+                        <span className="text-[11px] font-medium text-indigo-500 dark:text-indigo-400">· {detailSummary.join(" · ")}</span>
+                      )}
                       {repeatOn && <span className="text-[11px] font-medium text-indigo-500 dark:text-indigo-400">· repeat active</span>}
                     </span>
                     <ChevronDown size={18} className={`text-gray-400 transition-transform ${showDetails ? "rotate-180" : ""}`} />
@@ -720,6 +702,18 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
 
                   {showDetails && (
                     <div className="mt-4 space-y-4">
+                      {/* Route and Device type — optional. Route arrives
+                          pre-filled from the medication, Device type is empty. */}
+                      <ShotRouteDeviceFields
+                        route={activeRoute}
+                        routeOptions={routeOptions}
+                        onRouteChange={setRoute}
+                        deviceType={deviceType}
+                        deviceOptions={deviceChoices}
+                        onDeviceChange={setDeviceType}
+                        inputClass={inputClass}
+                      />
+
                       {/* Concentration — compounded / generic products only */}
                       {isCompounded && (
                         <InputField label="Concentration (optional)">
@@ -727,26 +721,6 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                             placeholder="e.g. 2.5 mg/mL" className={inputClass} />
                           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Compounded strengths vary by pharmacy — enter what your vial says.</p>
                         </InputField>
-                      )}
-
-                      {/* Delivery method — other products only (pens hide it) */}
-                      {showDeliveryField && (
-                        <div>
-                          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Delivery method (optional)</label>
-                          {deliveryOptions.length === 1 ? (
-                            <div className="w-full border border-gray-100 dark:border-white/[0.08] bg-gray-50 dark:bg-white/[0.03] rounded-xl px-4 py-3 text-base text-gray-500 dark:text-gray-400">
-                              {deliveryOptions[0].label}
-                            </div>
-                          ) : (
-                            <select value={deviceType} onChange={(e) => setDeviceType(e.target.value)} className={inputClass}>
-                              <option value="">—</option>
-                              {isLegacyDevice && (
-                                <option value={deviceType} disabled>{getDeliveryMethodLabel(deviceType)}</option>
-                              )}
-                              {deliveryOptions.map((dt) => <option key={dt.value} value={dt.value}>{dt.label}</option>)}
-                            </select>
-                          )}
-                        </div>
                       )}
 
                       {/* Route-specific fields */}
