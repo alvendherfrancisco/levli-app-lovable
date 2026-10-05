@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, ArrowLeft, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
+import LevliLogo from "@/components/LevliLogo";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -27,7 +28,7 @@ export default function ForgotPassword() {
 
   return (
     <AuthLayout
-      icon={Mail}
+      iconNode={<LevliLogo size={88} />}
       title="Reset password"
       subtitle="We'll send you a link to reset it"
       footer={

@@ -4,9 +4,10 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
+import { Mail, Lock, Loader2 } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
+import LevliLogo from "@/components/LevliLogo";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 
@@ -73,7 +74,7 @@ export default function Register() {
   if (showOtp) {
     return (
       <AuthLayout
-        icon={Mail}
+        iconNode={<LevliLogo size={88} />}
         title="Verify your email"
         subtitle={`We sent a code to ${email}`}
       >
@@ -126,7 +127,7 @@ export default function Register() {
 
   return (
     <AuthLayout
-      icon={UserPlus}
+      iconNode={<LevliLogo size={88} />}
       title="Create your account"
       subtitle="Sign up to get started"
       footer={

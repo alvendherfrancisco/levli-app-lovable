@@ -1,10 +1,12 @@
 import React from "react";
+import { DROPLET_PATH as DROPLET } from "@/lib/levliMark";
 
 /**
  * The droplet outline: a soft point at the top, a round base — the widest part
- * sits just above the base, where the face goes.
+ * sits just above the base, where the face goes. The path comes from
+ * src/lib/levliMark.js, the one description of the artwork, so the animated
+ * splash mascot and the static sign-in mark can never drift apart.
  */
-const DROPLET = "M32 2 C32 2 61 44 61 62 A29 29 0 0 1 3 62 C3 44 32 2 32 2 Z";
 
 /**
  * The Levli mascot as vector shapes: a smiling indigo droplet with a lighter

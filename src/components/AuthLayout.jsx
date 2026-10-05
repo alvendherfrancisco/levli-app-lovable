@@ -7,10 +7,12 @@ export default function AuthLayout({ icon: Icon, iconNode, title, subtitle, foot
       <PageBackground />
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8 sm:mb-10">
+          {/* The brand mark sits above the title with a clear gap. Nothing here
+              sets a height or hides overflow, so a taller mark is never cut. */}
           {iconNode ? (
-            <div className="mb-4 flex justify-center">{iconNode}</div>
+            <div className="mb-6 flex justify-center">{iconNode}</div>
           ) : (
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-6">
               <Icon className="w-7 h-7 text-primary-foreground" aria-hidden="true" />
             </div>
           )}
