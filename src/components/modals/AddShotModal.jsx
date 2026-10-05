@@ -58,6 +58,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const { addShot, updateShot, deleteShot, profile, setProfile, getRecommendedSite, shots, medications,
     repeatSchedules, addRepeatSchedule, updateRepeatSchedule } = useAppState();
   const confirmedDupRef = useRef(false);
+  // The "Possible duplicate" card and the modal's own scroll container.
+  const dupCardRef = useRef(null);
+  const scrollRef = useRef(null);
 
   const defaultMed = profile?.default_medication || "Ozempic®";
   const now = new Date();
@@ -86,6 +89,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // (optional)" label can show a short summary once either is changed.
   const [defaults, setDefaults] = useState({ route: "", device: "" });
   const [duplicatePrompt, setDuplicatePrompt] = useState(null);
+  // Bumped every time the warning shows, so its highlight replays each time.
+  const [dupNonce, setDupNonce] = useState(0);
   const [reporting, setReporting] = useState(false);
 
   // Repeat schedule (weekly repeat of the dose being logged)
@@ -273,6 +278,37 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setRepeatWeeks("12");
   }, [open, editingShot]);
 
+  // The "Possible duplicate" warning is brought into view the moment it appears.
+  // Focus moves onto the card (so it is announced, and its two buttons are the
+  // next thing reached), then the modal's own scroll container centres it. The
+  // container is scrolled directly, so the page behind the overlay never moves,
+  // and this runs on every appearance — including a second one after the card
+  // has been dismissed.
+  useEffect(() => {
+    if (!duplicatePrompt) return;
+    haptic("warning");
+    const card = dupCardRef.current;
+    const scroller = scrollRef.current;
+    if (!card || !scroller) return;
+    // preventScroll keeps focus from jumping the container before we centre it.
+    card.focus({ preventScroll: true });
+    const raf = requestAnimationFrame(() => {
+      const cardRect = card.getBoundingClientRect();
+      const scrollerRect = scroller.getBoundingClientRect();
+      const centered = scroller.scrollTop + (cardRect.top - scrollerRect.top)
+        - (scroller.clientHeight - cardRect.height) / 2;
+      scroller.scrollTo({ top: Math.max(0, centered), behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [duplicatePrompt, dupNonce]);
+
+  // The warning belongs to the entry that produced it: changing the date, time,
+  // medication or dose makes it stale, so it is cleared rather than left on
+  // screen above a different entry.
+  useEffect(() => {
+    setDuplicatePrompt((current) => (current ? null : current));
+  }, [date, time, medication, dose]);
+
   // Unsaved-input guard, plus the shared dialog behaviour (background scroll
   // lock, focus trap, Escape and the hardware back button).
   const dirtyRef = useRef(false);
@@ -403,7 +439,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     }
     if (!editingShot && !confirmedDupRef.current) {
       const dup = recentSameMedication();
-      if (dup) { setError(""); setDuplicatePrompt(dup); return; }
+      if (dup) { setError(""); setDupNonce((n) => n + 1); setDuplicatePrompt(dup); return; }
     }
     setSaving(true);
     setError(""); setDuplicatePrompt(null);
@@ -520,6 +556,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
           </div>
 
           <div
+            ref={scrollRef}
             className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar overscroll-contain"
             style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
             onFocusCapture={(e) => {
@@ -892,14 +929,26 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
               </div>
 
               {duplicatePrompt && (
-                <div className="mx-5 mb-3 text-sm text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-500/10 rounded-xl px-3 py-2 border border-orange-200 dark:border-orange-500/20">
-                  <p className="font-semibold">Possible duplicate</p>
-                  <p className="mt-1">Your last {duplicatePrompt.medication} shot was {duplicatePrompt.label} ago. Is this a duplicate?</p>
-                  <div className="flex gap-2 mt-2">
-                    <button onClick={() => { confirmedDupRef.current = true; handleSave(); }} className="px-3 py-1.5 rounded-lg bg-orange-600 text-white text-xs font-semibold">Save anyway</button>
-                    <button onClick={() => setDuplicatePrompt(null)} className="px-3 py-1.5 rounded-lg bg-white dark:bg-white/10 text-gray-600 dark:text-gray-300 text-xs font-semibold border border-gray-200 dark:border-white/10">Cancel</button>
+                <>
+                  <div
+                    key={dupNonce}
+                    ref={dupCardRef}
+                    tabIndex={-1}
+                    role="alert"
+                    aria-live="assertive"
+                    className="mx-5 mb-3 scroll-mb-[100px] rounded-xl border border-orange-200 dark:border-orange-500/20 bg-orange-50 dark:bg-orange-500/10 px-3 py-2 text-sm text-orange-700 dark:text-orange-300 animate-duplicate-glow outline-none"
+                  >
+                    <p className="font-semibold">Possible duplicate</p>
+                    <p className="mt-1">Your last {duplicatePrompt.medication} shot was {duplicatePrompt.label} ago. Is this a duplicate?</p>
+                    <div className="flex gap-2 mt-2">
+                      <button onClick={() => { confirmedDupRef.current = true; handleSave(); }} className="px-3 py-1.5 rounded-lg bg-orange-600 text-white text-xs font-semibold">Save anyway</button>
+                      <button onClick={() => setDuplicatePrompt(null)} className="px-3 py-1.5 rounded-lg bg-white dark:bg-white/10 text-gray-600 dark:text-gray-300 text-xs font-semibold border border-gray-200 dark:border-white/10">Cancel</button>
+                    </div>
                   </div>
-                </div>
+                  {/* Trailing space, so the card can be centred clear of the
+                      fixed Save Shot footer instead of pinned to the bottom. */}
+                  <div className="h-24" aria-hidden="true" />
+                </>
               )}
             </>
           )}
