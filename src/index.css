@@ -114,7 +114,10 @@
 .bottom-fab-safe { bottom: calc(var(--tabbar-h) + 0.5rem + env(safe-area-inset-bottom, 0px)); }
 .pb-modal-footer { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
 @media (min-width: 1024px) {
-  .pb-safe-content, .pb-safe-fab, .pb-safe-banner { padding-bottom: 2rem; }
+  /* No tab bar at this width, but the floating button still sits 2rem from the
+     bottom, so content that carries one stays clear of it. */
+  .pb-safe-content { padding-bottom: 2rem; }
+  .pb-safe-fab, .pb-safe-banner { padding-bottom: calc(var(--fab-h) + 3rem); }
   .bottom-fab-safe { bottom: 2rem; }
 }
 
