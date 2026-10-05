@@ -2,8 +2,14 @@ import React from "react";
 import { Syringe, MapPin, Calendar, Activity, AlertTriangle } from "lucide-react";
 import DoseBadge from "@/components/DoseBadge";
 import { needsDoseCheck, plainBrandName } from "@/lib/medicationConfig";
+import { renamedTo } from "@/lib/medicationLink";
+import { useAppState } from "@/lib/AppState";
 
-export default function ShotCard({ medication, dose, dose_unit, dose_source, drugClass, drug_class, date, time, site, pain }) {
+export default function ShotCard({ medication, medication_id, dose, dose_unit, dose_source, drugClass, drug_class, date, time, site, pain }) {
+  // A log shows the name it was recorded with. The medication's current name is
+  // shown only when it has since been renamed.
+  const { medications } = useAppState();
+  const renamed = renamedTo({ medication, medication_id }, medications);
   const dc = drugClass || drug_class || "GLP-1";
   const unit = dose_unit || "mg";
   // A dose the label does not list for this medication is flagged, never hidden
@@ -23,6 +29,9 @@ export default function ShotCard({ medication, dose, dose_unit, dose_source, dru
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-gray-900 dark:text-[#E8E9F0] truncate min-w-0">{medication}</span>
+            {renamed && (
+              <span className="text-[11px] text-gray-400 dark:text-gray-500 truncate min-w-0">now {renamed}</span>
+            )}
             <DoseBadge medication={medication} dose={dose} unit={unit} />
             {doseNotListed && (
               <span className="text-xs px-2 py-0.5 rounded-lg font-semibold whitespace-nowrap flex-shrink-0 bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300 flex items-center gap-1">

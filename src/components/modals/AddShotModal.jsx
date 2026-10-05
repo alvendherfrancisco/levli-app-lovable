@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Save, Star, ChevronDown, Trash2 } from "lucide-react";
+import { X, Save, Star, ChevronDown, Trash2, Plus, Pill } from "lucide-react";
 import CustomMedicationFields from "@/components/modals/CustomMedicationFields";
-import {
-  CUSTOM_MEDICATION_NAME, getIntervalDays, getMedicationConfig, getMedicationPickerNames,
-  describeAllowedDoses, validateDosePair,
-} from "@/lib/medicationConfig";
+import MedicationModal from "@/components/modals/MedicationModal";
+import { getIntervalDays, getMedicationConfig, validateDosePair } from "@/lib/medicationConfig";
+import { pickerMedications } from "@/lib/medicationLink";
 import { useAppState } from "@/lib/AppState";
 import { MEDICATIONS, DRUG_CLASS, isInvestigational, getDoseMax, getMolecularClass, isCompoundedGeneric } from "@/lib/medicationData";
 import { getShotDeviceOptions, getDeliveryMethodLabel, RETIRED_DELIVERY_METHODS } from "@/lib/deliveryMethods";
@@ -20,7 +19,7 @@ import { addDaysToKey } from "@/lib/repeatSchedule";
 import ShotRouteDeviceFields from "@/components/modals/ShotRouteDeviceFields";
 import RepeatOptionsField from "@/components/modals/RepeatOptionsField";
 import DoseChips from "@/components/modals/DoseChips";
-import { getDoseChips, withCustomDose } from "@/lib/doseOptions";
+import { chipsForMedication, withCustomDose } from "@/lib/doseOptions";
 import ShotSuccessPanel from "@/components/modals/ShotSuccessPanel";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -68,7 +67,7 @@ function isTypingField(el) {
 
 export default function AddShotModal({ open, onClose, editingShot, initialValues }) {
   const { addShot, updateShot, deleteShot, profile, setProfile, getRecommendedSite, shots, medications,
-    repeatSchedules, addRepeatSchedule, updateRepeatSchedule } = useAppState();
+    repeatSchedules, addRepeatSchedule, updateRepeatSchedule, addMedicationCustomDose } = useAppState();
   const confirmedDupRef = useRef(false);
   // The "Possible duplicate" card and the modal's own scroll container.
   const dupCardRef = useRef(null);
@@ -78,7 +77,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const now = new Date();
 
   const [pain, setPain] = useState(0);
-  const [medication, setMedication] = useState(defaultMed);
+  // Starts empty: what is offered comes from the user's own medications, which
+  // the opening effect resolves before anything is shown as selected.
+  const [medication, setMedication] = useState("");
   // Drug name for an "Other / custom (prescriber-directed)" entry.
   const [customName, setCustomName] = useState("");
   const [medicationId, setMedicationId] = useState("");
@@ -104,6 +105,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // Bumped every time the warning shows, so its highlight replays each time.
   const [dupNonce, setDupNonce] = useState(0);
   const [reporting, setReporting] = useState(false);
+  // The Add Medication form, opened from the picker when Meds is empty.
+  const [addMedOpen, setAddMedOpen] = useState(false);
   // True while a keyboard-raising field holds focus, so the content gets tail
   // space to be scrolled clear of the keyboard.
   const [typing, setTyping] = useState(false);
@@ -131,9 +134,15 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const [reconstitutionDate, setReconstitutionDate] = useState("");
   const [inUseExpiry, setInUseExpiry] = useState("");
 
-  // "Other / custom (prescriber-directed)": the user types the drug and dose,
-  // and nothing about it can be checked against a label.
-  const isCustomProduct = medication === CUSTOM_MEDICATION_NAME;
+  // The medication record this log belongs to. A logged name with no record
+  // (an entry that predates Meds) falls back to typing the medication and dose.
+  const ownMed = medications.find((m) => m.id === medicationId)
+    || medications.find((m) => m.medication_name === medication)
+    || null;
+  const isCustomProduct = !ownMed;
+  // The picker offers the user's own active medications — plus this log's own
+  // medication, so an old entry stays editable after it was paused.
+  const pickerMeds = pickerMedications(medications, { medication_name: medication });
   // Only once-weekly products can use the weekly repeat; a daily product cannot.
   const isWeeklyMedication = getIntervalDays(medication) === 7;
   const caps = getCapabilityProfile(medication);
@@ -180,11 +189,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const needsRegimenChoice = regimensForMed.length > 1;
 
   // Medication selector is prominent only when more than one medication is in play.
-  const medsInPlay = new Set([
-    ...medications.filter((m) => m.status === "active").map((m) => m.medication_name),
-    ...shots.map((s) => s.medication),
-  ].filter(Boolean));
-  const showMedSelector = medsInPlay.size > 1;
+  const showMedSelector = pickerMeds.length > 1;
 
   // ── Gentle, non-blocking safety readouts ──────────────────────────────────
   const doseNum = parseFloat(dose) || 0;
@@ -197,7 +202,10 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     (previousShot.dose_unit || "mg") === doseUnit &&
     Number(previousShot.dose) !== doseNum
   );
-  const doseChips = getDoseChips(medication, profile?.custom_doses || []);
+  const doseChips = chipsForMedication(
+    ownMed || { medication_name: medication },
+    profile?.custom_doses || [],
+  );
   const ingredientDup = editingShot ? { duplicate: false } : detectDuplicateActiveIngredient(medication, shots);
 
   useEffect(() => {
@@ -221,9 +229,11 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setShowDetails(false);
 
     if (editingShot) {
-      const customEntry = editingShot.dose_source === "custom";
-      setMedication(customEntry ? CUSTOM_MEDICATION_NAME : (editingShot.medication || defaultMed));
-      setCustomName(customEntry ? (editingShot.medication || "") : "");
+      // The log keeps the name it was recorded with; its medication record is
+      // resolved from the link, or from the name when it predates Meds.
+      const stored = editingShot.medication || "";
+      setMedication(stored);
+      setCustomName(stored);
       setMedicationId(editingShot.medication_id || "");
       setDose(String(editingShot.dose ?? "2.50"));
       setDoseUnit(editingShot.dose_unit || "mg");
@@ -337,34 +347,25 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
 
   if (!open) return null;
 
-  // Switching medication re-applies that product's defaults (dose, route,
-  // device and its active regimen).
-  const selectMedication = (med) => {
-    // "Other / custom" has no label data — the user types the name and dose.
-    if (med === CUSTOM_MEDICATION_NAME) {
-      setMedication(med);
-      setCustomName("");
-      setDose("");
-      setDoseUnit("mg");
-      setMedicationId("");
-      setRoute("");
-      setDeviceType("");
-      setDefaults({ route: getDefaultRoute(med), device: "" });
-      setRepeatOn(false);
-      setShowMedDropdown(false);
-      return;
-    }
-    const { dose: nextDose, unit } = getDoseDefault({ medication: med, medications, shots });
-    const nextRoute = getDefaultRoute(med);
-    setMedication(med);
-    setDose(String(nextDose));
-    setDoseUnit(unit);
-    setMedicationId(activeRegimensFor(medications, med)[0]?.id || "");
+  // Switching medication re-applies that medication's own defaults: its
+  // prescribed dose when that is one of its chips (otherwise no dose is
+  // selected), its unit and its route. All of them stay editable.
+  const selectMedication = (picked) => {
+    const name = picked.medication_name;
+    const { dose: nextDose, unit } = getDoseDefault({
+      medication: name, medications, shots, legacyCustomDoses: profile?.custom_doses || [],
+    });
+    const nextRoute = picked.route || getDefaultRoute(name);
+    setMedication(name);
+    setCustomName(name);
+    setMedicationId(picked.id || "");
+    setDose(nextDose === "" ? "" : String(nextDose));
+    setDoseUnit(unit || picked.dose_unit || "mg");
     setRoute(nextRoute);
-    setDefaults({ route: nextRoute, device: getDefaultDeviceType(med, nextRoute) });
+    setDefaults({ route: nextRoute, device: getDefaultDeviceType(name, nextRoute) });
     if (RETIRED_DELIVERY_METHODS.includes(deviceType)) setDeviceType("");
-    else if (isCompoundedGeneric(med) && !INJECTABLE_ROUTES.includes(nextRoute)) setDeviceType("");
-    setRepeatOn(!!scheduleFor(med));
+    else if (isCompoundedGeneric(name) && !INJECTABLE_ROUTES.includes(nextRoute)) setDeviceType("");
+    setRepeatOn(!!scheduleFor(name));
     setShowMedDropdown(false);
   };
 
@@ -379,7 +380,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     const startKey = addDaysToKey(date, 7);
     const base = {
       medication,
-      medication_id: medicationId || "",
+      medication_id: ownMed?.id || medicationId || "",
       dose: doseNum,
       dose_unit: doseUnit,
       concentration: isCompounded ? concentration.trim() : "",
@@ -410,7 +411,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     return { label, medication: previousShot.medication };
   };
 
-  // Saves a custom dose on the profile so it becomes a chip next time.
+  // Saves a typed dose on the medication so it is a chip the next time that
+  // medication is logged (a log with no medication record keeps it on the
+  // profile instead).
   const addCustomDose = async (value) => {
     // A strength the label does not list is never offered as a chip for this
     // medication — the same message the save path shows.
@@ -420,7 +423,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       setError(check.message);
       return;
     }
-    await setProfile({ ...profile, custom_doses: withCustomDose(profile?.custom_doses || [], medication, value) });
+    // Saved on the medication itself, so it is offered as a chip next time.
+    if (ownMed) await addMedicationCustomDose(ownMed.id, value);
+    else await setProfile({ ...profile, custom_doses: withCustomDose(profile?.custom_doses || [], medication, value) });
     setDose(String(value));
   };
 
@@ -428,8 +433,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     // Saving puts the keyboard away.
     if (isTypingField(document.activeElement)) document.activeElement.blur();
     const doseNum = parseFloat(dose);
-    const isCustom = medication === CUSTOM_MEDICATION_NAME;
-    const finalMedication = isCustom ? customName.trim() : medication;
+    const isCustom = !ownMed;
+    const finalMedication = isCustom ? (customName.trim() || medication) : medication;
     if (isCustom && !finalMedication) {
       sound.warning();
       setError("Enter the medication name your prescriber gave you.");
@@ -464,7 +469,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     const payload = {
       medication: finalMedication,
       dose_source: isCustom ? "custom" : "label",
-      medication_id: isCustom ? undefined : (medicationId || undefined),
+      medication_id: isCustom ? undefined : (ownMed?.id || medicationId || undefined),
       dose: doseNum, dose_unit: doseUnit,
       drugClass: isCustom ? (DRUG_CLASS[finalMedication] || "") : (DRUG_CLASS[medication] || "GLP-1"),
       molecularClass: getMolecularClass(finalMedication),
@@ -613,9 +618,23 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
           {saved ? (
             <ShotSuccessPanel
               title={editingShot ? "Shot updated" : "Shot logged"}
-              detail={`${dose} ${doseUnitLabel(doseUnit)} · ${medication === CUSTOM_MEDICATION_NAME ? customName : medication}`}
+              detail={`${dose} ${doseUnitLabel(doseUnit)} · ${medication}`}
               onReportSideEffect={() => setReporting(true)}
             />
+          ) : pickerMeds.length === 0 ? (
+            <div className="px-5 pb-4">
+              <div className="rounded-2xl border border-gray-200 dark:border-white/[0.12] bg-gray-50 dark:bg-white/[0.04] p-5 text-center">
+                <Pill size={30} className="mx-auto mb-3 text-gray-300 dark:text-white/20" />
+                <p className="text-sm font-semibold text-gray-700 dark:text-[#E8E9F0]">Add a medication first</p>
+                <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-1">
+                  Your shot logs belong to a medication, so the right dose and schedule can be shown with them.
+                </p>
+                <button onClick={() => { sound.open(); setAddMedOpen(true); }} data-skip-dirty
+                  className="mt-4 px-5 py-3 bg-indigo-600 text-white rounded-xl font-semibold text-sm inline-flex items-center gap-2">
+                  <Plus size={16} /> Add Medication
+                </button>
+              </div>
+            </div>
           ) : (
             <>
               {error && <p className="mx-5 mb-3 text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-xl px-3 py-2">{error}</p>}
@@ -653,21 +672,18 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                     )}
                     {showMedDropdown && (
                       <div className="absolute z-10 mt-1 w-full bg-white dark:bg-[#1e2130] border border-gray-200 dark:border-white/[0.08] rounded-xl shadow-lg max-h-64 overflow-y-auto">
-                        {getMedicationPickerNames().map((m) => {
-                          const entry = getMedicationConfig(m);
-                          const custom = m === CUSTOM_MEDICATION_NAME;
+                        {pickerMeds.map((m) => {
+                          const entry = getMedicationConfig(m.medication_name);
+                          const generic = m.generic_name || entry?.genericName || entry?.generic || "";
                           return (
-                            <button key={m} onClick={() => { sound.tap(); selectMedication(m); }}
-                              className={`w-full px-4 py-3 text-left text-sm dark:text-[#E8E9F0] ${medication === m ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-medium" : "hover:bg-gray-50 dark:hover:bg-white/[0.05]"}`}>
-                              <span className="block">{m}</span>
-                              {!custom && (
-                                <span className="text-xs text-gray-400 dark:text-gray-500 block">
-                                  {entry?.genericName ? `${entry.genericName} · ` : ""}
-                                  {entry?.allowedDoses?.length ? describeAllowedDoses(m) : "dose typed by you"}
-                                </span>
+                            <button key={m.id || m.medication_name} onClick={() => { sound.tap(); selectMedication(m); }}
+                              className={`w-full px-4 py-3 text-left text-sm dark:text-[#E8E9F0] ${m.medication_name === medication ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-medium" : "hover:bg-gray-50 dark:hover:bg-white/[0.05]"}`}>
+                              <span className="block">{m.medication_name}</span>
+                              {generic && (
+                                <span className="text-xs text-gray-400 dark:text-gray-500 block">{generic}</span>
                               )}
-                              {entry?.indicationNote && !custom && (
-                                <span className="text-[11px] text-gray-400 dark:text-gray-500 block mt-0.5">{entry.indicationNote}</span>
+                              {m.status && m.status !== "active" && (
+                                <span className="text-[11px] text-gray-400 dark:text-gray-500 block mt-0.5">{m.status}</span>
                               )}
                             </button>
                           );
@@ -697,8 +713,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                 <div>
                   {isCustomProduct ? (
                     <CustomMedicationFields
-                      name={customName}
-                      onNameChange={setCustomName}
+                      name={customName || medication}
+                      onNameChange={(v) => { setCustomName(v); setMedication(v); }}
                       dose={dose}
                       onDoseChange={setDose}
                       unit={doseUnit}
@@ -719,6 +735,12 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                   {doseChanged && (
                     <p className="text-[13px] font-medium text-amber-600 dark:text-amber-400 mt-1.5 leading-snug">
                       Dose changed from {previousShot.dose} {doseUnitLabel(previousShot.dose_unit || "mg")} to {dose} {doseUnitLabel(doseUnit)}.
+                    </p>
+                  )}
+                  {ownMed?.prescribed_dose != null && doseNum > 0
+                    && Number(ownMed.prescribed_dose) !== doseNum && (
+                    <p className="text-[13px] text-gray-500 dark:text-[#9A9DAE] mt-1.5 leading-snug">
+                      Different from your prescribed dose ({ownMed.prescribed_dose} {doseUnitLabel(ownMed.dose_unit || "mg")}).
                     </p>
                   )}
                   {aboveMax && (
@@ -1013,7 +1035,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                 Done
               </button>
             ) : (
-              <button onClick={handleSave} disabled={saving}
+              <button onClick={handleSave} disabled={saving || pickerMeds.length === 0}
                 className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
                 <Save size={16} /> {saving ? "Saving…" : editingShot ? "Update Shot" : "Save Shot"}
               </button>
@@ -1034,6 +1056,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       />
 
       <SideEffectsModal open={reporting} onClose={() => setReporting(false)} dayKey={date} />
+
+      {/* The Add Medication form, reachable from the picker's empty state. */}
+      <MedicationModal open={addMedOpen} onClose={() => setAddMedOpen(false)} />
     </>
   );
 }

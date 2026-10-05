@@ -8,22 +8,43 @@ import MedicationModal from "@/components/modals/MedicationModal";
 import RepeatScheduleCard from "@/components/medications/RepeatScheduleCard";
 import RepeatScheduleModal from "@/components/modals/RepeatScheduleModal";
 import LinkShotsToMedsCard from "@/components/medications/LinkShotsToMedsCard";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { shotsOfMedication } from "@/lib/medicationLink";
 import { sound } from "@/lib/sounds";
+import { toast } from "@/lib/toast";
 
 export default function MyMedications() {
-  const { medications, deleteMedication, shots, repeatSchedules } = useAppState();
+  const { medications, deleteMedication, archiveMedication, shots, repeatSchedules } = useAppState();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
+  // { medication, archive, count } — what the confirmation is about to do.
+  const [confirming, setConfirming] = useState(null);
 
   const openNew = () => { setEditing(null); setModalOpen(true); };
   const openEdit = (m) => { setEditing(m); setModalOpen(true); };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Remove this medication from your regimen?")) return;
-    sound.delete();
-    await deleteMedication(id);
+  // A medication that has shot logs is archived, never removed: the history it
+  // belongs to stays exactly where it is. Only a medication with no logs can be
+  // deleted for good.
+  const requestDelete = (m) => {
+    const count = shotsOfMedication(shots, m).length;
+    setConfirming({ medication: m, archive: count > 0, count });
+  };
+
+  const handleConfirm = async () => {
+    const target = confirming;
+    setConfirming(null);
+    if (!target) return;
+    sound.tap();
+    if (target.archive) {
+      await archiveMedication(target.medication.id);
+      toast.success(`${target.medication.medication_name} archived — your shot history is kept`);
+    } else {
+      await deleteMedication(target.medication.id);
+      toast.deleted("Medication removed");
+    }
   };
 
   const statusColors = {
@@ -31,6 +52,7 @@ export default function MyMedications() {
     paused: "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400",
     discontinued: "bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400",
     switched: "bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400",
+    archived: "bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400",
   };
 
   return (
@@ -97,7 +119,7 @@ export default function MyMedications() {
                   </button>
                   <div className="flex flex-col gap-2 items-end flex-shrink-0">
                     <button onClick={() => openEdit(m)} className="text-gray-400 hover:text-indigo-600"><ChevronRight size={20} /></button>
-                    <button onClick={() => handleDelete(m.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={16} /></button>
+                    <button onClick={() => requestDelete(m)} aria-label="Remove or archive this medication" className="text-gray-400 hover:text-red-500"><Trash2 size={16} /></button>
                   </div>
                 </div>
               </div>
@@ -113,6 +135,19 @@ export default function MyMedications() {
         open={scheduleOpen}
         onClose={() => { setScheduleOpen(false); setEditingSchedule(null); }}
         schedule={editingSchedule}
+      />
+
+      <ConfirmDialog
+        open={!!confirming}
+        title={confirming?.archive ? "Archive this medication?" : "Delete this medication?"}
+        message={confirming?.archive
+          ? "Your shot history will be kept."
+          : "It has no shot logs, so nothing else is affected."}
+        confirmLabel={confirming?.archive ? "Archive" : "Delete"}
+        cancelLabel="Keep it"
+        destructive={!confirming?.archive}
+        onConfirm={handleConfirm}
+        onCancel={() => setConfirming(null)}
       />
     </PageContainer>
   );

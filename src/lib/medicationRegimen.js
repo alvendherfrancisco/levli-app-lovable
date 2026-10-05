@@ -104,7 +104,7 @@ export const STATUS_OPTIONS = [
 ];
 
 /** Stored status values that are not one of the three plain choices. */
-const STATUS_EXTRA_LABELS = { switched: "Switched to another medication" };
+const STATUS_EXTRA_LABELS = { switched: "Switched to another medication", archived: "Archived" };
 
 /** The status choices, keeping an existing value that is not one of the three. */
 export function statusOptionsFor(current) {

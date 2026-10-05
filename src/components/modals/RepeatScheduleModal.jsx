@@ -4,7 +4,7 @@ import { toast } from "@/lib/toast";
 import useModal from "@/hooks/useModal";
 import { useAppState } from "@/lib/AppState";
 import DoseChips from "@/components/modals/DoseChips";
-import { getDoseChips, withCustomDose } from "@/lib/doseOptions";
+import { chipsForMedication, withCustomDose } from "@/lib/doseOptions";
 import { addDaysToKey, shiftWeekday, shotDateFromKey } from "@/lib/repeatSchedule";
 import { sound } from "@/lib/sounds";
 
@@ -15,7 +15,7 @@ const WEEKDAY_LABELS = { 0: "S", 1: "M", 2: "T", 3: "W", 4: "T", 5: "F", 6: "S" 
  * Edit / pause / cancel an active repeat schedule.
  */
 export default function RepeatScheduleModal({ open, onClose, schedule }) {
-  const { updateRepeatSchedule, profile, setProfile } = useAppState();
+  const { updateRepeatSchedule, profile, setProfile, medications } = useAppState();
   const [dose, setDose] = useState("");
   const [unit, setUnit] = useState("mg");
   const [time, setTime] = useState("08:00");
@@ -121,7 +121,11 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
             <DoseChips
               key={schedule.medication}
               medication={schedule.medication}
-              options={getDoseChips(schedule.medication, profile?.custom_doses || [])}
+              options={chipsForMedication(
+                medications.find((m) => (schedule.medication_id && m.id === schedule.medication_id)
+                  || m.medication_name === schedule.medication) || { medication_name: schedule.medication },
+                profile?.custom_doses || [],
+              )}
               value={parseFloat(dose)}
               unit={unit}
               onSelect={(v) => setDose(String(v))}

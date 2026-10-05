@@ -1,4 +1,5 @@
 {
+  "name": "Medication",
   "type": "object",
   "properties": {
     "medication_name": {
@@ -58,7 +59,7 @@
     },
     "regimen_source": {
       "type": "string",
-      "description": "Source of regimen data (user-entered, clinician-entered, imported)",
+      "description": "Source of regimen data (user-entered, clinician-entered, imported, shot-history)",
       "default": "user-entered"
     },
     "status": {
@@ -67,14 +68,32 @@
         "active",
         "paused",
         "discontinued",
-        "switched"
+        "switched",
+        "archived"
       ],
-      "default": "active"
+      "default": "active",
+      "description": "Archived medications are hidden from the shot pickers but still shown on past shots and reports."
     },
     "discontinued_date": {
       "type": "string",
       "format": "date",
       "description": "Date the user marked this medication as stopped. Reminders pause and the adherence window ends here."
+    },
+    "archived_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the medication was archived. Its shot history is kept and stays visible in history and reports."
+    },
+    "custom_doses": {
+      "type": "array",
+      "description": "Doses the user logged through 'Other' for this medication, offered as dose chips next time",
+      "items": {
+        "type": "number"
+      }
+    },
+    "shots_linked_count": {
+      "type": "number",
+      "description": "How many shot logs were linked when this medication was created from shot history"
     },
     "notes": {
       "type": "string"
@@ -83,7 +102,6 @@
   "required": [
     "medication_name"
   ],
-  "name": "Medication",
   "rls": {
     "create": {
       "created_by_id": "{{user.id}}"

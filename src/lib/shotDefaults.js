@@ -2,9 +2,9 @@
 // Single source of truth for what a returning user sees pre-filled, and for
 // which products have a fixed route / delivery choice.
 
-import { getDoseMax, getMedicationRoutes, isCompoundedGeneric } from "@/lib/medicationData";
+import { getMedicationRoutes, isCompoundedGeneric } from "@/lib/medicationData";
 import { ROUTE_LABELS } from "@/lib/medicationCatalogue";
-import { getDoseList } from "@/lib/doseOptions";
+import { chipsForMedication } from "@/lib/doseOptions";
 
 export const INJECTABLE_ROUTES = ["subcutaneous", "intramuscular", "intradermal"];
 
@@ -76,17 +76,25 @@ export function activeRegimensFor(medications = [], medication) {
     .sort(byCreatedDesc);
 }
 
-/** Dose to pre-fill: the active regimen dose, else the last logged dose. */
-export function getDoseDefault({ medication, medications = [], shots = [] }) {
+/**
+ * The dose to pre-fill for a medication: its prescribed dose when that is one
+ * of the chips on offer, otherwise the dose last logged for it when that is a
+ * chip, otherwise nothing at all. A dose is never invented and never silently
+ * adjusted — the chips are the only values offered.
+ */
+export function getDoseDefault({ medication, medications = [], shots = [], legacyCustomDoses = [] }) {
   const regimen = activeRegimensFor(medications, medication)[0];
   const lastShot = shots.find((s) => s.medication === medication);
   const unit = regimen?.dose_unit || lastShot?.dose_unit || "mg";
-  const raw = regimen?.prescribed_dose ?? lastShot?.dose;
-  let dose = raw != null && Number(raw) > 0 ? Number(raw) : null;
-  if (dose == null) dose = getDoseList(medication)[0] ?? 2.5;
-  const max = getDoseMax(medication);
-  if (unit === "mg" && max < 100 && dose > max) dose = max;
-  return { dose, unit };
+  const chips = chipsForMedication(
+    { medication_name: medication, custom_doses: regimen?.custom_doses },
+    legacyCustomDoses,
+  );
+  const prescribed = regimen?.prescribed_dose != null && Number(regimen.prescribed_dose) > 0
+    ? Number(regimen.prescribed_dose) : null;
+  const logged = lastShot?.dose != null && Number(lastShot.dose) > 0 ? Number(lastShot.dose) : null;
+  const pick = prescribed ?? logged;
+  return { dose: pick != null && chips.includes(pick) ? pick : "", unit };
 }
 
 /**
@@ -97,10 +105,14 @@ export function getDoseDefault({ medication, medications = [], shots = [] }) {
  */
 export function getSmartShotDefaults({ medications = [], shots = [], profile, recommendedSite = "" }) {
   const activeRegimens = medications.filter((m) => m.status === "active").sort(byCreatedDesc);
-  const medication =
-    activeRegimens[0]?.medication_name || shots[0]?.medication || profile?.default_medication || "Ozempic®";
+  // The user's own active medication is the source; the last logged medication
+  // covers an entry whose regimen has not been saved yet. With neither, the
+  // sheet asks for a medication rather than inventing one.
+  const medication = activeRegimens[0]?.medication_name || shots[0]?.medication || "";
   const regimens = activeRegimensFor(medications, medication);
-  const { dose, unit } = getDoseDefault({ medication, medications, shots });
+  const { dose, unit } = getDoseDefault({
+    medication, medications, shots, legacyCustomDoses: profile?.custom_doses || [],
+  });
   const route = regimens[0]?.route || getDefaultRoute(medication);
 
   let deviceType = "";

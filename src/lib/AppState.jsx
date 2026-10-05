@@ -7,6 +7,8 @@ import {
   detectUnitMismatch, heightCmFromParts,
 } from "@/lib/measure";
 import { useAuth } from "@/lib/AuthContext";
+import { getIntervalDays, getMedicationConfig } from "@/lib/medicationConfig";
+import { scheduleMatchesMedication } from "@/lib/medicationLink";
 
 const AppStateContext = createContext(null);
 
@@ -125,17 +127,19 @@ export function AppStateProvider({ children }) {
     if (!isAuthenticated) return;
     (async () => {
       await migrateUnits();
-      loadShots();
       loadJournal();
       loadProfile();
       loadDayMetrics();
       loadProgressPhotos();
-      loadMedications();
       loadAdverseEvents();
       loadInventory();
       loadStorageLogs();
       loadProxyAccess();
       loadRepeatSchedules();
+      // Shots and medications are loaded together, so every log can be linked to
+      // a regimen before the screens read them.
+      const [shotList, medList] = await Promise.all([loadShots(), loadMedications()]);
+      await linkOrphanShots(shotList, medList);
     })();
   }, [isAuthenticated]);
 
@@ -145,6 +149,7 @@ export function AppStateProvider({ children }) {
     data.sort((a, b) => parseShotDate(b.date) - parseShotDate(a.date));
     setShots(data);
     setShotsLoading(false);
+    return data;
   };
 
   const loadJournal = async () => {
@@ -189,6 +194,62 @@ export function AppStateProvider({ children }) {
   const loadMedications = async () => {
     const data = await base44.entities.Medication.list("-created_date", 200);
     setMedications(data);
+    return data;
+  };
+
+  // ── One source of truth ────────────────────────────────────────────────────
+  // Every shot log points at a medication record. A log whose medication is not
+  // in Meds yet gets one created from the log itself — from the same name, dose
+  // and unit that were recorded — so no entry is orphaned. The log keeps its own
+  // snapshot; nothing about it is rewritten.
+  const linkOrphanShots = async (shotList = [], medList = []) => {
+    const unlinked = shotList.filter((s) => !s.medication_id && s.medication);
+    if (!unlinked.length) return;
+    let meds = [...medList];
+
+    for (const name of [...new Set(unlinked.map((s) => s.medication))]) {
+      if (meds.some((m) => m.medication_name === name)) continue;
+      const mine = unlinked.filter((s) => s.medication === name);
+      const latest = mine[0];
+      const oldest = mine[mine.length - 1];
+      const entry = getMedicationConfig(name);
+      const interval = getIntervalDays(name);
+      try {
+        const rec = await base44.entities.Medication.create({
+          medication_name: name,
+          generic_name: entry?.genericName || entry?.generic || "",
+          route: latest.route || "",
+          prescribed_dose: latest.dose ?? null,
+          dose_unit: latest.dose_unit || "mg",
+          frequency: interval === 7 ? "once weekly" : interval === 1 ? "once daily" : "",
+          start_date: oldest?.date ? toDayKey(parseShotDate(oldest.date)) : "",
+          status: "active",
+          regimen_source: "shot-history",
+          shots_linked_count: mine.length,
+        });
+        meds = [rec, ...meds];
+      } catch (err) {
+        console.error("Could not create the medication for", name, err);
+      }
+    }
+
+    const updates = unlinked
+      .map((s) => {
+        const rec = meds.find((m) => m.medication_name === s.medication);
+        return rec?.id ? { id: s.id, medication_id: rec.id } : null;
+      })
+      .filter(Boolean);
+
+    setMedications(meds);
+    if (!updates.length) return;
+    try {
+      await base44.entities.Shot.bulkUpdate(updates.slice(0, 500));
+      const byId = {};
+      updates.forEach((u) => { byId[u.id] = u.medication_id; });
+      setShots((prev) => prev.map((s) => (byId[s.id] ? { ...s, medication_id: byId[s.id] } : s)));
+    } catch (err) {
+      console.error("Could not link shot logs to their medication:", err);
+    }
   };
 
   const loadAdverseEvents = async () => {
@@ -447,8 +508,44 @@ export function AppStateProvider({ children }) {
   };
 
   const updateMedication = async (id, updates) => {
+    const before = medications.find((m) => m.id === id) || null;
     const rec = await base44.entities.Medication.update(id, updates);
     setMedications((prev) => prev.map((m) => m.id === id ? { ...m, ...rec } : m));
+    // A rename carries the repeat schedule with it — a schedule is future setup,
+    // not history. Every shot log keeps the name it was recorded with.
+    if (before && rec?.medication_name && rec.medication_name !== before.medication_name) {
+      const mine = repeatSchedules.filter((s) => scheduleMatchesMedication(s, before));
+      for (const s of mine) {
+        await updateRepeatSchedule(s.id, { medication: rec.medication_name, medication_id: id });
+      }
+    }
+    return rec;
+  };
+
+  // Archiving keeps the history: the medication leaves the pickers and stops
+  // generating schedule dates, and every logged shot stays exactly as it is.
+  const archiveMedication = async (id) => {
+    const med = medications.find((m) => m.id === id) || null;
+    const rec = await base44.entities.Medication.update(id, {
+      status: "archived",
+      archived_date: todayKey(),
+    });
+    setMedications((prev) => prev.map((m) => m.id === id ? { ...m, ...rec } : m));
+    if (med) {
+      const running = repeatSchedules.filter((s) => s.status === "active" && scheduleMatchesMedication(s, med));
+      for (const s of running) await updateRepeatSchedule(s.id, { status: "cancelled" });
+    }
+    return rec;
+  };
+
+  // A dose typed through "Other" is remembered on the medication itself, so it
+  // is offered as a chip next time that medication is logged.
+  const addMedicationCustomDose = async (medicationId, dose) => {
+    const med = medications.find((m) => m.id === medicationId);
+    const value = Number(dose);
+    if (!med || !Number.isFinite(value) || value <= 0) return;
+    const next = [...new Set([...(med.custom_doses || []).map(Number), value])].sort((a, b) => a - b);
+    await updateMedication(medicationId, { custom_doses: next });
   };
 
   const deleteMedication = async (id) => {
@@ -755,6 +852,7 @@ export function AppStateProvider({ children }) {
       journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry,
       // Medications (regimen)
       medications, addMedication, updateMedication, deleteMedication, linkShotsToMedication, stopMedication,
+      archiveMedication, addMedicationCustomDose,
       // Canonical measurements + one-time unit check
       weightUnit: wDisplayUnit, heightCm: heightCmOf(profile), getWeightKg, unitCheck,
       convertAssumedKg, undoUnitConversion, keepWeightsAsLogged,

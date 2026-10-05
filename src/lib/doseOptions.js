@@ -59,6 +59,26 @@ export function getDoseChips(medication, customDoses = []) {
     .sort((a, b) => a - b);
 }
 
+/** The custom doses saved on a medication record (numbers), ascending. */
+export function medicationCustomDoses(medication) {
+  return [...new Set((medication?.custom_doses || []).map(Number).filter((d) => d > 0))]
+    .sort((a, b) => a - b);
+}
+
+/**
+ * Every chip offered for a medication: the strengths its label lists, the doses
+ * saved on the medication itself, and any dose saved earlier on the profile for
+ * the same product (so chips logged before this existed are not lost).
+ */
+export function chipsForMedication(medication, legacyCustomDoses = []) {
+  const name = medication?.medication_name || "";
+  const saved = [
+    ...legacyCustomDoses,
+    ...medicationCustomDoses(medication).map((dose) => ({ medication: name, dose })),
+  ];
+  return getDoseChips(name, saved);
+}
+
 /** true when the picker should accept a typed dose instead of only chips. */
 export function medicationAllowsAnyDose(medication) {
   return allowsAnyDose(medication);
