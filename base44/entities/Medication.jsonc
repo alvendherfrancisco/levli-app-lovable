@@ -71,6 +71,11 @@
       ],
       "default": "active"
     },
+    "discontinued_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the user marked this medication as stopped. Reminders pause and the adherence window ends here."
+    },
     "notes": {
       "type": "string"
     }

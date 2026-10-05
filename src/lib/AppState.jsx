@@ -29,6 +29,8 @@ const DEFAULT_PROFILE = {
   notif_reengagement: false,
   weight_tracking_opted_in: false,
   custom_doses: [],
+  prescriber_name: "",
+  prescriber_contact: "",
 };
 
 export function AppStateProvider({ children }) {
@@ -435,6 +437,30 @@ export function AppStateProvider({ children }) {
     return list.length;
   };
 
+  // "I stopped this medication": the regimen is marked inactive with the date,
+  // and any running repeat is cancelled, so nothing keeps prompting for it.
+  const stopMedication = async (medicationName) => {
+    const stamped = todayKey();
+    let regimen = medications.find((m) => m.medication_name === medicationName && m.status === "active")
+      || medications.find((m) => m.medication_name === medicationName);
+    if (regimen) {
+      const rec = await base44.entities.Medication.update(regimen.id, {
+        status: "discontinued", discontinued_date: stamped,
+      });
+      setMedications((prev) => prev.map((m) => (m.id === regimen.id ? { ...m, ...rec } : m)));
+      regimen = { ...regimen, ...rec };
+    } else {
+      const rec = await base44.entities.Medication.create({
+        medication_name: medicationName, status: "discontinued", discontinued_date: stamped,
+      });
+      setMedications((prev) => [rec, ...prev]);
+      regimen = rec;
+    }
+    const running = repeatSchedules.filter((s) => s.status === "active" && s.medication === medicationName);
+    for (const s of running) await updateRepeatSchedule(s.id, { status: "cancelled" });
+    return regimen;
+  };
+
   // ── AdverseEvent CRUD ──────────────────────────────────────────────────────
   const addAdverseEvent = async (data) => {
     const rec = await base44.entities.AdverseEvent.create(data);
@@ -526,6 +552,8 @@ export function AppStateProvider({ children }) {
       notif_reengagement: !!next.notif_reengagement,
       weight_tracking_opted_in: !!next.weight_tracking_opted_in,
       custom_doses: Array.isArray(next.custom_doses) ? next.custom_doses : [],
+      prescriber_name: next.prescriber_name || "",
+      prescriber_contact: next.prescriber_contact || "",
     };
     if (profileId) {
       await base44.entities.UserProfile.update(profileId, payload);
@@ -686,7 +714,7 @@ export function AppStateProvider({ children }) {
       // Journal
       journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry,
       // Medications (regimen)
-      medications, addMedication, updateMedication, deleteMedication, linkShotsToMedication,
+      medications, addMedication, updateMedication, deleteMedication, linkShotsToMedication, stopMedication,
       // Canonical measurements + one-time unit check
       weightUnit: wDisplayUnit, heightCm: heightCmOf(profile), getWeightKg, unitCheck,
       convertAssumedKg, undoUnitConversion, keepWeightsAsLogged,

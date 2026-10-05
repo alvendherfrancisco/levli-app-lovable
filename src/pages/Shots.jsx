@@ -7,7 +7,7 @@ import ShotCard from "@/components/shots/ShotCard";
 import DoseBadge from "@/components/DoseBadge";
 import AddShotModal from "@/components/modals/AddShotModal";
 import { useAppState } from "@/lib/AppState";
-import { addDaysToShotDate, daysAgoLabel } from "@/lib/dateUtils";
+import { addDaysToShotDate, daysAgoLabel, daysUntilShotDate, formatDayKeyShort } from "@/lib/dateUtils";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import { effectiveDaysBetween } from "@/lib/medicationConfig";
 import { calcAdherence } from "@/lib/adherence";
@@ -15,7 +15,7 @@ import { calcAdherence } from "@/lib/adherence";
 export default function Shots() {
   const [showShot, setShowShot] = useState(false);
   const [editingShot, setEditingShot] = useState(null);
-  const { shots, shotsLoading, profile } = useAppState();
+  const { shots, shotsLoading, profile, medications } = useAppState();
   const { isPremium, openPaywall } = useSubscription();
   const navigate = useNavigate();
 
@@ -27,9 +27,23 @@ export default function Shots() {
   const daysBetween = effectiveDaysBetween(profile, last?.medication);
   const nextDate = last ? addDaysToShotDate(last.date, daysBetween) : null;
 
-  // Adherence for the most recent medication over the last 90 days
+  // Adherence for the most recent medication: doses logged over doses scheduled
+  // inside the window, which ends on the day the medication was marked stopped.
   const lastMed = last?.medication;
-  const adherence = lastMed ? calcAdherence(shots, lastMed, 90) : { logged: 0, scheduled: 0, adherencePct: null };
+  const lastRegimen = medications.find((m) => m.medication_name === lastMed) || null;
+  const adherence = lastMed
+    ? calcAdherence(shots, lastMed, 90, {
+        startDate: lastRegimen?.start_date || "",
+        stoppedDate: lastRegimen?.discontinued_date || "",
+      })
+    : { logged: 0, scheduled: 0, adherencePct: null, startDate: null, endDate: null };
+  const adherenceRange = adherence.startDate && adherence.endDate
+    ? `${formatDayKeyShort(adherence.startDate)} – ${formatDayKeyShort(adherence.endDate)}`
+    : "";
+
+  // A due date that has already gone is never shown as the upcoming shot.
+  const nextDaysLeft = nextDate ? daysUntilShotDate(nextDate) : null;
+  const nextOverdue = nextDaysLeft != null && nextDaysLeft < 0;
 
   const openEdit = (shot) => { setEditingShot(shot); setShowShot(true); };
   const openNew = () => { setEditingShot(null); setShowShot(true); };
@@ -75,9 +89,14 @@ export default function Shots() {
               <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center flex-shrink-0">
                 <CalendarCheck size={20} strokeWidth={2} className="text-teal-600 dark:text-teal-400" />
               </div>
-              <span className="text-xs text-gray-400 dark:text-gray-500">Next Shot</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">{nextOverdue ? "Dose was due" : "Next Shot"}</span>
             </div>
-            {nextDate ? <p className="text-lg font-bold text-gray-900 dark:text-white">{nextDate}</p> : <p className="text-sm text-gray-400 dark:text-gray-500">—</p>}
+            {nextDate ? (
+              <>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">{nextDate}</p>
+                {nextOverdue && <p className="text-xs text-gray-400 dark:text-gray-500">{Math.abs(nextDaysLeft)} days ago</p>}
+              </>
+            ) : <p className="text-sm text-gray-400 dark:text-gray-500">—</p>}
           </div>
           {adherence.adherencePct != null && (
             <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-800">
@@ -85,10 +104,11 @@ export default function Shots() {
                 <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center flex-shrink-0">
                   <ClipboardCheck size={20} strokeWidth={2} className="text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <span className="text-xs text-gray-400 dark:text-gray-500">90d Adherence</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">Adherence</span>
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{adherence.adherencePct}%</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">{adherence.logged}/{adherence.scheduled} doses</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{adherence.logged} of {adherence.scheduled} doses</p>
+              {adherenceRange && <p className="text-[11px] text-gray-400 dark:text-gray-500">{adherenceRange}</p>}
             </div>
           )}
         </div>

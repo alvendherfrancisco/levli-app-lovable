@@ -41,7 +41,7 @@ export default function Home() {
         <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
         <FirstRunCard onAddShot={() => { setShotPreset(null); setShowShot(true); }} />
         <RepeatDoseCard onEdit={(preset) => { setShotPreset(preset); setShowShot(true); }} />
-        <NextShotCard />
+        <NextShotCard onLogPastShot={(preset) => { setShotPreset(preset); setShowShot(true); }} />
         <MetricsGrid dayKey={dk} />
 
         {/* Side Effects card */}

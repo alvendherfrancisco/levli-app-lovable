@@ -120,7 +120,7 @@ export default async function(req) {
     }
 
     // Batch-fetch all data upfront (service role bypasses RLS)
-    const [allProfiles, allSubs, allLogs, allShots, allAdverse, allMetrics, allJournal, allInventory, allSchedules] = await Promise.all([
+    const [allProfiles, allSubs, allLogs, allShots, allAdverse, allMetrics, allJournal, allInventory, allSchedules, allMeds] = await Promise.all([
       base44.asServiceRole.entities.UserProfile.list("", 1000),
       base44.asServiceRole.entities.PushSubscription.list(),
       base44.asServiceRole.entities.ReminderLog.list(),
@@ -130,6 +130,7 @@ export default async function(req) {
       base44.asServiceRole.entities.JournalEntry.list("", 1000),
       base44.asServiceRole.entities.Inventory.list("", 1000),
       base44.asServiceRole.entities.RepeatSchedule.list("", 1000),
+      base44.asServiceRole.entities.Medication.list("", 1000),
     ]);
 
     const profiles = allProfiles.filter((p) => p.notifications_enabled === true);
@@ -147,6 +148,7 @@ export default async function(req) {
     const journalByUser = groupBy(allJournal);
     const inventoryByUser = groupBy(allInventory);
     const schedulesByUser = groupBy(allSchedules);
+    const medsByUser = groupBy(allMeds);
 
     // Dedup: exact key match (user|instanceKey|reminder_type)
     const loggedKeys = new Set(allLogs.map((l) => `${l.created_by_id}|${l.shot_date_key}|${l.reminder_type}`));
@@ -185,6 +187,14 @@ export default async function(req) {
           return db.getTime() - da.getTime();
         });
 
+        // A medication the user has marked as stopped is never reminded about.
+        const stoppedMeds = new Set(
+          (medsByUser[userId] || [])
+            .filter((m) => m.status === 'discontinued' || m.status === 'switched')
+            .map((m) => m.medication_name)
+        );
+        const isStopped = (name) => !!name && stoppedMeds.has(name);
+
         // Track which notifications were sent this run (for staggering)
         const sentThisRun = new Set<string>();
 
@@ -192,7 +202,8 @@ export default async function(req) {
         if (profile.notif_shot_reminders !== false) {
           // When a repeat schedule is running it drives the reminder, and the
           // push deep-links straight to the one-tap confirm card on Home.
-          const activeSchedules = (schedulesByUser[userId] || []).filter((s) => s.status === 'active');
+          const activeSchedules = (schedulesByUser[userId] || [])
+            .filter((s) => s.status === 'active' && !isStopped(s.medication));
           let dueSchedule: any = null;
           let duePending: { dayKey: string; daysLate: number } | null = null;
           for (const sched of activeSchedules) {
@@ -220,7 +231,7 @@ export default async function(req) {
               sent += result.sent; failed += result.failed;
               sentThisRun.add('shot');
             }
-          } else if (userShots.length > 0) {
+          } else if (userShots.length > 0 && !isStopped(userShots[0].medication)) {
             const lastShot = userShots[0];
             const lastDate = parseShotDate(lastShot.date);
             if (lastDate) {

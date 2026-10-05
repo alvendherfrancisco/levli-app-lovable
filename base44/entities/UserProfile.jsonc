@@ -103,6 +103,14 @@
       "type": "string",
       "description": "User's first name for personalized notification copy"
     },
+    "prescriber_name": {
+      "type": "string",
+      "description": "Prescriber's name, saved in Profile"
+    },
+    "prescriber_contact": {
+      "type": "string",
+      "description": "Prescriber's phone number or email, saved in Profile. Opened by the Contact prescriber button."
+    },
     "notif_shot_reminders": {
       "type": "boolean",
       "default": true,

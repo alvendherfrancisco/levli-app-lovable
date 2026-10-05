@@ -58,6 +58,13 @@ export function todayKey() {
   return toDayKey(new Date());
 }
 
+/** "YYYY-MM-DD" → "Aug 1" — compact captions such as a date range. */
+export function formatDayKeyShort(key) {
+  if (!key) return "";
+  const d = fromDayKey(key);
+  return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
 /**
  * Days between two "Jun 29, 2026" date strings — calendar-day count, DST-safe.
  * Uses Date-only subtraction then rounds. Because both endpoints are pinned

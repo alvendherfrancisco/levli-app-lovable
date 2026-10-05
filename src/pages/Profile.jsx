@@ -318,6 +318,29 @@ export default function Profile() {
           )}
         </div>
 
+        {/* Prescriber contact */}
+        <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+              <IonIcon name="person" size={18} className="text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h3 className="font-bold text-gray-900 dark:text-white text-lg">Prescriber</h3>
+          </div>
+          <div className="border-b-2 border-indigo-500 w-10 mb-4" />
+          <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2">Name (optional)</label>
+          <input type="text" value={local.prescriber_name || ""} placeholder="e.g. Dr Patel"
+          onChange={(e) => setLocal({ ...local, prescriber_name: e.target.value })}
+          className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl px-3 py-2.5 text-base outline-none focus:border-indigo-300 mb-3" />
+          <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2">Phone or email (optional)</label>
+          <div className="flex items-center gap-2">
+            <input type="text" value={local.prescriber_contact || ""} placeholder="Phone or email"
+            onChange={(e) => setLocal({ ...local, prescriber_contact: e.target.value })}
+            className="flex-1 min-w-0 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl px-3 py-2.5 text-base outline-none focus:border-indigo-300" />
+            <SaveBtn fields={["prescriber_name", "prescriber_contact"]} />
+          </div>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Used by the "Contact prescriber" button when a dose is overdue or you've had a longer break.</p>
+        </div>
+
         {/* Measurement Units */}
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2 mb-1">

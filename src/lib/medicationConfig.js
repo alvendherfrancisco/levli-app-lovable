@@ -42,8 +42,11 @@ export const MEDICATION_CONFIG = [
     indicationNote:
       "Type 2 diabetes. Also lowers the risk of major heart events and of worsening kidney disease in adults with type 2 diabetes and established heart or kidney disease.",
     missedDoseRule:
-      "Take a missed dose within 2 days (48 hours) of when it was due if you can. If more than 2 days have passed, skip it and take the next dose on your usual day. Never take two doses less than 2 days apart.",
-    retitrationDays: 2,
+      "Take a missed dose as soon as possible within 5 days after the missed dose. If more than 5 days have passed, contact your prescriber before continuing — the label says the missed dose is not taken and the next dose is taken on the usual day. Never take two doses less than 2 days (48 hours) apart.",
+    retitrationDays: 5,
+    missedDoseWindowDays: 5,
+    missedDoseLabelQuote:
+      "If a dose is missed, administer OZEMPIC as soon as possible within 5 days after the missed dose.",
     source: "https://www.novo-pi.com/ozempic.pdf",
     lastReviewed: "2026-10-05",
     verified: true,
@@ -68,13 +71,16 @@ export const MEDICATION_CONFIG = [
     indicationNote:
       "Chronic weight management in adults and in adolescents aged 12 and older with obesity or with overweight plus a weight-related condition. Also lowers major heart-event risk in adults with established heart disease, and treats noncirrhotic MASH with moderate to advanced liver fibrosis.",
     missedDoseRule:
-      "If your next scheduled dose is more than 2 days away, take the missed dose as soon as you remember. If it is less than 2 days away, skip it and take the next dose on your usual day. At least 2 days (48 hours) must separate two doses.",
-    retitrationDays: 2,
+      "If the next scheduled dose is more than 2 days away (48 hours), take the missed dose as soon as possible. If the next dose is less than 2 days away, the label says the missed dose is not taken and the next dose is taken on the usual day. At least 2 days (48 hours) must separate two doses. If 2 or more weeks (14 days) have passed since the last dose, contact your prescriber about how to restart.",
+    retitrationDays: 14,
+    missedDoseWindowDays: 4,
+    missedDoseLabelQuote:
+      "If you miss a dose of WEGOVY and the next scheduled dose is more than 2 days away (48 hours), take the missed dose as soon as possible.",
     source: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2025/215256s024lbl.pdf",
     lastReviewed: "2026-10-05",
     verified: true,
     verifiedNote:
-      "Wegovy is also sold as an oral tablet (oral semaglutide 25 mg once daily). That form is not in this config, so it cannot be logged as Wegovy® here.",
+      "Wegovy is also sold as an oral tablet (oral semaglutide 25 mg once daily). That form is not in this config, so it cannot be logged as Wegovy® here. The label states the missed-dose rule as a condition on the next dose rather than a plain day count; the 4-day window is derived from it and the card shows the label's own wording.",
     exposureEligible: true,
   },
   {
@@ -98,6 +104,9 @@ export const MEDICATION_CONFIG = [
     missedDoseRule:
       "Take a missed dose within 4 days (96 hours) of when it was due if you can. If more than 4 days have passed, skip it and take the next dose on your usual day. At least 3 days (72 hours) must separate two doses.",
     retitrationDays: 4,
+    missedDoseWindowDays: 4,
+    missedDoseLabelQuote:
+      "If a dose is missed, administer MOUNJARO as soon as possible within 4 days (96 hours) after the missed dose.",
     source: "https://pi.lilly.com/us/mounjaro-uspi.pdf",
     lastReviewed: "2026-10-05",
     verified: true,
@@ -125,6 +134,9 @@ export const MEDICATION_CONFIG = [
     missedDoseRule:
       "Take a missed dose within 4 days (96 hours) of when it was due if you can. If more than 4 days have passed, skip it and take the next dose on your usual day. At least 3 days (72 hours) must separate two doses.",
     retitrationDays: 4,
+    missedDoseWindowDays: 4,
+    missedDoseLabelQuote:
+      "If a dose is missed, administer ZEPBOUND as soon as possible within 4 days (96 hours) after the missed dose.",
     source: "https://pi.lilly.com/us/zepbound-uspi.pdf",
     lastReviewed: "2026-10-05",
     verified: true,
@@ -149,6 +161,9 @@ export const MEDICATION_CONFIG = [
     missedDoseRule:
       "Do not take two doses on the same day. If you miss a dose, take your next dose at the usual time the following day, and speak to your prescriber before restarting if you have missed several days in a row.",
     retitrationDays: null,
+    missedDoseWindowDays: 0,
+    missedDoseLabelQuote:
+      "If a dose is missed, resume the once-daily regimen at the next scheduled dose.",
     source: "https://www.novo-pi.com/victoza.pdf",
     lastReviewed: "2026-10-05",
     verified: true,
@@ -176,6 +191,9 @@ export const MEDICATION_CONFIG = [
     missedDoseRule:
       "If you miss a daily dose, skip it and take the next dose at the usual time the following day. Never take two doses in one day. If Saxenda has not been taken for 3 days or more, contact your prescriber — the label says to restart at 0.6 mg and build up again.",
     retitrationDays: 3,
+    missedDoseWindowDays: 0,
+    missedDoseLabelQuote:
+      "If a dose is missed, resume the once-daily regimen as prescribed with the next scheduled dose.",
     source: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2023/206321s016lbl.pdf",
     lastReviewed: "2026-10-05",
     verified: true,
@@ -201,6 +219,9 @@ export const MEDICATION_CONFIG = [
     missedDoseRule:
       "If you miss a daily tablet, skip it and take the next tablet at the usual time the next morning. Never take two tablets to catch up.",
     retitrationDays: null,
+    missedDoseWindowDays: 0,
+    missedDoseLabelQuote:
+      "If a dose is missed, the missed dose should be skipped and the next dose should be taken on the next day.",
     source: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2024/213051s018lbl.pdf",
     lastReviewed: "2026-10-05",
     verified: true,
@@ -223,8 +244,11 @@ export const MEDICATION_CONFIG = [
     maxDoseMg: 4.5,
     indicationNote: "Type 2 diabetes in adults and in children aged 10 and older.",
     missedDoseRule:
-      "Take a missed dose within 3 days of when it was due if you can. If more than 3 days have passed, skip it and take the next dose on your usual day.",
+      "Take the missed dose as soon as possible when there are at least 3 days (72 hours) until the next scheduled dose. If the next dose is due in 1 or 2 days, the label says the missed dose is not taken and the next dose is taken on its usual day.",
     retitrationDays: 3,
+    missedDoseWindowDays: 3,
+    missedDoseLabelQuote:
+      "If a dose is missed, administer the missed dose as soon as possible if there are at least 3 days (72 hours) until the next scheduled dose.",
     source: "https://pi.lilly.com/us/trulicity-uspi.pdf",
     lastReviewed: "2026-10-05",
     verified: true,
@@ -247,6 +271,8 @@ export const MEDICATION_CONFIG = [
     missedDoseRule:
       "Follow the instructions your prescriber or pharmacy gave you for a missed dose. Levli cannot check these products against a label.",
     retitrationDays: null,
+    missedDoseWindowDays: null,
+    missedDoseLabelQuote: "",
     source: "",
     lastReviewed: "2026-10-05",
     verified: false,
@@ -269,6 +295,8 @@ export const MEDICATION_CONFIG = [
     missedDoseRule:
       "Follow the instructions your prescriber or pharmacy gave you for a missed dose. Levli cannot check these products against a label.",
     retitrationDays: null,
+    missedDoseWindowDays: null,
+    missedDoseLabelQuote: "",
     source: "",
     lastReviewed: "2026-10-05",
     verified: false,
@@ -288,6 +316,8 @@ export const MEDICATION_CONFIG = [
       "A medication you name yourself, with a dose your prescriber directed. Levli holds no information about it.",
     missedDoseRule: "Follow your prescriber's instructions for a missed dose.",
     retitrationDays: null,
+    missedDoseWindowDays: null,
+    missedDoseLabelQuote: "",
     source: "",
     lastReviewed: "2026-10-05",
     verified: false,
@@ -444,6 +474,26 @@ export function effectiveDaysBetween(profile, medication) {
 /** What the label says about a missed dose. */
 export function getMissedDoseRule(name) {
   return getMedicationConfig(name)?.missedDoseRule || "";
+}
+
+/**
+ * Days after the due date that the label still allows the missed dose to be
+ * taken, or null when the product has no label to check against. 0 means the
+ * label never has a dose taken late (a daily product resumes with the next one).
+ */
+export function getMissedDoseWindowDays(name) {
+  const entry = getMedicationConfig(name);
+  return entry ? (entry.missedDoseWindowDays ?? null) : null;
+}
+
+/** The label's own sentence about a missed dose, for citation. */
+export function getMissedDoseLabelQuote(name) {
+  return getMedicationConfig(name)?.missedDoseLabelQuote || "";
+}
+
+/** Link to the prescribing information this record was checked against. */
+export function getMedicationLabelSource(name) {
+  return getMedicationConfig(name)?.source || "";
 }
 
 /** Days after which the label says to contact the prescriber, or null. */
