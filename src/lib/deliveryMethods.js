@@ -72,3 +72,23 @@ export function getDeliveryMethods(medication, route) {
 export function getSelectableRoutes(medication) {
   return getMedicationRoutes(medication).filter((r) => !RETIRED_ROUTES.includes(r));
 }
+
+// Shorter device wording for the optional "Device type" field on a shot log.
+// Only the label shown in the picker changes — the value stored stays the one
+// every other screen (History, Insights, the report) already understands.
+const SHOT_DEVICE_LABELS = {
+  single_dose_pen: "Pen",
+  multidose_pen: "Multidose pen",
+  prefilled_syringe: "Prefilled syringe",
+  vial_syringe: "Vial and syringe",
+  patch: "Patch",
+  other: "Other",
+};
+
+/** Device choices offered on a shot log for a medication on a given route. */
+export function getShotDeviceOptions(medication, route) {
+  return getDeliveryMethods(medication, route).map((m) => ({
+    value: m.value,
+    label: SHOT_DEVICE_LABELS[m.value] || m.label,
+  }));
+}

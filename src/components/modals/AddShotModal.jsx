@@ -7,16 +7,17 @@ import {
 } from "@/lib/medicationConfig";
 import { useAppState } from "@/lib/AppState";
 import { MEDICATIONS, DRUG_CLASS, isInvestigational, getDoseMax, getMolecularClass, isCompoundedGeneric } from "@/lib/medicationData";
-import { getDeliveryMethods, getDeliveryMethodLabel, RETIRED_DELIVERY_METHODS } from "@/lib/deliveryMethods";
+import { getShotDeviceOptions, getDeliveryMethodLabel, RETIRED_DELIVERY_METHODS } from "@/lib/deliveryMethods";
 import { getCapabilityProfile, getCapabilityWarning, getMolecularClassLabel } from "@/lib/capabilityProfile";
 import { detectDuplicateActiveIngredient } from "@/lib/drugSafety";
 import { convertDose, doseUnitLabel } from "@/lib/units";
 import { parseShotDate, formatShotDate, calendarDaysBetween } from "@/lib/dateUtils";
 import {
-  INJECTABLE_ROUTES, COMPOUNDED_DEVICES, getRouteChoices,
-  getDefaultRoute, isBrandPen, activeRegimensFor, getDoseDefault, getSmartShotDefaults,
+  INJECTABLE_ROUTES, ROUTE_CHOICES, getRouteChoices, getDefaultRoute,
+  getDefaultDeviceType, activeRegimensFor, getDoseDefault, getSmartShotDefaults,
 } from "@/lib/shotDefaults";
 import { addDaysToKey } from "@/lib/repeatSchedule";
+import ShotRouteDeviceFields from "@/components/modals/ShotRouteDeviceFields";
 import RepeatOptionsField from "@/components/modals/RepeatOptionsField";
 import DoseChips from "@/components/modals/DoseChips";
 import { getDoseChips, withCustomDose } from "@/lib/doseOptions";

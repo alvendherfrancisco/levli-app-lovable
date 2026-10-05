@@ -29,6 +29,14 @@ export function getDefaultRoute(medication) {
   return PREFERRED_ROUTE[medication] || getMedicationRoutes(medication)[0] || "subcutaneous";
 }
 
+// The device a product normally comes in. Only a compounded injectable is
+// pre-selected (its vial is the usual form); everything else starts empty.
+export function getDefaultDeviceType(medication, route) {
+  const r = route || getDefaultRoute(medication);
+  if (isCompoundedGeneric(medication) && INJECTABLE_ROUTES.includes(r)) return "vial_syringe";
+  return "";
+}
+
 // The three routes offered for compounded / generic products.
 export const ROUTE_CHOICES = [
   { value: "subcutaneous", label: "Subcutaneous injection" },
