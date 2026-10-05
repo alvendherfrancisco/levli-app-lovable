@@ -107,6 +107,13 @@ export default function MyMedications() {
                       {m.status && (
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap flex-shrink-0 ${statusColors[m.status] || statusColors.active}`}>{m.status}</span>
                       )}
+                      {/* Saved from a shot log, so its schedule is still to come:
+                          the card opens the form where it can be added. */}
+                      {m.needs_details && (
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap flex-shrink-0 bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400">
+                          Needs details
+                        </span>
+                      )}
                     </div>
                     <div className="space-y-1 text-sm text-gray-500 dark:text-[#9A9DAE]">
                       {m.prescribed_dose != null && (

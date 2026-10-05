@@ -205,6 +205,9 @@ export default function MedicationModal({ open, onClose, editing }) {
       status,
       notes,
       regimen_source: "user-entered",
+      // Filling in the form is what completes a regimen that was created from a
+      // shot log, so its "needs details" mark is cleared here.
+      needs_details: false,
     };
     // A regimen marked stopped ends today, so its schedule pauses with it.
     if (status === "discontinued" && !editing?.discontinued_date) payload.discontinued_date = todayInput();

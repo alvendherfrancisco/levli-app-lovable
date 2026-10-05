@@ -59,8 +59,13 @@
     },
     "regimen_source": {
       "type": "string",
-      "description": "Source of regimen data (user-entered, clinician-entered, imported, shot-history)",
+      "description": "Source of regimen data (user-entered, clinician-entered, imported, shot-history, shot-log)",
       "default": "user-entered"
+    },
+    "needs_details": {
+      "type": "boolean",
+      "default": false,
+      "description": "Set when the regimen was created from a saved shot log rather than entered by the user, so its schedule and reminders still need adding. Cleared when the medication is saved from the Add / Edit Medication form."
     },
     "status": {
       "type": "string",
