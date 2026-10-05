@@ -1,25 +1,11 @@
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
+/** Thin helper for screens that prefer one call for either kind of message. */
 export function useToast() {
   const showToast = ({ type = "success", message = "" }) => {
-    const defaultMessages = {
-      success: "Action completed successfully!",
-      error: "Something went wrong. Please try again.",
-    };
-
-    const msg = message || defaultMessages[type];
-
-    if (type === "success") {
-      toast.success(msg, {
-        duration: 4000,
-        position: "top-center",
-      });
-    } else if (type === "error") {
-      toast.error(msg, {
-        duration: 4000,
-        position: "top-center",
-      });
-    }
+    const msg = message || (type === "error" ? "Couldn't save. Please try again." : "Action completed");
+    if (type === "error") toast.error(msg);
+    else toast.success(msg);
   };
 
   return { showToast };
