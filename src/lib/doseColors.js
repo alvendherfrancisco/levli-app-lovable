@@ -1,19 +1,74 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Dose colours — ONE central config.
 //
-// A neutral sequential palette: light indigo at the lowest dose through to a
-// burnt orange at the highest. No red is used for a dose, because red reads as
-// "error" rather than "lower number". Colour is never the only signal — every
-// place a dose colour is shown also shows the dose as text (chips, badges,
-// chart legends), and getDoseLabel() supplies that text.
+// A dose chip, badge, dot or chart marker carries the colour the manufacturer
+// itself uses for that strength (see OFFICIAL_DOSE_COLORS below), so what the
+// person sees in Levli matches the pen, tablet carton or box in their hand.
 //
-// The dose step comes from the central medications config, so the colour ladder
-// always matches the label's strength list.
+// Where a manufacturer publishes no per-strength colour — or the dose is not one
+// of the product's labelled strengths — the neutral fallback ladder is used.
+//
+// Colour is never the only signal: every place a dose colour is shown also shows
+// the dose as text (chips, badges, chart legends), and getDoseLabel() supplies
+// that text. Several official colours are red or magenta by the manufacturer's
+// own design (Ozempic 0.5 mg, Rybelsus 7 mg, Wegovy 0.5 mg); those are
+// reproduced faithfully rather than reinterpreted as an error state.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getAllowedDoses } from "@/lib/medicationConfig";
+import { getAllowedDoses, getMedicationConfig } from "@/lib/medicationConfig";
 
-// Low → high ladder, step 1 first. Neutral and warm, never red.
+// ── Official manufacturer colours ─────────────────────────────────────────────
+// Keyed by the config id (src/lib/medicationConfig.js) and the labelled strength.
+// Every set was read from the manufacturer's own material — the pen itself, its
+// carton, or Novo Nordisk's own strength chart. A product whose maker publishes
+// no per-strength colour is deliberately absent, so it falls to the ladder
+// rather than wearing a colour nobody printed.
+export const OFFICIAL_DOSE_COLORS = {
+  // Novo Nordisk Ozempic — one pen per strength, colour on the pen label.
+  ozempic: {
+    0.25: "#00857D",
+    0.5: "#E11928",
+    1: "#009775",
+    2: "#E3B03C",
+  },
+  // Novo Nordisk Wegovy single-dose pen — pen label and carton colour.
+  wegovy: {
+    0.25: "#46B1A8",
+    0.5: "#BC3879",
+    1: "#A56831",
+    1.7: "#006F95",
+    2.4: "#2B383D",
+  },
+  // Lilly Mounjaro KwikPen — cap and label colour per strength.
+  mounjaro: {
+    2.5: "#75787B",
+    5: "#592C7F",
+    7.5: "#00857D",
+    10: "#D45780",
+    12.5: "#0069A0",
+    15: "#F58233",
+  },
+  // Novo Nordisk Rybelsus — the carton's colour band per strength.
+  rybelsus: {
+    3: "#009639",
+    7: "#E32D1C",
+    14: "#0082CA",
+  },
+  // Novo Nordisk Saxenda — one pen delivers every strength, so its single label
+  // and dose-knob accent colour identifies the product, not a strength.
+  saxenda: {
+    0.6: "#4A37A5",
+    1.2: "#4A37A5",
+    1.8: "#4A37A5",
+    2.4: "#4A37A5",
+    3: "#4A37A5",
+  },
+};
+
+// The fallback for a product with no published per-strength colour (Zepbound,
+// Victoza, Trulicity, the compounded products) and for a dose that isn't one of
+// a product's labelled strengths. Low → high ladder, step 1 first: light indigo
+// through to burnt orange, stepped against the product's own strength list.
 export const DOSE_LADDER = [
   "#818CF8", // step 1 — light indigo
   "#6366F1", // step 2 — indigo
@@ -37,8 +92,21 @@ export function getDoseStep(medication, dose) {
   return index === -1 ? null : index + 1;
 }
 
-/** The colour that represents this dose. */
+/** The manufacturer's own colour for this labelled strength, or null. */
+export function getOfficialDoseColor(medication, dose) {
+  const id = getMedicationConfig(medication)?.id;
+  const byDose = id ? OFFICIAL_DOSE_COLORS[id] : null;
+  const value = Number(dose);
+  if (!byDose || !Number.isFinite(value)) return null;
+  const key = Object.keys(byDose).find((k) => Number(k) === value);
+  return key ? byDose[key] : null;
+}
+
+/** The colour that represents this dose: the label's own colour where the
+    manufacturer publishes one, otherwise the fallback ladder. */
 export function getDoseColor(medication, dose) {
+  const official = getOfficialDoseColor(medication, dose);
+  if (official) return official;
   const step = getDoseStep(medication, dose);
   return (step && DOSE_LADDER[step - 1]) || CUSTOM_DOSE_COLOR;
 }
