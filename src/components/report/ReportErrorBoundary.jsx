@@ -7,7 +7,7 @@ function ReportErrorFallback() {
   return (
     <div className="bg-gray-50 dark:bg-gray-950 min-h-screen w-full flex items-center justify-center px-6">
       <div className="max-w-sm text-center">
-        <div className="w-14 h-14 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-4">
+        <div className="w-14 h-14 rounded-full bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center mx-auto mb-4">
           <AlertTriangle size={26} className="text-orange-500" />
         </div>
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Something went wrong on this page</h2>

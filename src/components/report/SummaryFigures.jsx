@@ -10,14 +10,12 @@ export default function SummaryFigures({ figures }) {
   const t = useReportTokens();
   if (!figures.length) return null;
 
+  // Two figures per row on a phone, and as many per row as there are figures
+  // from 640px up (any beyond four wrap onto the next row).
+  const columns = figures.length <= 2 ? "sm:grid-cols-2" : figures.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4";
+
   return (
-    <div
-      className="rounded-xl px-3 py-3 grid gap-x-4 gap-y-3"
-      style={{
-        background: t.tableHeadBg,
-        gridTemplateColumns: `repeat(${Math.min(figures.length, 4)}, minmax(0, 1fr))`,
-      }}
-    >
+    <div className={`rounded-xl px-3 py-3 grid gap-x-4 gap-y-3 grid-cols-2 ${columns}`} style={{ background: t.tableHeadBg }}>
       {figures.map((figure) => (
         <div key={figure.label} className="min-w-0">
           <span className="block text-xs leading-snug break-words" style={{ color: t.muted }}>

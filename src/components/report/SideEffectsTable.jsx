@@ -1,5 +1,9 @@
 import React from "react";
 import { useReportTokens } from "@/components/report/ReportTheme";
+import ReportTable from "@/components/report/ReportTable";
+
+/** "mild" → "Mild", for the severity column and its phone row. */
+const capitalise = (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1) : "");
 
 /**
  * Side effects — newest first, with the most recent dose logged before each
@@ -13,32 +17,13 @@ export default function SideEffectsTable({ rows }) {
     return <p className="text-sm" style={{ color: t.muted }}>No side effects logged in this period.</p>;
   }
 
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr style={{ background: t.tableHeadBg, color: t.muted }}>
-            <th className="text-left p-2 font-medium whitespace-nowrap">Date</th>
-            <th className="text-left p-2 font-medium">Side effect</th>
-            <th className="text-left p-2 font-medium">Severity</th>
-            <th className="text-left p-2 font-medium">Duration / notes</th>
-            <th className="text-left p-2 font-medium">Previous dose</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t" style={{ borderColor: t.divider, color: t.ink }}>
-              <td className="p-2 whitespace-nowrap">{row.dayLabel}</td>
-              <td className="p-2">{row.symptom}</td>
-              <td className="p-2 capitalize">{row.severity}</td>
-              <td className="p-2">{row.detail}</td>
-              <td className="p-2 whitespace-nowrap">
-                {row.prior ? `${row.prior.label} on ${row.prior.dayLabel}` : "None logged"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  const columns = [
+    { label: "Date", text: (row) => row.dayLabel, lead: true },
+    { label: "Severity", text: (row) => capitalise(row.severity), strong: true },
+    { label: "Side effect", text: (row) => row.symptom },
+    { label: "Duration / notes", text: (row) => row.detail },
+    { label: "Previous dose", text: (row) => (row.prior ? `${row.prior.label} on ${row.prior.dayLabel}` : "None logged") },
+  ];
+
+  return <ReportTable columns={columns} rows={rows} rowKey={(row) => row.id} />;
 }

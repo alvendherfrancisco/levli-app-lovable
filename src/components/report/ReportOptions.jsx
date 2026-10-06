@@ -55,7 +55,9 @@ export default function ReportOptions({ options, onChange, medications, availabl
 
       <div>
         <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Weight unit</p>
-        <div className="flex gap-2">
+        {/* The note wraps below the chips on a narrow screen instead of being
+            squeezed onto their line. */}
+        <div className="flex flex-wrap items-center gap-2">
           {["lb", "kg"].map((unitOption) => (
             <button key={unitOption} type="button" onClick={() => onChange({ weightUnit: unitOption })} className={chip(options.weightUnit === unitOption)}>
               {unitOption}

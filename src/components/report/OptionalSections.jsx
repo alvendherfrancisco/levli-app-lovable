@@ -1,6 +1,7 @@
 import React from "react";
 import SafeImage from "@/components/SafeImage";
 import PaperPairs from "@/components/report/PaperPairs";
+import ReportTable from "@/components/report/ReportTable";
 import SectionBoundary from "@/components/report/SectionBoundary";
 import { useReportTokens } from "@/components/report/ReportTheme";
 
@@ -15,25 +16,6 @@ function Block({ title, children, t }) {
   );
 }
 
-function SmallTable({ head, rows, render, t }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr style={{ background: t.tableHeadBg, color: t.muted }}>
-            {head.map((h) => <th key={h} className="text-left p-2 font-medium">{h}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={i} className="border-t" style={{ borderColor: t.divider, color: t.ink }}>{render(row)}</tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 /** Optional sections — each one only renders when the range holds data for it. */
 export default function OptionalSections({ report }) {
   const t = useReportTokens();
@@ -45,17 +27,14 @@ export default function OptionalSections({ report }) {
     const data = optional.injectionSites;
     blocks.push(
       <Block key="sites" title="Injection sites and pain" t={t}>
-        <SmallTable
-          t={t}
-          head={["Site", "Doses", "% of doses"]}
+        <ReportTable
           rows={data.counts}
-          render={(row) => (
-            <>
-              <td className="p-2">{row.site}</td>
-              <td className="p-2">{row.count}</td>
-              <td className="p-2">{row.pct}%</td>
-            </>
-          )}
+          rowKey={(row, index) => `${row.site}-${index}`}
+          columns={[
+            { label: "Site", text: (row) => row.site, lead: true },
+            { label: "Doses", text: (row) => String(row.count), strong: true },
+            { label: "% of doses", text: (row) => `${row.pct}%` },
+          ]}
         />
         <p className="text-sm mt-2" style={{ color: t.muted }}>
           {data.sitesUsed} site{data.sitesUsed === 1 ? "" : "s"} used across {data.totalDosesWithSite} doses.
@@ -82,17 +61,14 @@ export default function OptionalSections({ report }) {
         ]} />
         {data.weekly.length > 0 && (
           <div className="mt-3">
-            <SmallTable
-              t={t}
-              head={["Week", "Days logged", "Average calories"]}
+            <ReportTable
               rows={data.weekly}
-              render={(row) => (
-                <>
-                  <td className="p-2">{row.label}</td>
-                  <td className="p-2">{row.days}</td>
-                  <td className="p-2">{row.value} kcal</td>
-                </>
-              )}
+              rowKey={(row, index) => `${row.label}-${index}`}
+              columns={[
+                { label: "Week", text: (row) => row.label, lead: true },
+                { label: "Days logged", text: (row) => String(row.days) },
+                { label: "Average calories", text: (row) => `${row.value} kcal`, strong: true },
+              ]}
             />
           </div>
         )}
@@ -109,17 +85,14 @@ export default function OptionalSections({ report }) {
         </p>
         {data.weekly.length > 0 && (
           <div className="mt-3">
-            <SmallTable
-              t={t}
-              head={["Week", "Days logged", "Average"]}
+            <ReportTable
               rows={data.weekly}
-              render={(row) => (
-                <>
-                  <td className="p-2">{row.label}</td>
-                  <td className="p-2">{row.days}</td>
-                  <td className="p-2">{row.value} {data.unit}</td>
-                </>
-              )}
+              rowKey={(row, index) => `${row.label}-${index}`}
+              columns={[
+                { label: "Week", text: (row) => row.label, lead: true },
+                { label: "Days logged", text: (row) => String(row.days) },
+                { label: "Average", text: (row) => `${row.value} ${data.unit}`, strong: true },
+              ]}
             />
           </div>
         )}
@@ -136,17 +109,14 @@ export default function OptionalSections({ report }) {
         </p>
         {data.weekly.length > 0 && (
           <div className="mt-3">
-            <SmallTable
-              t={t}
-              head={["Week", "Days logged", "Average"]}
+            <ReportTable
               rows={data.weekly}
-              render={(row) => (
-                <>
-                  <td className="p-2">{row.label}</td>
-                  <td className="p-2">{row.days}</td>
-                  <td className="p-2">{row.value} min</td>
-                </>
-              )}
+              rowKey={(row, index) => `${row.label}-${index}`}
+              columns={[
+                { label: "Week", text: (row) => row.label, lead: true },
+                { label: "Days logged", text: (row) => String(row.days) },
+                { label: "Average", text: (row) => `${row.value} min`, strong: true },
+              ]}
             />
           </div>
         )}

@@ -21,7 +21,7 @@ export default class SectionBoundary extends React.Component {
   render() {
     if (this.state.failed) {
       return (
-        <p className="text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+        <p className="text-xs text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 rounded-lg px-3 py-2">
           This section could not be loaded.
         </p>
       );

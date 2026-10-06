@@ -17,7 +17,7 @@ export default function PreviewModeToggle({ mode, onChange }) {
       role="group"
       aria-label="Preview style"
     >
-      <span className="pl-2 pr-1 text-sm text-gray-500 dark:text-gray-400">Preview:</span>
+      <span className="hidden sm:inline pl-2 pr-1 text-sm text-gray-500 dark:text-gray-400">Preview:</span>
       {options.map(({ id, label, Icon }) => {
         const active = mode === id;
         return (
@@ -32,8 +32,8 @@ export default function PreviewModeToggle({ mode, onChange }) {
                 : "text-gray-500 dark:text-gray-400"
             }`}
           >
-            <Icon size={15} aria-hidden="true" />
-            {label}
+            <Icon size={15} className="flex-shrink-0" aria-hidden="true" />
+            <span className="whitespace-nowrap">{label}</span>
           </button>
         );
       })}

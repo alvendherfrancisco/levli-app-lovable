@@ -42,7 +42,7 @@ export default function ReportPreview({ report }) {
 
   return (
     <div
-      className="report-page rounded-2xl border p-5 min-w-0 overflow-x-hidden break-words"
+      className="report-page rounded-2xl border p-4 sm:p-5 min-w-0 overflow-x-hidden break-words"
       style={{ background: t.cardBg, borderColor: t.cardBorder, color: t.ink }}
     >
       <h2 className="text-xl font-bold" style={{ color: t.ink }}>Levli Health Report</h2>
