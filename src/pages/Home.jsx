@@ -16,8 +16,12 @@ import LockedFeatureCard from "@/components/LockedFeatureCard";
 import FirstRunCard from "@/components/home/FirstRunCard";
 import UnitCheckPrompt from "@/components/home/UnitCheckPrompt";
 import { useSubscription } from "@/lib/SubscriptionContext";
+import { useMountProbe } from "@/lib/perfProbe";
 
 export default function Home() {
+  // Reports every mount of this screen when the probe is on (?perf=1). Home
+  // mounting more than once per login is exactly what should never happen.
+  useMountProbe("Home");
   const [showShot, setShowShot] = useState(false);
   const [shotPreset, setShotPreset] = useState(null);
   const [showSideEffects, setShowSideEffects] = useState(false);

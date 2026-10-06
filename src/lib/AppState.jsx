@@ -9,6 +9,8 @@ import {
 import { useAuth } from "@/lib/AuthContext";
 import { getIntervalDays, getMedicationConfig } from "@/lib/medicationConfig";
 import { scheduleMatchesMedication } from "@/lib/medicationLink";
+import { readCachedProfile, writeCachedProfile, clearCachedProfile } from "@/lib/profileCache";
+import { perfMark } from "@/lib/perfProbe";
 
 const AppStateContext = createContext(null);
 
@@ -37,6 +39,11 @@ const DEFAULT_PROFILE = {
   prescriber_contact: "",
 };
 
+// The profile this device last loaded. It answers "Home or onboarding?" and
+// "which units?" on the very first frame, so the first screen never waits on a
+// round-trip; the fresh copy replaces it a moment later.
+const CACHED_PROFILE = readCachedProfile();
+
 export function AppStateProvider({ children }) {
   const { isAuthenticated } = useAuth();
   const [shots, setShots] = useState([]);
@@ -44,12 +51,16 @@ export function AppStateProvider({ children }) {
   const [dayMetrics, setDayMetrics] = useState({}); // key: day_key → record
   const [progressPhotosList, setProgressPhotosList] = useState([]);
   const [journalEntries, setJournalEntries] = useState([]);
-  const [profile, setProfileState] = useState(DEFAULT_PROFILE);
-  const [profileId, setProfileId] = useState(null);
-  const [darkMode, setDarkModeState] = useState(false);
+  const [profile, setProfileState] = useState(() => (CACHED_PROFILE ? { ...DEFAULT_PROFILE, ...CACHED_PROFILE } : DEFAULT_PROFILE));
+  // Seeded from the cached profile, so a save made before the fresh copy lands
+  // updates the existing record instead of creating a second one.
+  const [profileId, setProfileId] = useState(() => CACHED_PROFILE?.id || null);
+  const [darkMode, setDarkModeState] = useState(() => CACHED_PROFILE?.dark_mode === true);
   // Dark mode follows the device setting until the user picks a theme.
-  const themeChosenRef = useRef(false);
-  const [onboardingCompleted, setOnboardingCompleted] = useState(null);
+  const themeChosenRef = useRef(CACHED_PROFILE?.dark_mode === true || CACHED_PROFILE?.dark_mode === false);
+  // null means "not known yet" — that is what holds the launch. A cached answer
+  // is known already, so the app opens on Home and syncs behind it.
+  const [onboardingCompleted, setOnboardingCompleted] = useState(() => (CACHED_PROFILE ? !!CACHED_PROFILE.onboarding_completed : null));
 
   // ── New entity states ─────────────────────────────────────────────────────
   const [medications, setMedications] = useState([]);
@@ -78,13 +89,21 @@ export function AppStateProvider({ children }) {
     return () => query.removeEventListener("change", apply);
   }, [profileId]);
 
+  // Keeps the cached profile in step, so the next launch opens on the right
+  // screen without waiting for the network.
+  useEffect(() => {
+    if (onboardingCompleted === null) return;
+    writeCachedProfile({ ...profile, onboarding_completed: onboardingCompleted });
+  }, [profile, onboardingCompleted]);
+
   // ── One-time migration onto canonical units (kg / cm) ───────────────────────
   // Legacy rows keep their weight, expressed in kilograms, and record the unit
   // they were entered in. Nothing is deleted and nothing is reinterpreted.
-  const migrateUnits = async () => {
+  // Reuses the profile and day-metric rows the startup fan-out has already read,
+  // so the one-time migration costs no round-trips of its own.
+  const migrateUnits = async (profileRow, metricRows) => {
     try {
-      const profiles = await base44.entities.UserProfile.list("", 1);
-      const p = profiles[0] || null;
+      const p = profileRow || null;
       if (!p || p.units_migrated_at) return;
       const prefUnit = p.weight_unit || "lb";
       const cm = parseFloat(p.height_cm) || heightCmOf(p) || null;
@@ -96,8 +115,7 @@ export function AppStateProvider({ children }) {
       });
       setProfileState((prev) => ({ ...prev, height_cm: cm, goal_weight_kg: goalKg, units_migrated_at: stamp }));
 
-      const metrics = await base44.entities.DayMetric.list("-day_key", 500);
-      const updates = metrics
+      const updates = (metricRows || [])
         .filter((m) => m.weight != null && (m.weight_unit || prefUnit) !== "kg")
         .map((row) => {
           const kg = kgOfEntry(row, prefUnit);
@@ -121,10 +139,12 @@ export function AppStateProvider({ children }) {
   useEffect(() => {
     if (!isAuthenticated) return;
     (async () => {
-      await migrateUnits();
+      // Everything independent starts in the same tick. Nothing waits for
+      // anything it does not need, and the first screen waits for none of it —
+      // the profile it opens from is already on the device.
+      const profilePromise = loadProfile();
+      const metricsPromise = loadDayMetrics();
       loadJournal();
-      loadProfile();
-      loadDayMetrics();
       loadProgressPhotos();
       loadAdverseEvents();
       loadInventory();
@@ -133,8 +153,17 @@ export function AppStateProvider({ children }) {
       loadRepeatSchedules();
       // Shots and medications are loaded together, so every log can be linked to
       // a regimen before the screens read them.
-      const [shotList, medList] = await Promise.all([loadShots(), loadMedications()]);
-      await linkOrphanShots(shotList, medList);
+      const dataPromise = Promise.all([loadShots(), loadMedications()])
+        .then(([shotList, medList]) => linkOrphanShots(shotList, medList))
+        .catch((err) => console.error("Startup data load failed:", err))
+        .then(() => perfMark("startup data loaded"));
+
+      const [profileRow, metricRows] = await Promise.all([profilePromise, metricsPromise]);
+      // The one-time unit migration writes to the profile and to the day
+      // metrics, so it starts once those reads are in — behind the first screen,
+      // never in front of it.
+      migrateUnits(profileRow, metricRows);
+      await dataPromise;
     })();
   }, [isAuthenticated]);
 
@@ -172,6 +201,7 @@ export function AppStateProvider({ children }) {
       setDarkModeState(prefersDark);
       setOnboardingCompleted(false);
     }
+    return data[0] || null;
   };
 
   const loadDayMetrics = async () => {
@@ -179,6 +209,7 @@ export function AppStateProvider({ children }) {
     const map = {};
     data.forEach((d) => { map[d.day_key] = d; });
     setDayMetrics(map);
+    return data;
   };
 
   const loadProgressPhotos = async () => {
@@ -715,6 +746,7 @@ export function AppStateProvider({ children }) {
     setRepeatSchedules([]);
     setProfileState(DEFAULT_PROFILE); setProfileId(null);
     setDarkModeState(false); setOnboardingCompleted(null);
+    clearCachedProfile();
   };
 
   const completeOnboarding = async () => {

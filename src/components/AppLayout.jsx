@@ -2,8 +2,11 @@ import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import BottomTabBar from "@/components/BottomTabBar";
 import PageBackground from "@/components/PageBackground";
+import { useMountProbe } from "@/lib/perfProbe";
 
 export default function AppLayout() {
+  // Counts mounts of the signed-in shell when the probe is on (?perf=1).
+  useMountProbe("signed-in shell");
   const location = useLocation();
   const showGradient = location.pathname !== "/profile";
   return (

@@ -1,14 +1,15 @@
+import { lazy, Suspense, useEffect } from 'react';
 import ToastHost from "@/components/ToastHost";
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ReportErrorBoundary from '@/components/report/ReportErrorBoundary';
 import SplashGate from '@/components/splash/SplashGate';
+import { perfMark, useMountProbe } from '@/lib/perfProbe';
 
 import { AppStateProvider, useAppState } from '@/lib/AppState';
 import { SubscriptionProvider } from '@/lib/SubscriptionContext';
@@ -24,12 +25,10 @@ import Onboarding from '@/pages/Onboarding';
 import Home from '@/pages/Home';
 import Shots from '@/pages/Shots';
 import History from '@/pages/History';
-import Insights from '@/pages/Insights';
 import Journal from '@/pages/Journal';
 import More from '@/pages/More';
 import Profile from '@/pages/Profile';
 import SettingsPage from '@/pages/SettingsPage';
-import ReportPage from '@/pages/ReportPage';
 import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
 import TermsPage from '@/pages/TermsPage';
 import MedicalDisclaimerPage from '@/pages/MedicalDisclaimerPage';
@@ -42,6 +41,12 @@ import HelpFeedbackPage from '@/pages/HelpFeedbackPage';
 
 // Layout
 import AppLayout from '@/components/AppLayout';
+
+// The two heaviest and least opened screens. Insights pulls in the chart
+// library; the report pulls in the PDF engine and html2canvas. Loading them on
+// their own keeps all of that off the app's first screen.
+const Insights = lazy(() => import('@/pages/Insights'));
+const ReportPage = lazy(() => import('@/pages/ReportPage'));
 
 function HomeOrOnboarding() {
   const { onboardingCompleted } = useAppState();
@@ -63,28 +68,29 @@ function EntryRedirect() {
   return <Navigate to={isNewUser ? "/onboarding" : "/login"} replace />;
 }
 
+// Shown only while a lazily-loaded screen fetches its own code.
+const RouteLoading = () => (
+  <div className="fixed inset-0 flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+  </div>
+);
+
+/**
+ * One navigation tree for the whole session.
+ *
+ * It mounts once and is never swapped for a spinner, so nothing can unmount it
+ * and drop the screen in hand — not an auth event, not a settings call, not a
+ * profile fetch. While the app starts, the launch splash covers everything; the
+ * gate inside the tree looks after the signed-in screens.
+ *
+ * Nothing on this path navigates. A missing or expired session is handled by
+ * the gate with a client-side redirect; leaving the document is what reloads
+ * the app and lands it back on Home.
+ */
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
-
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
-  const onPublicPath = publicPaths.includes(window.location.pathname);
-
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required' && !onPublicPath) {
-      navigateToLogin();
-      return null;
-    }
-  }
+  useEffect(() => {
+    perfMark("navigator mounted (splash finished)");
+  }, []);
 
   return (
     <Routes>
@@ -106,7 +112,9 @@ const AuthenticatedApp = () => {
           <Route path="/medications" element={<MyMedications />} />
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/history" element={<History />} />
-          <Route path="/insights" element={<Insights />} />
+          {/* Each lazy screen waits on its own, inside the shell: the tab bar
+              and the current screen around it stay mounted while it loads. */}
+          <Route path="/insights" element={<Suspense fallback={<RouteLoading />}><Insights /></Suspense>} />
           <Route path="/journal" element={<Journal />} />
           <Route path="/more" element={<More />} />
           <Route path="/profile" element={<Profile />} />
@@ -117,7 +125,7 @@ const AuthenticatedApp = () => {
         <Route path="/help-feedback" element={<HelpFeedbackPage />} />
         {/* The old developer push test screen is gone; send its link to Settings. */}
         <Route path="/push-test" element={<Navigate to="/settings" replace />} />
-        <Route path="/report" element={<ReportErrorBoundary><ReportPage /></ReportErrorBoundary>} />
+        <Route path="/report" element={<ReportErrorBoundary><Suspense fallback={<RouteLoading />}><ReportPage /></Suspense></ReportErrorBoundary>} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
@@ -125,6 +133,13 @@ const AuthenticatedApp = () => {
 };
 
 function App() {
+  // Startup timing and mount counts — silent unless the probe is switched on
+  // with ?perf=1 (see src/lib/perfProbe.js).
+  useEffect(() => {
+    perfMark("app first render");
+  }, []);
+  useMountProbe("app tree");
+
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
