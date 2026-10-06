@@ -55,9 +55,15 @@ export function AppStateProvider({ children }) {
   // Seeded from the cached profile, so a save made before the fresh copy lands
   // updates the existing record instead of creating a second one.
   const [profileId, setProfileId] = useState(() => CACHED_PROFILE?.id || null);
-  const [darkMode, setDarkModeState] = useState(() => CACHED_PROFILE?.dark_mode === true);
+  // The theme the person chose, when the cached profile carries one; until they
+  // choose, the device setting governs. index.html resolves the same rule before
+  // the first paint, so the window, the splash and this screen already agree.
+  const savedThemeChosen = CACHED_PROFILE?.theme_chosen === true;
+  const [darkMode, setDarkModeState] = useState(() => (
+    savedThemeChosen ? CACHED_PROFILE.dark_mode === true : systemPrefersDark()
+  ));
   // Dark mode follows the device setting until the user picks a theme.
-  const themeChosenRef = useRef(CACHED_PROFILE?.dark_mode === true || CACHED_PROFILE?.dark_mode === false);
+  const themeChosenRef = useRef(savedThemeChosen);
   // null means "not known yet" — that is what holds the launch. A cached answer
   // is known already, so the app opens on Home and syncs behind it.
   const [onboardingCompleted, setOnboardingCompleted] = useState(() => (CACHED_PROFILE ? !!CACHED_PROFILE.onboarding_completed : null));
@@ -73,6 +79,11 @@ export function AppStateProvider({ children }) {
   // ── Dark mode ──────────────────────────────────────────────────────────────
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
+    // The window chrome (status bar, address bar) takes the colour of the screen
+    // behind it, so the top edge never shows a seam. Same two values as the
+    // first-paint rule in index.html and --launch-bg in src/index.css.
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", darkMode ? "#15171e" : "#fdfcff");
   }, [darkMode]);
 
   // Follows the device's light/dark setting until the user chooses a theme.
@@ -93,7 +104,13 @@ export function AppStateProvider({ children }) {
   // screen without waiting for the network.
   useEffect(() => {
     if (onboardingCompleted === null) return;
-    writeCachedProfile({ ...profile, onboarding_completed: onboardingCompleted });
+    // theme_chosen rides along so the next launch can tell a theme the person
+    // picked from one that merely followed the device setting.
+    writeCachedProfile({
+      ...profile,
+      onboarding_completed: onboardingCompleted,
+      theme_chosen: themeChosenRef.current,
+    });
   }, [profile, onboardingCompleted]);
 
   // ── One-time migration onto canonical units (kg / cm) ───────────────────────

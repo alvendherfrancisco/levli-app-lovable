@@ -10,7 +10,43 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon-180.png?v=2" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#4f46e5" />
+    <meta name="theme-color" content="#fdfcff" />
+    <!-- Launch theme, resolved before the first paint so the window background,
+         the handover from the native launch screen and the animated splash all
+         show one colour — no white flash, no mid-launch flip. The saved in-app
+         theme wins; with none saved, the device setting governs, which is the
+         same rule the app itself follows. Keep both values here in step with
+         --launch-bg in src/index.css. -->
+    <style>
+      html { background-color: #fdfcff; }
+      html.dark { background-color: #15171e; }
+    </style>
+    <script>
+      (function () {
+        var dark = null;
+        try {
+          var saved = window.localStorage.getItem("levli:profile");
+          if (saved) {
+            var profile = JSON.parse(saved);
+            if (profile && profile.theme_chosen === true && typeof profile.dark_mode === "boolean") {
+              dark = profile.dark_mode;
+            }
+          }
+        } catch (e) { /* no readable saved theme */ }
+        if (dark === null) {
+          try {
+            dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          } catch (e2) {
+            dark = false;
+          }
+        }
+        var root = document.documentElement;
+        root.classList.toggle("dark", dark);
+        root.style.colorScheme = dark ? "dark" : "light";
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", dark ? "#15171e" : "#fdfcff");
+      })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Levli" />

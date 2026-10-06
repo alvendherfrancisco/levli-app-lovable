@@ -408,9 +408,20 @@ input[type="range"].pain-slider:active::-moz-range-thumb { transform: scale(1.1)
    With "Reduce Motion" the same composition is shown as a single fade: every
    moving animation is dropped and the static logo simply fades in. */
 
+/* ── Launch background ─────────────────────────────────────────────────────
+   The one colour every launch layer paints: the window while the bundle loads,
+   the animated splash, and the first app screen behind them. Defined once, in
+   both modes, so the handover between them never shows a seam. index.html
+   carries the same two values in its first-paint rule, because that rule has to
+   paint before this stylesheet exists. */
+:root { --launch-bg: #fdfcff; } /* near-white, what the light splash sits on */
+.dark { --launch-bg: #15171e; } /* hsl(228 18% 10%) — the app's own dark background */
+
+html { background-color: var(--launch-bg); }
+
 :root {
   /* Splash palette — light: warm peach, lavender and mint over near-white. */
-  --splash-base: #fdfcff;
+  --splash-base: var(--launch-bg);
   --splash-peach: #ffe7d3;
   --splash-lavender: #e9e6ff;
   --splash-mint: #d9f3ea;
@@ -427,15 +438,21 @@ input[type="range"].pain-slider:active::-moz-range-thumb { transform: scale(1.1)
   --splash-lift: 9vh; /* holds the mascot a little above the vertical middle */
 }
 
-/* Dark: the same soft glows over deep navy. */
+/* Dark: the same soft glows over the app's own navy, held back so they read as
+   a glow rather than a wash, with a near-white wordmark and a droplet gradient
+   lifted a step so the mascot keeps its shape on the dark surface. Only colours
+   change here — the layout and the animation are the light ones, untouched.
+   --splash-base is left alone: it already resolves to --launch-bg. */
 .splash--dark {
-  --splash-base: #0a1024;
-  --splash-peach: rgba(245, 158, 11, 0.17);
-  --splash-lavender: rgba(99, 102, 241, 0.24);
-  --splash-mint: rgba(20, 184, 166, 0.16);
-  --splash-word: #c7c8ff;
+  --splash-peach: rgba(245, 158, 11, 0.14);
+  --splash-lavender: rgba(99, 102, 241, 0.20);
+  --splash-mint: rgba(20, 184, 166, 0.13);
+  --splash-word: #f4f5ff;
   --splash-tag: #9aa1b9;
   --splash-ripple: 165 166 255;
+  --splash-drop-light: #9596fa;
+  --splash-drop-mid: #7b7bf0;
+  --splash-drop-deep: #5d57dd;
 }
 
 .splash {
