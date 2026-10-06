@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { getIntervalDays, getMedicationConfig } from "@/lib/medicationConfig";
 import { scheduleMatchesMedication } from "@/lib/medicationLink";
 import { readCachedProfile, writeCachedProfile, clearCachedProfile } from "@/lib/profileCache";
+import { resolveProfileRecords } from "@/lib/profileRecords";
 import { perfMark } from "@/lib/perfProbe";
 
 const AppStateContext = createContext(null);
@@ -55,6 +56,15 @@ export function AppStateProvider({ children }) {
   // Seeded from the cached profile, so a save made before the fresh copy lands
   // updates the existing record instead of creating a second one.
   const [profileId, setProfileId] = useState(() => CACHED_PROFILE?.id || null);
+  // The same id, readable the instant it is known. Two saves in a row (consent,
+  // then the rest of onboarding) must never both see "no profile yet" and each
+  // create one, so the id and any create in flight live in refs, not just state.
+  const profileIdRef = useRef(CACHED_PROFILE?.id || null);
+  const profileCreateRef = useRef(null);
+  const rememberProfileId = (id) => {
+    profileIdRef.current = id;
+    setProfileId(id);
+  };
   // The theme the person chose, when the cached profile carries one; until they
   // choose, the device setting governs. index.html resolves the same rule before
   // the first paint, so the window, the splash and this screen already agree.
@@ -199,10 +209,15 @@ export function AppStateProvider({ children }) {
   };
 
   const loadProfile = async () => {
-    const data = await base44.entities.UserProfile.list("", 1);
+    const rows = await base44.entities.UserProfile.list("-created_date", 20);
+    // One record is kept deterministically (the completed one), never "whichever
+    // came first"; any extras are folded into it and removed.
+    const { keeper, patch, extras } = resolveProfileRecords(rows);
+    const data = keeper ? [{ ...keeper, ...patch }] : [];
+    if (keeper && extras.length) mergeDuplicateProfiles(keeper, patch, extras);
     if (data.length > 0) {
       const p = data[0];
-      setProfileId(p.id);
+      rememberProfileId(p.id);
       // A stored true/false is the user's own choice; anything else follows the
       // device's light/dark setting.
       const hasChoice = p.dark_mode === true || p.dark_mode === false;
@@ -219,6 +234,17 @@ export function AppStateProvider({ children }) {
       setOnboardingCompleted(false);
     }
     return data[0] || null;
+  };
+
+  // Folds the values a duplicate holds into the kept record, then deletes the
+  // duplicates. The kept record is updated first; if that fails nothing is deleted.
+  const mergeDuplicateProfiles = async (keeper, patch, extras) => {
+    try {
+      if (Object.keys(patch).length) await base44.entities.UserProfile.update(keeper.id, patch);
+      await Promise.all(extras.map((e) => base44.entities.UserProfile.delete(e.id)));
+    } catch (err) {
+      console.error("Could not merge duplicate profile records:", err);
+    }
   };
 
   const loadDayMetrics = async () => {
@@ -726,11 +752,27 @@ export function AppStateProvider({ children }) {
       prescriber_name: next.prescriber_name || "",
       prescriber_contact: next.prescriber_contact || "",
     };
-    if (profileId) {
-      await base44.entities.UserProfile.update(profileId, payload);
-    } else {
-      const rec = await base44.entities.UserProfile.create(payload);
-      setProfileId(rec.id);
+    await saveProfileRecord(payload);
+  };
+
+  // Updates the person's profile record, creating it exactly once. A save that
+  // arrives while the first create is still in flight waits for it and updates
+  // that record instead of creating a second.
+  const saveProfileRecord = async (payload) => {
+    if (!profileIdRef.current && profileCreateRef.current) await profileCreateRef.current;
+    if (profileIdRef.current) {
+      await base44.entities.UserProfile.update(profileIdRef.current, payload);
+      return;
+    }
+    const creating = base44.entities.UserProfile.create(payload).then((rec) => {
+      rememberProfileId(rec.id);
+      return rec;
+    });
+    profileCreateRef.current = creating;
+    try {
+      await creating;
+    } finally {
+      if (profileCreateRef.current === creating) profileCreateRef.current = null;
     }
   };
 
@@ -761,7 +803,7 @@ export function AppStateProvider({ children }) {
     setShots([]); setDayMetrics({}); setProgressPhotosList([]); setJournalEntries([]);
     setMedications([]); setAdverseEvents([]); setInventory([]); setStorageLogs([]); setProxyAccess([]);
     setRepeatSchedules([]);
-    setProfileState(DEFAULT_PROFILE); setProfileId(null);
+    setProfileState(DEFAULT_PROFILE); rememberProfileId(null);
     setDarkModeState(false); setOnboardingCompleted(null);
     clearCachedProfile();
   };

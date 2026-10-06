@@ -77,7 +77,7 @@ const UNIT_GROUPS = [
 export default function Onboarding() {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
-  const { setProfile, profile, recordConsent, recordParentalConsent } = useAppState();
+  const { setProfile, profile } = useAppState();
 
   const [selectedMeds, setSelectedMeds] = useState([]);
   const [doseAmount, setDoseAmount] = useState("");
@@ -142,9 +142,8 @@ export default function Onboarding() {
       setStep(step + 1);
       return;
     }
-    // Completion — record consents + save profile
-    if (gdprConsented) await recordConsent(PRIVACY_POLICY_VERSION);
-
+    // Completion — one save carries the consent and the rest of the profile, so
+    // the consent record is never written separately (or lost) on the way.
     const realMeds = selectedMeds.filter((m) => m !== "Other");
     let defaultMed = "Ozempic®";
     if (realMeds.length && MEDICATIONS.includes(realMeds[0])) {
@@ -160,6 +159,9 @@ export default function Onboarding() {
 
     await setProfile({
       ...profile,
+      ...(gdprConsented
+        ? { gdpr_consent_date: new Date().toISOString(), gdpr_privacy_policy_version: PRIVACY_POLICY_VERSION }
+        : {}),
       first_name: firstName,
       default_medication: defaultMed,
       days_between: daysBetween,
