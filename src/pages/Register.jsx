@@ -46,7 +46,9 @@ export default function Register() {
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
       }
-      window.location.href = "/";
+      // Replace, not push: the sign-up page must not stay in the history behind
+      // the app (see the note in Login.jsx).
+      window.location.replace("/");
     } catch (err) {
       setError(err.message || "Invalid verification code");
     } finally {

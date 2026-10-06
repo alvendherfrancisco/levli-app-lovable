@@ -46,7 +46,9 @@ export default function SignUpStep({ persistState }) {
       if (result?.access_token) base44.auth.setToken(result.access_token);
       // Persist onboarding state so it survives the auth-session reload.
       persistState?.({ firstName });
-      window.location.href = "/onboarding";
+      // Replace, not push: the sign-up page must not stay in the history behind
+      // onboarding (see the note in Login.jsx).
+      window.location.replace("/onboarding");
     } catch (err) {
       setError(err.message || "Invalid verification code");
     } finally {

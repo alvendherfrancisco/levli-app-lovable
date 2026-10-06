@@ -30,7 +30,13 @@ export default function Login() {
     setLoading(true);
     try {
       await base44.auth.loginViaEmailPassword(email, password);
-      window.location.href = getSafeRedirect();
+      // Replace rather than push. Pushing leaves the sign-in page in the history
+      // directly behind the app, so the first in-app step back — the shell's own
+      // history bookkeeping, the hardware back button, a swipe — can leave the
+      // app's route and re-open the login page. That leftover entry is the only
+      // difference between the session that begins right after signing in and a
+      // fresh launch, which is why a restart behaves and this one did not.
+      window.location.replace(getSafeRedirect());
     } catch (err) {
       setError(err.message || "Invalid email or password");
     } finally {
