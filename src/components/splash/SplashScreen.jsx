@@ -8,8 +8,9 @@ import SplashSparkles from "@/components/splash/SplashSparkles";
 /**
  * The Levli launch splash.
  *
- * It plays its own sequence and never holds startup up: as soon as the app says
- * it is ready, the splash finishes the step it is in and cross-fades away. If
+ * It plays its own sequence in full, and the app is routed to only once that
+ * sequence has finished and the splash has cross-faded away — so Home, or
+ * Login, can never arrive on top of a splash that is still animating. If
  * startup runs longer than the sequence, the droplet keeps bobbing gently (and
  * the sparkles keep twinkling) until the app is ready.
  *
@@ -38,14 +39,16 @@ export default function SplashScreen({ ready = true, onFinish, onSequenceEnd }) 
   const steps = reduced ? [SPLASH_TIMING.reducedHold] : SPLASH_STEPS;
   const sequenceEnd = steps[steps.length - 1];
 
-  // Ready? Leave at the end of the step we're in — never mid-step.
+  // Ready? Then leave as soon as the sequence has finished — the whole sequence
+  // is played, never a part of it, so the screen the session calls for (Home, or
+  // Login) is only routed to after the splash is done. Startup that runs longer
+  // than the sequence is covered by the idle bob below.
   useEffect(() => {
     if (exiting || !ready) return undefined;
-    const elapsed = Date.now() - startedAt.current;
-    const leaveAt = steps.find((step) => step >= elapsed) ?? 0;
-    const timer = setTimeout(() => setExiting(true), Math.max(0, leaveAt - elapsed));
+    const remaining = sequenceEnd - (Date.now() - startedAt.current);
+    const timer = setTimeout(() => setExiting(true), Math.max(0, remaining));
     return () => clearTimeout(timer);
-  }, [ready, exiting, reduced]);
+  }, [ready, exiting, sequenceEnd]);
 
   // The sequence has played out. If startup ran long, bob gently rather than
   // sitting on a frozen frame; either way the caller is told once, which is how

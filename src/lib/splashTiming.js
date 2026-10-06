@@ -50,7 +50,11 @@ export const SPLASH_TIMING = {
 
 const endOf = (start, duration) => start + duration;
 
-/** The end of each step — the points the splash is allowed to leave on. */
+/**
+ * The end of each step. The last one is the end of the sequence, and the first
+ * moment the splash may leave: the app is routed to only once the whole
+ * sequence has played.
+ */
 export const SPLASH_STEPS = [
   endOf(0, SPLASH_TIMING.fadeIn),
   endOf(SPLASH_TIMING.rippleDelay, SPLASH_TIMING.ripple),
