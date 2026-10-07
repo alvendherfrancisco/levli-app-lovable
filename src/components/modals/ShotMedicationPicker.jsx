@@ -39,8 +39,7 @@ function MedicationRow({ row, selected, onSelect }) {
 
 /**
  * The Add Shot Log medication picker: two groups — the medications already
- * saved in Meds first, then the built-in catalogue — and a final
- * "Other / custom" row.
+ * saved in Meds first, then the built-in catalogue — and a final "Others" row.
  *
  * It opens inside the sheet's own flow rather than over it, so it can never
  * cover the dose chips below, and its list scrolls inside a capped height.
@@ -96,7 +95,7 @@ export default function ShotMedicationPicker({
 
         {isEmpty && (
           <p role="status" aria-live="polite" className="px-3 py-4 text-xs text-gray-500 dark:text-[#9A9DAE]">
-            Nothing matches “{query.trim()}”. Choose Other / custom below and type the name from your prescription.
+            Nothing matches “{query.trim()}”. Choose Others below and type the name from your prescription.
           </p>
         )}
 
@@ -116,7 +115,7 @@ export default function ShotMedicationPicker({
           <span className="min-w-0 flex-1">
             <span className={`block text-sm font-semibold ${
               isCustom ? "text-indigo-700 dark:text-indigo-300" : "text-gray-900 dark:text-[#E8E9F0]"
-            }`}>Other / custom</span>
+            }`}>Others</span>
             <span className="block text-xs text-gray-500 dark:text-[#9A9DAE] mt-0.5">
               Type the name from your prescription
             </span>

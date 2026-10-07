@@ -19,7 +19,7 @@ const BRAND_PENS = [
 ];
 
 // Products normally taken by a route other than their catalogue's first.
-const PREFERRED_ROUTE = { "Rybelsus®": "oral_tablet" };
+const PREFERRED_ROUTE = { "Rybelsus®": "oral_tablet", "Foundayo®": "oral_tablet" };
 
 export function isBrandPen(medication) {
   return BRAND_PENS.includes(medication);

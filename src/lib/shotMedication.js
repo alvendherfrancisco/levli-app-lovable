@@ -6,7 +6,7 @@
 // itself is saved, so browsing the list never leaves a stray regimen behind.
 
 import {
-  MEDICATION_CONFIG,
+  LISTED_MEDICATIONS,
   CUSTOM_MEDICATION_NAME,
   allowsAnyDose,
   describeAllowedDoses,
@@ -19,20 +19,18 @@ import { pickerMedications } from "@/lib/medicationLink";
 import { parseShotDate, toDayKey } from "@/lib/dateUtils";
 
 /** The catalogue the picker browses: brand, generic, dose unit and strengths. */
-const CATALOGUE_ROWS = MEDICATION_CONFIG
-  .filter((entry) => entry.id !== "custom")
-  .map((entry) => ({
-    key: `catalogue:${entry.id}`,
-    catalogueId: entry.id,
-    name: entry.brandName,
-    display: plainBrandName(entry.brandName),
-    generic: entry.genericName || "",
-    unit: getDoseUnit(entry.brandName),
-    strengths: describeAllowedDoses(entry.brandName),
-    anyDose: allowsAnyDose(entry.brandName),
-    route: entry.route || "",
-    status: "",
-  }));
+const CATALOGUE_ROWS = LISTED_MEDICATIONS.map((entry) => ({
+  key: `catalogue:${entry.id}`,
+  catalogueId: entry.id,
+  name: entry.brandName,
+  display: plainBrandName(entry.brandName),
+  generic: entry.genericName || "",
+  unit: getDoseUnit(entry.brandName),
+  strengths: describeAllowedDoses(entry.brandName),
+  anyDose: allowsAnyDose(entry.brandName),
+  route: entry.route || "",
+  status: "",
+}));
 
 const searchText = (value) => String(value || "").trim().toLowerCase();
 
@@ -87,6 +85,7 @@ export function medicationPickerGroups({ medications = [], current = "", query =
  */
 export function regimenFromShot({
   name,
+  genericName = "",
   dose,
   doseUnit = "mg",
   route = "",
@@ -104,7 +103,7 @@ export function regimenFromShot({
   return {
     medication_name: name,
     catalogue_id: entry?.id || "",
-    generic_name: entry?.genericName || "",
+    generic_name: genericName || entry?.genericName || "",
     route: route || entry?.route || "",
     prescribed_dose: dose ?? null,
     dose_unit: doseUnit,

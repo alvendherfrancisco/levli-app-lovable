@@ -54,7 +54,7 @@ export default function MedicationNamePicker({ selectedName, isCustom, onSelect,
             >
               {selected && <Check size={14} strokeWidth={3} className="flex-shrink-0" />}
               <span className="text-sm font-semibold">{plainBrandName(o.value)}</span>
-              <span className={subClass(selected)}>· {o.generic}</span>
+              {o.generic && <span className={subClass(selected)}>· {o.generic}</span>}
             </button>
           );
         })}
@@ -66,14 +66,14 @@ export default function MedicationNamePicker({ selectedName, isCustom, onSelect,
           className={chipClass(isCustom)}
         >
           {isCustom && <Check size={14} strokeWidth={3} className="flex-shrink-0" />}
-          <span className="text-sm font-semibold">Other</span>
+          <span className="text-sm font-semibold">Others</span>
           <span className={subClass(isCustom)}>· type the name</span>
         </button>
       </div>
 
       {!matches.length && (
         <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-2">
-          No match in the list. Choose “Other” and type the name from your prescription.
+          No match in the list. Choose “Others” and type the name from your prescription.
         </p>
       )}
 

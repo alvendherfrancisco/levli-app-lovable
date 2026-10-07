@@ -4,9 +4,11 @@
 // Shots, Meds, Stock, Insights and Reports all read from here. No screen
 // hardcodes a dose list.
 //
-// Each record: brandName, genericName, route, dosingIntervalDays, allowedDoses[]
-// (with units), indicationNote, missedDoseRule, source (link to the official
-// prescribing information), lastReviewed.
+// Each record: brandName (the display name — the ®/™ mark lives here and nowhere
+// else), name (the same name plain, used for matching, sorting and exports),
+// genericName, route, dosingIntervalDays, allowedDoses[] (with units),
+// indicationNote, missedDoseRule, source (link to the official prescribing
+// information), lastReviewed.
 //
 // Every value was checked against the current US prescribing information on
 // `lastReviewed`. Anything that could not be verified is marked verified: false
@@ -19,7 +21,47 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** The option that asks the user to type their own drug name and dose. */
-export const CUSTOM_MEDICATION_NAME = "Other / custom (prescriber-directed)";
+export const CUSTOM_MEDICATION_NAME = "Others";
+
+/** The name this option carried before it was renamed. Still resolved, so a log
+    made under the old name keeps working. */
+export const LEGACY_CUSTOM_NAMES = ["Other / custom (prescriber-directed)"];
+
+/** Unapproved research peptides: there is no approved product anywhere, so no
+    strengths, no schedule and no missed-dose rule. Levli logs only what the user
+    types for one of these, and never models exposure for it. */
+const RESEARCH_PEPTIDE_NAMES = [
+  { id: "bpc157", name: "BPC-157" },
+  { id: "cjc1295", name: "CJC-1295" },
+  { id: "ghkcu", name: "GHK-Cu" },
+  { id: "ipamorelin", name: "Ipamorelin" },
+  { id: "tb500", name: "TB-500" },
+];
+
+const researchPeptideEntry = ({ id, name }) => ({
+  id,
+  brandName: name,
+  name,
+  genericName: "",
+  route: "",
+  dosingIntervalDays: null,
+  allowedDoses: [],
+  allowsAnyDose: true,
+  minIntervalDays: null,
+  maxDoseMg: null,
+  indicationNote:
+    `${name} is not an approved medicine in the US, EU or UK. Levli holds no prescribing information for it and records only what you enter.`,
+  missedDoseRule: "",
+  retitrationDays: null,
+  missedDoseWindowDays: null,
+  missedDoseLabelQuote: "",
+  source: "",
+  lastReviewed: "2026-10-07",
+  verified: false,
+  verifiedNote:
+    `${name} has no approved product or label to check against, so it carries no strength list, no schedule and no missed-dose rule. A typed dose is never used for exposure modelling.`,
+  exposureEligible: false,
+});
 /** Shown wherever a custom entry is used. */
 export const CUSTOM_MEDICATION_WARNING = "Levli can't verify this dose.";
 
@@ -27,6 +69,7 @@ export const MEDICATION_CONFIG = [
   {
     id: "ozempic",
     brandName: "Ozempic®",
+    name: "Ozempic",
     genericName: "semaglutide",
     route: "subcutaneous",
     dosingIntervalDays: 7,
@@ -55,6 +98,7 @@ export const MEDICATION_CONFIG = [
   {
     id: "wegovy",
     brandName: "Wegovy®",
+    name: "Wegovy",
     genericName: "semaglutide",
     route: "subcutaneous",
     dosingIntervalDays: 7,
@@ -85,6 +129,7 @@ export const MEDICATION_CONFIG = [
   {
     id: "mounjaro",
     brandName: "Mounjaro®",
+    name: "Mounjaro",
     genericName: "tirzepatide",
     route: "subcutaneous",
     dosingIntervalDays: 7,
@@ -115,6 +160,7 @@ export const MEDICATION_CONFIG = [
   {
     id: "zepbound",
     brandName: "Zepbound®",
+    name: "Zepbound",
     genericName: "tirzepatide",
     route: "subcutaneous",
     dosingIntervalDays: 7,
@@ -145,6 +191,7 @@ export const MEDICATION_CONFIG = [
   {
     id: "victoza",
     brandName: "Victoza®",
+    name: "Victoza",
     genericName: "liraglutide",
     route: "subcutaneous",
     dosingIntervalDays: 1,
@@ -173,6 +220,7 @@ export const MEDICATION_CONFIG = [
   {
     id: "saxenda",
     brandName: "Saxenda®",
+    name: "Saxenda",
     genericName: "liraglutide",
     route: "subcutaneous",
     dosingIntervalDays: 1,
@@ -203,6 +251,7 @@ export const MEDICATION_CONFIG = [
   {
     id: "rybelsus",
     brandName: "Rybelsus®",
+    name: "Rybelsus",
     genericName: "semaglutide",
     route: "oral_tablet",
     dosingIntervalDays: 1,
@@ -230,6 +279,7 @@ export const MEDICATION_CONFIG = [
   {
     id: "trulicity",
     brandName: "Trulicity®",
+    name: "Trulicity",
     genericName: "dulaglutide",
     route: "subcutaneous",
     dosingIntervalDays: 7,
@@ -256,8 +306,40 @@ export const MEDICATION_CONFIG = [
     exposureEligible: true,
   },
   {
+    id: "foundayo",
+    brandName: "Foundayo®",
+    name: "Foundayo",
+    genericName: "orforglipron",
+    route: "oral_tablet",
+    dosingIntervalDays: 1,
+    allowedDoses: [
+      { value: 0.8, unit: "mg", role: "initiation" },
+      { value: 2.5, unit: "mg", role: "titration_only" },
+      { value: 5.5, unit: "mg", role: "standard" },
+      { value: 9, unit: "mg", role: "standard" },
+      { value: 14.5, unit: "mg", role: "standard" },
+      { value: 17.2, unit: "mg", role: "standard" },
+    ],
+    minIntervalDays: 1,
+    maxDoseMg: 17.2,
+    indicationNote:
+      "Chronic weight management in adults with obesity, or with overweight plus a weight-related condition. A once-daily tablet taken with or without food. The label states it should not be used with another GLP-1 receptor agonist medicine.",
+    missedDoseRule: "",
+    retitrationDays: null,
+    missedDoseWindowDays: null,
+    missedDoseLabelQuote: "",
+    source: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/220934Orig1s000lbl.pdf",
+    lastReviewed: "2026-10-07",
+    verified: true,
+    verifiedNote:
+      "Tablet strengths (0.8 / 2.5 / 5.5 / 9 / 14.5 / 17.2 mg), the once-daily interval, the titration order and the 17.2 mg maximum were read from the FDA prescribing information (approval 2026). The label's missed-dose wording was not read in this pass, so Levli states none for it. No published half-life is held, so it is kept out of the exposure estimate.",
+    exposureEligible: false,
+  },
+  ...RESEARCH_PEPTIDE_NAMES.map(researchPeptideEntry),
+  {
     id: "compounded_semaglutide",
     brandName: "Semaglutide (generic / compounded)",
+    name: "Semaglutide (generic / compounded)",
     genericName: "semaglutide",
     route: "subcutaneous",
     dosingIntervalDays: 7,
@@ -282,6 +364,7 @@ export const MEDICATION_CONFIG = [
   {
     id: "compounded_tirzepatide",
     brandName: "Tirzepatide (generic / compounded)",
+    name: "Tirzepatide (generic / compounded)",
     genericName: "tirzepatide",
     route: "subcutaneous",
     dosingIntervalDays: 7,
@@ -306,6 +389,7 @@ export const MEDICATION_CONFIG = [
   {
     id: "custom",
     brandName: CUSTOM_MEDICATION_NAME,
+    name: CUSTOM_MEDICATION_NAME,
     genericName: "",
     route: "",
     dosingIntervalDays: null,
@@ -332,10 +416,14 @@ const normalise = (name) => String(name || "").replace(/[®™]/g, "").trim().to
 
 const BY_KEY = (() => {
   const map = {};
+  const customEntry = MEDICATION_CONFIG.find((e) => e.id === "custom");
   MEDICATION_CONFIG.forEach((entry) => {
     map[normalise(entry.brandName)] = entry;
+    if (entry.name) map[normalise(entry.name)] = entry;
     if (entry.genericName && !map[normalise(entry.genericName)]) map[normalise(entry.genericName)] = entry;
   });
+  // A log made while this option still carried its old name still resolves to it.
+  LEGACY_CUSTOM_NAMES.forEach((name) => { if (customEntry) map[normalise(name)] = customEntry; });
   return map;
 })();
 
@@ -347,10 +435,13 @@ export function getMedicationConfig(name) {
   return BY_KEY[normalise(name)] || null;
 }
 
-/** The brand name without the ® so it reads naturally inside a sentence. */
+/**
+ * The product's plain name — no ® or ™ — for matching, sorting, exports and
+ * reading inside a sentence. The stored display name is never changed by this.
+ */
 export function plainBrandName(name) {
   const entry = getMedicationConfig(name);
-  return (entry?.brandName || String(name || "")).replace(/[®™]/g, "");
+  return entry?.name || String(name || "").replace(/[®™]/g, "");
 }
 
 /** true when this product allows any dose (compounded / custom / unknown). */
@@ -513,12 +604,34 @@ export function isCustomDoseSource(shot) {
 
 // ── Pickers ────────────────────────────────────────────────────────────────
 
-/**
- * Medication names for the pickers: label-verified products first, then the
- * products with no verifiable list, then the custom option.
- */
+// ── What the pickers offer, and in what order ───────────────────────────────
+// The product list, in the order it is shown. A product that is NOT here is
+// still defined above (Trulicity, Victoza, Saxenda) so anyone already logging it
+// keeps its strengths, its interval and its missed-dose rule — it is simply no
+// longer offered as a new choice, and a product outside this list is logged
+// through "Others" instead.
+const LISTED_IDS = [
+  "foundayo",
+  "mounjaro",
+  "ozempic",
+  "rybelsus",
+  "compounded_semaglutide",
+  "compounded_tirzepatide",
+  "wegovy",
+  "zepbound",
+  "bpc157",
+  "cjc1295",
+  "ghkcu",
+  "ipamorelin",
+  "tb500",
+];
+
+/** The products the pickers offer, in order (the custom entry is not one of them). */
+export const LISTED_MEDICATIONS = LISTED_IDS
+  .map((id) => MEDICATION_CONFIG.find((e) => e.id === id))
+  .filter(Boolean);
+
+/** Medication names for the pickers, in the order above, then "Others". */
 export function getMedicationPickerNames() {
-  const verified = MEDICATION_CONFIG.filter((e) => e.verified && !e.allowsAnyDose).map((e) => e.brandName);
-  const unverified = MEDICATION_CONFIG.filter((e) => !e.verified && e.id !== "custom").map((e) => e.brandName);
-  return [...verified, ...unverified, CUSTOM_MEDICATION_NAME];
+  return [...LISTED_MEDICATIONS.map((e) => e.brandName), CUSTOM_MEDICATION_NAME];
 }

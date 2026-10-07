@@ -52,6 +52,7 @@ export default function MedicationModal({ open, onClose, editing }) {
   const [selectedName, setSelectedName] = useState("");
   const [isCustom, setIsCustom] = useState(false);
   const [customName, setCustomName] = useState("");
+  const [customGeneric, setCustomGeneric] = useState("");
   const [dose, setDose] = useState("");
   const [doseSuggested, setDoseSuggested] = useState(false);
   const [doseConfirmed, setDoseConfirmed] = useState(false);
@@ -115,7 +116,7 @@ export default function MedicationModal({ open, onClose, editing }) {
       setShowDetails(!!(editing.indication || editing.planned_end_date || editing.titration_stage
         || editing.prescriber_name || editing.prescriber_contact || editing.notes));
     } else {
-      setSelectedName(""); setIsCustom(false); setCustomName("");
+      setSelectedName(""); setIsCustom(false); setCustomName(""); setCustomGeneric("");
       setDose(""); setUnit("mg"); setSchedule(""); setScheduleOther("");
       setIndication(""); setIndicationOther("");
       setStartDate(todayInput()); setPlannedEndDate(""); setDoseStep("");
@@ -144,6 +145,7 @@ export default function MedicationModal({ open, onClose, editing }) {
       setIsCustom(true);
       setSelectedName("");
       setCustomName(name);
+      setCustomGeneric("");
       setDose(""); setDoseSuggested(false);
       setUnit("");
       setSchedule("");
@@ -190,7 +192,7 @@ export default function MedicationModal({ open, onClose, editing }) {
     setSaving(true);
     const payload = {
       medication_name: finalName,
-      generic_name: picked?.generic || "",
+      generic_name: picked?.generic || (isCustom ? customGeneric.trim() : ""),
       route: picked?.route || "",
       prescribed_dose: doseNum,
       dose_unit: unit || "mg",
@@ -273,6 +275,18 @@ export default function MedicationModal({ open, onClose, editing }) {
                 autoComplete="off"
                 onChange={(e) => { setCustomName(e.target.value); clearError("name"); }}
                 placeholder="Type the name from your prescription"
+                className={inputClass}
+              />
+              <label htmlFor="custom-med-generic" className="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-3 mb-2 block">
+                Generic name (optional)
+              </label>
+              <input
+                id="custom-med-generic"
+                type="text"
+                value={customGeneric}
+                autoComplete="off"
+                onChange={(e) => setCustomGeneric(e.target.value)}
+                placeholder="e.g. semaglutide"
                 className={inputClass}
               />
             </div>

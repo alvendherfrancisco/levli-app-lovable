@@ -88,6 +88,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const [medication, setMedication] = useState("");
   // Drug name for an "Other / custom (prescriber-directed)" entry.
   const [customName, setCustomName] = useState("");
+  const [customGeneric, setCustomGeneric] = useState("");
   const [medicationId, setMedicationId] = useState("");
   const [dose, setDose] = useState("2.50");
   const [doseUnit, setDoseUnit] = useState("mg");
@@ -203,7 +204,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const showMedSelector = pickerMeds.length > 1 || !medication;
   // What the medication field shows: the chosen product, the typed custom name,
   // or a plain prompt before anything is chosen.
-  const medLabel = isCustomProduct ? (customName.trim() || "Other / custom") : medication;
+  const medLabel = isCustomProduct ? (customName.trim() || "Others") : medication;
 
   // ── Gentle, non-blocking safety readouts ──────────────────────────────────
   const doseNum = parseFloat(dose) || 0;
@@ -566,6 +567,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
         payload,
         regimen: ownMed ? null : regimenFromShot({
           name: finalMedication,
+          // A generic name typed in the "Others" entry is kept with the medication.
+          genericName: isCustomProduct ? customGeneric.trim() : "",
           dose: doseNum,
           doseUnit,
           route: route || "",
@@ -755,7 +758,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                 </div>
 
                 {/* Dose — the strengths the label lists for the chosen product.
-                    An "Other / custom" entry instead asks for the drug name and dose. */}
+                    An "Others" entry instead asks for the drug name and dose. */}
                 <div>
                   {/* Nothing chosen yet: the picker above is the way in, and no
                       dose is offered until a medication is chosen. */}
@@ -767,6 +770,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                     <CustomMedicationFields
                       name={customName || medication}
                       onNameChange={(v) => { setCustomName(v); setMedication(v); }}
+                      generic={customGeneric}
+                      onGenericChange={setCustomGeneric}
                       dose={dose}
                       onDoseChange={setDose}
                       unit={doseUnit}

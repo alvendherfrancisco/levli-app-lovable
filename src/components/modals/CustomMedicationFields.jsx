@@ -5,9 +5,10 @@ import { CUSTOM_MEDICATION_WARNING } from "@/lib/medicationConfig";
 const UNIT_CHOICES = ["mg", "mcg", "units", "IU", "mL"];
 
 /**
- * The "Other / custom (prescriber-directed)" entry fields: the user types the
- * drug name and the dose, and is told plainly that Levli cannot verify it.
- * A custom entry is excluded from exposure modelling.
+ * The "Others" entry fields: the drug name (the only required one), an optional
+ * generic name, the dose unit and the dose itself, which may be typed freely.
+ * A dose added here is offered as a chip — a strength — next time, and a custom
+ * entry is excluded from exposure modelling.
  *
  * The dose row is a two-part row that always fits inside the sheet: the number
  * input takes the remaining width (flex: 1 1 0, min-width: 0) and the unit
@@ -16,7 +17,8 @@ const UNIT_CHOICES = ["mg", "mcg", "units", "IU", "mL"];
  * on focus (which is what used to shove the sheet sideways).
  */
 export default function CustomMedicationFields({
-  name, onNameChange, dose, onDoseChange, unit, onUnitChange, inputClass,
+  name, onNameChange, generic, onGenericChange,
+  dose, onDoseChange, unit, onUnitChange, inputClass,
 }) {
   return (
     <div className="space-y-3">
@@ -24,6 +26,13 @@ export default function CustomMedicationFields({
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Medication name</label>
         <input type="text" value={name} onChange={(e) => onNameChange(e.target.value)}
           placeholder="Type the name on your prescription" className={`${inputClass} min-w-0`} />
+      </div>
+      <div>
+        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
+          Generic name (optional)
+        </label>
+        <input type="text" value={generic || ""} onChange={(e) => onGenericChange(e.target.value)}
+          placeholder="e.g. semaglutide" className={`${inputClass} min-w-0`} />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Dose</label>
