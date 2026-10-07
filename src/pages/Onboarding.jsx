@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Navigate, Link } from "react-router-dom";
 import { DISCLAIMER_TEXT, PRIVACY_POLICY_VERSION } from "@/lib/appInfo";
 import OnboardingScreen from "@/components/onboarding/OnboardingScreen";
@@ -21,6 +21,13 @@ import {
   InjectionSiteIcon,
 } from "@/components/onboarding/LevliIcons";
 import { useAppState } from "@/lib/AppState";
+import { useAuth } from "@/lib/AuthContext";
+import { base44 } from "@/api/base44Client";
+import {
+  saveDraft, loadDraft, clearDraft, markProviderRedirect, takeProviderRedirect,
+  firstNameFromUser,
+} from "@/lib/onboardingDraft";
+import FirstNameStep from "@/components/onboarding/FirstNameStep";
 import { MEDICATIONS } from "@/lib/medicationData";
 import { COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE } from "@/lib/medicationCatalogue";
 import { Check } from "lucide-react";
@@ -78,6 +85,7 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
   const { setProfile, profile } = useAppState();
+  const { user, isLoadingAuth } = useAuth();
 
   const [selectedMeds, setSelectedMeds] = useState([]);
   const [doseAmount, setDoseAmount] = useState("");
@@ -90,30 +98,90 @@ export default function Onboarding() {
   const [firstName, setFirstName] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [parentalConsentName, setParentalConsentName] = useState("");
+  // The account step's two text fields live here rather than inside that step:
+  // they are part of what has to survive a reload, or a trip out to a provider.
+  const [accountEmail, setAccountEmail] = useState("");
+  // A provider signed in but returned no name, so the account step asks for the
+  // first name and nothing else.
+  const [nameOnly, setNameOnly] = useState(false);
+  const [providerNotice, setProviderNotice] = useState("");
+  // What the draft records about the account itself.
+  const [verifiedAccount, setVerifiedAccount] = useState(false);
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
 
-  // Restore onboarding state after sign-up reload (sign-up happens at step 3
-  // and requires a page reload to initialise the auth session, so we persist
-  // the data collected in steps 1–3 to sessionStorage and restore here).
+  // ── The answers, held on the device ───────────────────────────────────────
+  // Onboarding is answered before anyone is signed in, and the account step can
+  // reload the page (email verification) or leave it altogether (a provider
+  // sign-in). So every answer is restored from, and written back to, this
+  // device's draft — see src/lib/onboardingDraft.js.
+  const firstSaveRef = useRef(true);
+
   useEffect(() => {
-    const saved = sessionStorage.getItem("onboarding_signup_state");
-    if (!saved) return;
-    try {
-      const data = JSON.parse(saved);
-      setSelectedMeds(data.selectedMeds || []);
-      setDoseAmount(data.doseAmount || "");
-      setFrequency(data.frequency || null);
-      setShotDay(data.shotDay ?? null);
-      setTracking(data.tracking || []);
-      setUnits(data.units || { weight_unit: "lb", height_unit: "in", liquid_unit: "oz" });
-      setGdprConsented(!!data.gdprConsented);
-      setAgeConfirmed(!!data.ageConfirmed);
-      setBirthdate(data.birthdate || "");
-      setParentalConsentName(data.parentalConsentName || "");
-      setFirstName(data.firstName || "");
-      setStep(typeof data.step === "number" ? data.step : 4);
-    } catch (e) { /* ignore malformed */ }
-    sessionStorage.removeItem("onboarding_signup_state");
+    const draft = loadDraft();
+    if (draft) {
+      setSelectedMeds(draft.selectedMeds || []);
+      setDoseAmount(draft.doseAmount || "");
+      setFrequency(draft.frequency || null);
+      setShotDay(draft.shotDay ?? null);
+      setTracking(draft.tracking || []);
+      setUnits(draft.units || { weight_unit: "lb", height_unit: "in", liquid_unit: "oz" });
+      setGdprConsented(!!draft.gdprConsented);
+      setAgeConfirmed(!!draft.ageConfirmed);
+      setBirthdate(draft.birthdate || "");
+      setParentalConsentName(draft.parentalConsentName || "");
+      setFirstName(draft.firstName || "");
+      setAccountEmail(draft.email || "");
+      setAwaitingVerification(!!draft.awaitingVerification);
+      setVerifiedAccount(draft.verified === true);
+      setStep(typeof draft.step === "number" ? draft.step : 0);
+    }
   }, []);
+
+  // Written as it is given, so going back, reloading, or leaving the page for a
+  // provider can never lose an answer. The first run is the restore above and is
+  // skipped, so an empty first render never overwrites what is already stored.
+  useEffect(() => {
+    if (firstSaveRef.current) { firstSaveRef.current = false; return; }
+    saveDraft({
+      step, selectedMeds, doseAmount, frequency, shotDay, tracking, units,
+      gdprConsented, birthdate, ageConfirmed, parentalConsentName, firstName,
+      email: accountEmail, awaitingVerification, verified: verifiedAccount,
+    });
+  }, [
+    step, selectedMeds, doseAmount, frequency, shotDay, tracking, units,
+    gdprConsented, birthdate, ageConfirmed, parentalConsentName, firstName,
+    accountEmail, awaitingVerification, verifiedAccount,
+  ]);
+
+  // ── The account step settles itself ───────────────────────────────────────
+  // With a session that step is already answered (a provider sign-in, or an
+  // account that already exists), so onboarding carries on at the next step and
+  // the account screen is never shown. Without one, this page load is either a
+  // cancelled sign-in or a reload before verification, and the account step is
+  // exactly where it belongs.
+  useEffect(() => {
+    if (isLoadingAuth) return;
+    const returnedFromProvider = takeProviderRedirect();
+
+    if (user) {
+      if (step !== 3) return;
+      const name = firstNameFromUser(user);
+      if (name) {
+        setFirstName((prev) => prev || name);
+        setStep(4);
+      } else {
+        setNameOnly(true);
+      }
+      return;
+    }
+
+    if (returnedFromProvider) {
+      setProviderNotice("That sign-in was cancelled, so nothing was saved. Try again, or create your account with your email below.");
+    }
+    // No session, and this account was never verified: the account step is still
+    // the one thing that has to happen before anything more can be saved.
+    if (!verifiedAccount && step > 3) setStep(3);
+  }, [isLoadingAuth, user, step, verifiedAccount]);
 
   if (profile?.onboarding_completed) {
     return <Navigate to="/" replace />;
@@ -126,15 +194,28 @@ export default function Onboarding() {
     return true;
   })();
 
-  // Sign-up (step 3) requires a page reload to initialise the auth session.
-  // Persist the data collected in steps 1–3 so it can be restored after reload.
+  // The account step's hand-off: everything answered so far, plus whatever that
+  // step needs carried with it (the first name, the address awaiting a code, the
+  // step to resume at).
   const persistOnboardingState = (extra = {}) => {
-    sessionStorage.setItem("onboarding_signup_state", JSON.stringify({
+    saveDraft({
       step: 4,
       selectedMeds, doseAmount, frequency, shotDay, tracking, units,
       gdprConsented, birthdate, ageConfirmed, parentalConsentName,
+      firstName, email: accountEmail, verified: verifiedAccount, awaitingVerification,
       ...extra,
-    }));
+    });
+  };
+
+  /**
+   * Hands off to the provider's own page. Everything answered so far is on the
+   * device before we leave, and the marker says a return is pending — so a
+   * cancelled sign-in comes back to this screen with its answers intact.
+   */
+  const startProvider = (provider) => {
+    persistOnboardingState({ step: 3, verified: false, awaitingVerification: false });
+    markProviderRedirect();
+    base44.auth.loginWithProvider(provider, "/onboarding");
   };
 
   const next = async () => {
@@ -171,11 +252,17 @@ export default function Onboarding() {
       onboarding_completed: true,
       weight_tracking_opted_in: weightOptedIn,
     });
+    // Those answers now live on the account, so the device's copy of them is done.
+    clearDraft();
     navigate("/");
   };
 
   const back = () => {
-    if (step > 0) setStep(step - 1);
+    if (step <= 0) return;
+    // With a session the account step is already answered, so Back steps over it
+    // rather than reopening a screen that would bounce straight forward again.
+    const target = step - 1 === 3 && user ? 2 : step - 1;
+    setStep(Math.max(0, target));
   };
 
   const ctaLabel =
@@ -203,7 +290,34 @@ export default function Onboarding() {
       {step === 0 && <WelcomeStep />}
       {step === 1 && <EmpathyStep />}
       {step === 2 && <MedicationStep selectedMeds={selectedMeds} setSelectedMeds={setSelectedMeds} />}
-      {step === 3 && <SignUpStep persistState={persistOnboardingState} />}
+      {step === 3 && (
+        isLoadingAuth ? (
+          // The session decides whether this screen is needed at all, so the
+          // screen waits for it: no flash of a form that is about to be skipped.
+          <div className="flex items-center justify-center py-8">
+            <div className="w-6 h-6 border-2 border-gray-200 border-t-indigo-600 rounded-full animate-spin" />
+          </div>
+        ) : user ? (
+          nameOnly ? (
+            <FirstNameStep
+              firstName={firstName}
+              setFirstName={setFirstName}
+              onContinue={next}
+            />
+          ) : null
+        ) : (
+          <SignUpStep
+            firstName={firstName}
+            setFirstName={setFirstName}
+            email={accountEmail}
+            setEmail={setAccountEmail}
+            persistState={persistOnboardingState}
+            onProvider={startProvider}
+            notice={providerNotice}
+            startAtVerify={awaitingVerification}
+          />
+        )
+      )}
       {step === 4 && (
         <PrivacyStep
           gdprConsented={gdprConsented}

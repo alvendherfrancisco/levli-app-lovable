@@ -329,6 +329,26 @@ export default function Profile() {
           )}
         </div>
 
+        {/* Your details */}
+        <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+              <IonIcon name="person" size={18} className="text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h3 className="font-bold text-gray-900 dark:text-white text-lg">Your details</h3>
+          </div>
+          <div className="border-b-2 border-indigo-500 w-10 mb-4" />
+          <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2">First name</label>
+          <div className="flex items-center gap-2">
+            <input type="text" value={local.first_name || ""} placeholder="First name"
+            autoComplete="given-name"
+            onChange={(e) => setLocal({ ...local, first_name: e.target.value })}
+            className="flex-1 min-w-0 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl px-3 py-2.5 text-base outline-none focus:border-indigo-300" />
+            <SaveBtn fields="first_name" />
+          </div>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">How Levli greets you on Home.</p>
+        </div>
+
         {/* Prescriber contact */}
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2 mb-1">
