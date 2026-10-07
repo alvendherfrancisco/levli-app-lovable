@@ -3,12 +3,14 @@
 // Dose palette check — run before a release:  npm run check:colors
 //
 // Verifies the palette's own rules against the colour data stored on the
-// catalogue (src/lib/medicationConfig.js):
+// catalogue (src/lib/medicationConfig.js), where every token was read from the
+// manufacturer reference recorded beside it:
 //
 //   1. every product with a confirmed colour system carries a light and a dark
 //      token for each labelled strength, with a source link and a verified date
 //   2. every chip it draws meets WCAG AA (4.5:1) in light and in dark mode
-//   3. the standard scale steps light to dark, and reuses no brand's colour
+//   3. the standard scale steps light to dark, and stays clear of any brand's
+//      own colour within the same theme
 //   4. a dose typed through "+ Other" on a branded product is a neutral outline
 //   5. the print swatch stays readable in greyscale
 //   6. a product flagged for review says why
@@ -28,7 +30,12 @@ const check = (ok, message) => { if (!ok) failures.push(message); };
 
 const confirmed = MEDICATION_CONFIG.filter((e) => e.colorScheme?.status === "confirmed");
 const review = MEDICATION_CONFIG.filter((e) => e.colorScheme?.status === "review");
-const brandHexes = confirmed.flatMap((e) => e.allowedDoses.flatMap((d) => [d.color?.light, d.color?.dark]).filter(Boolean));
+// Brand colours per theme: the scale only has to stay clear of the colours that
+// can actually appear beside it on screen.
+const brandByMode = {
+  light: confirmed.flatMap((e) => e.allowedDoses.map((d) => d.color?.light).filter(Boolean)),
+  dark: confirmed.flatMap((e) => e.allowedDoses.map((d) => d.color?.dark).filter(Boolean)),
+};
 
 // 1. Tokens, sources and dates on every confirmed product.
 confirmed.forEach((entry) => {
@@ -56,8 +63,11 @@ confirmed.forEach((entry) => entry.allowedDoses.forEach((d) => {
 
 // 3. The standard scale: ordered light → dark, and no brand's colour reused.
 const lightSteps = STANDARD_SCALE.map((s) => relativeLuminance(s.light));
+const darkSteps = STANDARD_SCALE.map((s) => relativeLuminance(s.dark));
 check(lightSteps.every((v, i) => i === 0 || v < lightSteps[i - 1]),
-  "standard scale is not ordered from light to dark");
+  "standard scale is not ordered from light to dark in light mode");
+check(darkSteps.every((v, i) => i === 0 || v < darkSteps[i - 1]),
+  "standard scale is not ordered from light to dark in dark mode");
 check(STANDARD_SCALE.length >= 6, "standard scale needs at least six steps");
 
 const compounded = MEDICATION_CONFIG.find((e) => e.id === "compounded_semaglutide");
@@ -74,14 +84,19 @@ STANDARD_SCALE.forEach((step, i) => {
   });
 });
 
-[...STANDARD_SCALE.flatMap((s) => [s.light, s.dark]), NEUTRAL_DOSE_COLOR].forEach((hex) => {
-  brandHexes.forEach((brandHex) => {
-    check(colourDistance(hex, brandHex) >= 40,
-      `standard scale / neutral colour ${hex} is too close to a brand colour ${brandHex}`);
-  });
+STANDARD_SCALE.forEach((step, i) => {
+  brandByMode.light.forEach((hex) => check(colourDistance(step.light, hex) >= 40,
+    `standard scale step ${i + 1} (light) is too close to a brand colour ${hex}`));
+  brandByMode.dark.forEach((hex) => check(colourDistance(step.dark, hex) >= 40,
+    `standard scale step ${i + 1} (dark) is too close to a brand colour ${hex}`));
 });
+// The neutral carries no brand hue, and is never used as a chip fill.
 const neutralSaturation = rgbToHsl(NEUTRAL_DOSE_COLOR)[1];
 check(neutralSaturation <= 0.2, `the neutral dose colour is too saturated (${neutralSaturation.toFixed(2)})`);
+[...brandByMode.light, ...brandByMode.dark].forEach((hex) => {
+  check(hex.toLowerCase() !== NEUTRAL_DOSE_COLOR.toLowerCase(),
+    `the neutral colour is also a brand's own colour (${hex})`);
+});
 
 // 4. A typed dose on a branded product is a neutral outline, a labelled one filled.
 confirmed.forEach((entry) => {
@@ -95,14 +110,13 @@ confirmed.forEach((entry) => {
 });
 
 // 5. The print swatch: pale enough to survive greyscale, dark text on it.
-[...confirmed.flatMap((e) => [e.brandName]), compounded.brandName].forEach((medication) => {
-  const dose = confirmed.find((e) => e.brandName === medication)?.allowedDoses[0].value ?? maxDose;
-  const print = getPrintDoseStyle(medication, dose);
+confirmed.forEach((entry) => entry.allowedDoses.forEach((d) => {
+  const print = getPrintDoseStyle(entry.brandName, d.value);
   const ratio = contrastRatio(print.background, print.color);
-  check(ratio >= 7, `${medication}: print swatch contrast ${ratio.toFixed(2)} is under 7`);
+  check(ratio >= 7, `${entry.id} ${d.value} ${d.unit}: print swatch contrast ${ratio.toFixed(2)} is under 7`);
   check(relativeLuminance(print.background) >= 0.6,
-    `${medication}: print swatch is too dark to stay readable in greyscale`);
-});
+    `${entry.id} ${d.value} ${d.unit}: print swatch is too dark to stay readable in greyscale`);
+}));
 
 // 6. Every review flag explains itself.
 review.forEach((entry) => {
@@ -152,4 +166,4 @@ if (failures.length) {
   failures.forEach((f) => console.error(`   · ${f}`));
   process.exit(1);
 }
-console.log(`✓ dose palette: ${confirmed.length} products with confirmed colours, ${review.length} flagged for review, ${chipRows.length} labelled strengths checked`);
+console.log(`✓ dose palette: ${confirmed.length} products with confirmed colours (${chipRows.length} labelled strengths), ${review.length} flagged for review`);

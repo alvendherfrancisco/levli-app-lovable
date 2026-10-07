@@ -39,14 +39,14 @@ const NEUTRAL_OUTLINE = {
  * brand's own colour.
  */
 export const STANDARD_SCALE = [
-  { light: "#C7D2FE", dark: "#A5B4FC" },
-  { light: "#A5B4FC", dark: "#99A2FA" },
-  { light: "#8B95F8", dark: "#8B8FF8" },
-  { light: "#6E76F1", dark: "#7B7DF5" },
-  { light: "#5549E3", dark: "#6B64F0" },
-  { light: "#4436C9", dark: "#5C55E8" },
-  { light: "#372BA8", dark: "#4E47DC" },
-  { light: "#2B217F", dark: "#4139C9" },
+  { light: "#E0E3FE", dark: "#C6CCFD" },
+  { light: "#C7D2FE", dark: "#B2B8FB" },
+  { light: "#A5B4FC", dark: "#9EA3F9" },
+  { light: "#8B95F8", dark: "#8E92F7" },
+  { light: "#7A80F2", dark: "#7F81F5" },
+  { light: "#6A6CE8", dark: "#7272F0" },
+  { light: "#5C5BD9", dark: "#6763E8" },
+  { light: "#514FCA", dark: "#5D58DE" },
 ];
 
 /** The scheme recorded for a product, or null (for sign-off and checks). */

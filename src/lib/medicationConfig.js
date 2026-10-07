@@ -75,31 +75,44 @@ export const CUSTOM_MEDICATION_WARNING = "Levli can't verify this dose.";
 //
 // Nothing in the UI hard-codes a dose colour: it is read from here.
 const COLOR_TOKENS = {
-  // Ozempic — pen label colour.
-  ozempicRed: { light: "#C8102E", dark: "#CE2A3C" },
-  ozempicBlue: { light: "#1A57A5", dark: "#2E6FC4" },
-  ozempicYellow: { light: "#E0A616", dark: "#EFBB33" },
-  // Wegovy — one colour-coded pen per strength.
-  wegovyLightGreen: { light: "#8FC043", dark: "#A3D25C" },
-  wegovyPink: { light: "#D6336C", dark: "#C92A62" },
-  wegovyBrown: { light: "#7A5230", dark: "#8E6238" },
-  wegovyBlue: { light: "#1D6FB8", dark: "#2472BB" },
-  wegovyBlack: { light: "#2B383D", dark: "#4A5A61" },
-  // Rybelsus — carton and blister colour.
-  rybelsusGreen: { light: "#0B7F35", dark: "#127F3C" },
-  rybelsusRed: { light: "#C81E28", dark: "#D63A45" },
-  rybelsusBlue: { light: "#0B69B0", dark: "#1976BE" },
-  // Foundayo — tablet colour.
-  foundayoPink: { light: "#E08CA8", dark: "#EDA3BC" },
-  foundayoYellow: { light: "#EBD79A", dark: "#F2E3B4" },
-  foundayoPurpleGrey: { light: "#AFA6CF", dark: "#C2BADA" },
-  // Mounjaro — carton and pen label colour.
-  mounjaroGrey: { light: "#75787B", dark: "#8A8D91" },
-  mounjaroPurple: { light: "#592C7F", dark: "#7B4AA8" },
-  mounjaroGreen: { light: "#00857D", dark: "#159C93" },
-  mounjaroPink: { light: "#D45780", dark: "#E27A9C" },
-  mounjaroBlue: { light: "#0069A0", dark: "#1E86BF" },
-  mounjaroOrange: { light: "#F58233", dark: "#FA9C5C" },
+  // Ozempic — pen label colour, read from the manufacturer pen reference.
+  ozempicGrey: { light: "#808285", dark: "#9A9C9F" },
+  ozempicRed: { light: "#D61D29", dark: "#E4444F" },
+  ozempicTeal: { light: "#00868B", dark: "#12999E" },
+  ozempicGold: { light: "#F5A41C", dark: "#F8B84A" },
+  // Wegovy — one colour-coded pen label per strength, per the pen reference.
+  wegovyTeal: { light: "#4BB4A5", dark: "#63C7B8" },
+  wegovyRaspberry: { light: "#A93C66", dark: "#C25580" },
+  wegovyTan: { light: "#A66E3E", dark: "#BC8654" },
+  wegovyBlue: { light: "#0079A4", dark: "#1E93BF" },
+  wegovyCharcoal: { light: "#3B4044", dark: "#585F64" },
+  // Rybelsus — carton colour, per the tablet reference.
+  rybelsusGreen: { light: "#009933", dark: "#12AC47" },
+  rybelsusRed: { light: "#E32D1C", dark: "#EF5243" },
+  rybelsusBlue: { light: "#008BCF", dark: "#21A0DE" },
+  // Foundayo — one colour per step, per the dosing chart.
+  foundayoBlue: { light: "#1A3D7D", dark: "#2F5AA5" },
+  foundayoOlive: { light: "#597C2E", dark: "#74994A" },
+  foundayoPurple: { light: "#733A8C", dark: "#8F55A8" },
+  foundayoTeal: { light: "#006A77", dark: "#128492" },
+  foundayoOrange: { light: "#C8642A", dark: "#DC7F45" },
+  foundayoMagenta: { light: "#9C1C68", dark: "#B93E86" },
+  // Mounjaro — carton and pen label colour, per the pen reference.
+  mounjaroGrey: { light: "#727479", dark: "#8C8E93" },
+  mounjaroPurple: { light: "#562866", dark: "#70407F" },
+  mounjaroGreen: { light: "#009180", dark: "#0FA795" },
+  mounjaroPink: { light: "#CC4678", dark: "#DE6591" },
+  mounjaroBlue: { light: "#1775A6", dark: "#2E8EC0" },
+  mounjaroOrange: { light: "#F38B38", dark: "#F6A25D" },
+  // Zepbound — pen label colour, per the pen reference.
+  zepboundGrey: { light: "#4A4F54", dark: "#666C72" },
+  zepboundPurple: { light: "#4A2C6D", dark: "#6A478E" },
+  zepboundGreen: { light: "#2E8C82", dark: "#41A79C" },
+  zepboundPink: { light: "#D53880", dark: "#E45C98" },
+  zepboundBlue: { light: "#0086D3", dark: "#1E9EE5" },
+  zepboundOrange: { light: "#D86616", dark: "#EC8137" },
+  // Saxenda — the pen's own blue, shared by every strength it delivers.
+  saxendaPen: { light: "#253494", dark: "#3D4CAE" },
 };
 
 export const MEDICATION_CONFIG = [
@@ -111,19 +124,19 @@ export const MEDICATION_CONFIG = [
     route: "subcutaneous",
     dosingIntervalDays: 7,
     allowedDoses: [
-      // Coloured by pen, exactly as the maker does: the red-label pen delivers
-      // both 0.25 mg and 0.5 mg, so those two strengths share one colour.
-      { value: 0.25, unit: "mg", role: "initiation", color: COLOR_TOKENS.ozempicRed },
+      // Four strengths, four label colours, read from the manufacturer pen
+      // reference (see colorScheme.source).
+      { value: 0.25, unit: "mg", role: "initiation", color: COLOR_TOKENS.ozempicGrey },
       { value: 0.5, unit: "mg", role: "standard", color: COLOR_TOKENS.ozempicRed },
-      { value: 1, unit: "mg", role: "standard", color: COLOR_TOKENS.ozempicBlue },
-      { value: 2, unit: "mg", role: "standard", color: COLOR_TOKENS.ozempicYellow },
+      { value: 1, unit: "mg", role: "standard", color: COLOR_TOKENS.ozempicTeal },
+      { value: 2, unit: "mg", role: "standard", color: COLOR_TOKENS.ozempicGold },
     ],
     colorScheme: {
       basis: "pen",
-      source: "https://www.ozempic.com/ozempic-pen/dosing.html",
+      source: "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/073735cb4_image.png",
       verified: "2026-10-08",
       status: "confirmed",
-      note: "Pen label colour by strength: red-label pen 0.25 mg and 0.5 mg, blue-label pen 1 mg, yellow-label pen 2 mg (Ozempic pen dosing page; Novo Nordisk pen administration page).",
+      note: "Pen label colour per strength, read from the manufacturer pen reference image: grey 0.25 mg, red 0.5 mg, teal 1 mg, gold 2 mg. Every pen shares the same body; only the label band changes with the strength.",
     },
     minIntervalDays: 2,
     maxDoseMg: 2,
@@ -149,19 +162,20 @@ export const MEDICATION_CONFIG = [
     route: "subcutaneous",
     dosingIntervalDays: 7,
     allowedDoses: [
-      // One colour-coded pen per strength, as the maker does.
-      { value: 0.25, unit: "mg", role: "initiation", color: COLOR_TOKENS.wegovyLightGreen },
-      { value: 0.5, unit: "mg", role: "standard", color: COLOR_TOKENS.wegovyPink },
-      { value: 1, unit: "mg", role: "standard", color: COLOR_TOKENS.wegovyBrown },
+      // One colour-coded pen label per strength, read from the manufacturer pen
+      // reference (see colorScheme.source).
+      { value: 0.25, unit: "mg", role: "initiation", color: COLOR_TOKENS.wegovyTeal },
+      { value: 0.5, unit: "mg", role: "standard", color: COLOR_TOKENS.wegovyRaspberry },
+      { value: 1, unit: "mg", role: "standard", color: COLOR_TOKENS.wegovyTan },
       { value: 1.7, unit: "mg", role: "standard", color: COLOR_TOKENS.wegovyBlue },
-      { value: 2.4, unit: "mg", role: "standard", color: COLOR_TOKENS.wegovyBlack },
+      { value: 2.4, unit: "mg", role: "standard", color: COLOR_TOKENS.wegovyCharcoal },
     ],
     colorScheme: {
       basis: "pen",
-      source: "https://www.wegovy.com/obesity/starting-wegovy/starting-wegovy-pen.html",
+      source: "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/fe3b5c170_image.png",
       verified: "2026-10-08",
       status: "confirmed",
-      note: "Each strength has its own colour-coded pen: light green 0.25 mg, pink 0.5 mg, brown 1 mg, blue 1.7 mg, black 2.4 mg (Wegovy pen guide; pen-label references for the colour names).",
+      note: "Each strength has its own colour-coded pen label, read from the manufacturer pen reference image: teal 0.25 mg, raspberry 0.5 mg, tan 1 mg, blue 1.7 mg, charcoal 2.4 mg.",
     },
     minIntervalDays: 2,
     maxDoseMg: 2.4,
@@ -188,7 +202,8 @@ export const MEDICATION_CONFIG = [
     route: "subcutaneous",
     dosingIntervalDays: 7,
     allowedDoses: [
-      // One colour per strength on the carton and pen label, as the maker does.
+      // One colour per strength on the pen and carton label, read from the
+      // manufacturer pen reference (see colorScheme.source).
       { value: 2.5, unit: "mg", role: "initiation", color: COLOR_TOKENS.mounjaroGrey },
       { value: 5, unit: "mg", role: "standard", color: COLOR_TOKENS.mounjaroPurple },
       { value: 7.5, unit: "mg", role: "standard", color: COLOR_TOKENS.mounjaroGreen },
@@ -198,10 +213,10 @@ export const MEDICATION_CONFIG = [
     ],
     colorScheme: {
       basis: "pen",
-      source: "https://www.goodrx.com/mounjaro/appearance",
+      source: "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/2db69ff87_image.png",
       verified: "2026-10-08",
       status: "confirmed",
-      note: "US pen and carton label colour by strength, from manufacturer-supplied product photos: grey 2.5 mg, purple 5 mg, green 7.5 mg, pink 10 mg, blue 12.5 mg, orange 15 mg. Re-verify against Lilly material at sign-off: UK pens use a different set (yellow, maroon, green, teal, indigo, purple).",
+      note: "Pen and carton label colour by strength, read from the manufacturer pen reference image: grey 2.5 mg, dark purple 5 mg, green 7.5 mg, magenta 10 mg, blue 12.5 mg, orange 15 mg. UK pens use a different set (yellow, maroon, green, teal, indigo, purple).",
     },
     minIntervalDays: 3,
     maxDoseMg: 15,
@@ -227,21 +242,23 @@ export const MEDICATION_CONFIG = [
     route: "subcutaneous",
     dosingIntervalDays: 7,
     allowedDoses: [
-      { value: 2.5, unit: "mg", role: "initiation" },
-      { value: 5, unit: "mg", role: "standard" },
-      { value: 7.5, unit: "mg", role: "standard" },
-      { value: 10, unit: "mg", role: "standard" },
-      { value: 12.5, unit: "mg", role: "standard" },
-      { value: 15, unit: "mg", role: "standard" },
+      // One colour per strength on the pen label, read from the manufacturer
+      // pen reference (see colorScheme.source).
+      { value: 2.5, unit: "mg", role: "initiation", color: COLOR_TOKENS.zepboundGrey },
+      { value: 5, unit: "mg", role: "standard", color: COLOR_TOKENS.zepboundPurple },
+      { value: 7.5, unit: "mg", role: "standard", color: COLOR_TOKENS.zepboundGreen },
+      { value: 10, unit: "mg", role: "standard", color: COLOR_TOKENS.zepboundPink },
+      { value: 12.5, unit: "mg", role: "standard", color: COLOR_TOKENS.zepboundBlue },
+      { value: 15, unit: "mg", role: "standard", color: COLOR_TOKENS.zepboundOrange },
     ],
     minIntervalDays: 3,
     maxDoseMg: 15,
     colorScheme: {
-      basis: "",
-      source: "",
-      verified: "",
-      status: "review",
-      note: "No manufacturer-stated colour found, so the standard scale is used. A third-party guide records the pen and vial colour blocks as dark grey, dark purple, dark teal, pink, blue and red for 2.5 mg through 15 mg, and Lilly's own pages describe a colour-coded pen without naming the colours. Confirm against Lilly packaging and this becomes a colour block on each dose above.",
+      basis: "pen",
+      source: "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/39eb42da9_image.png",
+      verified: "2026-10-08",
+      status: "confirmed",
+      note: "Pen label colour by strength, read from the manufacturer pen reference image: dark grey 2.5 mg, deep purple 5 mg, teal 7.5 mg, magenta 10 mg, bright blue 12.5 mg, burnt orange 15 mg. 5 mg, 10 mg and 15 mg are the maintenance strengths.",
     },
     indicationNote:
       "Chronic weight management in adults with obesity, or with overweight plus a weight-related condition, and moderate-to-severe obstructive sleep apnoea with obesity. The 2.5 mg strength is for starting treatment only and is not a maintenance dose.",
@@ -301,20 +318,23 @@ export const MEDICATION_CONFIG = [
     route: "subcutaneous",
     dosingIntervalDays: 1,
     allowedDoses: [
-      { value: 0.6, unit: "mg", role: "titration_only" },
-      { value: 1.2, unit: "mg", role: "titration_only" },
-      { value: 1.8, unit: "mg", role: "titration_only" },
-      { value: 2.4, unit: "mg", role: "titration_only" },
-      { value: 3, unit: "mg", role: "standard" },
+      // One pen delivers every strength, so every dose carries that pen's own
+      // colour, exactly as the product does: the strength is set on the dose
+      // selector, not by a change of label colour.
+      { value: 0.6, unit: "mg", role: "titration_only", color: COLOR_TOKENS.saxendaPen },
+      { value: 1.2, unit: "mg", role: "titration_only", color: COLOR_TOKENS.saxendaPen },
+      { value: 1.8, unit: "mg", role: "titration_only", color: COLOR_TOKENS.saxendaPen },
+      { value: 2.4, unit: "mg", role: "titration_only", color: COLOR_TOKENS.saxendaPen },
+      { value: 3, unit: "mg", role: "standard", color: COLOR_TOKENS.saxendaPen },
     ],
     minIntervalDays: 1,
     maxDoseMg: 3,
     colorScheme: {
       basis: "pen",
-      source: "",
-      verified: "",
-      status: "review",
-      note: "One pen delivers every strength from 0.6 mg to 3 mg, so every dose shares a single colour — no manufacturer-stated colour found for that pen, so the standard scale is used until one is sourced.",
+      source: "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/ca3ce7c7e_image.png",
+      verified: "2026-10-08",
+      status: "confirmed",
+      note: "One royal-blue pen delivers every strength from 0.6 mg to 3 mg (read from the manufacturer pen reference image), so all five strengths share the pen's blue — as they do on the product itself, where the dose selector sets the strength.",
     },
     indicationNote:
       "Chronic weight management in adults and in adolescents aged 12 and older with obesity or with overweight plus a weight-related condition. The 3 mg strength is the maintenance dose; the lower strengths are for titration only.",
@@ -340,17 +360,17 @@ export const MEDICATION_CONFIG = [
     dosingIntervalDays: 1,
     allowedDoses: [
       // Coloured by carton, as the maker does: the tablets themselves are all
-      // white to light yellow, so the colour belongs to the strength's carton.
+      // white, so the colour belongs to the strength's carton.
       { value: 3, unit: "mg", role: "initiation", color: COLOR_TOKENS.rybelsusGreen },
       { value: 7, unit: "mg", role: "standard", color: COLOR_TOKENS.rybelsusRed },
       { value: 14, unit: "mg", role: "standard", color: COLOR_TOKENS.rybelsusBlue },
     ],
     colorScheme: {
       basis: "strength",
-      source: "https://www.novonordisk.ca/content/dam/nncorp/ca/en/products/Rybelsus-CI-EN-monograph.pdf",
+      source: "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/6f743ef88_image.png",
       verified: "2026-10-08",
       status: "confirmed",
-      note: "Carton and blister colour by strength: green 3 mg, red 7 mg, blue 14 mg (Novo Nordisk product monograph; Health Canada product register).",
+      note: "Carton colour by strength, read from the manufacturer tablet reference image: green 3 mg, red 7 mg, blue 14 mg. That image also shows lower tablet strengths (1.5 mg, 4 mg, 9 mg) that this config does not list yet.",
     },
     minIntervalDays: 1,
     maxDoseMg: 14,
@@ -412,23 +432,21 @@ export const MEDICATION_CONFIG = [
     route: "oral_tablet",
     dosingIntervalDays: 1,
     allowedDoses: [
-      // The label gives each strength a tablet colour, and colours two
-      // strengths alike (pink, light yellow, grayish purple). Those pairs share
-      // a colour here — the tablets differ in shape as well, and the dose number
-      // is always shown, so nothing is identified by colour alone.
-      { value: 0.8, unit: "mg", role: "initiation", color: COLOR_TOKENS.foundayoPink },
-      { value: 2.5, unit: "mg", role: "titration_only", color: COLOR_TOKENS.foundayoYellow },
-      { value: 5.5, unit: "mg", role: "standard", color: COLOR_TOKENS.foundayoPurpleGrey },
-      { value: 9, unit: "mg", role: "standard", color: COLOR_TOKENS.foundayoPink },
-      { value: 14.5, unit: "mg", role: "standard", color: COLOR_TOKENS.foundayoYellow },
-      { value: 17.2, unit: "mg", role: "standard", color: COLOR_TOKENS.foundayoPurpleGrey },
+      // Six strengths, six colours, read from the manufacturer dosing chart
+      // (see colorScheme.source): no two strengths share a colour.
+      { value: 0.8, unit: "mg", role: "initiation", color: COLOR_TOKENS.foundayoBlue },
+      { value: 2.5, unit: "mg", role: "titration_only", color: COLOR_TOKENS.foundayoOlive },
+      { value: 5.5, unit: "mg", role: "standard", color: COLOR_TOKENS.foundayoPurple },
+      { value: 9, unit: "mg", role: "standard", color: COLOR_TOKENS.foundayoTeal },
+      { value: 14.5, unit: "mg", role: "standard", color: COLOR_TOKENS.foundayoOrange },
+      { value: 17.2, unit: "mg", role: "standard", color: COLOR_TOKENS.foundayoMagenta },
     ],
     colorScheme: {
       basis: "strength",
-      source: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=8ac446c5-feba-474f-a103-23facb9b5c62",
+      source: "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/f3e9c7ed3_image.png",
       verified: "2026-10-08",
       status: "confirmed",
-      note: "Tablet colour by strength from the FDA label: pink 0.8 mg and 9 mg, light yellow 2.5 mg and 14.5 mg, grayish purple 5.5 mg and 17.2 mg.",
+      note: "Step colour per strength, read from the manufacturer dosing chart image: dark blue 0.8 mg, olive green 2.5 mg, purple 5.5 mg, teal 9 mg, burnt orange 14.5 mg, magenta 17.2 mg.",
     },
     minIntervalDays: 1,
     maxDoseMg: 17.2,
