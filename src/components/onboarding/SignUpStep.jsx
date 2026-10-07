@@ -3,15 +3,12 @@ import { Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { SignUpIllustration } from "@/components/onboarding/OnboardingIllustrations";
-import StepArt from "@/components/onboarding/StepArt";
-import StepHeading from "@/components/onboarding/StepHeading";
-import { FIELD } from "@/components/onboarding/onboardingStyles";
 
 /**
- * Step 4 — account creation.
+ * Onboarding step 4 — account creation.
  * Collects email + password, verifies via OTP, then persists the onboarding
  * state (via persistState) and reloads so the auth session initialises.
- * The reload resumes onboarding at the consent step with all prior data intact.
+ * The reload resumes onboarding at step 5 (Privacy) with all prior data intact.
  */
 export default function SignUpStep({ persistState }) {
   const [firstName, setFirstName] = useState("");
@@ -68,21 +65,20 @@ export default function SignUpStep({ persistState }) {
     }
   };
 
-  const errorLine = error && (
-    <p role="alert" className="rounded-xl border border-destructive bg-background px-3 py-2 text-center text-sm text-foreground">
-      {error}
-    </p>
-  );
-
   if (showOtp) {
     return (
-      <div className="flex flex-col gap-[clamp(0.5rem,1.8vh,1.25rem)] py-2">
-        <StepArt size="compact">
-          <SignUpIllustration />
-        </StepArt>
-        <StepHeading title="Verify your email" subtitle={`We sent a 6-digit code to ${email}`} />
-        {errorLine}
-        <div className="flex justify-center">
+      <div className="flex flex-col flex-1">
+        <SignUpIllustration />
+        <div className="text-center mt-3 mb-4">
+          <h1 className="text-2xl sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
+            Verify your email
+          </h1>
+          <p className="text-gray-500 text-sm px-3">We sent a code to {email}</p>
+        </div>
+        {error && (
+          <p className="mb-3 text-sm text-red-500 text-center bg-red-50 rounded-xl px-3 py-2">{error}</p>
+        )}
+        <div className="flex justify-center mb-5">
           <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode} autoFocus>
             <InputOTPGroup>
               <InputOTPSlot index={0} />
@@ -95,20 +91,19 @@ export default function SignUpStep({ persistState }) {
           </InputOTP>
         </div>
         <button
-          type="button"
           onClick={handleVerify}
           disabled={loading || otpCode.length < 6}
-          className="mx-auto min-h-[52px] w-full max-w-[320px] rounded-full bg-action text-base font-semibold text-action-foreground transition-all active:scale-[0.98] disabled:opacity-60"
+          className="w-full max-w-[320px] mx-auto py-4 rounded-full font-semibold text-base bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-60 transition-all active:scale-95"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" /> Verifying…
+              <Loader2 className="w-4 h-4 animate-spin" /> Verifying...
             </span>
           ) : "Verify"}
         </button>
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-sm text-gray-500 mt-5">
           Didn't receive the code?{" "}
-          <button type="button" onClick={handleResend} className="min-h-[44px] font-medium text-primary underline">
+          <button onClick={handleResend} className="text-indigo-600 font-medium hover:underline">
             Resend
           </button>
         </p>
@@ -117,23 +112,27 @@ export default function SignUpStep({ persistState }) {
   }
 
   return (
-    <div className="flex flex-col gap-[clamp(0.4rem,1.4vh,1rem)] py-2">
-      <StepArt size="compact">
-        <SignUpIllustration />
-      </StepArt>
-      <StepHeading
-        title="Create your account"
-        subtitle="Save your journey and pick up where you left off, on any device."
-      />
-      {errorLine}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
+    <div className="flex flex-col flex-1">
+      <SignUpIllustration />
+      <div className="text-center mt-3 mb-4">
+        <h1 className="text-2xl sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
+          Create your account
+        </h1>
+        <p className="text-gray-500 text-sm px-3 leading-relaxed">
+          Sign up to save your journey and pick up where you left off, on any device.
+        </p>
+      </div>
+      {error && (
+        <p className="mb-3 text-sm text-red-500 text-center bg-red-50 rounded-xl px-3 py-2">{error}</p>
+      )}
+      <form onSubmit={handleSubmit} className="space-y-3 flex flex-col items-center">
         <input
           type="text"
           placeholder="First name"
           autoComplete="given-name"
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
-          className={FIELD}
+          className="w-full max-w-[400px] border-2 border-gray-200 bg-white rounded-xl px-4 py-3 text-base text-gray-700 outline-none focus:border-indigo-500 transition-colors"
         />
         <input
           type="email"
@@ -141,7 +140,7 @@ export default function SignUpStep({ persistState }) {
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className={FIELD}
+          className="w-full border-2 border-gray-200 bg-white rounded-xl px-4 py-3 text-base text-gray-700 outline-none focus:border-indigo-500 transition-colors"
           required
         />
         <input
@@ -150,7 +149,7 @@ export default function SignUpStep({ persistState }) {
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className={FIELD}
+          className="w-full border-2 border-gray-200 bg-white rounded-xl px-4 py-3 text-base text-gray-700 outline-none focus:border-indigo-500 transition-colors"
           required
         />
         <input
@@ -159,22 +158,22 @@ export default function SignUpStep({ persistState }) {
           autoComplete="new-password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          className={FIELD}
+          className="w-full border-2 border-gray-200 bg-white rounded-xl px-4 py-3 text-base text-gray-700 outline-none focus:border-indigo-500 transition-colors"
           required
         />
         <button
           type="submit"
           disabled={loading}
-          className="mx-auto min-h-[52px] w-full max-w-[320px] rounded-full bg-action text-base font-semibold text-action-foreground transition-all active:scale-[0.98] disabled:opacity-60"
+          className="w-full max-w-[320px] mx-auto py-4 rounded-full font-semibold text-base bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-60 transition-all active:scale-95"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" /> Creating account…
+              <Loader2 className="w-4 h-4 animate-spin" /> Creating account...
             </span>
           ) : "Create account"}
         </button>
       </form>
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center text-xs text-gray-400 mt-5 px-4">
         By creating an account, you agree to our Terms of Service and Privacy Policy.
       </p>
     </div>

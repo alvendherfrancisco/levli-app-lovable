@@ -121,9 +121,6 @@ export function getSmartShotDefaults({ medications = [], shots = [], profile, re
     const allowed = COMPOUNDED_DEVICES.map((d) => d.value);
     deviceType = allowed.includes(lastDevice) ? lastDevice : "vial_syringe";
   }
-  // Otherwise the delivery method saved on the regimen is the one offered back,
-  // so the log starts from how this person actually takes it.
-  if (!deviceType && regimens[0]?.device_type) deviceType = regimens[0].device_type;
 
   return {
     medication,

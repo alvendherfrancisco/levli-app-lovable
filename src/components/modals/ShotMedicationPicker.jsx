@@ -1,8 +1,6 @@
 import React, { useId, useMemo, useState } from "react";
 import { Check, Pill, Plus, Search } from "lucide-react";
 import { medicationPickerGroups } from "@/lib/shotMedication";
-import { OTHERS_LABEL } from "@/lib/medicationConfig";
-import MedicationName from "@/components/MedicationName";
 import { sound } from "@/lib/sounds";
 
 /** One selectable row: the brand name over its generic name and strengths. */
@@ -27,7 +25,7 @@ function MedicationRow({ row, selected, onSelect }) {
       <span className="min-w-0 flex-1">
         <span className={`block text-sm font-semibold break-words ${
           selected ? "text-indigo-700 dark:text-indigo-300" : "text-gray-900 dark:text-[#E8E9F0]"
-        }`}><MedicationName name={row.display} /></span>
+        }`}>{row.display}</span>
         {detail && (
           <span className="block text-xs text-gray-500 dark:text-[#9A9DAE] mt-0.5 break-words">{detail}</span>
         )}
@@ -41,8 +39,8 @@ function MedicationRow({ row, selected, onSelect }) {
 
 /**
  * The Add Shot Log medication picker: two groups — the medications already
- * saved in Meds first, then the built-in catalogue, in catalogue order — and a
- * final "Others" row for a medication that is not listed.
+ * saved in Meds first, then the built-in catalogue — and a final
+ * "Other / custom" row.
  *
  * It opens inside the sheet's own flow rather than over it, so it can never
  * cover the dose chips below, and its list scrolls inside a capped height.
@@ -98,7 +96,7 @@ export default function ShotMedicationPicker({
 
         {isEmpty && (
           <p role="status" aria-live="polite" className="px-3 py-4 text-xs text-gray-500 dark:text-[#9A9DAE]">
-            Nothing matches “{query.trim()}”. Choose {OTHERS_LABEL} below and type the name from your prescription.
+            Nothing matches “{query.trim()}”. Choose Other / custom below and type the name from your prescription.
           </p>
         )}
 
@@ -118,7 +116,7 @@ export default function ShotMedicationPicker({
           <span className="min-w-0 flex-1">
             <span className={`block text-sm font-semibold ${
               isCustom ? "text-indigo-700 dark:text-indigo-300" : "text-gray-900 dark:text-[#E8E9F0]"
-            }`}>{OTHERS_LABEL}</span>
+            }`}>Other / custom</span>
             <span className="block text-xs text-gray-500 dark:text-[#9A9DAE] mt-0.5">
               Type the name from your prescription
             </span>

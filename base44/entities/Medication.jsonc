@@ -22,10 +22,6 @@
       "type": "string",
       "description": "Route of administration for this medication entry"
     },
-    "device_type": {
-      "type": "string",
-      "description": "The delivery method this medication is usually taken with (prefilled_syringe, single_dose_pen, multidose_pen, vial_syringe, patch, other). Used as the default when a dose is logged."
-    },
     "prescribed_dose": {
       "type": "number",
       "description": "Currently prescribed dose in mg (or other unit as specified)"

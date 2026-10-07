@@ -1,19 +1,14 @@
 import React, { useMemo, useState } from "react";
 import { Search, Check } from "lucide-react";
 import { MEDICATION_OPTIONS } from "@/lib/medicationRegimen";
-import { OTHERS_LABEL } from "@/lib/medicationConfig";
-import MedicationName from "@/components/MedicationName";
+import { plainBrandName } from "@/lib/medicationConfig";
 import { sound } from "@/lib/sounds";
 
 /**
- * Quick-choice medication picker: a row of tappable product chips (the product's
- * own name — trademark mark and all — beside its generic name in smaller text), a
- * searchable field underneath for finding one faster, and an "Others" chip for a
- * medication that isn't listed, whose details are typed on the form below.
- * Chips wrap rather than scroll sideways.
- *
- * The list is the shared catalogue, in the catalogue's own order
- * (src/lib/medicationConfig.js), so it is the same list everywhere in the app.
+ * Quick-choice medication picker: a row of tappable brand chips (brand beside
+ * its generic name in smaller text), a searchable field underneath for finding
+ * one faster, and an "Other" chip for a medication that isn't listed — its name
+ * is typed on the form, not here. Chips wrap rather than scroll sideways.
  */
 
 const chipClass = (selected) =>
@@ -32,8 +27,6 @@ export default function MedicationNamePicker({ selectedName, isCustom, onSelect,
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return MEDICATION_OPTIONS;
-    // The stored name carries the trademark mark; a plain search for "Ozempic"
-    // still matches it, because the mark only ever sits at the end of the name.
     return MEDICATION_OPTIONS.filter(
       (o) => o.label.toLowerCase().includes(q) || o.generic.toLowerCase().includes(q));
   }, [query]);
@@ -60,8 +53,8 @@ export default function MedicationNamePicker({ selectedName, isCustom, onSelect,
               className={chipClass(selected)}
             >
               {selected && <Check size={14} strokeWidth={3} className="flex-shrink-0" />}
-              <MedicationName name={o.value} className="text-sm font-semibold" />
-              {o.generic && <span className={subClass(selected)}>· {o.generic}</span>}
+              <span className="text-sm font-semibold">{plainBrandName(o.value)}</span>
+              <span className={subClass(selected)}>· {o.generic}</span>
             </button>
           );
         })}
@@ -73,14 +66,14 @@ export default function MedicationNamePicker({ selectedName, isCustom, onSelect,
           className={chipClass(isCustom)}
         >
           {isCustom && <Check size={14} strokeWidth={3} className="flex-shrink-0" />}
-          <span className="text-sm font-semibold">{OTHERS_LABEL}</span>
-          <span className={subClass(isCustom)}>· type the details</span>
+          <span className="text-sm font-semibold">Other</span>
+          <span className={subClass(isCustom)}>· type the name</span>
         </button>
       </div>
 
       {!matches.length && (
         <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-2">
-          No match in the list. Choose “{OTHERS_LABEL}” and type the name from your prescription.
+          No match in the list. Choose “Other” and type the name from your prescription.
         </p>
       )}
 
