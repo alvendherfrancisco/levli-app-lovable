@@ -6,33 +6,38 @@
 // itself is saved, so browsing the list never leaves a stray regimen behind.
 
 import {
-  MEDICATION_CONFIG,
   CUSTOM_MEDICATION_NAME,
   allowsAnyDose,
   describeAllowedDoses,
+  displayBrandName,
+  genericSubtitle,
+  getCatalogueEntries,
   getDoseUnit,
   getIntervalDays,
   getMedicationConfig,
-  plainBrandName,
 } from "@/lib/medicationConfig";
 import { pickerMedications } from "@/lib/medicationLink";
 import { parseShotDate, toDayKey } from "@/lib/dateUtils";
 
-/** The catalogue the picker browses: brand, generic, dose unit and strengths. */
-const CATALOGUE_ROWS = MEDICATION_CONFIG
-  .filter((entry) => entry.id !== "custom")
-  .map((entry) => ({
-    key: `catalogue:${entry.id}`,
-    catalogueId: entry.id,
-    name: entry.brandName,
-    display: plainBrandName(entry.brandName),
-    generic: entry.genericName || "",
-    unit: getDoseUnit(entry.brandName),
-    strengths: describeAllowedDoses(entry.brandName),
-    anyDose: allowsAnyDose(entry.brandName),
-    route: entry.route || "",
-    status: "",
-  }));
+/**
+ * The catalogue the picker browses: brand, generic, dose unit and strengths, in
+ * the catalogue's own order. `name` is the stored name (how a log records it,
+ * trademark mark included) and `display` is that name as it is drawn on screen;
+ * the search below matches the stored name, so typing "Ozempic" still finds
+ * "Ozempic®".
+ */
+const CATALOGUE_ROWS = getCatalogueEntries().map((entry) => ({
+  key: `catalogue:${entry.id}`,
+  catalogueId: entry.id,
+  name: entry.brandName,
+  display: displayBrandName(entry.brandName),
+  generic: genericSubtitle(entry.brandName),
+  unit: getDoseUnit(entry.brandName),
+  strengths: describeAllowedDoses(entry.brandName),
+  anyDose: allowsAnyDose(entry.brandName),
+  route: entry.route || "",
+  status: "",
+}));
 
 const searchText = (value) => String(value || "").trim().toLowerCase();
 
@@ -47,8 +52,8 @@ function storeRow(medication) {
     id: medication.id || "",
     catalogueId: entry?.id || "",
     name: medication.medication_name,
-    display: plainBrandName(medication.medication_name),
-    generic: medication.generic_name || entry?.genericName || "",
+    display: displayBrandName(medication.medication_name),
+    generic: medication.generic_name || genericSubtitle(medication.medication_name) || entry?.genericName || "",
     unit: medication.dose_unit || getDoseUnit(medication.medication_name),
     strengths: describeAllowedDoses(medication.medication_name),
     anyDose: allowsAnyDose(medication.medication_name),
@@ -93,6 +98,7 @@ export function regimenFromShot({
   shots = [],
   dateKey = "",
   customDoses = [],
+  genericName = "",
 }) {
   const entry = name === CUSTOM_MEDICATION_NAME ? null : getMedicationConfig(name);
   const logged = shots
@@ -104,7 +110,9 @@ export function regimenFromShot({
   return {
     medication_name: name,
     catalogue_id: entry?.id || "",
-    generic_name: entry?.genericName || "",
+    // A catalogue product's own generic name; for a typed "Others" entry, the
+    // generic the user gave (optional, and empty when they gave none).
+    generic_name: entry?.genericName || genericName || "",
     route: route || entry?.route || "",
     prescribed_dose: dose ?? null,
     dose_unit: doseUnit,

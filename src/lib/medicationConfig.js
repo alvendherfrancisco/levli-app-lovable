@@ -20,6 +20,8 @@
 
 /** The option that asks the user to type their own drug name and dose. */
 export const CUSTOM_MEDICATION_NAME = "Other / custom (prescriber-directed)";
+/** The last row of every medication picker: opens the type-your-own entry. */
+export const OTHERS_LABEL = "Others";
 /** Shown wherever a custom entry is used. */
 export const CUSTOM_MEDICATION_WARNING = "Levli can't verify this dose.";
 
@@ -256,6 +258,152 @@ export const MEDICATION_CONFIG = [
     exposureEligible: true,
   },
   {
+    id: "foundayo",
+    brandName: "Foundayo®",
+    genericName: "orforglipron",
+    route: "oral_tablet",
+    dosingIntervalDays: 1,
+    allowedDoses: [],
+    allowsAnyDose: true,
+    minIntervalDays: 1,
+    maxDoseMg: null,
+    indicationNote:
+      "Chronic weight management in adults with obesity, or with overweight plus a weight-related condition. A once-daily tablet, and the first oral GLP-1 that is not a peptide.",
+    missedDoseRule:
+      "Follow the instructions your prescriber gave you for a missed tablet. Never take two tablets to catch up.",
+    retitrationDays: null,
+    missedDoseWindowDays: 0,
+    missedDoseLabelQuote: "",
+    source: "https://foundayo.lilly.com/",
+    lastReviewed: "2026-10-07",
+    verified: false,
+    verifiedNote:
+      "Foundayo (orforglipron) is a brand-name oral GLP-1. Its strength list has not been read from the prescribing information, so no strengths are offered here and any dose may be typed — nothing logged for it is used for exposure modelling. The once-daily interval is the manufacturer's own.",
+    exposureEligible: false,
+  },
+  {
+    id: "bpc_157",
+    brandName: "BPC-157",
+    genericName: "Body Protection Compound 157",
+    route: "subcutaneous",
+    dosingIntervalDays: null,
+    allowedDoses: [],
+    allowsAnyDose: true,
+    minIntervalDays: null,
+    maxDoseMg: null,
+    indicationNote:
+      "A research peptide studied for tissue repair in animals. No approved product anywhere, and the FDA has issued warnings about it.",
+    missedDoseRule:
+      "Levli holds no label for this product, so it cannot state a missed-dose rule. Follow your prescriber's instructions.",
+    retitrationDays: null,
+    missedDoseWindowDays: null,
+    missedDoseLabelQuote: "",
+    source: "",
+    lastReviewed: "2026-10-07",
+    verified: false,
+    verifiedNote:
+      "A research peptide with no approved product and no prescribing information to check against. No strengths are listed and the dose is always typed by the user.",
+    exposureEligible: false,
+  },
+  {
+    id: "cjc_1295",
+    brandName: "CJC-1295",
+    genericName: "Modified growth hormone releasing factor 1-29",
+    route: "subcutaneous",
+    dosingIntervalDays: null,
+    allowedDoses: [],
+    allowsAnyDose: true,
+    minIntervalDays: null,
+    maxDoseMg: null,
+    indicationNote:
+      "A research peptide (growth hormone releasing factor analogue). No approved product anywhere.",
+    missedDoseRule:
+      "Levli holds no label for this product, so it cannot state a missed-dose rule. Follow your prescriber's instructions.",
+    retitrationDays: null,
+    missedDoseWindowDays: null,
+    missedDoseLabelQuote: "",
+    source: "",
+    lastReviewed: "2026-10-07",
+    verified: false,
+    verifiedNote:
+      "A research peptide with no approved product and no prescribing information to check against. No strengths are listed and the dose is always typed by the user.",
+    exposureEligible: false,
+  },
+  {
+    id: "ghk_cu",
+    brandName: "GHK-Cu",
+    genericName: "Copper tripeptide-1",
+    route: "topical_serum",
+    dosingIntervalDays: null,
+    allowedDoses: [],
+    allowsAnyDose: true,
+    minIntervalDays: null,
+    maxDoseMg: null,
+    indicationNote:
+      "A copper peptide used in skincare. A cosmetic ingredient, not an approved medicine.",
+    missedDoseRule:
+      "Levli holds no label for this product, so it cannot state a missed-dose rule. Follow the instructions that came with it.",
+    retitrationDays: null,
+    missedDoseWindowDays: null,
+    missedDoseLabelQuote: "",
+    source: "",
+    lastReviewed: "2026-10-07",
+    verified: false,
+    verifiedNote:
+      "A cosmetic ingredient, not an approved medicine. No strengths are listed and the amount applied is always typed by the user.",
+    exposureEligible: false,
+  },
+  {
+    id: "ipamorelin",
+    brandName: "Ipamorelin",
+    // A single peptide with no separate generic name — the product name IS the
+    // name, so no generic is printed beside it.
+    genericName: "",
+    route: "subcutaneous",
+    dosingIntervalDays: null,
+    allowedDoses: [],
+    allowsAnyDose: true,
+    minIntervalDays: null,
+    maxDoseMg: null,
+    indicationNote:
+      "A research peptide (growth hormone secretagogue). No approved product anywhere.",
+    missedDoseRule:
+      "Levli holds no label for this product, so it cannot state a missed-dose rule. Follow your prescriber's instructions.",
+    retitrationDays: null,
+    missedDoseWindowDays: null,
+    missedDoseLabelQuote: "",
+    source: "",
+    lastReviewed: "2026-10-07",
+    verified: false,
+    verifiedNote:
+      "A research peptide with no approved product and no prescribing information to check against. No strengths are listed and the dose is always typed by the user.",
+    exposureEligible: false,
+  },
+  {
+    id: "tb_500",
+    brandName: "TB-500",
+    genericName: "Thymosin beta-4 fragment",
+    route: "subcutaneous",
+    dosingIntervalDays: null,
+    allowedDoses: [],
+    allowsAnyDose: true,
+    minIntervalDays: null,
+    maxDoseMg: null,
+    indicationNote:
+      "A research peptide studied for tissue repair. No approved product anywhere, and it is prohibited in sport (WADA).",
+    missedDoseRule:
+      "Levli holds no label for this product, so it cannot state a missed-dose rule. Follow your prescriber's instructions.",
+    retitrationDays: null,
+    missedDoseWindowDays: null,
+    missedDoseLabelQuote: "",
+    source: "",
+    lastReviewed: "2026-10-07",
+    verified: false,
+    verifiedNote:
+      "A research peptide with no approved product and no prescribing information to check against. No strengths are listed and the dose is always typed by the user.",
+    exposureEligible: false,
+  },
+  {
     id: "compounded_semaglutide",
     brandName: "Semaglutide (generic / compounded)",
     genericName: "semaglutide",
@@ -351,6 +499,29 @@ export function getMedicationConfig(name) {
 export function plainBrandName(name) {
   const entry = getMedicationConfig(name);
   return (entry?.brandName || String(name || "")).replace(/[®™]/g, "");
+}
+
+/**
+ * The product's name exactly as it should be SHOWN — the ® kept, because a
+ * brand's own name includes it. Matching, sorting, searching and exports use the
+ * plain name above instead, so a search for "Ozempic" still finds "Ozempic®".
+ * A name Levli does not hold is returned exactly as the user typed it.
+ */
+export function displayBrandName(name) {
+  const entry = MEDICATION_CONFIG.find((e) => normalise(e.brandName) === normalise(name));
+  return entry ? entry.brandName : String(name || "");
+}
+
+/**
+ * The generic wording to show beside a product, or "" when it would only repeat
+ * the product's own name (a single peptide such as Ipamorelin has no separate
+ * generic name to print).
+ */
+export function genericSubtitle(name) {
+  const generic = getMedicationConfig(name)?.genericName || "";
+  if (!generic) return "";
+  const letters = (v) => normalise(v).replace(/[^a-z0-9]/g, "");
+  return letters(generic) === letters(displayBrandName(name)) ? "" : generic;
 }
 
 /** true when this product allows any dose (compounded / custom / unknown). */
@@ -518,7 +689,36 @@ export function isCustomDoseSource(shot) {
  * products with no verifiable list, then the custom option.
  */
 export function getMedicationPickerNames() {
-  const verified = MEDICATION_CONFIG.filter((e) => e.verified && !e.allowsAnyDose).map((e) => e.brandName);
-  const unverified = MEDICATION_CONFIG.filter((e) => !e.verified && e.id !== "custom").map((e) => e.brandName);
-  return [...verified, ...unverified, CUSTOM_MEDICATION_NAME];
+  return [...getCatalogueEntries().map((e) => e.brandName), CUSTOM_MEDICATION_NAME];
+}
+
+// ── The selectable catalogue, in the order it is shown ──────────────────────
+// Every picker reads this one list — Add Shot Log, Add / Edit Medication, Stock
+// and onboarding — so a product can never be offered on one screen and missing
+// from another.
+//
+// A product that is NOT listed here (Victoza, Saxenda, Trulicity) keeps all of
+// its label data and is still reached by name: an existing log, a stock item, or
+// the "Others" entry. It is simply no longer one of the catalogue rows.
+export const CATALOGUE_ORDER = [
+  "foundayo",
+  "mounjaro",
+  "ozempic",
+  "rybelsus",
+  "compounded_semaglutide",
+  "compounded_tirzepatide",
+  "wegovy",
+  "zepbound",
+  "bpc_157",
+  "cjc_1295",
+  "ghk_cu",
+  "ipamorelin",
+  "tb_500",
+];
+
+/** The catalogue's products, in the order the pickers show them. */
+export function getCatalogueEntries() {
+  return CATALOGUE_ORDER
+    .map((id) => MEDICATION_CONFIG.find((e) => e.id === id))
+    .filter(Boolean);
 }

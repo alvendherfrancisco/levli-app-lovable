@@ -4,8 +4,8 @@ import { useAppState } from "@/lib/AppState";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
 import {
-  findMedicationOption, isLabelStrength, scheduleText, statusOptionsFor, validateRegimenForm,
-  DOSE_STEP_HELPER, OTHER_SCHEDULE,
+  findMedicationOption, isLabelStrength, parseStrengthList, scheduleText, statusOptionsFor,
+  validateRegimenForm, DOSE_STEP_HELPER, OTHER_SCHEDULE,
 } from "@/lib/medicationRegimen";
 import { sound } from "@/lib/sounds";
 import MedicationNamePicker from "@/components/medications/MedicationNamePicker";
@@ -15,6 +15,7 @@ import StartDateField from "@/components/medications/StartDateField";
 import IndicationField from "@/components/medications/IndicationField";
 import ClearFieldButton from "@/components/ClearFieldButton";
 import OptionChips from "@/components/OptionChips";
+import CustomProductDetails from "@/components/modals/CustomProductDetails";
 
 const pad = (n) => String(n).padStart(2, "0");
 function todayInput() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
@@ -52,6 +53,10 @@ export default function MedicationModal({ open, onClose, editing }) {
   const [selectedName, setSelectedName] = useState("");
   const [isCustom, setIsCustom] = useState(false);
   const [customName, setCustomName] = useState("");
+  // The optional parts of an "Others" entry: the generic name, and the product's
+  // strengths typed as a list so each one becomes a chip when it is logged.
+  const [customGeneric, setCustomGeneric] = useState("");
+  const [customStrengths, setCustomStrengths] = useState("");
   const [dose, setDose] = useState("");
   const [doseSuggested, setDoseSuggested] = useState(false);
   const [doseConfirmed, setDoseConfirmed] = useState(false);
@@ -93,6 +98,9 @@ export default function MedicationModal({ open, onClose, editing }) {
       setSelectedName(option ? option.value : "");
       setIsCustom(!option);
       setCustomName(option ? "" : stored);
+      setCustomGeneric(option ? "" : (editing.generic_name || ""));
+      // What was saved before is shown back as an editable list.
+      setCustomStrengths(option ? "" : (editing.custom_doses || []).join(", "));
       setDose(editing.prescribed_dose != null ? String(editing.prescribed_dose) : "");
       setUnit(editing.dose_unit || option?.unit || "mg");
       setSchedule(scheduleFromStored(storedFrequency));
@@ -116,6 +124,7 @@ export default function MedicationModal({ open, onClose, editing }) {
         || editing.prescriber_name || editing.prescriber_contact || editing.notes));
     } else {
       setSelectedName(""); setIsCustom(false); setCustomName("");
+      setCustomGeneric(""); setCustomStrengths("");
       setDose(""); setUnit("mg"); setSchedule(""); setScheduleOther("");
       setIndication(""); setIndicationOther("");
       setStartDate(todayInput()); setPlannedEndDate(""); setDoseStep("");
@@ -144,6 +153,8 @@ export default function MedicationModal({ open, onClose, editing }) {
       setIsCustom(true);
       setSelectedName("");
       setCustomName(name);
+      setCustomGeneric("");
+      setCustomStrengths("");
       setDose(""); setDoseSuggested(false);
       setUnit("");
       setSchedule("");
@@ -190,7 +201,8 @@ export default function MedicationModal({ open, onClose, editing }) {
     setSaving(true);
     const payload = {
       medication_name: finalName,
-      generic_name: picked?.generic || "",
+      // An "Others" entry keeps the generic the user gave, when they gave one.
+      generic_name: picked?.generic || customGeneric.trim(),
       route: picked?.route || "",
       prescribed_dose: doseNum,
       dose_unit: unit || "mg",
@@ -209,6 +221,9 @@ export default function MedicationModal({ open, onClose, editing }) {
       // shot log, so its "needs details" mark is cleared here.
       needs_details: false,
     };
+    // The strengths listed on an "Others" entry become that medication's own
+    // dose chips, offered wherever the dose is logged.
+    if (isCustom) payload.custom_doses = parseStrengthList(customStrengths);
     // A regimen marked stopped ends today, so its schedule pauses with it.
     if (status === "discontinued" && !editing?.discontinued_date) payload.discontinued_date = todayInput();
 
@@ -275,6 +290,15 @@ export default function MedicationModal({ open, onClose, editing }) {
                 placeholder="Type the name from your prescription"
                 className={inputClass}
               />
+              <div className="mt-3">
+                <CustomProductDetails
+                  generic={customGeneric}
+                  onGenericChange={setCustomGeneric}
+                  strengths={customStrengths}
+                  onStrengthsChange={setCustomStrengths}
+                  inputClass={inputClass}
+                />
+              </div>
             </div>
           )}
 

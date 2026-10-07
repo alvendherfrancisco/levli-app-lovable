@@ -12,14 +12,10 @@
 // the user from their own prescription.
 // ─────────────────────────────────────────────────────────────────────────────
 import {
-  MEDICATION_CONFIG, getAllowedDoses, getDoseUnit, getIntervalDays, plainBrandName,
+  OTHERS_LABEL, displayBrandName, genericSubtitle, getAllowedDoses, getCatalogueEntries,
+  getDoseUnit, getIntervalDays,
 } from "@/lib/medicationConfig";
 import { formatLocaleDate, fromDayKey } from "@/lib/dateUtils";
-
-/** The products the picker offers, in the order it shows them. */
-const PICKER_IDS = [
-  "ozempic", "wegovy", "rybelsus", "mounjaro", "zepbound", "trulicity", "victoza", "saxenda",
-];
 
 /** Plain route wording for this form (the label's route, said simply). */
 const FORM_ROUTE_LABELS = {
@@ -41,10 +37,13 @@ export function labelledSchedule(name) {
 /** A product's picker entry, built from the central config. */
 function buildOption(entry) {
   const oral = entry.route === "oral_tablet" || entry.route === "oral_capsule";
+  // The name is shown exactly as the product's own is written (® and all); the
+  // generic is only printed when it says something the name does not.
+  const generic = genericSubtitle(entry.brandName);
   return {
     value: entry.brandName,
-    label: `${plainBrandName(entry.brandName)} (${entry.genericName}${oral ? " tablet" : ""})`,
-    generic: entry.genericName,
+    label: `${displayBrandName(entry.brandName)}${generic ? ` (${generic}${oral ? " tablet" : ""})` : ""}`,
+    generic,
     strengths: getAllowedDoses(entry.brandName),
     unit: getDoseUnit(entry.brandName),
     schedule: labelledSchedule(entry.brandName),
@@ -53,12 +52,25 @@ function buildOption(entry) {
   };
 }
 
-/** Every product the picker offers, in order. */
-export const MEDICATION_OPTIONS = PICKER_IDS.map((id) =>
-  buildOption(MEDICATION_CONFIG.find((e) => e.id === id)));
+/** Every product the picker offers: the catalogue, in the catalogue's order. */
+export const MEDICATION_OPTIONS = getCatalogueEntries().map(buildOption);
 
 /** The row that asks the user to type their own medication name. */
-export const OTHER_MEDICATION_OPTION = { value: "", label: "Other medication (type name)", generic: "" };
+export const OTHER_MEDICATION_OPTION = { value: "", label: `${OTHERS_LABEL} (type name)`, generic: "" };
+
+/**
+ * The strengths a user typed as a list ("250, 500"), cleaned to whole numbers,
+ * largest last. Anything that is not a positive number is ignored rather than
+ * guessed at. Used by both custom ("Others") entries: the Add Shot Log sheet and
+ * the Add / Edit Medication form.
+ */
+export function parseStrengthList(text) {
+  const values = String(text || "")
+    .split(/[,\s;]+/)
+    .map((v) => Number(v))
+    .filter((v) => Number.isFinite(v) && v > 0);
+  return [...new Set(values)].sort((a, b) => a - b);
+}
 
 /** The option record for a stored medication name, or null for a typed name. */
 export function findMedicationOption(name) {

@@ -21,8 +21,8 @@ import {
   InjectionSiteIcon,
 } from "@/components/onboarding/LevliIcons";
 import { useAppState } from "@/lib/AppState";
-import { MEDICATIONS } from "@/lib/medicationData";
-import { COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE } from "@/lib/medicationCatalogue";
+import { OTHERS_LABEL, genericSubtitle, getCatalogueEntries } from "@/lib/medicationConfig";
+import MedicationName from "@/components/MedicationName";
 import { Check } from "lucide-react";
 
 const TOTAL_STEPS = 8;
@@ -38,16 +38,14 @@ function isMinor(birthdate) {
   return age < 18;
 }
 
+// The same catalogue the rest of the app offers, in the same order, with
+// "Others" last — a medication that is not listed is entered later, in Meds.
 const MED_OPTIONS = [
-  { label: "Mounjaro®", generic: "Tirzepatide" },
-  { label: "Wegovy®", generic: "Semaglutide" },
-  { label: "Ozempic®", generic: "Semaglutide" },
-  { label: "Zepbound®", generic: "Tirzepatide" },
-  { label: "Saxenda®", generic: "Liraglutide" },
-  { label: "Rybelsus®", generic: "Semaglutide" },
-  { label: COMPOUNDED_SEMAGLUTIDE, generic: "Semaglutide" },
-  { label: COMPOUNDED_TIRZEPATIDE, generic: "Tirzepatide" },
-  { label: "Other", generic: null },
+  ...getCatalogueEntries().map((entry) => ({
+    label: entry.brandName,
+    generic: genericSubtitle(entry.brandName),
+  })),
+  { label: OTHERS_LABEL, generic: null },
 ];
 
 const FREQUENCY_OPTIONS = [
@@ -144,13 +142,10 @@ export default function Onboarding() {
     }
     // Completion — one save carries the consent and the rest of the profile, so
     // the consent record is never written separately (or lost) on the way.
-    const realMeds = selectedMeds.filter((m) => m !== "Other");
+    // "Others" is not a medication, so it never becomes the default one.
+    const realMeds = selectedMeds.filter((m) => m !== OTHERS_LABEL);
     let defaultMed = "Ozempic®";
-    if (realMeds.length && MEDICATIONS.includes(realMeds[0])) {
-      defaultMed = realMeds[0];
-    } else if (realMeds.some((m) => MED_OPTIONS.find((o) => o.label === m)?.generic === "Tirzepatide")) {
-      defaultMed = "Zepbound®";
-    }
+    if (realMeds.length) defaultMed = realMeds[0];
 
     const freqOption = FREQUENCY_OPTIONS.find((f) => f.label === frequency);
     const daysBetween = freqOption ? freqOption.days : "7";
@@ -291,7 +286,7 @@ function MedicationStep({ selectedMeds, setSelectedMeds }) {
               }`}
             >
               <PillIcon size={20} />
-              {opt.label}
+              <MedicationName name={opt.label} />
               {selected && <Check size={14} className="text-indigo-600 ml-0.5" strokeWidth={3} />}
             </button>
           );

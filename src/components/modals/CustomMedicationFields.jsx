@@ -1,13 +1,16 @@
 import React from "react";
 import { AlertTriangle } from "lucide-react";
 import { CUSTOM_MEDICATION_WARNING } from "@/lib/medicationConfig";
+import CustomProductDetails from "@/components/modals/CustomProductDetails";
 
 const UNIT_CHOICES = ["mg", "mcg", "units", "IU", "mL"];
 
 /**
- * The "Other / custom (prescriber-directed)" entry fields: the user types the
- * drug name and the dose, and is told plainly that Levli cannot verify it.
- * A custom entry is excluded from exposure modelling.
+ * The "Others" entry fields: the medication name (required), the generic name
+ * and strengths the user may know (both optional), the dose unit, and the dose
+ * being logged — typed freely, because there is no label to take a list from.
+ * The entry is flagged plainly as one Levli cannot verify, and it is excluded
+ * from exposure modelling.
  *
  * The dose row is a two-part row that always fits inside the sheet: the number
  * input takes the remaining width (flex: 1 1 0, min-width: 0) and the unit
@@ -17,6 +20,7 @@ const UNIT_CHOICES = ["mg", "mcg", "units", "IU", "mL"];
  */
 export default function CustomMedicationFields({
   name, onNameChange, dose, onDoseChange, unit, onUnitChange, inputClass,
+  generic = "", onGenericChange, strengths = "", onStrengthsChange,
 }) {
   return (
     <div className="space-y-3">
@@ -25,6 +29,15 @@ export default function CustomMedicationFields({
         <input type="text" value={name} onChange={(e) => onNameChange(e.target.value)}
           placeholder="Type the name on your prescription" className={`${inputClass} min-w-0`} />
       </div>
+
+      <CustomProductDetails
+        generic={generic}
+        onGenericChange={onGenericChange}
+        strengths={strengths}
+        onStrengthsChange={onStrengthsChange}
+        inputClass={inputClass}
+      />
+
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Dose</label>
         <div className="flex items-center gap-2">

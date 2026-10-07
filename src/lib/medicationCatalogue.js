@@ -320,19 +320,34 @@ export const MEDICATION_CATALOGUE = [
   {
     id: "orforglipron",
     generic_name: "Orforglipron",
-    brand_names: [],
+    // The brand this molecule is sold as. Kept here so the product resolves to
+    // its route, molecular class and approval wherever it is logged.
+    brand_names: ["Foundayo®"],
     medication_class: "metabolic",
     molecular_class: MOL.SMALL_MOL, // NON-PEPTIDE — small molecule GLP-1 agonist
     receptor_targets: "GLP-1 receptor",
     mechanism_of_action: "Oral non-peptide GLP-1 receptor agonist",
     manufacturer: "Eli Lilly",
     routes: [ROUTES.ORAL_TAB],
-    approval: { US: { status: "investigational" }, EU: { status: "investigational" }, UK: { status: "investigational" } },
-    dosing_interval_days: {},
-    half_life_days: {},
+    approval: {
+      US: { status: "approved", brands: ["Foundayo®"], note: "Approved for chronic weight management in adults" },
+      EU: { status: "not_established" },
+      UK: { status: "not_established" },
+    },
+    dosing_interval_days: { oral_tablet: 1 },
+    half_life_days: {}, // not read from a controlling source — no PK modelling
     dose_max: {},
-    capability: caps({ research_only: true, supports_pk_estimation: false, supports_injection_site_rotation: false, supports_missed_dose_guidance: false, dosing_calculations_prohibited: true }),
-    last_review: "2025-01-15",
+    // No missed-dose advice: the label's own wording has not been read, and a
+    // made-up rule would be worse than none.
+    missed_dose: {},
+    capability: caps({
+      supports_pk_estimation: false,
+      supports_injection_site_rotation: false,
+      dosing_calculations_prohibited: true,
+      clinical_review_required: true,
+    }),
+    note: "Brand-name oral GLP-1 (orforglipron). The label's strength list has not been read, so dose entry for this product is free and nothing logged for it is modelled.",
+    last_review: "2026-10-07",
   },
   {
     id: "metformin",
@@ -807,7 +822,7 @@ export const MEDICATION_CATALOGUE = [
   {
     id: "ghk_cu",
     generic_name: "GHK-Cu (Copper tripeptide-1)",
-    brand_names: [],
+    brand_names: ["GHK-Cu"],
     medication_class: "dermatology_cosmetic",
     molecular_class: MOL.COSMETIC, // Cosmetic peptide — NOT a medicine
     amino_acid_length: 3,
@@ -897,7 +912,7 @@ export const MEDICATION_CATALOGUE = [
   {
     id: "bpc157",
     generic_name: "BPC-157 (Body Protection Compound 157)",
-    brand_names: [],
+    brand_names: ["BPC-157"],
     medication_class: "research_peptide",
     molecular_class: MOL.PEPTIDE, // 15-aa peptide derived from gastric juice
     amino_acid_length: 15,
@@ -925,7 +940,7 @@ export const MEDICATION_CATALOGUE = [
   {
     id: "tb500",
     generic_name: "TB-500 (Thymosin beta-4 fragment)",
-    brand_names: [],
+    brand_names: ["TB-500"],
     medication_class: "research_peptide",
     molecular_class: MOL.PEPTIDE,
     mechanism_of_action: "Investigated for tissue repair; actin-sequestering peptide fragment",
@@ -951,7 +966,7 @@ export const MEDICATION_CATALOGUE = [
   {
     id: "cjc1295",
     generic_name: "CJC-1295 (Modified growth hormone releasing factor 1-29)",
-    brand_names: [],
+    brand_names: ["CJC-1295"],
     medication_class: "research_peptide",
     molecular_class: MOL.PEPTIDE_ANALOGUE, // GHRH analogue
     amino_acid_length: 29,
@@ -979,7 +994,7 @@ export const MEDICATION_CATALOGUE = [
   {
     id: "ipamorelin",
     generic_name: "Ipamorelin",
-    brand_names: [],
+    brand_names: ["Ipamorelin"],
     medication_class: "research_peptide",
     molecular_class: MOL.PEPTIDE, // GHRP — pentapeptide
     amino_acid_length: 5,

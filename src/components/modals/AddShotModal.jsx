@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { X, Save, Star, ChevronDown, Trash2, AlertTriangle } from "lucide-react";
 import CustomMedicationFields from "@/components/modals/CustomMedicationFields";
 import ShotMedicationPicker from "@/components/modals/ShotMedicationPicker";
-import { getIntervalDays, getMedicationConfig, validateDosePair } from "@/lib/medicationConfig";
+import { OTHERS_LABEL, getIntervalDays, getMedicationConfig, validateDosePair } from "@/lib/medicationConfig";
+import { parseStrengthList } from "@/lib/medicationRegimen";
 import { regimenFromShot, saveShotWithMedication } from "@/lib/shotMedication";
 import { pickerMedications } from "@/lib/medicationLink";
 import { useAppState } from "@/lib/AppState";
@@ -114,6 +115,11 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // True while the entry is an "Other / custom" one: its name and dose are
   // typed by the user, and nothing is checked against a label.
   const [customChosen, setCustomChosen] = useState(false);
+  // The optional parts of an "Others" entry: what the active ingredient is
+  // called, and the product's strengths typed as a list so each one becomes a
+  // chip next time.
+  const [customGeneric, setCustomGeneric] = useState("");
+  const [customStrengths, setCustomStrengths] = useState("");
   // True while a keyboard-raising field holds focus, so the content gets tail
   // space to be scrolled clear of the keyboard.
   const [typing, setTyping] = useState(false);
@@ -203,7 +209,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const showMedSelector = pickerMeds.length > 1 || !medication;
   // What the medication field shows: the chosen product, the typed custom name,
   // or a plain prompt before anything is chosen.
-  const medLabel = isCustomProduct ? (customName.trim() || "Other / custom") : medication;
+  const medLabel = isCustomProduct ? (customName.trim() || OTHERS_LABEL) : medication;
 
   // ── Gentle, non-blocking safety readouts ──────────────────────────────────
   const doseNum = parseFloat(dose) || 0;
@@ -220,6 +226,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     ownMed || { medication_name: medication },
     profile?.custom_doses || [],
   );
+  // The strengths an "Others" entry lists, ready to be saved as its chips.
+  const declaredStrengths = parseStrengthList(customStrengths);
   const ingredientDup = editingShot ? { duplicate: false } : detectDuplicateActiveIngredient(medication, shots);
 
   useEffect(() => {
@@ -233,6 +241,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setMedicationId("");
     setCustomName("");
     setCustomChosen(false);
+    setCustomGeneric("");
+    setCustomStrengths("");
     setConcentration(""); setNotes(""); setPain(null);
     setInfusionDuration(""); setClinicLocation(""); setPremedication(false);
     setSprayCount(""); setNostril(""); setPriming(false);
@@ -252,7 +262,12 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       setCustomName(stored);
       setMedicationId(editingShot.medication_id || "");
       // An entry with no record and no catalogue product is a typed custom one.
-      setCustomChosen(!editingShot.medication_id && !getMedicationConfig(stored));
+      const typedEntry = !editingShot.medication_id && !getMedicationConfig(stored);
+      setCustomChosen(typedEntry);
+      // The generic saved with it is shown back. The strength list is not
+      // re-opened: those strengths are already its chips.
+      setCustomGeneric(typedEntry ? (editingShot.drug_class || "") : "");
+      setCustomStrengths("");
       setDose(String(editingShot.dose ?? "2.50"));
       setDoseUnit(editingShot.dose_unit || "mg");
       setConcentration(editingShot.concentration || "");
@@ -401,6 +416,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setCustomChosen(true);
     setMedication("");
     setCustomName("");
+    setCustomGeneric("");
+    setCustomStrengths("");
     setMedicationId("");
     setDose("");
     setDoseUnit("mg");
@@ -516,7 +533,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       dose_source: isCustomProduct ? "custom" : "label",
       medication_id: isCustomProduct ? undefined : (ownMed?.id || medicationId || undefined),
       dose: doseNum, dose_unit: doseUnit,
-      drugClass: isCustomProduct ? (DRUG_CLASS[finalMedication] || "") : (DRUG_CLASS[medication] || "GLP-1"),
+      drugClass: isCustomProduct
+        ? (customGeneric.trim() || DRUG_CLASS[finalMedication] || "")
+        : (DRUG_CLASS[medication] || "GLP-1"),
       molecularClass: getMolecularClass(finalMedication),
       route: route || "", device_type: deviceType || undefined,
       concentration: isCompounded ? concentration.trim() || undefined : undefined,
@@ -572,8 +591,14 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
           shots,
           // The shot's own date counts, so a backdated shot sets the start date.
           dateKey: date,
-          // A strength the label does not list is remembered as a chip next time.
-          customDoses: doseChips.includes(doseNum) ? [] : [doseNum],
+          // The generic the user gave for an "Others" entry, when they gave one.
+          genericName: isCustomProduct ? customGeneric.trim() : "",
+          // A strength the label does not list is remembered as a chip next time,
+          // together with any strengths the entry itself lists.
+          customDoses: [...new Set([
+            ...declaredStrengths,
+            ...(doseChips.includes(doseNum) ? [] : [doseNum]),
+          ])],
         }),
         // The record already exists: the shot links to it, and a strength the
         // label does not list is added to it once the shot is safely written.
@@ -767,6 +792,10 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                     <CustomMedicationFields
                       name={customName || medication}
                       onNameChange={(v) => { setCustomName(v); setMedication(v); }}
+                      generic={customGeneric}
+                      onGenericChange={setCustomGeneric}
+                      strengths={customStrengths}
+                      onStrengthsChange={setCustomStrengths}
                       dose={dose}
                       onDoseChange={setDose}
                       unit={doseUnit}
