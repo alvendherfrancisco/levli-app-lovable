@@ -39,8 +39,11 @@ export function WelcomeIllustration({ className }) {
       <circle cx="154" cy="125" r="4" fill="white" />
       {/* smile */}
       <path d="M128 140 Q 140 150 152 140" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" />
-      {/* heart */}
-      <path d="M210 50 c-4-5-13-2-13 4 c0 6 13 12 13 12 s13-6 13-12 c0-6-9-9-13-4Z" fill="url(#welHeart)" />
+      {/* heart — a normal, symmetric heart: 28 across and 25 high, its two
+          lobes are true arcs of the same radius, and every point mirrors its
+          partner around the centre line at x=210, so the bottom tip closes to a
+          clean point instead of a blunt, stretched base. */}
+      <path d="M219.8 63.4c2.086-2.044 4.2-4.494 4.2-7.7A7.7 7.7 0 0 0 216.3 48c-2.464 0-4.2 .7-6.3 2.8-2.1-2.1-3.836-2.8-6.3-2.8A7.7 7.7 0 0 0 196 55.7c0 3.22 2.1 5.67 4.2 7.7l9.8 9.8Z" fill="url(#welHeart)" />
       {/* sparkles */}
       <g className="animate-onb-sparkle"><path d="M60 50 L 63 57 L 70 60 L 63 63 L 60 70 L 57 63 L 50 60 L 57 57Z" fill="#F59E0B" /></g>
       <g className="animate-onb-sparkle" style={{ animationDelay: "1.2s" }}><path d="M235 145 L 237 150 L 242 152 L 237 154 L 235 159 L 233 154 L 228 152 L 233 150Z" fill="#6366F1" /></g>
