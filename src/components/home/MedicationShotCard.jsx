@@ -2,7 +2,7 @@ import React from "react";
 import { Syringe } from "lucide-react";
 import { parseShotDate, toDayKey, todayKey, calendarDaysBetween } from "@/lib/dateUtils";
 import {
-  plainBrandName, getMissedDoseWindowDays, getMissedDoseLabelQuote, getMedicationLabelSource,
+  getMissedDoseWindowDays, getMissedDoseLabelQuote, getMedicationLabelSource,
 } from "@/lib/medicationConfig";
 import { evaluateDoseSchedule, MISSED_STATE } from "@/lib/missedDose";
 import { shotDateFromKey } from "@/lib/repeatSchedule";
@@ -18,7 +18,9 @@ import LongGapNotice from "@/components/home/LongGapNotice";
 export default function MedicationShotCard({ summary, contact, contactHref, stopping, onStop, onLogPastShot }) {
   const { medication, lastShot, totalShots, intervalDays, nextKey } = summary;
   const name = medication.medication_name;
-  const brand = plainBrandName(name);
+  // The name exactly as the user selected it, ® and all. The plain name is only
+  // for matching, sorting and exports.
+  const brand = name;
   const windowDays = getMissedDoseWindowDays(name);
   const evaluation = evaluateDoseSchedule({ lastShot, intervalDays, windowDays });
 

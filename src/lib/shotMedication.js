@@ -23,7 +23,7 @@ const CATALOGUE_ROWS = LISTED_MEDICATIONS.map((entry) => ({
   key: `catalogue:${entry.id}`,
   catalogueId: entry.id,
   name: entry.brandName,
-  display: plainBrandName(entry.brandName),
+  plain: plainBrandName(entry.brandName),
   generic: entry.genericName || "",
   unit: getDoseUnit(entry.brandName),
   strengths: describeAllowedDoses(entry.brandName),
@@ -34,8 +34,11 @@ const CATALOGUE_ROWS = LISTED_MEDICATIONS.map((entry) => ({
 
 const searchText = (value) => String(value || "").trim().toLowerCase();
 
+// Searching runs over the plain name as well as the shown one, so "ozempic"
+// finds "Ozempic®" and a typed ® is never needed.
 const matches = (row, query) =>
-  !query || searchText(row.name).includes(query) || searchText(row.generic).includes(query);
+  !query || searchText(row.name).includes(query) || searchText(row.plain).includes(query)
+  || searchText(row.generic).includes(query);
 
 /** One row for a medication the user already has in Meds. */
 function storeRow(medication) {
@@ -45,7 +48,7 @@ function storeRow(medication) {
     id: medication.id || "",
     catalogueId: entry?.id || "",
     name: medication.medication_name,
-    display: plainBrandName(medication.medication_name),
+    plain: plainBrandName(medication.medication_name),
     generic: medication.generic_name || entry?.genericName || "",
     unit: medication.dose_unit || getDoseUnit(medication.medication_name),
     strengths: describeAllowedDoses(medication.medication_name),

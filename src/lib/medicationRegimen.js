@@ -36,11 +36,15 @@ export function labelledSchedule(name) {
 /** A product's picker entry, built from the central config. */
 function buildOption(entry) {
   const oral = entry.route === "oral_tablet" || entry.route === "oral_capsule";
-  const name = plainBrandName(entry.brandName);
+  const plain = plainBrandName(entry.brandName);
   const generic = entry.genericName || "";
   return {
+    // value / name is the name shown and stored, ® included; plain is the same
+    // name without the mark, which searching, sorting and exports use.
     value: entry.brandName,
-    label: generic ? `${name} (${generic}${oral ? " tablet" : ""})` : name,
+    name: entry.brandName,
+    plain,
+    label: generic ? `${plain} (${generic}${oral ? " tablet" : ""})` : plain,
     generic,
     strengths: getAllowedDoses(entry.brandName),
     unit: getDoseUnit(entry.brandName),

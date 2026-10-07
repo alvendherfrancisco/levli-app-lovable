@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Search, Check } from "lucide-react";
 import { MEDICATION_OPTIONS } from "@/lib/medicationRegimen";
-import { plainBrandName } from "@/lib/medicationConfig";
 import { sound } from "@/lib/sounds";
 
 /**
@@ -27,8 +26,9 @@ export default function MedicationNamePicker({ selectedName, isCustom, onSelect,
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return MEDICATION_OPTIONS;
+    // Searching runs over the plain name, so "ozempic" finds "Ozempic®".
     return MEDICATION_OPTIONS.filter(
-      (o) => o.label.toLowerCase().includes(q) || o.generic.toLowerCase().includes(q));
+      (o) => o.plain.toLowerCase().includes(q) || o.generic.toLowerCase().includes(q));
   }, [query]);
 
   const pick = (selection) => {
@@ -53,7 +53,7 @@ export default function MedicationNamePicker({ selectedName, isCustom, onSelect,
               className={chipClass(selected)}
             >
               {selected && <Check size={14} strokeWidth={3} className="flex-shrink-0" />}
-              <span className="text-sm font-semibold">{plainBrandName(o.value)}</span>
+              <span className="text-sm font-semibold">{o.name}</span>
               {o.generic && <span className={subClass(selected)}>· {o.generic}</span>}
             </button>
           );

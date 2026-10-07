@@ -1,4 +1,13 @@
 import { APP_VERSION } from "@/lib/appInfo";
+import { plainBrandName } from "@/lib/medicationConfig";
+
+/**
+ * A medication column written as the plain name — no ® or ™ — so the file reads
+ * cleanly in a spreadsheet. Only the export is stripped: the stored record, the
+ * app's screens and its reports keep the name as it was selected.
+ */
+const plainMedicationColumn = (rows, field) =>
+  (Array.isArray(rows) ? rows.map((row) => ({ ...row, [field]: plainBrandName(row[field]) })) : rows);
 
 /** Escapes one CSV cell. */
 const cell = (value) => {
@@ -23,13 +32,13 @@ export function toCsv(rows) {
  */
 export function buildFullExportCsv(data) {
   const sections = [
-    ["Shots", data.shots],
+    ["Shots", plainMedicationColumn(data.shots, "medication")],
     ["Daily metrics", data.dayMetrics],
     ["Journal entries", data.journalEntries],
     ["Side effects", data.adverseEvents],
-    ["Medications", data.medications],
+    ["Medications", plainMedicationColumn(data.medications, "medication_name")],
     ["Inventory", data.inventory],
-    ["Repeat schedules", data.repeatSchedules],
+    ["Repeat schedules", plainMedicationColumn(data.repeatSchedules, "medication")],
     ["Caregiver access", data.proxyAccess],
   ];
   const parts = sections
@@ -47,7 +56,7 @@ export function buildFullExportCsv(data) {
     toCsv([{
       first_name: profile.first_name, birthdate: profile.birthdate,
       height_cm: profile.height_cm, weight_unit: profile.weight_unit,
-      goal_weight_kg: profile.goal_weight_kg, default_medication: profile.default_medication,
+      goal_weight_kg: profile.goal_weight_kg, default_medication: plainBrandName(profile.default_medication),
       days_between: profile.days_between, plan_type: profile.plan_type,
     }]),
   ].join("\n");

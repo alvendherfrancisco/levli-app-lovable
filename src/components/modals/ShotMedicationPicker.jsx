@@ -25,7 +25,7 @@ function MedicationRow({ row, selected, onSelect }) {
       <span className="min-w-0 flex-1">
         <span className={`block text-sm font-semibold break-words ${
           selected ? "text-indigo-700 dark:text-indigo-300" : "text-gray-900 dark:text-[#E8E9F0]"
-        }`}>{row.display}</span>
+        }`}>{row.name}</span>
         {detail && (
           <span className="block text-xs text-gray-500 dark:text-[#9A9DAE] mt-0.5 break-words">{detail}</span>
         )}
