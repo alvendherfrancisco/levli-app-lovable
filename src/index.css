@@ -12,6 +12,12 @@
     --popover-foreground: 0 0% 3.9%;
     --primary: 243 75% 59%;
     --primary-foreground: 0 0% 98%;
+    /* The one filled action surface (the primary button and a chosen chip).
+       Kept separate from --primary so the text on it clears WCAG AA in BOTH
+       modes: white on indigo-600 is 6.3:1 in light, and the dark value is
+       deepened until it clears 4.5:1 (the dark --primary only reaches 3.5:1). */
+    --action: 243 75% 59%;
+    --action-foreground: 0 0% 100%;
     --secondary: 136 53% 43%;
     --secondary-foreground: 142 71% 45%;
     --muted: 220 13% 91%;
@@ -52,6 +58,8 @@
     --popover-foreground: 230 15% 91%;
     --primary: 239 84% 67%;
     --primary-foreground: 0 0% 98%;
+    --action: 243 75% 60%;
+    --action-foreground: 0 0% 100%;
     --secondary: 228 14% 18%;
     --secondary-foreground: 230 15% 91%;
     --muted: 228 14% 18%;
@@ -340,6 +348,22 @@ input[type="range"].pain-slider:active::-moz-range-thumb { transform: scale(1.1)
 .animate-onb-left { animation: onbSlideLeft 0.3s ease-out; }
 .animate-onb-bounce { animation: onbBounce 0.6s ease-out; }
 .animate-onb-sparkle { animation: onbSparkle 3s ease-in-out infinite; }
+
+/* Reduce Motion: every onboarding animation stops. The composition is unchanged
+   — the sparkles simply sit still, the mascot does not bounce, the steps do not
+   slide and the ambient wash does not drift. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-onb-scale,
+  .animate-onb-right,
+  .animate-onb-left,
+  .animate-onb-bounce,
+  .animate-onb-sparkle,
+  .animate-ambient-1,
+  .animate-ambient-2,
+  .animate-ambient-3 {
+    animation: none;
+  }
+}
 
 /* ── "Possible duplicate" warning (Add Shot Log) ───────────────────────────
    A one-second glow on the card's border, drawn the moment it appears. The card

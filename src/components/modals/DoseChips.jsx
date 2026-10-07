@@ -33,8 +33,9 @@ export default function DoseChips({ medication, options = [], value, unit = DOSE
   const canSave = !saving && !isNaN(customDose) && customDose > 0;
 
   // The selected chip is ringed in its own colour; every chip keeps its fill.
+  // 44px tall, so every chip is a full-size touch target.
   const chipClass = (selected) =>
-    `inline-flex items-center justify-center h-10 px-3.5 rounded-xl text-[15px] font-semibold transition-all active:scale-95 ${
+    `inline-flex items-center justify-center h-11 px-3.5 rounded-xl text-[15px] font-semibold transition-all active:scale-95 ${
       selected ? "ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#0f1117]" : ""
     }`;
 
@@ -117,7 +118,7 @@ export default function DoseChips({ medication, options = [], value, unit = DOSE
             <span className="text-sm text-gray-400 dark:text-gray-500 flex-shrink-0">{unit}</span>
             <button
               type="button" onClick={handleAdd} disabled={!canSave}
-              className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold disabled:opacity-50 flex-shrink-0 whitespace-nowrap"
+              className="px-3 min-h-[44px] rounded-lg bg-indigo-600 text-white text-xs font-semibold disabled:opacity-50 flex-shrink-0 whitespace-nowrap"
             >
               {saving ? "Saving…" : "Add custom dosage"}
             </button>

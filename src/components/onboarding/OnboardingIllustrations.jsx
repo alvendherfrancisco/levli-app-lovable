@@ -7,12 +7,15 @@ import React from "react";
  */
 
 function Scene({ blobStyle, children, className = "" }) {
+  // The drawing fills whatever box the step hands it and keeps its own 7:5
+  // proportions inside it (viewBox + meet), so it scales down as the screen gets
+  // shorter instead of pushing the heading or the button off the bottom.
   return (
-    <div className={`relative w-full max-w-[280px] mx-auto aspect-[7/5] ${className}`}>
+    <div className={`relative mx-auto h-full w-full max-w-[280px] ${className}`}>
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-44 h-44 rounded-full blur-3xl opacity-50" style={blobStyle} />
+        <div className="w-40 h-40 rounded-full blur-3xl opacity-50" style={blobStyle} />
       </div>
-      <svg viewBox="0 0 280 200" className="relative w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 280 200" preserveAspectRatio="xMidYMid meet" className="relative w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
         {children}
       </svg>
     </div>

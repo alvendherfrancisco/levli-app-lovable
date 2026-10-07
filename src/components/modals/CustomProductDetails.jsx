@@ -13,7 +13,7 @@ import React from "react";
  * and the Add / Edit Medication form), so the wording can never drift apart.
  */
 export default function CustomProductDetails({
-  generic, onGenericChange, strengths, onStrengthsChange, inputClass,
+  generic, onGenericChange, strengths, onStrengthsChange, inputClass, showStrengths = true,
 }) {
   return (
     <>
@@ -32,6 +32,7 @@ export default function CustomProductDetails({
         />
       </div>
 
+      {showStrengths && (
       <div>
         <label htmlFor="custom-med-strengths" className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
           Strengths (optional)
@@ -50,6 +51,7 @@ export default function CustomProductDetails({
           Separate them with commas — each one becomes a quick-choice chip next time. Leave it empty to type the dose each time instead.
         </p>
       </div>
+      )}
     </>
   );
 }
