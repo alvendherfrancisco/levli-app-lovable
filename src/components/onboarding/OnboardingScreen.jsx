@@ -43,15 +43,21 @@ export default function OnboardingScreen({
       <div className="w-full max-w-lg mx-auto flex flex-col h-full sm:h-[88vh] sm:max-h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:shadow-xl bg-white/70 backdrop-blur-md overflow-hidden relative z-10 border border-gray-100/80">
         {/* Header — back + segmented progress */}
         <div className="flex items-center gap-3 px-5 sm:px-6 pt-5 sm:pt-6 pb-1.5 flex-shrink-0">
-          {!isFirstStep && (
-            <button
-              onClick={onBack}
-              className="w-8 h-8 flex-shrink-0 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all"
-              aria-label="Back"
-            >
-              <ChevronLeft size={17} className="text-gray-600" />
-            </button>
-          )}
+          {/* The back button keeps its slot on the first step, where there is
+              nothing to go back to. The row is then exactly the same height and
+              the bar starts at the same x on every step, so the progress bar
+              never shifts or changes width as the steps change. */}
+          <div className="w-8 h-8 flex-shrink-0">
+            {!isFirstStep && (
+              <button
+                onClick={onBack}
+                className="w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all"
+                aria-label="Back"
+              >
+                <ChevronLeft size={17} className="text-gray-600" />
+              </button>
+            )}
+          </div>
           <div className="flex-1 flex gap-1.5">
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div
