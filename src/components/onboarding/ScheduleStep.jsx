@@ -2,6 +2,7 @@ import React from "react";
 import { ScheduleIllustration } from "@/components/onboarding/OnboardingIllustrations";
 import DoseChoice from "@/components/schedule/DoseChoice";
 import ScheduleFields from "@/components/schedule/ScheduleFields";
+import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import { getMedicationConfig } from "@/lib/medicationConfig";
 
 /** The one line of guidance on this screen, as the clinical team worded it. */
@@ -28,8 +29,10 @@ export default function ScheduleStep({
 
   return (
     <div className="flex flex-col">
-      <ScheduleIllustration className="onb-art" />
-      <div className="text-center mt-2.5 mb-3">
+      <OnboardingArt>
+        <ScheduleIllustration />
+      </OnboardingArt>
+      <div className="text-center mb-3">
         <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           {injectable ? "Let's set your shot schedule." : "Let's set your dose schedule."}
         </h1>

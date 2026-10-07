@@ -7,18 +7,12 @@ import {
   WelcomeIllustration,
   EmpathyIllustration,
   MedicationIllustration,
-  TrackingIllustration,
   PrivacyIllustration,
   CompletionIllustration,
 } from "@/components/onboarding/OnboardingIllustrations";
-import {
-  PillIcon,
-  MoodIcon,
-  HeartIcon,
-  ScaleIcon,
-  NutritionIcon,
-  InjectionSiteIcon,
-} from "@/components/onboarding/LevliIcons";
+import { PillIcon } from "@/components/onboarding/LevliIcons";
+import OnboardingArt from "@/components/onboarding/OnboardingArt";
+import TrackingStep, { SUGGESTED_TRACKING } from "@/components/onboarding/TrackingStep";
 import { useAppState } from "@/lib/AppState";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
@@ -62,20 +56,6 @@ const MED_OPTIONS = [
   { label: "Other", generic: null },
 ];
 
-const TRACKING_OPTIONS = [
-  { key: "symptoms", label: "Symptoms", desc: "Note how you're feeling day to day", Icon: MoodIcon },
-  { key: "mood", label: "Mood", desc: "Track emotional wellbeing", Icon: HeartIcon },
-  { key: "weight", label: "Weight", desc: "Monitor progress over time", Icon: ScaleIcon },
-  { key: "nutrition", label: "Nutrition", desc: "Log meals, water, and protein", Icon: NutritionIcon },
-  { key: "sites", label: "Injection sites", desc: "Rotate with confidence", Icon: InjectionSiteIcon },
-];
-
-const UNIT_GROUPS = [
-  { key: "weight_unit", label: "Weight", options: [{ value: "lb", label: "lb" }, { value: "kg", label: "kg" }] },
-  { key: "height_unit", label: "Height", options: [{ value: "in", label: "ft / in" }, { value: "cm", label: "cm" }] },
-  { key: "liquid_unit", label: "Liquids", options: [{ value: "oz", label: "oz" }, { value: "mL", label: "mL" }] },
-];
-
 export default function Onboarding() {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
@@ -89,7 +69,9 @@ export default function Onboarding() {
   const [doseAmount, setDoseAmount] = useState("");
   const [doseOther, setDoseOther] = useState(false);
   const [schedule, setSchedule] = useState(() => emptySchedule("", toDayKey(new Date())));
-  const [tracking, setTracking] = useState([]);
+  // Suggestions to start from, not decisions: both are ordinary selections the
+  // person can untick, and Next never waits on any of them.
+  const [tracking, setTracking] = useState(SUGGESTED_TRACKING);
   const [units, setUnits] = useState({ weight_unit: "lb", height_unit: "in", liquid_unit: "oz" });
   const [gdprConsented, setGdprConsented] = useState(false);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
@@ -122,7 +104,10 @@ export default function Onboarding() {
       setDoseAmount(draft.doseAmount || "");
       setDoseOther(!!draft.doseOther);
       setSchedule(draft.schedule || emptySchedule(restoredMeds[0], toDayKey(new Date())));
-      setTracking(draft.tracking || []);
+      // A draft always carries the person's own choice, including "none of
+      // them"; only a draft written before these cards existed falls back to
+      // the suggestions.
+      setTracking(Array.isArray(draft.tracking) ? draft.tracking : SUGGESTED_TRACKING);
       setUnits(draft.units || { weight_unit: "lb", height_unit: "in", liquid_unit: "oz" });
       setGdprConsented(!!draft.gdprConsented);
       setAgeConfirmed(!!draft.ageConfirmed);
@@ -402,8 +387,10 @@ export default function Onboarding() {
 function WelcomeStep() {
   return (
     <div className="flex flex-col items-center text-center">
-      <WelcomeIllustration className="onb-art" />
-      <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mt-5 mb-3 leading-tight px-2">
+      <OnboardingArt>
+        <WelcomeIllustration />
+      </OnboardingArt>
+      <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-3 leading-tight px-2">
         You're starting a journey — we're here for it.
       </h1>
       <p className="text-[15px] sm:text-[16px] text-gray-500 leading-relaxed px-3">
@@ -416,8 +403,10 @@ function WelcomeStep() {
 function EmpathyStep() {
   return (
     <div className="flex flex-col items-center text-center">
-      <EmpathyIllustration className="onb-art" />
-      <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mt-5 mb-3 leading-tight px-2">
+      <OnboardingArt>
+        <EmpathyIllustration />
+      </OnboardingArt>
+      <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-3 leading-tight px-2">
         GLP-1 journeys aren't always linear.
       </h1>
       <p className="text-[15px] sm:text-[16px] text-gray-500 leading-relaxed px-3">
@@ -435,8 +424,10 @@ function EmpathyStep() {
 function MedicationStep({ selectedMed, onSelect }) {
   return (
     <div className="flex flex-col">
-      <MedicationIllustration className="onb-art" />
-      <div className="text-center mt-3 mb-2.5">
+      <OnboardingArt>
+        <MedicationIllustration />
+      </OnboardingArt>
+      <div className="text-center mb-3">
         <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Which medication are you on?
         </h1>
@@ -471,84 +462,14 @@ function MedicationStep({ selectedMed, onSelect }) {
   );
 }
 
-function TrackingStep({ tracking, setTracking, units, setUnits }) {
-  const toggle = (key) => {
-    setTracking((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
-  };
-  return (
-    <div className="flex flex-col">
-      <TrackingIllustration className="onb-art-tight" />
-      <div className="text-center mt-2 mb-2.5">
-        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
-          What would you like to keep an eye on?
-        </h1>
-        <p className="text-[15px] text-gray-500 leading-relaxed px-2">
-          Log as much or as little as feels right for you.
-        </p>
-      </div>
-      <div className="grid grid-cols-1 gap-2 mb-4">
-        {TRACKING_OPTIONS.map((opt) => {
-          const selected = tracking.includes(opt.key);
-          return (
-            <button
-              key={opt.key}
-              onClick={() => { sound.tap(); toggle(opt.key); }}
-              className={`flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-all active:scale-[0.98] ${
-                selected
-                  ? "border-indigo-600 bg-indigo-50"
-                  : "border-gray-200 bg-white hover:border-gray-300"
-              }`}
-            >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0">
-                <opt.Icon size={30} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className={`text-[15px] font-semibold leading-snug ${selected ? "text-indigo-700" : "text-gray-700"}`}>
-                  {opt.label}
-                </p>
-                <p className="text-[12.5px] text-gray-400 leading-snug">{opt.desc}</p>
-              </div>
-              {selected && <Check size={16} className="text-indigo-600 flex-shrink-0" strokeWidth={3} />}
-            </button>
-          );
-        })}
-      </div>
-      {/* Units */}
-      <div className="border-t border-gray-100 pt-4">
-        <p className="text-[14px] font-semibold text-gray-600 mb-3">Measurement preferences</p>
-        <div className="space-y-2">
-          {UNIT_GROUPS.map((group) => (
-            <div key={group.key} className="flex items-center justify-between">
-              <span className="text-[13.5px] text-gray-500">{group.label}</span>
-              <div className="flex gap-1.5">
-                {group.options.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => { sound.tap(); setUnits((prev) => ({ ...prev, [group.key]: opt.value })); }}
-                    className={`px-3 py-1.5 rounded-lg text-[13.5px] font-medium transition-all ${
-                      units[group.key] === opt.value
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate, ageConfirmed, setAgeConfirmed }) {
   const minor = isMinor(birthdate);
   return (
     <div className="flex flex-col">
-      <PrivacyIllustration className="onb-art-tight" />
-      <div className="text-center mt-2 mb-2.5">
+      <OnboardingArt>
+        <PrivacyIllustration />
+      </OnboardingArt>
+      <div className="text-center mb-3">
         <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Your data stays yours.
         </h1>
@@ -630,10 +551,12 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
 function CompletionStep() {
   return (
     <div className="flex flex-col items-center text-center">
-      <div className="animate-onb-bounce">
-        <CompletionIllustration className="onb-art" />
+      <div className="animate-onb-bounce w-full">
+        <OnboardingArt>
+          <CompletionIllustration />
+        </OnboardingArt>
       </div>
-      <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mt-5 mb-3 leading-tight px-2">
+      <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-3 leading-tight px-2">
         You're all set.
       </h1>
       <p className="text-[15px] sm:text-[16px] text-gray-500 leading-relaxed px-3">

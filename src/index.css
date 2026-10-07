@@ -666,12 +666,11 @@ html { background-color: var(--launch-bg); }
 }
 
 /* ── Onboarding: one screen per step, and it scrolls ───────────────────────
-   Nothing is scaled down or hidden to avoid a scroll any more, so the artwork
-   keeps its standard size on every screen and a taller step scrolls inside the
-   fixed progress header and CTA instead. Sizes are max-widths because every
-   illustration keeps its own aspect ratio (see OnboardingIllustrations.jsx). */
-.onb-art { max-width: 250px; }
-.onb-art-tight { max-width: 190px; }
+   Nothing is scaled down or hidden to avoid a scroll, so the artwork keeps its
+   standard size on every screen and a taller step scrolls inside the fixed
+   progress header and CTA instead. The illustration's size and slot live in one
+   place now — src/components/onboarding/OnboardingArt.jsx — so every page shows
+   it at the same size, in the same place. */
 
 /* The CTA: a full-size touch target, with the home-indicator inset respected. */
 .onb-cta { padding-bottom: max(1.75rem, env(safe-area-inset-bottom, 0px)); }

@@ -1,6 +1,7 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
 import { SignUpIllustration } from "@/components/onboarding/OnboardingIllustrations";
+import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import { firstNameError } from "@/lib/accountValidation";
 import { sound } from "@/lib/sounds";
 
@@ -21,8 +22,10 @@ export default function FirstNameStep({ firstName, setFirstName, onContinue, loa
 
   return (
     <form onSubmit={submit} className="flex flex-col items-center">
-      <SignUpIllustration className="onb-art-tight" />
-      <div className="text-center mt-2 mb-3">
+      <OnboardingArt>
+        <SignUpIllustration />
+      </OnboardingArt>
+      <div className="text-center mb-3">
         <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           What should we call you?
         </h1>

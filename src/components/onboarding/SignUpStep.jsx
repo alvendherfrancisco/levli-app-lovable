@@ -6,6 +6,7 @@ import SocialAuthButtons from "@/components/onboarding/SocialAuthButtons";
 import AccountEmailForm from "@/components/onboarding/AccountEmailForm";
 import VerifyEmailStep from "@/components/onboarding/VerifyEmailStep";
 import GoogleIcon from "@/components/GoogleIcon";
+import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import { formBlocker, isEmailTakenError } from "@/lib/accountValidation";
 import { sound } from "@/lib/sounds";
 
@@ -110,9 +111,11 @@ export default function SignUpStep({
 
   return (
     <div className="flex flex-col">
-      <SignUpIllustration className="onb-art-tight" />
+      <OnboardingArt>
+        <SignUpIllustration />
+      </OnboardingArt>
 
-      <div className="text-center mt-2 mb-3">
+      <div className="text-center mb-3">
         <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Create your account
         </h1>
