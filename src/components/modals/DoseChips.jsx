@@ -11,10 +11,7 @@ import { sound } from "@/lib/sounds";
  * neutral "Other" chip opens a small numeric entry so a compounded dose can be
  * logged, saved and offered as a chip next time.
  */
-export default function DoseChips({
-  medication, options = [], value, unit = DOSE_UNIT, onSelect, onAddCustom,
-  label = "Dose", helper,
-}) {
+export default function DoseChips({ medication, options = [], value, unit = DOSE_UNIT, onSelect, onAddCustom }) {
   const numeric = Number(value) || 0;
   const isChipValue = options.includes(numeric);
   const [otherOpen, setOtherOpen] = useState(!isChipValue && numeric > 0);
@@ -59,7 +56,7 @@ export default function DoseChips({
   return (
     <div>
       <div className="flex items-baseline justify-between mb-1.5">
-        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{label}</label>
+        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Dose</label>
         <span className="text-xs text-gray-400 dark:text-gray-500">{unit}</span>
       </div>
 
@@ -104,10 +101,6 @@ export default function DoseChips({
           Other
         </button>
       </div>
-
-      {helper && (
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 leading-snug">{helper}</p>
-      )}
 
       {otherOpen && (
         <div className="mt-2">

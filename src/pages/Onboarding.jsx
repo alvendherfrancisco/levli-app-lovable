@@ -7,6 +7,7 @@ import {
   WelcomeIllustration,
   EmpathyIllustration,
   MedicationIllustration,
+  ScheduleIllustration,
   TrackingIllustration,
   PrivacyIllustration,
   CompletionIllustration,
@@ -27,12 +28,7 @@ import {
   firstNameFromUser,
 } from "@/lib/onboardingDraft";
 import FirstNameStep from "@/components/onboarding/FirstNameStep";
-import ScheduleStep from "@/components/onboarding/ScheduleStep";
 import { MEDICATIONS } from "@/lib/medicationData";
-import { withCustomDose } from "@/lib/doseOptions";
-import {
-  emptySchedule, reconcileSchedule, scheduleComplete, scheduleForProfile,
-} from "@/lib/medicationSchedule";
 import { COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE } from "@/lib/medicationCatalogue";
 import { Check } from "lucide-react";
 
@@ -61,6 +57,16 @@ const MED_OPTIONS = [
   { label: "Other", generic: null },
 ];
 
+const FREQUENCY_OPTIONS = [
+  { label: "Once weekly", days: "7" },
+  { label: "Every two weeks", days: "14" },
+  { label: "Once monthly", days: "30" },
+  { label: "Daily", days: "1" },
+  { label: "Irregular schedule", days: "7" },
+];
+
+const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
+
 const TRACKING_OPTIONS = [
   { key: "symptoms", label: "Symptoms", desc: "Note how you're feeling day to day", Icon: MoodIcon },
   { key: "mood", label: "Mood", desc: "Track emotional wellbeing", Icon: HeartIcon },
@@ -82,10 +88,9 @@ export default function Onboarding() {
   const { user, isLoadingAuth } = useAuth();
 
   const [selectedMeds, setSelectedMeds] = useState([]);
-  // The schedule the chosen medication runs on (see ScheduleStep), and any dose
-  // the person typed themselves — kept so it can be offered as a chip next time.
-  const [schedule, setSchedule] = useState(() => emptySchedule(""));
-  const [customDoses, setCustomDoses] = useState([]);
+  const [doseAmount, setDoseAmount] = useState("");
+  const [frequency, setFrequency] = useState(null);
+  const [shotDay, setShotDay] = useState(null);
   const [tracking, setTracking] = useState([]);
   const [units, setUnits] = useState({ weight_unit: "lb", height_unit: "in", liquid_unit: "oz" });
   const [gdprConsented, setGdprConsented] = useState(false);
@@ -115,8 +120,9 @@ export default function Onboarding() {
     const draft = loadDraft();
     if (draft) {
       setSelectedMeds(draft.selectedMeds || []);
-      setSchedule(draft.schedule || emptySchedule(""));
-      setCustomDoses(draft.customDoses || []);
+      setDoseAmount(draft.doseAmount || "");
+      setFrequency(draft.frequency || null);
+      setShotDay(draft.shotDay ?? null);
       setTracking(draft.tracking || []);
       setUnits(draft.units || { weight_unit: "lb", height_unit: "in", liquid_unit: "oz" });
       setGdprConsented(!!draft.gdprConsented);
@@ -137,12 +143,12 @@ export default function Onboarding() {
   useEffect(() => {
     if (firstSaveRef.current) { firstSaveRef.current = false; return; }
     saveDraft({
-      step, selectedMeds, schedule, customDoses, tracking, units,
+      step, selectedMeds, doseAmount, frequency, shotDay, tracking, units,
       gdprConsented, birthdate, ageConfirmed, parentalConsentName, firstName,
       email: accountEmail, awaitingVerification, verified: verifiedAccount,
     });
   }, [
-    step, selectedMeds, schedule, customDoses, tracking, units,
+    step, selectedMeds, doseAmount, frequency, shotDay, tracking, units,
     gdprConsented, birthdate, ageConfirmed, parentalConsentName, firstName,
     accountEmail, awaitingVerification, verifiedAccount,
   ]);
@@ -177,18 +183,6 @@ export default function Onboarding() {
     if (!verifiedAccount && step > 3) setStep(3);
   }, [isLoadingAuth, user, step, verifiedAccount]);
 
-  // The medication the schedule belongs to — the first real product chosen. Its
-  // own catalogue entry decides which frequencies the step offers, which one it
-  // starts on, and which strengths its dose chips carry.
-  const scheduleMedication = selectedMeds.filter((m) => m !== "Other")[0] || "";
-
-  // A change of medication — or a restored answer that no longer fits the one now
-  // chosen — resets the schedule to that product's own default, so a frequency, a
-  // day or a strength from one medication never carries over to another.
-  useEffect(() => {
-    setSchedule((prev) => reconcileSchedule(prev, scheduleMedication));
-  }, [scheduleMedication]);
-
   if (profile?.onboarding_completed) {
     return <Navigate to="/" replace />;
   }
@@ -196,7 +190,7 @@ export default function Onboarding() {
   const canContinue = (() => {
     if (step === 2) return selectedMeds.length > 0;
     if (step === 4) return gdprConsented && birthdate && ageConfirmed && !isMinor(birthdate);
-    if (step === 5) return scheduleComplete(schedule);
+    if (step === 5) return frequency !== null;
     return true;
   })();
 
@@ -206,7 +200,7 @@ export default function Onboarding() {
   const persistOnboardingState = (extra = {}) => {
     saveDraft({
       step: 4,
-      selectedMeds, schedule, customDoses, tracking, units,
+      selectedMeds, doseAmount, frequency, shotDay, tracking, units,
       gdprConsented, birthdate, ageConfirmed, parentalConsentName,
       firstName, email: accountEmail, verified: verifiedAccount, awaitingVerification,
       ...extra,
@@ -239,11 +233,8 @@ export default function Onboarding() {
       defaultMed = "Zepbound®";
     }
 
-    // The interval the app schedules on: the last dose logged plus this many
-    // days. A frequency that sets no interval of its own (as directed) leaves it
-    // empty, so the product's own label interval is used.
-    const storedSchedule = scheduleForProfile(schedule);
-    const daysBetween = storedSchedule.interval_days ? String(storedSchedule.interval_days) : "";
+    const freqOption = FREQUENCY_OPTIONS.find((f) => f.label === frequency);
+    const daysBetween = freqOption ? freqOption.days : "7";
 
     const weightOptedIn = tracking.includes("weight");
 
@@ -255,8 +246,6 @@ export default function Onboarding() {
       first_name: firstName,
       default_medication: defaultMed,
       days_between: daysBetween,
-      shot_schedule: storedSchedule,
-      custom_doses: customDoses,
       ...units,
       birthdate,
       age_confirmed_at: ageConfirmed ? new Date().toISOString() : "",
@@ -341,12 +330,12 @@ export default function Onboarding() {
       )}
       {step === 5 && (
         <ScheduleStep
-          medication={scheduleMedication}
-          otherMedications={Math.max(0, selectedMeds.filter((m) => m !== "Other").length - 1)}
-          schedule={schedule}
-          onChange={setSchedule}
-          customDoses={customDoses}
-          onAddCustomDose={(dose) => setCustomDoses((prev) => withCustomDose(prev, scheduleMedication, dose))}
+          doseAmount={doseAmount}
+          setDoseAmount={setDoseAmount}
+          frequency={frequency}
+          setFrequency={setFrequency}
+          shotDay={shotDay}
+          setShotDay={setShotDay}
         />
       )}
       {step === 6 && (
@@ -421,6 +410,71 @@ function MedicationStep({ selectedMeds, setSelectedMeds }) {
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function ScheduleStep({ doseAmount, setDoseAmount, frequency, setFrequency, shotDay, setShotDay }) {
+  return (
+    <div className="flex flex-col">
+      <ScheduleIllustration className="onb-art" />
+      <div className="text-center mt-2.5 mb-3">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
+          Let's set your shot schedule.
+        </h1>
+        <p className="text-[15px] text-gray-500 leading-relaxed px-2">
+          Set it once here, and Levli works out your next dose date from it.
+        </p>
+      </div>
+      {/* Dose amount */}
+      <div className="mb-3">
+        <label className="text-[14px] font-semibold text-gray-600 mb-2 block">Your dose (optional)</label>
+        <input
+          type="text"
+          value={doseAmount}
+          onChange={(e) => setDoseAmount(e.target.value)}
+          placeholder="e.g. 0.5 mg"
+          className="w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-3 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors"
+        />
+      </div>
+      {/* Frequency */}
+      <div className="mb-3">
+        <label className="text-[14px] font-semibold text-gray-600 mb-2 block">How often?</label>
+        <div className="flex flex-wrap gap-1.5">
+          {FREQUENCY_OPTIONS.map((opt) => (
+            <button
+              key={opt.label}
+              onClick={() => setFrequency(opt.label)}
+              className={`px-3.5 py-2.5 rounded-xl border-2 text-[14px] font-medium transition-all active:scale-95 ${
+                frequency === opt.label
+                  ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {/* Day of week */}
+      <div>
+        <label className="text-[14px] font-semibold text-gray-600 mb-2 block">Preferred day</label>
+        <div className="flex gap-1 justify-between">
+          {DAYS.map((d, i) => (
+            <button
+              key={i}
+              onClick={() => setShotDay(i)}
+              className={`w-10 h-10 rounded-full text-[14px] font-medium transition-all active:scale-95 ${
+                shotDay === i
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
