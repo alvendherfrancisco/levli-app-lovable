@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { parseShotDate } from "@/lib/dateUtils";
-import { getDoseColor } from "@/lib/doseColors";
+import useDoseColors from "@/hooks/useDoseColors";
 
 const SITE_COLORS = [
   "#6366F1", "#14B8A6", "#F59E0B", "#3B82F6", "#EC4899",
@@ -10,6 +10,8 @@ const SITE_COLORS = [
 
 export default function SiteRotationChart({ shots, range }) {
   const days = parseInt(range, 10);
+  // Each chip's dot carries the dose's own colour, in the theme in use.
+  const { color: doseColor } = useDoseColors();
 
   const siteData = useMemo(() => {
     const now = new Date(); now.setHours(0, 0, 0, 0);
@@ -67,7 +69,7 @@ export default function SiteRotationChart({ shots, range }) {
         <div className="flex flex-wrap gap-2">
           {rotation.map((s) => (
             <div key={s.id} className="flex items-center gap-1.5 bg-gray-50 dark:bg-white/[0.05] rounded-lg px-2 py-1">
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: getDoseColor(s.medication, s.dose) }} />
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: doseColor(s.medication, s.dose) }} />
               <span className="text-xs text-gray-600 dark:text-gray-300">{s.site}</span>
               <span className="text-xs text-gray-500 dark:text-[#9A9DAE]">{s.date}</span>
             </div>

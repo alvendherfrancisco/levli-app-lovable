@@ -9,7 +9,7 @@ import AddShotModal from "@/components/modals/AddShotModal";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import { useAppState } from "@/lib/AppState";
 import { parseShotDate, toDayKey, fromDayKey } from "@/lib/dateUtils";
-import { getDoseColor } from "@/lib/doseColors";
+import useDoseColors from "@/hooks/useDoseColors";
 
 const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -22,6 +22,8 @@ export default function History() {
   const [showSideEffects, setShowSideEffects] = useState(false);
   const [editingShot, setEditingShot] = useState(null);
   const { shots, getSideEffects, adverseEventsByDay } = useAppState();
+  // Calendar dots carry the dose's own colour, in the theme in use.
+  const { color: doseColor } = useDoseColors();
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfWeek = new Date(year, month, 1).getDay();
@@ -99,7 +101,7 @@ export default function History() {
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
               const dayShot = shotDayMap[day]?.[0];
-              const dotColor = dayShot ? getDoseColor(dayShot.medication, dayShot.dose) : null;
+              const dotColor = dayShot ? doseColor(dayShot.medication, dayShot.dose) : null;
               const isSelected = day === selectedDay;
               const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
               const isFuture = isCurrentMonth && day > today.getDate();

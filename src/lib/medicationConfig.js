@@ -65,6 +65,43 @@ const researchPeptideEntry = ({ id, name }) => ({
 /** Shown wherever a custom entry is used. */
 export const CUSTOM_MEDICATION_WARNING = "Levli can't verify this dose.";
 
+// ── Colour tokens ───────────────────────────────────────────────────────────
+// Each token is the colour the manufacturer prints on the pen, tablet or carton
+// for that strength, as a light and a dark variant. The light variant is the
+// colour as it appears on the product; the dark variant is the same hue lifted
+// so it holds its shape on a dark screen. Where a colour cannot carry its own
+// text at WCAG AA, src/lib/doseColors.js keeps the hue and steps the lightness
+// of the chip it draws, so the token itself stays the maker's colour.
+//
+// Nothing in the UI hard-codes a dose colour: it is read from here.
+const COLOR_TOKENS = {
+  // Ozempic — pen label colour.
+  ozempicRed: { light: "#C8102E", dark: "#CE2A3C" },
+  ozempicBlue: { light: "#1A57A5", dark: "#2E6FC4" },
+  ozempicYellow: { light: "#E0A616", dark: "#EFBB33" },
+  // Wegovy — one colour-coded pen per strength.
+  wegovyLightGreen: { light: "#8FC043", dark: "#A3D25C" },
+  wegovyPink: { light: "#D6336C", dark: "#C92A62" },
+  wegovyBrown: { light: "#7A5230", dark: "#8E6238" },
+  wegovyBlue: { light: "#1D6FB8", dark: "#2472BB" },
+  wegovyBlack: { light: "#2B383D", dark: "#4A5A61" },
+  // Rybelsus — carton and blister colour.
+  rybelsusGreen: { light: "#0B7F35", dark: "#127F3C" },
+  rybelsusRed: { light: "#C81E28", dark: "#D63A45" },
+  rybelsusBlue: { light: "#0B69B0", dark: "#1976BE" },
+  // Foundayo — tablet colour.
+  foundayoPink: { light: "#E08CA8", dark: "#EDA3BC" },
+  foundayoYellow: { light: "#EBD79A", dark: "#F2E3B4" },
+  foundayoPurpleGrey: { light: "#AFA6CF", dark: "#C2BADA" },
+  // Mounjaro — carton and pen label colour.
+  mounjaroGrey: { light: "#75787B", dark: "#8A8D91" },
+  mounjaroPurple: { light: "#592C7F", dark: "#7B4AA8" },
+  mounjaroGreen: { light: "#00857D", dark: "#159C93" },
+  mounjaroPink: { light: "#D45780", dark: "#E27A9C" },
+  mounjaroBlue: { light: "#0069A0", dark: "#1E86BF" },
+  mounjaroOrange: { light: "#F58233", dark: "#FA9C5C" },
+};
+
 export const MEDICATION_CONFIG = [
   {
     id: "ozempic",
@@ -74,11 +111,20 @@ export const MEDICATION_CONFIG = [
     route: "subcutaneous",
     dosingIntervalDays: 7,
     allowedDoses: [
-      { value: 0.25, unit: "mg", role: "initiation" },
-      { value: 0.5, unit: "mg", role: "standard" },
-      { value: 1, unit: "mg", role: "standard" },
-      { value: 2, unit: "mg", role: "standard" },
+      // Coloured by pen, exactly as the maker does: the red-label pen delivers
+      // both 0.25 mg and 0.5 mg, so those two strengths share one colour.
+      { value: 0.25, unit: "mg", role: "initiation", color: COLOR_TOKENS.ozempicRed },
+      { value: 0.5, unit: "mg", role: "standard", color: COLOR_TOKENS.ozempicRed },
+      { value: 1, unit: "mg", role: "standard", color: COLOR_TOKENS.ozempicBlue },
+      { value: 2, unit: "mg", role: "standard", color: COLOR_TOKENS.ozempicYellow },
     ],
+    colorScheme: {
+      basis: "pen",
+      source: "https://www.ozempic.com/ozempic-pen/dosing.html",
+      verified: "2026-10-08",
+      status: "confirmed",
+      note: "Pen label colour by strength: red-label pen 0.25 mg and 0.5 mg, blue-label pen 1 mg, yellow-label pen 2 mg (Ozempic pen dosing page; Novo Nordisk pen administration page).",
+    },
     minIntervalDays: 2,
     maxDoseMg: 2,
     indicationNote:
@@ -103,12 +149,20 @@ export const MEDICATION_CONFIG = [
     route: "subcutaneous",
     dosingIntervalDays: 7,
     allowedDoses: [
-      { value: 0.25, unit: "mg", role: "initiation" },
-      { value: 0.5, unit: "mg", role: "standard" },
-      { value: 1, unit: "mg", role: "standard" },
-      { value: 1.7, unit: "mg", role: "standard" },
-      { value: 2.4, unit: "mg", role: "standard" },
+      // One colour-coded pen per strength, as the maker does.
+      { value: 0.25, unit: "mg", role: "initiation", color: COLOR_TOKENS.wegovyLightGreen },
+      { value: 0.5, unit: "mg", role: "standard", color: COLOR_TOKENS.wegovyPink },
+      { value: 1, unit: "mg", role: "standard", color: COLOR_TOKENS.wegovyBrown },
+      { value: 1.7, unit: "mg", role: "standard", color: COLOR_TOKENS.wegovyBlue },
+      { value: 2.4, unit: "mg", role: "standard", color: COLOR_TOKENS.wegovyBlack },
     ],
+    colorScheme: {
+      basis: "pen",
+      source: "https://www.wegovy.com/obesity/starting-wegovy/starting-wegovy-pen.html",
+      verified: "2026-10-08",
+      status: "confirmed",
+      note: "Each strength has its own colour-coded pen: light green 0.25 mg, pink 0.5 mg, brown 1 mg, blue 1.7 mg, black 2.4 mg (Wegovy pen guide; pen-label references for the colour names).",
+    },
     minIntervalDays: 2,
     maxDoseMg: 2.4,
     indicationNote:
@@ -134,13 +188,21 @@ export const MEDICATION_CONFIG = [
     route: "subcutaneous",
     dosingIntervalDays: 7,
     allowedDoses: [
-      { value: 2.5, unit: "mg", role: "initiation" },
-      { value: 5, unit: "mg", role: "standard" },
-      { value: 7.5, unit: "mg", role: "standard" },
-      { value: 10, unit: "mg", role: "standard" },
-      { value: 12.5, unit: "mg", role: "standard" },
-      { value: 15, unit: "mg", role: "standard" },
+      // One colour per strength on the carton and pen label, as the maker does.
+      { value: 2.5, unit: "mg", role: "initiation", color: COLOR_TOKENS.mounjaroGrey },
+      { value: 5, unit: "mg", role: "standard", color: COLOR_TOKENS.mounjaroPurple },
+      { value: 7.5, unit: "mg", role: "standard", color: COLOR_TOKENS.mounjaroGreen },
+      { value: 10, unit: "mg", role: "standard", color: COLOR_TOKENS.mounjaroPink },
+      { value: 12.5, unit: "mg", role: "standard", color: COLOR_TOKENS.mounjaroBlue },
+      { value: 15, unit: "mg", role: "standard", color: COLOR_TOKENS.mounjaroOrange },
     ],
+    colorScheme: {
+      basis: "pen",
+      source: "https://www.goodrx.com/mounjaro/appearance",
+      verified: "2026-10-08",
+      status: "confirmed",
+      note: "US pen and carton label colour by strength, from manufacturer-supplied product photos: grey 2.5 mg, purple 5 mg, green 7.5 mg, pink 10 mg, blue 12.5 mg, orange 15 mg. Re-verify against Lilly material at sign-off: UK pens use a different set (yellow, maroon, green, teal, indigo, purple).",
+    },
     minIntervalDays: 3,
     maxDoseMg: 15,
     indicationNote:
@@ -174,6 +236,13 @@ export const MEDICATION_CONFIG = [
     ],
     minIntervalDays: 3,
     maxDoseMg: 15,
+    colorScheme: {
+      basis: "",
+      source: "",
+      verified: "",
+      status: "review",
+      note: "No manufacturer-stated colour found, so the standard scale is used. A third-party guide records the pen and vial colour blocks as dark grey, dark purple, dark teal, pink, blue and red for 2.5 mg through 15 mg, and Lilly's own pages describe a colour-coded pen without naming the colours. Confirm against Lilly packaging and this becomes a colour block on each dose above.",
+    },
     indicationNote:
       "Chronic weight management in adults with obesity, or with overweight plus a weight-related condition, and moderate-to-severe obstructive sleep apnoea with obesity. The 2.5 mg strength is for starting treatment only and is not a maintenance dose.",
     missedDoseRule:
@@ -202,6 +271,13 @@ export const MEDICATION_CONFIG = [
     ],
     minIntervalDays: 1,
     maxDoseMg: 1.8,
+    colorScheme: {
+      basis: "pen",
+      source: "",
+      verified: "",
+      status: "review",
+      note: "One pen delivers 0.6 mg, 1.2 mg and 1.8 mg, so every dose would share a single colour — no manufacturer-stated colour found for that pen, so the standard scale is used. Not offered as a new choice in the pickers; kept so existing logs resolve.",
+    },
     indicationNote:
       "Type 2 diabetes in adults and in children aged 10 and older. Also lowers the risk of major heart events in adults with type 2 diabetes and established heart disease.",
     missedDoseRule:
@@ -233,6 +309,13 @@ export const MEDICATION_CONFIG = [
     ],
     minIntervalDays: 1,
     maxDoseMg: 3,
+    colorScheme: {
+      basis: "pen",
+      source: "",
+      verified: "",
+      status: "review",
+      note: "One pen delivers every strength from 0.6 mg to 3 mg, so every dose would share a single colour — no manufacturer-stated colour found for that pen, so the standard scale is used. Not offered as a new choice in the pickers; kept so existing logs resolve.",
+    },
     indicationNote:
       "Chronic weight management in adults and in adolescents aged 12 and older with obesity or with overweight plus a weight-related condition. The 3 mg strength is the maintenance dose; the lower strengths are for titration only.",
     missedDoseRule:
@@ -256,10 +339,19 @@ export const MEDICATION_CONFIG = [
     route: "oral_tablet",
     dosingIntervalDays: 1,
     allowedDoses: [
-      { value: 3, unit: "mg", role: "initiation" },
-      { value: 7, unit: "mg", role: "standard" },
-      { value: 14, unit: "mg", role: "standard" },
+      // Coloured by carton, as the maker does: the tablets themselves are all
+      // white to light yellow, so the colour belongs to the strength's carton.
+      { value: 3, unit: "mg", role: "initiation", color: COLOR_TOKENS.rybelsusGreen },
+      { value: 7, unit: "mg", role: "standard", color: COLOR_TOKENS.rybelsusRed },
+      { value: 14, unit: "mg", role: "standard", color: COLOR_TOKENS.rybelsusBlue },
     ],
+    colorScheme: {
+      basis: "strength",
+      source: "https://www.novonordisk.ca/content/dam/nncorp/ca/en/products/Rybelsus-CI-EN-monograph.pdf",
+      verified: "2026-10-08",
+      status: "confirmed",
+      note: "Carton and blister colour by strength: green 3 mg, red 7 mg, blue 14 mg (Novo Nordisk product monograph; Health Canada product register).",
+    },
     minIntervalDays: 1,
     maxDoseMg: 14,
     indicationNote:
@@ -291,6 +383,13 @@ export const MEDICATION_CONFIG = [
     ],
     minIntervalDays: 3,
     maxDoseMg: 4.5,
+    colorScheme: {
+      basis: "",
+      source: "",
+      verified: "",
+      status: "review",
+      note: "No manufacturer-stated colour found, so the standard scale is used. Not offered as a new choice in the pickers; kept so existing logs resolve.",
+    },
     indicationNote: "Type 2 diabetes in adults and in children aged 10 and older.",
     missedDoseRule:
       "Take the missed dose as soon as possible when there are at least 3 days (72 hours) until the next scheduled dose. If the next dose is due in 1 or 2 days, the label says the missed dose is not taken and the next dose is taken on its usual day.",
@@ -313,13 +412,24 @@ export const MEDICATION_CONFIG = [
     route: "oral_tablet",
     dosingIntervalDays: 1,
     allowedDoses: [
-      { value: 0.8, unit: "mg", role: "initiation" },
-      { value: 2.5, unit: "mg", role: "titration_only" },
-      { value: 5.5, unit: "mg", role: "standard" },
-      { value: 9, unit: "mg", role: "standard" },
-      { value: 14.5, unit: "mg", role: "standard" },
-      { value: 17.2, unit: "mg", role: "standard" },
+      // The label gives each strength a tablet colour, and colours two
+      // strengths alike (pink, light yellow, grayish purple). Those pairs share
+      // a colour here — the tablets differ in shape as well, and the dose number
+      // is always shown, so nothing is identified by colour alone.
+      { value: 0.8, unit: "mg", role: "initiation", color: COLOR_TOKENS.foundayoPink },
+      { value: 2.5, unit: "mg", role: "titration_only", color: COLOR_TOKENS.foundayoYellow },
+      { value: 5.5, unit: "mg", role: "standard", color: COLOR_TOKENS.foundayoPurpleGrey },
+      { value: 9, unit: "mg", role: "standard", color: COLOR_TOKENS.foundayoPink },
+      { value: 14.5, unit: "mg", role: "standard", color: COLOR_TOKENS.foundayoYellow },
+      { value: 17.2, unit: "mg", role: "standard", color: COLOR_TOKENS.foundayoPurpleGrey },
     ],
+    colorScheme: {
+      basis: "strength",
+      source: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=8ac446c5-feba-474f-a103-23facb9b5c62",
+      verified: "2026-10-08",
+      status: "confirmed",
+      note: "Tablet colour by strength from the FDA label: pink 0.8 mg and 9 mg, light yellow 2.5 mg and 14.5 mg, grayish purple 5.5 mg and 17.2 mg.",
+    },
     minIntervalDays: 1,
     maxDoseMg: 17.2,
     indicationNote:

@@ -1,7 +1,8 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { DOSE_UNIT } from "@/lib/doseOptions";
-import { CUSTOM_DOSE_COLOR, getDoseColor, getDoseStyle } from "@/lib/doseColors";
+import { NEUTRAL_DOSE_COLOR } from "@/lib/doseColors";
+import useDoseColors from "@/hooks/useDoseColors";
 import { sound } from "@/lib/sounds";
 
 /**
@@ -16,6 +17,9 @@ export default function DoseChips({ medication, options = [], value, unit = DOSE
   const [otherOpen, setOtherOpen] = useState(!isChipValue && numeric > 0);
   const [custom, setCustom] = useState(!isChipValue && numeric > 0 ? String(numeric) : "");
   const [saving, setSaving] = useState(false);
+  // Every chip's colour comes from the dose palette, in the theme in use, so
+  // changing the medication or the theme repaints them at once.
+  const { color, style } = useDoseColors();
   // The "Other" field takes focus only when the user taps the chip themselves,
   // never just because the panel happened to be open as the sheet appeared.
   const doseInputRef = useRef(null);
@@ -58,14 +62,14 @@ export default function DoseChips({ medication, options = [], value, unit = DOSE
 
       <div className="flex flex-wrap gap-2">
         {options.map((v) => {
-          const color = getDoseColor(medication, v);
+          const chipColor = color(medication, v);
           const selected = !otherOpen && numeric === v;
           return (
             <button
               key={v}
               type="button"
               onClick={() => { sound.tap(); setOtherOpen(false); onSelect(v); }}
-              style={{ ...getDoseStyle(medication, v), ...(selected ? { "--tw-ring-color": color } : {}) }}
+              style={{ ...style(medication, v), ...(selected ? { "--tw-ring-color": chipColor } : {}) }}
               className={chipClass(selected)}
             >
               {selected && <Check size={14} strokeWidth={3} className="mr-1 flex-shrink-0" />}
@@ -86,7 +90,7 @@ export default function DoseChips({ medication, options = [], value, unit = DOSE
               setOtherOpen(true);
             }
           }}
-          style={{ ...(otherOpen ? { "--tw-ring-color": CUSTOM_DOSE_COLOR } : {}) }}
+          style={{ ...(otherOpen ? { "--tw-ring-color": NEUTRAL_DOSE_COLOR } : {}) }}
           className={`${chipClass(otherOpen)} gap-1 border bg-white dark:bg-white/[0.04] ${
             otherOpen
               ? "border-gray-300 dark:border-white/[0.2] text-gray-700 dark:text-gray-200"

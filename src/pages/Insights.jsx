@@ -19,6 +19,7 @@ import UpsellBanner from "@/components/UpsellBanner";
 import SiteRotationChart from "@/components/insights/SiteRotationChart";
 import DoseLegend from "@/components/insights/DoseLegend";
 import { getDoseColor, getDoseLegend } from "@/lib/doseColors";
+import useDoseColors from "@/hooks/useDoseColors";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import PageContainer from "@/components/PageContainer";
 import AppFooterDisclaimer from "@/components/AppFooterDisclaimer";
@@ -30,7 +31,7 @@ const CLASS_COLORS = { Semaglutide: "#14B8A6", Tirzepatide: "#6366F1", Liragluti
 // Investigational classes are excluded so no curve is shown for unapproved products.
 // Every number here comes from the doses actually logged; a class with no dose
 // inside the last five half-lives has nothing to model and is left out.
-function buildMedLevelData(shots, days) {
+function buildMedLevelData(shots, days, isDark) {
   const nothing = {
     data: [], classes: [], disabled: false, empty: true, markers: [], doseLegend: [],
     summary: null, primaryClass: null, primaryHL: null, interval: null, medication: null, doseUnit: "mg",
@@ -113,12 +114,12 @@ function buildMedLevelData(shots, days) {
   });
   const markers = shotsInRange.map((s) => {
     const sd = parseShotDate(s.date);
-    return { key: s.id, day: `${mNames[sd.getMonth()]} ${sd.getDate()}`, color: getDoseColor(s.medication, s.dose) };
+    return { key: s.id, day: `${mNames[sd.getMonth()]} ${sd.getDate()}`, color: getDoseColor(s.medication, s.dose, isDark) };
   });
 
   return {
     data: points, classes: activeClasses, disabled: false, empty: false,
-    markers, doseLegend: getDoseLegend(shotsInRange),
+    markers, doseLegend: getDoseLegend(shotsInRange, isDark),
     summary, primaryClass, primaryHL: primary.halfLife, interval: primary.interval,
     medication: primary.medication, doseUnit: primary.unit,
   };
@@ -174,8 +175,10 @@ export default function Insights() {
   const [viewAllPhotos, setViewAllPhotos] = useState(false);
   const [photoModal, setPhotoModal] = useState(null);
   const weightUnit = profile?.weight_unit || "lb";
+  // Markers and the legend follow the theme, so they repaint with it.
+  const { isDark } = useDoseColors();
 
-  const medLevel = useMemo(() => buildMedLevelData(shots, MED_RANGES[medRange]), [shots, medRange]);
+  const medLevel = useMemo(() => buildMedLevelData(shots, MED_RANGES[medRange], isDark), [shots, medRange, isDark]);
   const weightData = useMemo(() => buildWeightData(weightHistory, WEIGHT_RANGES[weightRange]), [weightHistory, weightRange]);
 
   const formatPhotoDate = (isoDate) => {

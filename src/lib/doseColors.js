@@ -1,163 +1,163 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Dose colours — ONE central config.
+// Dose colours — ONE resolver for the whole app.
 //
 // A dose chip, badge, dot or chart marker carries the colour the manufacturer
-// itself uses for that strength (see OFFICIAL_DOSE_COLORS below), so what the
-// person sees in Levli matches the pen, tablet carton or box in their hand.
+// itself uses for that strength or pen. That colour is stored on the catalogue
+// entry it belongs to (src/lib/medicationConfig.js) as a light and a dark token,
+// beside the dose, the source it was checked against and the date it was
+// checked. No dose colour is hard-coded in the UI.
 //
-// Where a manufacturer publishes no per-strength colour — or the dose is not one
-// of the product's labelled strengths — the neutral fallback ladder is used.
+// Products whose maker publishes no colour system — the compounded products, the
+// unapproved peptides and the "Others" entry — use one ordered indigo scale,
+// stepping from light to dark with the dose's size so a higher dose reads
+// stronger. The steps are fixed, so a dose keeps its step when more strengths
+// are added above it.
 //
-// Colour is never the only signal: every place a dose colour is shown also shows
-// the dose as text (chips, badges, chart legends), and getDoseLabel() supplies
-// that text. Several official colours are red or magenta by the manufacturer's
-// own design (Ozempic 0.5 mg, Rybelsus 7 mg, Wegovy 0.5 mg); those are
-// reproduced faithfully rather than reinterpreted as an error state.
+// A dose typed through "+ Other" on a product that does have a scheme is drawn
+// as a neutral outline rather than a fill, so a typed amount can never look like
+// a labelled strength.
+//
+// Colour is never the only signal: everywhere a dose colour is drawn, the dose is
+// written beside it, so the palette is a recognition cue and nothing more.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getAllowedDoses, getMedicationConfig } from "@/lib/medicationConfig";
+import { getMedicationConfig } from "./medicationConfig.js";
+import { ensureContrast, mixWithWhite, readableTextColor } from "./colorMath.js";
 
-// ── Official manufacturer colours ─────────────────────────────────────────────
-// Keyed by the config id (src/lib/medicationConfig.js) and the labelled strength.
-// Every set was read from the manufacturer's own material — the pen itself, its
-// carton, or Novo Nordisk's own strength chart. A product whose maker publishes
-// no per-strength colour is deliberately absent, so it falls to the ladder
-// rather than wearing a colour nobody printed.
-export const OFFICIAL_DOSE_COLORS = {
-  // Novo Nordisk Ozempic — one pen per strength, colour on the pen label.
-  ozempic: {
-    0.25: "#00857D",
-    0.5: "#E11928",
-    1: "#009775",
-    2: "#E3B03C",
-  },
-  // Novo Nordisk Wegovy single-dose pen — pen label and carton colour.
-  wegovy: {
-    0.25: "#46B1A8",
-    0.5: "#BC3879",
-    1: "#A56831",
-    1.7: "#006F95",
-    2.4: "#2B383D",
-  },
-  // Lilly Mounjaro KwikPen — cap and label colour per strength.
-  mounjaro: {
-    2.5: "#75787B",
-    5: "#592C7F",
-    7.5: "#00857D",
-    10: "#D45780",
-    12.5: "#0069A0",
-    15: "#F58233",
-  },
-  // Novo Nordisk Rybelsus — the carton's colour band per strength.
-  rybelsus: {
-    3: "#009639",
-    7: "#E32D1C",
-    14: "#0082CA",
-  },
-  // Novo Nordisk Saxenda — one pen delivers every strength, so its single label
-  // and dose-knob accent colour identifies the product, not a strength.
-  saxenda: {
-    0.6: "#4A37A5",
-    1.2: "#4A37A5",
-    1.8: "#4A37A5",
-    2.4: "#4A37A5",
-    3: "#4A37A5",
-  },
+/** The neutral used by a typed dose and by a medication with no scheme. */
+export const NEUTRAL_DOSE_COLOR = "#64748B";
+
+// A neutral chip is an outline, not a fill: it carries no strength at all.
+const NEUTRAL_OUTLINE = {
+  light: { color: "#475569", borderColor: "#CBD5E1" },
+  dark: { color: "#C7CBD8", borderColor: "rgba(255, 255, 255, 0.3)" },
 };
 
-// The fallback for a product with no published per-strength colour (Zepbound,
-// Victoza, Trulicity, the compounded products) and for a dose that isn't one of
-// a product's labelled strengths. Low → high ladder, step 1 first: light indigo
-// through to burnt orange, stepped against the product's own strength list.
-export const DOSE_LADDER = [
-  "#818CF8", // step 1 — light indigo
-  "#6366F1", // step 2 — indigo
-  "#4338CA", // step 3 — deep indigo
-  "#0E7490", // step 4 — cyan
-  "#0D9488", // step 5 — teal
-  "#C2410C", // step 6 — burnt orange
+/**
+ * The standard scale: one indigo hue, eight steps, lightest first.
+ * Only used where no manufacturer colour system exists, so it never borrows a
+ * brand's own colour.
+ */
+export const STANDARD_SCALE = [
+  { light: "#C7D2FE", dark: "#A5B4FC" },
+  { light: "#A5B4FC", dark: "#99A2FA" },
+  { light: "#8B95F8", dark: "#8B8FF8" },
+  { light: "#6E76F1", dark: "#7B7DF5" },
+  { light: "#5549E3", dark: "#6B64F0" },
+  { light: "#4436C9", dark: "#5C55E8" },
+  { light: "#372BA8", dark: "#4E47DC" },
+  { light: "#2B217F", dark: "#4139C9" },
 ];
 
-// Doses that are not a standard step (typed doses, compounded strengths).
-export const CUSTOM_DOSE_COLOR = "#64748B";
-
-const DARK_TEXT = "#1F2937";
-const LIGHT_TEXT = "#FFFFFF";
-
-/** The dose's step (1 = lowest listed strength), or null when it isn't listed. */
-export function getDoseStep(medication, dose) {
-  const value = Number(dose);
-  if (!value) return null;
-  const index = getAllowedDoses(medication).findIndex((d) => Number(d.value) === value);
-  return index === -1 ? null : index + 1;
+/** The scheme recorded for a product, or null (for sign-off and checks). */
+export function getDoseScheme(medication) {
+  return getMedicationConfig(medication)?.colorScheme || null;
 }
 
-/** The manufacturer's own colour for this labelled strength, or null. */
-export function getOfficialDoseColor(medication, dose) {
-  const id = getMedicationConfig(medication)?.id;
-  const byDose = id ? OFFICIAL_DOSE_COLORS[id] : null;
-  const value = Number(dose);
-  if (!byDose || !Number.isFinite(value)) return null;
-  const key = Object.keys(byDose).find((k) => Number(k) === value);
-  return key ? byDose[key] : null;
-}
-
-/** The colour that represents this dose: the label's own colour where the
-    manufacturer publishes one, otherwise the fallback ladder. */
-export function getDoseColor(medication, dose) {
-  const official = getOfficialDoseColor(medication, dose);
-  if (official) return official;
-  const step = getDoseStep(medication, dose);
-  return (step && DOSE_LADDER[step - 1]) || CUSTOM_DOSE_COLOR;
+/** true when the maker of this product publishes a dose colour system. */
+export function hasOfficialScheme(medication) {
+  return getDoseScheme(medication)?.status === "confirmed";
 }
 
 /**
- * The dose as text — always shown next to the colour so the colour is never the
- * only signal.
+ * The dose's step on the standard scale, 1 being the product's lowest dose.
+ * A product with no labelled strengths has no scale to step along, so it sits on
+ * step 1 rather than implying a strength it does not have.
  */
+function standardStep(entry, value) {
+  const max = Number(entry?.maxDoseMg);
+  if (Number.isFinite(max) && max > 0) {
+    const step = Math.ceil((value / max) * STANDARD_SCALE.length);
+    return Math.min(STANDARD_SCALE.length, Math.max(1, step));
+  }
+  return 1;
+}
+
+/**
+ * The colour token for a dose: the maker's own where the dose is a labelled
+ * strength, the standard scale where the product has no colour system, and null
+ * where a dose is typed rather than labelled (or the medication is unknown).
+ */
+export function getDoseToken(medication, dose) {
+  const entry = getMedicationConfig(medication);
+  const value = Number(dose);
+  if (!entry || !Number.isFinite(value) || value <= 0) return null;
+  if (entry.colorScheme?.status === "confirmed") {
+    const labelled = entry.allowedDoses.find((d) => Math.abs(Number(d.value) - value) < 1e-9);
+    return labelled?.color || null;
+  }
+  return STANDARD_SCALE[standardStep(entry, value) - 1];
+}
+
+/** true when this dose is not one of the product's own labelled strengths. */
+export function isCustomDose(medication, dose) {
+  return hasOfficialScheme(medication) && !getDoseToken(medication, dose);
+}
+
+/** The neutral outlined chip, in the theme in use. */
+export function getNeutralDoseStyle(isDark = false) {
+  const token = isDark ? NEUTRAL_OUTLINE.dark : NEUTRAL_OUTLINE.light;
+  return { background: "transparent", color: token.color, borderColor: token.borderColor };
+}
+
+/** The colour for a dot or chart marker (a neutral slate where none applies). */
+export function getDoseColor(medication, dose, isDark = false) {
+  const token = getDoseToken(medication, dose);
+  if (!token) return NEUTRAL_DOSE_COLOR;
+  return isDark ? token.dark : token.light;
+}
+
+/**
+ * A filled chip for a labelled strength, or the neutral outline for anything
+ * else. The returned text colour always meets WCAG AA on the returned
+ * background, the hue kept as the maker drew it.
+ */
+export function getDoseStyle(medication, dose, isDark = false) {
+  const token = getDoseToken(medication, dose);
+  if (!token) return getNeutralDoseStyle(isDark);
+  return ensureContrast(isDark ? token.dark : token.light);
+}
+
+/**
+ * The print-safe swatch for the written report: the colour as a pale tint with
+ * near-black text, so it stays readable in colour, in greyscale and on paper.
+ * The dose value is always printed beside it.
+ */
+export function getPrintDoseStyle(medication, dose) {
+  const token = getDoseToken(medication, dose);
+  if (!token) return { background: "#FFFFFF", color: "#111827", borderColor: "#94A3B8" };
+  return { background: mixWithWhite(token.light, 0.82), color: "#111827", borderColor: token.light };
+}
+
+/** White or dark text for a raw colour (chart labels, report tables). */
+export function getDoseTextColor(hex) {
+  return readableTextColor(hex);
+}
+
+/** The dose as text — always shown next to the colour. */
 export function getDoseLabel(medication, dose, unit) {
   const value = Number(dose);
   if (!Number.isFinite(value) || value <= 0) return "";
-  const resolvedUnit = unit || getAllowedDoses(medication)[0]?.unit || "mg";
+  const resolvedUnit = unit || getMedicationConfig(medication)?.allowedDoses?.[0]?.unit || "mg";
   return `${value} ${resolvedUnit}`;
 }
 
-/** How the label describes this strength (initiation / titration only / standard). */
-export function getDoseRole(medication, dose) {
-  const value = Number(dose);
-  const match = getAllowedDoses(medication).find((d) => Number(d.value) === value);
-  return match?.role || null;
-}
-
-/** White or dark text, whichever reads better on that colour. */
-export function getDoseTextColor(hex) {
-  const [r, g, b] = [1, 3, 5]
-    .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
-    .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance >= 0.35 ? DARK_TEXT : LIGHT_TEXT;
-}
-
-/** Ready-to-spread style for a filled dose element. */
-export function getDoseStyle(medication, dose) {
-  const background = getDoseColor(medication, dose);
-  return { background, color: getDoseTextColor(background) };
-}
-
 /** The dose colours used by a set of shot-like records, for chart legends. */
-export function getDoseLegend(shots = []) {
+export function getDoseLegend(shots = [], isDark = false) {
   const seen = new Map();
   shots.forEach((s) => {
     if (!s || s.dose == null) return;
     const key = `${s.medication || ""}|${Number(s.dose)}`;
     if (seen.has(key)) return;
+    const token = getDoseToken(s.medication, s.dose);
     seen.set(key, {
       key,
       medication: s.medication || "",
       dose: Number(s.dose),
       unit: s.dose_unit || "mg",
       label: getDoseLabel(s.medication, s.dose, s.dose_unit),
-      color: getDoseColor(s.medication, s.dose),
+      color: token ? (isDark ? token.dark : token.light) : NEUTRAL_DOSE_COLOR,
+      neutral: !token,
     });
   });
   return [...seen.values()].sort((a, b) => a.dose - b.dose);
