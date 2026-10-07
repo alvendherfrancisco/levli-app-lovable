@@ -21,12 +21,12 @@ export default function FirstNameStep({ firstName, setFirstName, onContinue, loa
 
   return (
     <form onSubmit={submit} className="flex flex-col items-center">
-      <SignUpIllustration />
-      <div className="text-center">
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+      <SignUpIllustration className="onb-art-tight" />
+      <div className="text-center mt-2 mb-3">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           What should we call you?
         </h1>
-        <p className="text-base text-muted-foreground leading-relaxed mt-2">
+        <p className="text-[15px] text-gray-500 px-3 leading-relaxed">
           You're signed in. Just your first name and you're set.
         </p>
       </div>
@@ -44,11 +44,11 @@ export default function FirstNameStep({ firstName, setFirstName, onContinue, loa
         autoFocus
         value={firstName}
         onChange={(e) => setFirstName(e.target.value)}
-        className="w-full border-2 border-border bg-background rounded-xl px-3.5 py-3 text-base text-foreground outline-none focus:border-primary transition-colors"
+        className="w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-3 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors"
       />
 
       {/* Docked, so the button stays in view however tall the step grows. */}
-      <div className="sticky bottom-0 z-10 w-full pt-3 pb-1 bg-background/85 backdrop-blur-sm">
+      <div className="sticky bottom-0 z-10 w-full pt-3 pb-1 bg-white/85 backdrop-blur-sm">
         <button
           type="submit"
           disabled={loading || missing}
@@ -60,7 +60,7 @@ export default function FirstNameStep({ firstName, setFirstName, onContinue, loa
             </span>
           ) : "Continue"}
         </button>
-        {missing && <p className="text-sm text-muted-foreground mt-2 text-center">Add your first name to continue.</p>}
+        {missing && <p className="text-[13px] text-gray-400 mt-2 text-center">Add your first name to continue.</p>}
       </div>
     </form>
   );

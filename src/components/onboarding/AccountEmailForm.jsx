@@ -7,7 +7,7 @@ import {
 import { sound } from "@/lib/sounds";
 
 const FIELD =
-  "w-full border-2 border-border bg-background rounded-xl px-3.5 py-3 text-base text-foreground outline-none focus:border-primary transition-colors";
+  "w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-3 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors";
 
 const STRENGTH_BAR = {
   weak: "bg-red-500",
@@ -110,7 +110,7 @@ export default function AccountEmailForm({
         <button
           type="button"
           onClick={() => { sound.tap(); setShowPassword((s) => !s); }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           aria-label={showPassword ? "Hide password" : "Show password"}
         >
           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -126,13 +126,13 @@ export default function AccountEmailForm({
               {[1, 2, 3, 4].map((i) => (
                 <span
                   key={i}
-                  className={`h-1 flex-1 rounded-full ${i <= strength.score ? STRENGTH_BAR[strength.tone] : "bg-muted"}`}
+                  className={`h-1 flex-1 rounded-full ${i <= strength.score ? STRENGTH_BAR[strength.tone] : "bg-gray-200"}`}
                 />
               ))}
             </span>
-            <span className="text-xs font-semibold text-muted-foreground">{strength.label}</span>
+            <span className="text-[12px] font-semibold text-gray-500">{strength.label}</span>
           </div>
-          {strength.hint && <p className="text-xs text-muted-foreground mt-1">{strength.hint}</p>}
+          {strength.hint && <p className="text-[12px] text-gray-400 mt-1">{strength.hint}</p>}
         </div>
       ) : null}
 
@@ -140,14 +140,14 @@ export default function AccountEmailForm({
           the form scrolls behind it — with the reason it is not ready yet, which
           waits for the first touch so an untouched form is not scolded, sitting
           right above it. */}
-      <div className="sticky bottom-0 z-10 w-full pt-3 pb-1 bg-background/85 backdrop-blur-sm">
+      <div className="sticky bottom-0 z-10 w-full pt-3 pb-1 bg-white/85 backdrop-blur-sm">
         {blocker && !loading && (touched.firstName || touched.email || touched.password || firstName || email || password) && (
-          <p className="text-sm text-muted-foreground mb-2 text-center">{blocker}</p>
+          <p className="text-[13px] text-gray-400 mb-2 text-center">{blocker}</p>
         )}
         <button
           type="submit"
           disabled={loading || !!blocker}
-          className="onb-cta-btn w-full max-w-[320px] mx-auto rounded-full font-semibold text-base bg-primary text-primary-foreground shadow-lg shadow-primary/25 disabled:opacity-50 transition-all active:scale-95"
+          className="onb-cta-btn w-full max-w-[320px] mx-auto rounded-full font-semibold text-base bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-50 transition-all active:scale-95"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -157,16 +157,16 @@ export default function AccountEmailForm({
         </button>
       </div>
 
-      <p className="text-center text-xs text-muted-foreground mt-4 px-4 leading-relaxed">
+      <p className="text-center text-[12px] text-gray-400 mt-4 px-4 leading-relaxed">
         By creating an account you agree to our{" "}
-        <Link to="/terms" className="text-primary underline">Terms of Service</Link>{" "}
+        <Link to="/terms" className="text-indigo-600 underline">Terms of Service</Link>{" "}
         and{" "}
-        <Link to="/privacy" className="text-primary underline">Privacy Policy</Link>.
+        <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>.
       </p>
 
-      <p className="text-center text-sm text-muted-foreground mt-4">
+      <p className="text-center text-[14px] text-gray-500 mt-4">
         Already have an account?{" "}
-        <Link to="/login" className="text-primary font-medium hover:underline">Log in</Link>
+        <Link to="/login" className="text-indigo-600 font-medium hover:underline">Log in</Link>
       </p>
     </form>
   );

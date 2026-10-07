@@ -1,20 +1,28 @@
 import React from "react";
-import IllustrationSlot from "@/components/onboarding/IllustrationSlot";
 
 /**
  * Custom onboarding illustrations — soft gradient blobs + simple line art.
  * Each illustration is a composed scene, not a screenshot of the app.
- *
- * Every one of them is drawn inside the shared slot (see IllustrationSlot.jsx),
- * so they are all the same size on the same slot, with the same glow and the
- * same gap to the title — no page sizes its own artwork. Each scene is a
- * 280×200 drawing that fills the slot.
+ * Consistent 280×200 viewBox, responsive width.
  */
 
-// ── 1. Welcome — droplet mascot with heart ─────────────────────────────────
-export function WelcomeIllustration() {
+function Scene({ blobStyle, children, className = "" }) {
   return (
-    <IllustrationSlot tone={{ background: "linear-gradient(135deg, #818CF8, #5EEAD4)" }}>
+    <div className={`relative w-full max-w-[280px] mx-auto aspect-[7/5] ${className}`}>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-44 h-44 rounded-full blur-3xl opacity-50" style={blobStyle} />
+      </div>
+      <svg viewBox="0 0 280 200" className="relative w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {children}
+      </svg>
+    </div>
+  );
+}
+
+// ── 1. Welcome — droplet mascot with heart ─────────────────────────────────
+export function WelcomeIllustration({ className }) {
+  return (
+    <Scene className={className} blobStyle={{ background: "linear-gradient(135deg, #818CF8, #5EEAD4)" }}>
       <defs>
         <linearGradient id="welDrop" x1="80" y1="30" x2="200" y2="170" gradientUnits="userSpaceOnUse">
           <stop stopColor="#6366F1" /><stop offset="1" stopColor="#14B8A6" />
@@ -37,14 +45,14 @@ export function WelcomeIllustration() {
       <g className="animate-onb-sparkle"><path d="M60 50 L 63 57 L 70 60 L 63 63 L 60 70 L 57 63 L 50 60 L 57 57Z" fill="#F59E0B" /></g>
       <g className="animate-onb-sparkle" style={{ animationDelay: "1.2s" }}><path d="M235 145 L 237 150 L 242 152 L 237 154 L 235 159 L 233 154 L 228 152 L 233 150Z" fill="#6366F1" /></g>
       <g className="animate-onb-sparkle" style={{ animationDelay: "0.6s" }}><path d="M50 140 L 52 145 L 57 147 L 52 149 L 50 154 L 48 149 L 43 147 L 48 145Z" fill="#14B8A6" /></g>
-    </IllustrationSlot>
+    </Scene>
   );
 }
 
 // ── 2. Empathy — calendar + heartbeat, warm wash ──────────────────────────
-export function EmpathyIllustration() {
+export function EmpathyIllustration({ className }) {
   return (
-    <IllustrationSlot tone={{ background: "linear-gradient(135deg, #FDBA74, #FCA5A5)" }}>
+    <Scene className={className} blobStyle={{ background: "linear-gradient(135deg, #FDBA74, #FCA5A5)" }}>
       <defs>
         <linearGradient id="empCal" x1="70" y1="50" x2="190" y2="150" gradientUnits="userSpaceOnUse">
           <stop stopColor="#F97316" /><stop offset="1" stopColor="#EC4899" />
@@ -72,14 +80,14 @@ export function EmpathyIllustration() {
       <path d="M85 140 L 115 140 L 123 122 L 132 155 L 140 128 L 148 140 L 195 140" stroke="#F97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
       {/* sparkles */}
       <g className="animate-onb-sparkle"><path d="M55 60 L 57 65 L 62 67 L 57 69 L 55 74 L 53 69 L 48 67 L 53 65Z" fill="#EC4899" /></g>
-    </IllustrationSlot>
+    </Scene>
   );
 }
 
 // ── 3. Medication — pill capsules ─────────────────────────────────────────
-export function MedicationIllustration() {
+export function MedicationIllustration({ className }) {
   return (
-    <IllustrationSlot tone={{ background: "linear-gradient(135deg, #5EEAD4, #818CF8)" }}>
+    <Scene className={className} blobStyle={{ background: "linear-gradient(135deg, #5EEAD4, #818CF8)" }}>
       <defs>
         <linearGradient id="medP1" x1="60" y1="70" x2="140" y2="110" gradientUnits="userSpaceOnUse">
           <stop stopColor="#14B8A6" /><stop offset="1" stopColor="#6366F1" />
@@ -106,14 +114,14 @@ export function MedicationIllustration() {
       {/* sparkles */}
       <g className="animate-onb-sparkle"><path d="M50 55 L 52 60 L 57 62 L 52 64 L 50 69 L 48 64 L 43 62 L 48 60Z" fill="#F59E0B" /></g>
       <g className="animate-onb-sparkle" style={{ animationDelay: "1s" }}><path d="M140 45 L 142 50 L 147 52 L 142 54 L 140 59 L 138 54 L 133 52 L 138 50Z" fill="#6366F1" /></g>
-    </IllustrationSlot>
+    </Scene>
   );
 }
 
-// ── 4. Schedule — syringe ─────────────────────────────────────────────────
-export function ScheduleIllustration() {
+// ── 4. Schedule — syringe + day dots ──────────────────────────────────────
+export function ScheduleIllustration({ className }) {
   return (
-    <IllustrationSlot tone={{ background: "linear-gradient(135deg, #5EEAD4, #93C5FD)" }}>
+    <Scene className={className} blobStyle={{ background: "linear-gradient(135deg, #5EEAD4, #93C5FD)" }}>
       <defs>
         <linearGradient id="schSyr" x1="60" y1="50" x2="160" y2="120" gradientUnits="userSpaceOnUse">
           <stop stopColor="#14B8A6" /><stop offset="1" stopColor="#3B82F6" />
@@ -132,60 +140,49 @@ export function ScheduleIllustration() {
       </g>
       {/* sparkle */}
       <g className="animate-onb-sparkle"><path d="M210 45 L 212 50 L 217 52 L 212 54 L 210 59 L 208 54 L 203 52 L 208 50Z" fill="#14B8A6" /></g>
-    </IllustrationSlot>
+    </Scene>
   );
 }
 
-// ── 5. Tracking — the cards' own icons, as one tight cluster ──────────────
-// The same three shapes the cards use (a symptom line, a scale dial, a heart),
-// drawn large and close together with a white ring on each, so this page's
-// artwork has the same footprint and the same style as the other pages rather
-// than three small icons scattered across the middle.
-export function TrackingIllustration() {
+// ── 5. Tracking — heart / mood / scale cluster ────────────────────────────
+export function TrackingIllustration({ className }) {
   return (
-    <IllustrationSlot tone={{ background: "linear-gradient(135deg, #C4B5FD, #FBCFE8)" }}>
+    <Scene className={className} blobStyle={{ background: "linear-gradient(135deg, #C4B5FD, #FBCFE8)" }}>
       <defs>
-        <linearGradient id="trkDial" x1="60" y1="70" x2="135" y2="145" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#8B5CF6" /><stop offset="1" stopColor="#6366F1" />
-        </linearGradient>
-        <linearGradient id="trkMood" x1="100" y1="50" x2="182" y2="132" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#F59E0B" /><stop offset="1" stopColor="#F97316" />
-        </linearGradient>
-        <linearGradient id="trkHeart" x1="148" y1="70" x2="224" y2="145" gradientUnits="userSpaceOnUse">
+        <linearGradient id="trkH" x1="75" y1="60" x2="115" y2="105" gradientUnits="userSpaceOnUse">
           <stop stopColor="#F97316" /><stop offset="1" stopColor="#EC4899" />
         </linearGradient>
+        <linearGradient id="trkM" x1="135" y1="50" x2="175" y2="95" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#F59E0B" /><stop offset="1" stopColor="#F97316" />
+        </linearGradient>
+        <linearGradient id="trkS" x1="105" y1="110" x2="145" y2="155" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#8B5CF6" /><stop offset="1" stopColor="#6366F1" />
+        </linearGradient>
       </defs>
-
-      {/* The two outer circles first, the higher middle one on top of them. */}
-      <circle cx="98" cy="106" r="40" fill="url(#trkDial)" stroke="#FFFFFF" strokeWidth="3" />
-      <circle cx="184" cy="106" r="40" fill="url(#trkHeart)" stroke="#FFFFFF" strokeWidth="3" />
-      <circle cx="141" cy="90" r="42" fill="url(#trkMood)" stroke="#FFFFFF" strokeWidth="3" />
-
-      {/* scale dial */}
-      <circle cx="98" cy="108" r="15" fill="none" stroke="white" strokeWidth="2.5" strokeOpacity="0.7" />
-      <line x1="98" y1="108" x2="105" y2="101" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-      <circle cx="98" cy="108" r="2.5" fill="white" />
-
-      {/* smile */}
-      <circle cx="133" cy="86" r="3" fill="white" />
-      <circle cx="149" cy="86" r="3" fill="white" />
-      <path d="M132 96 Q 141 104 150 96" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" />
-
-      {/* symptom line */}
-      <path d="M166 106 H 174 L 179 95 L 186 117 L 190 106 H 202" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-
+      {/* connecting lines */}
+      <path d="M100 80 L 150 70 M 125 100 L 125 80 M 120 105 L 105 120" stroke="#D1D5DB" strokeWidth="1.5" strokeDasharray="3 3" />
+      {/* heart */}
+      <path d="M95 100 C 95 100, 75 88, 75 72 a10 10 0 0 1 20 -2 a10 10 0 0 1 20 2 C 115 88, 95 100, 95 100Z" fill="url(#trkH)" />
+      {/* mood */}
+      <circle cx="155" cy="72" r="22" fill="url(#trkM)" />
+      <circle cx="149" cy="68" r="2" fill="white" />
+      <circle cx="161" cy="68" r="2" fill="white" />
+      <path d="M148 76 Q 155 82 162 76" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
+      {/* scale */}
+      <rect x="105" y="115" width="40" height="30" rx="7" fill="url(#trkS)" />
+      <circle cx="125" cy="128" r="6" fill="none" stroke="white" strokeWidth="1.5" strokeOpacity="0.5" />
+      <line x1="125" y1="128" x2="130" y2="125" stroke="white" strokeWidth="2" strokeLinecap="round" />
       {/* sparkles */}
-      <g className="animate-onb-sparkle"><path d="M52 52 L 54 57 L 59 59 L 54 61 L 52 66 L 50 61 L 45 59 L 50 57Z" fill="#6366F1" /></g>
-      <g className="animate-onb-sparkle" style={{ animationDelay: "0.8s" }}><path d="M230 60 L 232 65 L 237 67 L 232 69 L 230 74 L 228 69 L 223 67 L 228 65Z" fill="#F59E0B" /></g>
-      <g className="animate-onb-sparkle" style={{ animationDelay: "0.4s" }}><path d="M60 152 L 62 157 L 67 159 L 62 161 L 60 166 L 58 161 L 53 159 L 58 157Z" fill="#14B8A6" /></g>
-    </IllustrationSlot>
+      <g className="animate-onb-sparkle"><path d="M55 50 L 57 55 L 62 57 L 57 59 L 55 64 L 53 59 L 48 57 L 53 55Z" fill="#6366F1" /></g>
+      <g className="animate-onb-sparkle" style={{ animationDelay: "0.8s" }}><path d="M215 120 L 217 125 L 222 127 L 217 129 L 215 134 L 213 129 L 208 127 L 213 125Z" fill="#EC4899" /></g>
+    </Scene>
   );
 }
 
 // ── 6. Privacy — friendly shield ───────────────────────────────────────────
-export function PrivacyIllustration() {
+export function PrivacyIllustration({ className }) {
   return (
-    <IllustrationSlot tone={{ background: "linear-gradient(135deg, #FED7AA, #FCA5A5)" }}>
+    <Scene className={className} blobStyle={{ background: "linear-gradient(135deg, #FED7AA, #FCA5A5)" }}>
       <defs>
         <linearGradient id="privSh" x1="90" y1="35" x2="190" y2="165" gradientUnits="userSpaceOnUse">
           <stop stopColor="#FB923C" /><stop offset="1" stopColor="#EF4444" />
@@ -200,14 +197,14 @@ export function PrivacyIllustration() {
       <g className="animate-onb-sparkle"><path d="M60 50 L 63 57 L 70 60 L 63 63 L 60 70 L 57 63 L 50 60 L 57 57Z" fill="#F59E0B" /></g>
       <g className="animate-onb-sparkle" style={{ animationDelay: "1s" }}><path d="M225 80 L 227 85 L 232 87 L 227 89 L 225 94 L 223 89 L 218 87 L 223 85Z" fill="#6366F1" /></g>
       <g className="animate-onb-sparkle" style={{ animationDelay: "0.5s" }}><path d="M220 150 L 222 155 L 227 157 L 222 159 L 220 164 L 218 159 L 213 157 L 218 155Z" fill="#14B8A6" /></g>
-    </IllustrationSlot>
+    </Scene>
   );
 }
 
 // ── Sign-Up — profile / ID card being created ───────────────────────────────
-export function SignUpIllustration() {
+export function SignUpIllustration({ className }) {
   return (
-    <IllustrationSlot tone={{ background: "linear-gradient(135deg, #818CF8, #5EEAD4)" }}>
+    <Scene className={className} blobStyle={{ background: "linear-gradient(135deg, #818CF8, #5EEAD4)" }}>
       <defs>
         <linearGradient id="sigCard" x1="70" y1="50" x2="200" y2="160" gradientUnits="userSpaceOnUse">
           <stop stopColor="#6366F1" /><stop offset="1" stopColor="#14B8A6" />
@@ -237,14 +234,14 @@ export function SignUpIllustration() {
       <g className="animate-onb-sparkle"><path d="M55 50 L 57 55 L 62 57 L 57 59 L 55 64 L 53 59 L 48 57 L 53 55Z" fill="#F59E0B" /></g>
       <g className="animate-onb-sparkle" style={{ animationDelay: "1s" }}><path d="M225 60 L 227 65 L 232 67 L 227 69 L 225 74 L 223 69 L 218 67 L 223 65Z" fill="#6366F1" /></g>
       <g className="animate-onb-sparkle" style={{ animationDelay: "0.5s" }}><path d="M50 150 L 52 155 L 57 157 L 52 159 L 50 164 L 48 159 L 43 157 L 48 155Z" fill="#14B8A6" /></g>
-    </IllustrationSlot>
+    </Scene>
   );
 }
 
 // ── 7. Completion — mascot celebrating ─────────────────────────────────────
-export function CompletionIllustration() {
+export function CompletionIllustration({ className }) {
   return (
-    <IllustrationSlot tone={{ background: "linear-gradient(135deg, #818CF8, #5EEAD4)" }}>
+    <Scene className={className} blobStyle={{ background: "linear-gradient(135deg, #818CF8, #5EEAD4)" }}>
       <defs>
         <linearGradient id="compDrop" x1="90" y1="30" x2="190" y2="170" gradientUnits="userSpaceOnUse">
           <stop stopColor="#6366F1" /><stop offset="1" stopColor="#14B8A6" />
@@ -265,6 +262,6 @@ export function CompletionIllustration() {
       <g className="animate-onb-sparkle" style={{ animationDelay: "0.2s" }}><circle cx="50" cy="140" r="4" fill="#14B8A6" /></g>
       <g className="animate-onb-sparkle" style={{ animationDelay: "0.6s" }}><path d="M210 40 L 212 45 L 217 47 L 212 49 L 210 54 L 208 49 L 203 47 L 208 45Z" fill="#F97316" /></g>
       <g className="animate-onb-sparkle" style={{ animationDelay: "1s" }}><path d="M65 120 L 67 125 L 72 127 L 67 129 L 65 134 L 63 129 L 58 127 L 63 125Z" fill="#A78BFA" /></g>
-    </IllustrationSlot>
+    </Scene>
   );
 }

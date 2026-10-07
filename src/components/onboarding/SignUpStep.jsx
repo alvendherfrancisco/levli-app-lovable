@@ -110,46 +110,46 @@ export default function SignUpStep({
 
   return (
     <div className="flex flex-col">
-      <SignUpIllustration />
+      <SignUpIllustration className="onb-art-tight" />
 
-      <div className="text-center">
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+      <div className="text-center mt-2 mb-3">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Create your account
         </h1>
-        <p className="text-base text-muted-foreground leading-relaxed mt-2">
+        <p className="text-[15px] text-gray-500 px-3 leading-relaxed">
           Sign up to save your journey and pick up where you left off, on any device.
         </p>
       </div>
 
       {notice && (
-        <p className="mb-4 text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl px-3 py-2.5 text-center leading-relaxed">
+        <p className="mb-4 text-[14px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-center leading-relaxed">
           {notice}
         </p>
       )}
 
       {taken ? (
         <div className="flex flex-col items-center">
-          <p className="text-center text-base font-semibold text-foreground mb-2">
+          <p className="text-center text-[16px] font-semibold text-gray-800 mb-1.5">
             This email is already registered.
           </p>
-          <p className="text-center text-sm text-muted-foreground mb-4 px-3 leading-relaxed">
+          <p className="text-center text-[14.5px] text-gray-500 mb-4 px-3 leading-relaxed">
             Nothing was created. Log in with Google, or with the password you set.
           </p>
           <button
             type="button"
             onClick={() => { sound.tap(); onProvider("google"); }}
-            className="w-full h-12 rounded-full border-2 border-border bg-background text-foreground text-base font-semibold flex items-center justify-center gap-2.5 hover:border-muted-foreground/40 active:scale-[0.98] transition-all"
+            className="w-full h-12 rounded-full border-2 border-gray-200 bg-white text-gray-700 text-[16px] font-semibold flex items-center justify-center gap-2.5 hover:border-gray-300 active:scale-[0.98] transition-all"
           >
             <GoogleIcon className="w-5 h-5" />
             Log in with Google
           </button>
-          <Link to="/login" className="text-sm text-primary font-medium hover:underline mt-4">
+          <Link to="/login" className="text-[14px] text-indigo-600 font-medium hover:underline mt-4">
             Log in with email and password
           </Link>
           <button
             type="button"
             onClick={() => { sound.tap(); setTaken(false); setError(""); }}
-            className="text-sm text-muted-foreground hover:text-foreground mt-3"
+            className="text-[13px] text-gray-400 hover:text-gray-600 mt-2.5"
           >
             Use a different email
           </button>

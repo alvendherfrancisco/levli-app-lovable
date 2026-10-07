@@ -135,20 +135,8 @@ function play(name) {
   try { recipe.forEach((n) => note(ctx, n)); } catch { /* audio unavailable */ }
 }
 
-/** A light haptic, where the device has one (Android; iOS Safari has none). */
-function pulse(ms) {
-  if (!enabled) return;
-  try {
-    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(ms);
-  } catch { /* no vibration API */ }
-}
-
 export const sound = {
   tap: () => play("tap"),
-  // A choice — one card, one option. The shared tap, with a light haptic where
-  // the device supports it. Both follow the Sound effects setting, so turning
-  // sounds off is silent on every sense it can reach.
-  select: () => { play("tap"); pulse(8); },
   open: () => play("open"),
   close: () => play("close"),
   success: () => play("success"),

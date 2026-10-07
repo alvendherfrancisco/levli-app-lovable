@@ -17,15 +17,15 @@ export default function VerifyEmailStep({
 
   return (
     <div className="flex flex-col items-center">
-      <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
-        <MailCheck className="w-6 h-6 text-primary" />
+      <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center mb-3">
+        <MailCheck className="w-6 h-6 text-indigo-600" />
       </div>
-      <div className="text-center mb-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+      <div className="text-center mb-3">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Check your email
         </h1>
-        <p className="text-base text-muted-foreground break-words leading-relaxed mt-2">
-          We sent a 6-digit code to <span className="font-medium text-foreground">{email}</span>.
+        <p className="text-[15px] text-gray-500 px-3 break-words leading-relaxed">
+          We sent a 6-digit code to <span className="font-medium text-gray-700">{email}</span>.
           Enter it and your account is ready.
         </p>
       </div>
@@ -51,11 +51,11 @@ export default function VerifyEmailStep({
       </div>
 
       {/* Docked, so the button stays in view however tall the step grows. */}
-      <div className="sticky bottom-0 z-10 w-full pt-3 pb-1 bg-background/85 backdrop-blur-sm">
+      <div className="sticky bottom-0 z-10 w-full pt-3 pb-1 bg-white/85 backdrop-blur-sm">
         <button
           onClick={() => { sound.tap(); onVerify(code); }}
           disabled={loading || code.length < 6}
-          className="onb-cta-btn w-full max-w-[320px] mx-auto rounded-full font-semibold text-base bg-primary text-primary-foreground shadow-lg shadow-primary/25 disabled:opacity-50 transition-all active:scale-95"
+          className="onb-cta-btn w-full max-w-[320px] mx-auto rounded-full font-semibold text-base bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-50 transition-all active:scale-95"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -65,13 +65,13 @@ export default function VerifyEmailStep({
         </button>
       </div>
 
-      <p className="text-center text-sm text-muted-foreground mt-4">
+      <p className="text-center text-[14px] text-gray-500 mt-4">
         Didn't get it?{" "}
-        <button onClick={() => { sound.tap(); onResend(); }} className="text-primary font-medium hover:underline">
+        <button onClick={() => { sound.tap(); onResend(); }} className="text-indigo-600 font-medium hover:underline">
           Resend email
         </button>
       </p>
-      <button onClick={() => { sound.tap(); onBackToForm(); }} className="text-center text-sm text-muted-foreground mt-3 hover:text-foreground">
+      <button onClick={() => { sound.tap(); onBackToForm(); }} className="text-center text-[13px] text-gray-400 mt-2.5 hover:text-gray-600">
         Use a different email
       </button>
     </div>

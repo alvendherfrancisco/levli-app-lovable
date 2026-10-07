@@ -28,12 +28,12 @@ export default function ScheduleStep({
 
   return (
     <div className="flex flex-col">
-      <ScheduleIllustration />
-      <div className="text-center">
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+      <ScheduleIllustration className="onb-art" />
+      <div className="text-center mt-2.5 mb-3">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           {injectable ? "Let's set your shot schedule." : "Let's set your dose schedule."}
         </h1>
-        <p className="text-base text-muted-foreground leading-relaxed mt-2">
+        <p className="text-[15px] text-gray-500 leading-relaxed px-2">
           Set it once here, and Levli works out your next dose date from it.
         </p>
       </div>
@@ -54,7 +54,7 @@ export default function ScheduleStep({
         />
       </div>
 
-      <p className="text-[12.5px] text-muted-foreground leading-relaxed px-1 mt-4">{PRESCRIBER_HELPER}</p>
+      <p className="text-[12.5px] text-gray-600 leading-relaxed px-1 mt-4">{PRESCRIBER_HELPER}</p>
       {error && (
         <p className="text-[13.5px] font-medium text-red-600 mt-1.5 px-1" role="alert">
           {error}
