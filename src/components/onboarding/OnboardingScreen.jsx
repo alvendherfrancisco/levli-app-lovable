@@ -1,18 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import AmbientBackground from "./AmbientBackground";
-import useFitScale from "@/hooks/useFitScale";
 
 /**
  * Onboarding shell — warm, light-themed layout matching the Levli marketing site.
  * Segmented progress bar, ghost back button, pill CTA, slide+fade step transitions.
  *
- * One screen per step, never a scroll: the step is measured and scaled into the
- * space between the progress header and the CTA (src/hooks/useFitScale.js), and
- * centred in it, so every question and the primary button are on screen together
- * from a 320 pt phone up to a Pro Max. The only case that scrolls is a window too
- * short to stay legible — a phone in landscape — where the step keeps its
- * minimum readable size and scrolls from the top.
+ * Readability first: every step is drawn at its natural size, and the step area
+ * is the only part that scrolls. The progress header above it and the primary
+ * CTA below it are fixed siblings, so both stay exactly where they are while a
+ * taller step — the medication list, the privacy screen — scrolls between them.
+ * A short step simply stays centred in the space they leave.
  */
 export default function OnboardingScreen({
   step,
@@ -30,7 +28,6 @@ export default function OnboardingScreen({
   const ctaText = ctaLabel || (isLastStep ? "Go to Home" : "Next");
   const [animClass, setAnimClass] = useState("animate-onb-right");
   const prevStepRef = useRef(step);
-  const { areaRef, contentRef, scale, scroll } = useFitScale([step]);
 
   useEffect(() => {
     setAnimClass(step >= prevStepRef.current ? "animate-onb-right" : "animate-onb-left");
@@ -73,21 +70,12 @@ export default function OnboardingScreen({
           </div>
         </div>
 
-        {/* The step — centred in the space the header and footer leave. The
-            measured block is the outer div (its height is unaffected by the
-            scale), and the animated step sits inside it, so the slide-in
-            animation and the fit transform never fight over the same element. */}
-        <div
-          ref={areaRef}
-          className={`flex-1 min-h-0 px-5 sm:px-6 flex justify-center ${
-            scroll ? "overflow-y-auto items-start" : "overflow-hidden items-center"
-          }`}
-        >
-          <div
-            ref={contentRef}
-            className="w-full"
-            style={scale < 1 ? { transform: `scale(${scale})`, transformOrigin: "center center" } : undefined}
-          >
+        {/* The step — the one part that scrolls. Nothing here is scaled down or
+            hidden to make it fit: the step is drawn at its normal size and
+            scrolls inside this area, while the progress header above and the CTA
+            below stay put. A short step stays centred in the space they leave. */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 py-4">
+          <div className="min-h-full flex flex-col justify-center">
             <div key={step} className={`w-full ${animClass}`}>
               {children}
             </div>

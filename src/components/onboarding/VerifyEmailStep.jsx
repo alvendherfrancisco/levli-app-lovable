@@ -20,10 +20,10 @@ export default function VerifyEmailStep({
         <MailCheck className="w-6 h-6 text-indigo-600" />
       </div>
       <div className="text-center mb-3">
-        <h1 className="text-[21px] sm:text-[26px] font-bold text-gray-800 mb-1.5 leading-tight px-2">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Check your email
         </h1>
-        <p className="text-[13px] text-gray-500 px-3 break-words leading-snug">
+        <p className="text-[15px] text-gray-500 px-3 break-words leading-relaxed">
           We sent a 6-digit code to <span className="font-medium text-gray-700">{email}</span>.
           Enter it and your account is ready.
         </p>
@@ -49,25 +49,28 @@ export default function VerifyEmailStep({
         </InputOTP>
       </div>
 
-      <button
-        onClick={() => onVerify(code)}
-        disabled={loading || code.length < 6}
-        className="onb-cta-btn w-full max-w-[320px] mx-auto rounded-full font-semibold text-base bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-50 transition-all active:scale-95"
-      >
-        {loading ? (
-          <span className="flex items-center justify-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" /> Verifying...
-          </span>
-        ) : "Verify and continue"}
-      </button>
+      {/* Docked, so the button stays in view however tall the step grows. */}
+      <div className="sticky bottom-0 z-10 w-full pt-3 pb-1 bg-white/85 backdrop-blur-sm">
+        <button
+          onClick={() => onVerify(code)}
+          disabled={loading || code.length < 6}
+          className="onb-cta-btn w-full max-w-[320px] mx-auto rounded-full font-semibold text-base bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-50 transition-all active:scale-95"
+        >
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" /> Verifying...
+            </span>
+          ) : "Verify and continue"}
+        </button>
+      </div>
 
-      <p className="text-center text-[13px] text-gray-500 mt-3">
+      <p className="text-center text-[14px] text-gray-500 mt-4">
         Didn't get it?{" "}
         <button onClick={onResend} className="text-indigo-600 font-medium hover:underline">
           Resend email
         </button>
       </p>
-      <button onClick={onBackToForm} className="text-center text-[12px] text-gray-400 mt-2 hover:text-gray-600">
+      <button onClick={onBackToForm} className="text-center text-[13px] text-gray-400 mt-2.5 hover:text-gray-600">
         Use a different email
       </button>
     </div>

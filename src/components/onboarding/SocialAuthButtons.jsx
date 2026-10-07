@@ -13,7 +13,7 @@ import AppleIcon from "@/components/AppleIcon";
  */
 export default function SocialAuthButtons({ onProvider, disabled = false }) {
   const base =
-    "w-full h-12 rounded-full text-[15px] font-semibold flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] disabled:opacity-60";
+    "w-full h-12 rounded-full text-[16px] font-semibold flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] disabled:opacity-60";
 
   return (
     <div className="flex flex-col gap-2.5">

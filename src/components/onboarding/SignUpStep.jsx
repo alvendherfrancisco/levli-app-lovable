@@ -112,43 +112,43 @@ export default function SignUpStep({
       <SignUpIllustration className="onb-art-tight" />
 
       <div className="text-center mt-2 mb-3">
-        <h1 className="text-[21px] sm:text-[26px] font-bold text-gray-800 mb-1.5 leading-tight px-2">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Create your account
         </h1>
-        <p className="text-[13px] text-gray-500 px-3 leading-snug">
+        <p className="text-[15px] text-gray-500 px-3 leading-relaxed">
           Sign up to save your journey and pick up where you left off, on any device.
         </p>
       </div>
 
       {notice && (
-        <p className="mb-3 text-[13px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-center leading-snug">
+        <p className="mb-4 text-[14px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-center leading-relaxed">
           {notice}
         </p>
       )}
 
       {taken ? (
         <div className="flex flex-col items-center">
-          <p className="text-center text-[14px] font-semibold text-gray-800 mb-1">
+          <p className="text-center text-[16px] font-semibold text-gray-800 mb-1.5">
             This email is already registered.
           </p>
-          <p className="text-center text-[13px] text-gray-500 mb-3 px-3 leading-snug">
+          <p className="text-center text-[14.5px] text-gray-500 mb-4 px-3 leading-relaxed">
             Nothing was created. Log in with Google, or with the password you set.
           </p>
           <button
             type="button"
             onClick={() => onProvider("google")}
-            className="w-full h-12 rounded-full border-2 border-gray-200 bg-white text-gray-700 text-[15px] font-semibold flex items-center justify-center gap-2.5 hover:border-gray-300 active:scale-[0.98] transition-all"
+            className="w-full h-12 rounded-full border-2 border-gray-200 bg-white text-gray-700 text-[16px] font-semibold flex items-center justify-center gap-2.5 hover:border-gray-300 active:scale-[0.98] transition-all"
           >
             <GoogleIcon className="w-5 h-5" />
             Log in with Google
           </button>
-          <Link to="/login" className="text-[13px] text-indigo-600 font-medium hover:underline mt-3">
+          <Link to="/login" className="text-[14px] text-indigo-600 font-medium hover:underline mt-4">
             Log in with email and password
           </Link>
           <button
             type="button"
             onClick={() => { setTaken(false); setError(""); }}
-            className="text-[12px] text-gray-400 hover:text-gray-600 mt-2"
+            className="text-[13px] text-gray-400 hover:text-gray-600 mt-2.5"
           >
             Use a different email
           </button>

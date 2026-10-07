@@ -352,10 +352,10 @@ function WelcomeStep() {
   return (
     <div className="flex flex-col items-center text-center">
       <WelcomeIllustration className="onb-art" />
-      <h1 className="text-[22px] sm:text-[27px] font-bold text-gray-800 mt-4 mb-2 leading-tight px-2">
+      <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mt-5 mb-3 leading-tight px-2">
         You're starting a journey — we're here for it.
       </h1>
-      <p className="text-[13.5px] sm:text-[15px] text-gray-500 leading-snug px-3">
+      <p className="text-[15px] sm:text-[16px] text-gray-500 leading-relaxed px-3">
         Levli helps you track your shots, symptoms, and progress, so you can feel more in control, one day at a time.
       </p>
     </div>
@@ -366,10 +366,10 @@ function EmpathyStep() {
   return (
     <div className="flex flex-col items-center text-center">
       <EmpathyIllustration className="onb-art" />
-      <h1 className="text-[22px] sm:text-[27px] font-bold text-gray-800 mt-4 mb-2 leading-tight px-2">
+      <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mt-5 mb-3 leading-tight px-2">
         GLP-1 journeys aren't always linear.
       </h1>
-      <p className="text-[13.5px] sm:text-[15px] text-gray-500 leading-snug px-3">
+      <p className="text-[15px] sm:text-[16px] text-gray-500 leading-relaxed px-3">
         Good days, hard days, plateaus — Levli helps you notice the patterns, so you're never guessing alone.
       </p>
     </div>
@@ -386,19 +386,19 @@ function MedicationStep({ selectedMeds, setSelectedMeds }) {
     <div className="flex flex-col">
       <MedicationIllustration className="onb-art" />
       <div className="text-center mt-3 mb-2.5">
-        <h1 className="text-[21px] sm:text-[26px] font-bold text-gray-800 mb-1.5 leading-tight px-2">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Which medication are you on?
         </h1>
-        <p className="text-[13px] text-gray-500 leading-snug">This helps us tailor your dose schedule and inventory tracking.</p>
+        <p className="text-[15px] text-gray-500 leading-relaxed px-2">This helps us tailor your dose schedule and inventory tracking.</p>
       </div>
-      <div className="flex flex-wrap gap-1.5 justify-center">
+      <div className="flex flex-wrap gap-2 justify-center">
         {MED_OPTIONS.map((opt) => {
           const selected = selectedMeds.includes(opt.label);
           return (
             <button
               key={opt.label}
               onClick={() => toggle(opt.label)}
-              className={`flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded-full border-2 text-[13px] font-medium transition-all active:scale-95 ${
+              className={`flex items-center gap-2 pl-3 pr-3.5 py-2.5 rounded-full border-2 text-[14px] font-medium transition-all active:scale-95 ${
                 selected
                   ? "border-indigo-600 bg-indigo-50 text-indigo-700"
                   : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
@@ -420,33 +420,33 @@ function ScheduleStep({ doseAmount, setDoseAmount, frequency, setFrequency, shot
     <div className="flex flex-col">
       <ScheduleIllustration className="onb-art" />
       <div className="text-center mt-2.5 mb-3">
-        <h1 className="text-[21px] sm:text-[26px] font-bold text-gray-800 mb-1.5 leading-tight px-2">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Let's set your shot schedule.
         </h1>
-        <p className="text-[13px] text-gray-500 leading-snug px-2">
+        <p className="text-[15px] text-gray-500 leading-relaxed px-2">
           Set it once here, and Levli works out your next dose date from it.
         </p>
       </div>
       {/* Dose amount */}
       <div className="mb-3">
-        <label className="text-[13px] font-semibold text-gray-600 mb-1.5 block">Your dose (optional)</label>
+        <label className="text-[14px] font-semibold text-gray-600 mb-2 block">Your dose (optional)</label>
         <input
           type="text"
           value={doseAmount}
           onChange={(e) => setDoseAmount(e.target.value)}
           placeholder="e.g. 0.5 mg"
-          className="w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-2.5 text-[15px] text-gray-700 outline-none focus:border-indigo-500 transition-colors"
+          className="w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-3 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors"
         />
       </div>
       {/* Frequency */}
       <div className="mb-3">
-        <label className="text-[13px] font-semibold text-gray-600 mb-1.5 block">How often?</label>
+        <label className="text-[14px] font-semibold text-gray-600 mb-2 block">How often?</label>
         <div className="flex flex-wrap gap-1.5">
           {FREQUENCY_OPTIONS.map((opt) => (
             <button
               key={opt.label}
               onClick={() => setFrequency(opt.label)}
-              className={`px-3 py-1.5 rounded-xl border-2 text-[13px] font-medium transition-all active:scale-95 ${
+              className={`px-3.5 py-2.5 rounded-xl border-2 text-[14px] font-medium transition-all active:scale-95 ${
                 frequency === opt.label
                   ? "border-indigo-600 bg-indigo-50 text-indigo-700"
                   : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
@@ -459,13 +459,13 @@ function ScheduleStep({ doseAmount, setDoseAmount, frequency, setFrequency, shot
       </div>
       {/* Day of week */}
       <div>
-        <label className="text-[13px] font-semibold text-gray-600 mb-1.5 block">Preferred day</label>
-        <div className="flex gap-0.5 justify-between">
+        <label className="text-[14px] font-semibold text-gray-600 mb-2 block">Preferred day</label>
+        <div className="flex gap-1 justify-between">
           {DAYS.map((d, i) => (
             <button
               key={i}
               onClick={() => setShotDay(i)}
-              className={`w-9 h-9 rounded-full text-[13px] font-medium transition-all active:scale-95 ${
+              className={`w-10 h-10 rounded-full text-[14px] font-medium transition-all active:scale-95 ${
                 shotDay === i
                   ? "bg-indigo-600 text-white"
                   : "bg-gray-100 text-gray-500 hover:bg-gray-200"
@@ -488,34 +488,34 @@ function TrackingStep({ tracking, setTracking, units, setUnits }) {
     <div className="flex flex-col">
       <TrackingIllustration className="onb-art-tight" />
       <div className="text-center mt-2 mb-2.5">
-        <h1 className="text-[21px] sm:text-[26px] font-bold text-gray-800 mb-1.5 leading-tight px-2">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           What would you like to keep an eye on?
         </h1>
-        <p className="text-[13px] text-gray-500 leading-snug px-2">
+        <p className="text-[15px] text-gray-500 leading-relaxed px-2">
           Log as much or as little as feels right for you.
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-1.5 mb-3">
+      <div className="grid grid-cols-1 gap-2 mb-4">
         {TRACKING_OPTIONS.map((opt) => {
           const selected = tracking.includes(opt.key);
           return (
             <button
               key={opt.key}
               onClick={() => toggle(opt.key)}
-              className={`flex items-center gap-2.5 p-2.5 rounded-2xl border-2 text-left transition-all active:scale-[0.98] ${
+              className={`flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-all active:scale-[0.98] ${
                 selected
                   ? "border-indigo-600 bg-indigo-50"
                   : "border-gray-200 bg-white hover:border-gray-300"
               }`}
             >
               <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0">
-                <opt.Icon size={26} />
+                <opt.Icon size={30} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-[13px] font-semibold leading-tight ${selected ? "text-indigo-700" : "text-gray-700"}`}>
+                <p className={`text-[15px] font-semibold leading-snug ${selected ? "text-indigo-700" : "text-gray-700"}`}>
                   {opt.label}
                 </p>
-                <p className="text-[11px] text-gray-400 leading-tight">{opt.desc}</p>
+                <p className="text-[12.5px] text-gray-400 leading-snug">{opt.desc}</p>
               </div>
               {selected && <Check size={16} className="text-indigo-600 flex-shrink-0" strokeWidth={3} />}
             </button>
@@ -523,18 +523,18 @@ function TrackingStep({ tracking, setTracking, units, setUnits }) {
         })}
       </div>
       {/* Units */}
-      <div className="border-t border-gray-100 pt-3">
-        <p className="text-[13px] font-semibold text-gray-600 mb-2">Measurement preferences</p>
+      <div className="border-t border-gray-100 pt-4">
+        <p className="text-[14px] font-semibold text-gray-600 mb-3">Measurement preferences</p>
         <div className="space-y-2">
           {UNIT_GROUPS.map((group) => (
             <div key={group.key} className="flex items-center justify-between">
-              <span className="text-[12.5px] text-gray-500">{group.label}</span>
+              <span className="text-[13.5px] text-gray-500">{group.label}</span>
               <div className="flex gap-1.5">
                 {group.options.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => setUnits((prev) => ({ ...prev, [group.key]: opt.value }))}
-                    className={`px-2.5 py-1 rounded-lg text-[12.5px] font-medium transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-[13.5px] font-medium transition-all ${
                       units[group.key] === opt.value
                         ? "bg-indigo-600 text-white"
                         : "bg-gray-100 text-gray-500 hover:bg-gray-200"
@@ -558,18 +558,18 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
     <div className="flex flex-col">
       <PrivacyIllustration className="onb-art-tight" />
       <div className="text-center mt-2 mb-2.5">
-        <h1 className="text-[21px] sm:text-[26px] font-bold text-gray-800 mb-1.5 leading-tight px-2">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Your data stays yours.
         </h1>
-        <p className="text-[13px] text-gray-600 leading-snug px-3">
+        <p className="text-[15px] text-gray-600 leading-relaxed px-3">
           Levli is a personal logbook. It doesn't replace your care team, and it never shares your journey without your say-so.
         </p>
       </div>
 
       {/* Exactly what is stored, where, and why */}
-      <div className="bg-gray-50 rounded-2xl p-3 border border-gray-100 mb-2">
-        <p className="text-[13px] font-semibold text-gray-700 mb-1">What Levli stores, and why</p>
-        <ul className="text-[11.5px] text-gray-600 space-y-0.5 list-disc list-inside leading-snug">
+      <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 mb-3">
+        <p className="text-[15px] font-semibold text-gray-700 mb-1.5">What Levli stores, and why</p>
+        <ul className="text-[13px] text-gray-600 space-y-1.5 list-disc list-inside leading-relaxed">
           <li><span className="font-medium">What:</span> what you log — doses, symptoms and side effects, weight, nutrition, journal entries and progress photos.</li>
           <li><span className="font-medium">Where:</span> in your own account, in our encrypted cloud database. Only your sign-in can read it. It is never sold, never used for advertising, and never shared with another person unless you grant them caregiver access.</li>
           <li><span className="font-medium">Why:</span> to show your history, trends and reports back to you. Nothing else.</li>
@@ -578,14 +578,14 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
       </div>
 
       {/* Health-data consent */}
-      <label className="flex items-start gap-2.5 cursor-pointer bg-gray-50 rounded-2xl p-3 border border-gray-100 mb-2">
+      <label className="flex items-start gap-3 cursor-pointer bg-gray-50 rounded-2xl p-3.5 border border-gray-100 mb-3">
         <input
           type="checkbox"
           checked={gdprConsented}
           onChange={(e) => setGdprConsented(e.target.checked)}
           className="w-5 h-5 mt-0.5 accent-indigo-600 flex-shrink-0"
         />
-        <span className="text-[12.5px] text-gray-600 leading-snug">
+        <span className="text-[14px] text-gray-600 leading-relaxed">
           I consent to Levli processing my health data as described above and in the{" "}
           <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>.
         </span>
@@ -593,36 +593,36 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
 
       {/* Birthdate — used to check the app's 18+ requirement */}
       <div className="mb-2">
-        <label className="text-[13px] font-semibold text-gray-600 mb-1.5 block">Date of birth</label>
+        <label className="text-[14px] font-semibold text-gray-600 mb-2 block">Date of birth</label>
         <input
           type="date"
           value={birthdate}
           onChange={(e) => setBirthdate(e.target.value)}
-          className="w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-2.5 text-[15px] text-gray-700 outline-none focus:border-indigo-500 transition-colors"
+          className="w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-3 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors"
         />
       </div>
 
       {/* Adult-only confirmation */}
       {minor ? (
-        <div className="rounded-2xl border border-orange-200 bg-orange-50 p-3 mb-2">
-          <p className="text-[13px] font-semibold text-orange-800">Levli is for adults aged 18 and over.</p>
-          <p className="text-[11.5px] text-orange-700 mt-1 leading-snug">
+        <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 mb-3">
+          <p className="text-[15px] font-semibold text-orange-800">Levli is for adults aged 18 and over.</p>
+          <p className="text-[13px] text-orange-700 mt-1.5 leading-relaxed">
             The date of birth entered is under 18, so Levli can't be used for health tracking. Please check the date, or come back when you're 18.
           </p>
         </div>
       ) : (
-        <label className="flex items-start gap-2.5 cursor-pointer bg-gray-50 rounded-2xl p-3 border border-gray-100 mb-2">
+        <label className="flex items-start gap-3 cursor-pointer bg-gray-50 rounded-2xl p-3.5 border border-gray-100 mb-3">
           <input
             type="checkbox"
             checked={ageConfirmed}
             onChange={(e) => setAgeConfirmed(e.target.checked)}
             className="w-5 h-5 mt-0.5 accent-indigo-600 flex-shrink-0"
           />
-          <span className="text-[12.5px] text-gray-600 leading-snug">I confirm that I am 18 years or older.</span>
+          <span className="text-[14px] text-gray-600 leading-relaxed">I confirm that I am 18 years or older.</span>
         </label>
       )}
 
-      <p className="text-[11px] text-gray-600 leading-snug px-1">
+      <p className="text-[12.5px] text-gray-600 leading-relaxed px-1">
         {DISCLAIMER_TEXT} Read the{" "}
         <Link to="/medical-disclaimer" className="text-indigo-600 underline">full medical disclaimer</Link>.
       </p>
@@ -636,10 +636,10 @@ function CompletionStep() {
       <div className="animate-onb-bounce">
         <CompletionIllustration className="onb-art" />
       </div>
-      <h1 className="text-[22px] sm:text-[27px] font-bold text-gray-800 mt-4 mb-2 leading-tight px-2">
+      <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mt-5 mb-3 leading-tight px-2">
         You're all set.
       </h1>
-      <p className="text-[13.5px] sm:text-[15px] text-gray-500 leading-snug px-3">
+      <p className="text-[15px] sm:text-[16px] text-gray-500 leading-relaxed px-3">
         Your Home is ready — next shot, mood, and progress, all in one calm place.
       </p>
     </div>
