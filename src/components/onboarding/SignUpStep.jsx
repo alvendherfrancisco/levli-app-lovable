@@ -7,6 +7,7 @@ import AccountEmailForm from "@/components/onboarding/AccountEmailForm";
 import VerifyEmailStep from "@/components/onboarding/VerifyEmailStep";
 import GoogleIcon from "@/components/GoogleIcon";
 import { formBlocker, isEmailTakenError } from "@/lib/accountValidation";
+import { sound } from "@/lib/sounds";
 
 /** Turns a refusal from the sign-up endpoint into something worth reading. */
 function friendlySignUpError(err) {
@@ -136,7 +137,7 @@ export default function SignUpStep({
           </p>
           <button
             type="button"
-            onClick={() => onProvider("google")}
+            onClick={() => { sound.tap(); onProvider("google"); }}
             className="w-full h-12 rounded-full border-2 border-gray-200 bg-white text-gray-700 text-[16px] font-semibold flex items-center justify-center gap-2.5 hover:border-gray-300 active:scale-[0.98] transition-all"
           >
             <GoogleIcon className="w-5 h-5" />
@@ -147,7 +148,7 @@ export default function SignUpStep({
           </Link>
           <button
             type="button"
-            onClick={() => { setTaken(false); setError(""); }}
+            onClick={() => { sound.tap(); setTaken(false); setError(""); }}
             className="text-[13px] text-gray-400 hover:text-gray-600 mt-2.5"
           >
             Use a different email

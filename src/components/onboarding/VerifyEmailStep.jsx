@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Loader2, MailCheck } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { sound } from "@/lib/sounds";
 
 /**
  * The verification half of the email path.
@@ -52,7 +53,7 @@ export default function VerifyEmailStep({
       {/* Docked, so the button stays in view however tall the step grows. */}
       <div className="sticky bottom-0 z-10 w-full pt-3 pb-1 bg-white/85 backdrop-blur-sm">
         <button
-          onClick={() => onVerify(code)}
+          onClick={() => { sound.tap(); onVerify(code); }}
           disabled={loading || code.length < 6}
           className="onb-cta-btn w-full max-w-[320px] mx-auto rounded-full font-semibold text-base bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-50 transition-all active:scale-95"
         >
@@ -66,11 +67,11 @@ export default function VerifyEmailStep({
 
       <p className="text-center text-[14px] text-gray-500 mt-4">
         Didn't get it?{" "}
-        <button onClick={onResend} className="text-indigo-600 font-medium hover:underline">
+        <button onClick={() => { sound.tap(); onResend(); }} className="text-indigo-600 font-medium hover:underline">
           Resend email
         </button>
       </p>
-      <button onClick={onBackToForm} className="text-center text-[13px] text-gray-400 mt-2.5 hover:text-gray-600">
+      <button onClick={() => { sound.tap(); onBackToForm(); }} className="text-center text-[13px] text-gray-400 mt-2.5 hover:text-gray-600">
         Use a different email
       </button>
     </div>

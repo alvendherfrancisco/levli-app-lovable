@@ -35,6 +35,7 @@ import {
   emptySchedule, getDayInterval, medicationScheduleFields, validateScheduleSelection,
 } from "@/lib/medicationSchedule";
 import { Check } from "lucide-react";
+import { sound } from "@/lib/sounds";
 
 const TOTAL_STEPS = 8;
 
@@ -448,7 +449,7 @@ function MedicationStep({ selectedMed, onSelect }) {
             <button
               key={opt.label}
               type="button"
-              onClick={() => onSelect(opt.label)}
+              onClick={() => { sound.tap(); onSelect(opt.label); }}
               aria-pressed={selected}
               className={`flex items-center gap-2 pl-3 pr-3.5 py-2.5 rounded-full border-2 text-[14px] font-medium transition-all active:scale-95 ${
                 selected
@@ -491,7 +492,7 @@ function TrackingStep({ tracking, setTracking, units, setUnits }) {
           return (
             <button
               key={opt.key}
-              onClick={() => toggle(opt.key)}
+              onClick={() => { sound.tap(); toggle(opt.key); }}
               className={`flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-all active:scale-[0.98] ${
                 selected
                   ? "border-indigo-600 bg-indigo-50"
@@ -523,7 +524,7 @@ function TrackingStep({ tracking, setTracking, units, setUnits }) {
                 {group.options.map((opt) => (
                   <button
                     key={opt.value}
-                    onClick={() => setUnits((prev) => ({ ...prev, [group.key]: opt.value }))}
+                    onClick={() => { sound.tap(); setUnits((prev) => ({ ...prev, [group.key]: opt.value })); }}
                     className={`px-3 py-1.5 rounded-lg text-[13.5px] font-medium transition-all ${
                       units[group.key] === opt.value
                         ? "bg-indigo-600 text-white"
@@ -572,7 +573,7 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
         <input
           type="checkbox"
           checked={gdprConsented}
-          onChange={(e) => setGdprConsented(e.target.checked)}
+          onChange={(e) => { sound.tap(); setGdprConsented(e.target.checked); }}
           className="w-5 h-5 mt-0.5 accent-indigo-600 flex-shrink-0"
         />
         <span className="text-[14px] text-gray-600 leading-relaxed">
@@ -587,7 +588,13 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
         <input
           type="date"
           value={birthdate}
-          onChange={(e) => setBirthdate(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value;
+            setBirthdate(next);
+            // The 18+ notice is a validation result, so it uses the app's own
+            // error cue; any other date is just a control tap.
+            if (isMinor(next)) sound.warning(); else sound.tap();
+          }}
           className="w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-3 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors"
         />
       </div>
@@ -605,7 +612,7 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
           <input
             type="checkbox"
             checked={ageConfirmed}
-            onChange={(e) => setAgeConfirmed(e.target.checked)}
+            onChange={(e) => { sound.tap(); setAgeConfirmed(e.target.checked); }}
             className="w-5 h-5 mt-0.5 accent-indigo-600 flex-shrink-0"
           />
           <span className="text-[14px] text-gray-600 leading-relaxed">I confirm that I am 18 years or older.</span>

@@ -1,5 +1,6 @@
 import React from "react";
 import { DEFAULT_REMINDER_TIME } from "@/lib/medicationSchedule";
+import { sound } from "@/lib/sounds";
 
 const TIME_INPUT =
   "w-full min-h-[52px] rounded-xl border border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-3 py-2.5 text-sm outline-none focus:border-indigo-400 dark:[color-scheme:dark]";
@@ -20,7 +21,7 @@ export default function ReminderTimeField({ value, onChange, optional = false })
           <input
             type="checkbox"
             checked={on}
-            onChange={(e) => onChange(e.target.checked ? DEFAULT_REMINDER_TIME : "")}
+            onChange={(e) => { sound.tap(); onChange(e.target.checked ? DEFAULT_REMINDER_TIME : ""); }}
             className="w-5 h-5 mt-0.5 accent-indigo-600 flex-shrink-0"
           />
           <span className="text-sm text-gray-700 dark:text-gray-300 leading-snug">

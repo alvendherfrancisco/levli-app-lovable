@@ -4,6 +4,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import {
   emailError, firstNameError, passwordError, passwordStrength, formBlocker,
 } from "@/lib/accountValidation";
+import { sound } from "@/lib/sounds";
 
 const FIELD =
   "w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-3 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors";
@@ -50,6 +51,7 @@ export default function AccountEmailForm({
     e.preventDefault();
     setTouched({ firstName: true, email: true, password: true });
     if (formBlocker({ firstName, email, password })) return;
+    sound.tap();
     onSubmit();
   };
 
@@ -107,7 +109,7 @@ export default function AccountEmailForm({
         />
         <button
           type="button"
-          onClick={() => setShowPassword((s) => !s)}
+          onClick={() => { sound.tap(); setShowPassword((s) => !s); }}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           aria-label={showPassword ? "Hide password" : "Show password"}
         >

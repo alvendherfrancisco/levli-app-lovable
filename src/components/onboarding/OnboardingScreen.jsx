@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import AmbientBackground from "./AmbientBackground";
+import { sound } from "@/lib/sounds";
 
 /**
  * Onboarding shell — warm, light-themed layout matching the Levli marketing site.
@@ -27,6 +28,9 @@ export default function OnboardingScreen({
   const isFirstStep = step === 0;
   const isLastStep = step === totalSteps - 1;
   const ctaText = ctaLabel || (isLastStep ? "Go to Home" : "Next");
+  // Every screen in the flow sounds the same: a soft tap on any control, and the
+  // completion chime on the last step, which is where onboarding actually saves.
+  const continueCue = () => { if (isLastStep) sound.success(); else sound.tap(); };
   const [animClass, setAnimClass] = useState("animate-onb-right");
   const prevStepRef = useRef(step);
 
@@ -47,7 +51,7 @@ export default function OnboardingScreen({
           <div className={`h-8 flex-shrink-0 ${isFirstStep ? "w-0" : "w-8"}`}>
             {!isFirstStep && (
               <button
-                onClick={onBack}
+                onClick={() => { sound.tap(); onBack(); }}
                 className="w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all"
                 aria-label="Back"
               >
@@ -106,7 +110,7 @@ export default function OnboardingScreen({
               </p>
             )}
             <button
-              onClick={canContinue ? onContinue : undefined}
+              onClick={canContinue ? () => { continueCue(); onContinue(); } : undefined}
               disabled={!canContinue}
               className={`onb-cta-btn w-full max-w-[400px] rounded-full font-semibold text-base sm:text-lg transition-all duration-300 active:scale-95 ${
                 canContinue
@@ -118,7 +122,7 @@ export default function OnboardingScreen({
             </button>
             {secondaryAction && (
               <button
-                onClick={secondaryAction.onClick}
+                onClick={() => { sound.tap(); secondaryAction.onClick(); }}
                 className="w-full max-w-[400px] text-center text-gray-500 text-sm font-medium mt-3 hover:text-gray-700 transition-colors"
               >
                 {secondaryAction.label}

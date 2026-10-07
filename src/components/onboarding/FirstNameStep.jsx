@@ -2,6 +2,7 @@ import React from "react";
 import { Loader2 } from "lucide-react";
 import { SignUpIllustration } from "@/components/onboarding/OnboardingIllustrations";
 import { firstNameError } from "@/lib/accountValidation";
+import { sound } from "@/lib/sounds";
 
 /**
  * The short account step for someone who signed in with a provider that gave no
@@ -14,6 +15,7 @@ export default function FirstNameStep({ firstName, setFirstName, onContinue, loa
   const submit = (e) => {
     e.preventDefault();
     if (missing) return;
+    sound.tap();
     onContinue();
   };
 
