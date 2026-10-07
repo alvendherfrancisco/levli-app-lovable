@@ -314,7 +314,7 @@ export const MEDICATION_CONFIG = [
       source: "",
       verified: "",
       status: "review",
-      note: "One pen delivers every strength from 0.6 mg to 3 mg, so every dose would share a single colour — no manufacturer-stated colour found for that pen, so the standard scale is used. Not offered as a new choice in the pickers; kept so existing logs resolve.",
+      note: "One pen delivers every strength from 0.6 mg to 3 mg, so every dose shares a single colour — no manufacturer-stated colour found for that pen, so the standard scale is used until one is sourced.",
     },
     indicationNote:
       "Chronic weight management in adults and in adolescents aged 12 and older with obesity or with overweight plus a weight-related condition. The 3 mg strength is the maintenance dose; the lower strengths are for titration only.",
@@ -716,7 +716,7 @@ export function isCustomDoseSource(shot) {
 
 // ── What the pickers offer, and in what order ───────────────────────────────
 // The product list, in the order it is shown. A product that is NOT here is
-// still defined above (Trulicity, Victoza, Saxenda) so anyone already logging it
+// still defined above (Trulicity, Victoza) so anyone already logging it
 // keeps its strengths, its interval and its missed-dose rule — it is simply no
 // longer offered as a new choice, and a product outside this list is logged
 // through "Others" instead.
@@ -727,6 +727,7 @@ const LISTED_IDS = [
   "rybelsus",
   "compounded_semaglutide",
   "compounded_tirzepatide",
+  "saxenda",
   "wegovy",
   "zepbound",
   "bpc157",
