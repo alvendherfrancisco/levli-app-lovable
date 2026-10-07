@@ -4,6 +4,7 @@ import usePrefersReducedMotion from "@/hooks/usePrefersReducedMotion";
 import useLiveDarkTheme from "@/hooks/useLiveDarkTheme";
 import SplashDroplet from "@/components/splash/SplashDroplet";
 import SplashSparkles from "@/components/splash/SplashSparkles";
+import { playSplashSounds } from "@/lib/splashSounds";
 
 /**
  * The Levli launch splash.
@@ -15,7 +16,7 @@ import SplashSparkles from "@/components/splash/SplashSparkles";
  * the sparkles keep twinkling) until the app is ready.
  *
  * With "Reduce Motion" the same composition is shown as a single fade — the
- * static logo — and nothing moves.
+ * static logo — and nothing moves, so nothing sounds either.
  *
  * A sign-out borrows the same screen: the sequence plays through in full, then
  * onSequenceEnd tells the app to leave for the login screen. Playing it before
@@ -35,6 +36,17 @@ export default function SplashScreen({ ready = true, onFinish, onSequenceEnd }) 
   readyRef.current = ready;
   finishRef.current = onFinish;
   sequenceEndRef.current = onSequenceEnd;
+
+  // The droplet's own sounds, written onto the same beats as its animation: the
+  // landing, the ring, the face, the sparkles. Played once, when the splash
+  // appears. A still logo has nothing to sound out, and whether the browser
+  // allows audio at all is decided inside src/lib/splashSounds.js.
+  const sounded = useRef(false);
+  useEffect(() => {
+    if (reduced || sounded.current) return;
+    sounded.current = true;
+    playSplashSounds();
+  }, [reduced]);
 
   const steps = reduced ? [SPLASH_TIMING.reducedHold] : SPLASH_STEPS;
   const sequenceEnd = steps[steps.length - 1];
