@@ -42,12 +42,11 @@ export default function OnboardingScreen({
       <AmbientBackground />
       <div className="w-full max-w-lg mx-auto flex flex-col h-full sm:h-[88vh] sm:max-h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:shadow-xl bg-white/70 backdrop-blur-md overflow-hidden relative z-10 border border-gray-100/80">
         {/* Header — back + segmented progress */}
-        <div className="flex items-center gap-3 px-5 sm:px-6 pt-5 sm:pt-6 pb-1.5 flex-shrink-0">
-          {/* The back button keeps its slot on the first step, where there is
-              nothing to go back to. The row is then exactly the same height and
-              the bar starts at the same x on every step, so the progress bar
-              never shifts or changes width as the steps change. */}
-          <div className="w-8 h-8 flex-shrink-0">
+        <div className={`flex items-center px-5 sm:px-6 pt-5 sm:pt-6 pb-1.5 flex-shrink-0 ${isFirstStep ? "" : "gap-3"}`}>
+          {/* The back button keeps its 2rem slot on the first step, where there
+              is nothing to go back to, so the row is exactly the same height on
+              every step and the bar never moves up or down. */}
+          <div className={`h-8 flex-shrink-0 ${isFirstStep ? "w-0" : "w-8"}`}>
             {!isFirstStep && (
               <button
                 onClick={onBack}
@@ -58,7 +57,11 @@ export default function OnboardingScreen({
               </button>
             )}
           </div>
-          <div className="flex-1 flex gap-1.5">
+          {/* On the first step the bar is centred instead: the slot and its gap
+              come to 2.75rem, so half of that (1.375rem) is left as empty space
+              on each side. The bar itself keeps exactly the same width, and so
+              the same segment size, as on every other step. */}
+          <div className={`flex-1 flex gap-1.5 ${isFirstStep ? "mx-[1.375rem]" : ""}`}>
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div
                 key={i}
