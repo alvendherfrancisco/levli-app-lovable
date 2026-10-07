@@ -18,7 +18,10 @@ export default function DoseField({ medication, schedule, customDoses, onChange,
 
   return (
     <div className="mb-4">
+      {/* Keyed by medication, so a change of product clears the chip row's own
+          state along with the dose — no strength can survive the switch. */}
       <DoseChips
+        key={medication}
         medication={medication}
         options={getDoseChips(medication, customDoses)}
         value={schedule.dose}

@@ -77,15 +77,6 @@ export function scheduleOptionsFor(medication) {
   };
 }
 
-/** The chip label for a frequency, filled in once an interval is known. */
-export function frequencyLabel(key, intervalDays) {
-  if (key === FREQUENCY.EVERY_X_DAYS && Number(intervalDays) > 0) {
-    const days = Number(intervalDays);
-    return `Every ${days} day${days === 1 ? "" : "s"}`;
-  }
-  return FREQUENCY_LABEL[key] || "";
-}
-
 /**
  * The interval in days a frequency runs at. Levli works the next dose out from
  * the last dose logged plus this interval — the weekday is only the anchor the
