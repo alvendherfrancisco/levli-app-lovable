@@ -664,3 +664,33 @@ html { background-color: var(--launch-bg); }
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Onboarding: one screen per step, never a scroll ───────────────────────
+   The step itself is measured and scaled into the space the progress header and
+   the CTA leave (see src/hooks/useFitScale.js). These rules do the height-aware
+   half of the job, so the artwork gives way before the copy does: it shrinks
+   with the viewport height and is dropped on the shortest screens. That keeps
+   every heading, question and the primary button on screen — and legible — from
+   a 320 pt phone upwards. Sizes are max-widths because every illustration keeps
+   its own aspect ratio (see OnboardingIllustrations.jsx). */
+.onb-art { max-width: min(250px, 30vh); }
+@supports (height: 1dvh) { .onb-art { max-width: min(250px, 30dvh); } }
+
+/* The two heaviest steps (privacy, tracking) retire their artwork earlier. */
+.onb-art-tight { max-width: min(190px, 23vh); }
+@supports (height: 1dvh) { .onb-art-tight { max-width: min(190px, 23dvh); } }
+
+@media (max-height: 720px) {
+  .onb-art { max-width: min(160px, 22dvh); }
+  .onb-art-tight { display: none; }
+}
+@media (max-height: 620px) { .onb-art { display: none; } }
+
+/* The CTA keeps its full touch size, but hands its spare padding back to the
+   step on short screens. */
+.onb-cta { padding-bottom: max(1.75rem, env(safe-area-inset-bottom, 0px)); }
+.onb-cta-btn { padding-top: 1rem; padding-bottom: 1rem; }
+@media (max-height: 720px) {
+  .onb-cta { padding-bottom: max(0.9rem, env(safe-area-inset-bottom, 0px)); }
+  .onb-cta-btn { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+}

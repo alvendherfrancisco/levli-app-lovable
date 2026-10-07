@@ -67,18 +67,18 @@ export default function SignUpStep({ persistState }) {
 
   if (showOtp) {
     return (
-      <div className="flex flex-col flex-1">
-        <SignUpIllustration />
-        <div className="text-center mt-3 mb-4">
-          <h1 className="text-2xl sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
+      <div className="flex flex-col">
+        <SignUpIllustration className="onb-art" />
+        <div className="text-center mt-2.5 mb-3">
+          <h1 className="text-[21px] sm:text-[26px] font-bold text-gray-800 mb-1.5 leading-tight px-2">
             Verify your email
           </h1>
-          <p className="text-gray-500 text-sm px-3">We sent a code to {email}</p>
+          <p className="text-[13px] text-gray-500 px-3 break-words">We sent a code to {email}</p>
         </div>
         {error && (
           <p className="mb-3 text-sm text-red-500 text-center bg-red-50 rounded-xl px-3 py-2">{error}</p>
         )}
-        <div className="flex justify-center mb-5">
+        <div className="flex justify-center mb-3">
           <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode} autoFocus>
             <InputOTPGroup>
               <InputOTPSlot index={0} />
@@ -93,7 +93,7 @@ export default function SignUpStep({ persistState }) {
         <button
           onClick={handleVerify}
           disabled={loading || otpCode.length < 6}
-          className="w-full max-w-[320px] mx-auto py-4 rounded-full font-semibold text-base bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-60 transition-all active:scale-95"
+          className="onb-cta-btn w-full max-w-[320px] mx-auto rounded-full font-semibold text-base bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-60 transition-all active:scale-95"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -101,7 +101,7 @@ export default function SignUpStep({ persistState }) {
             </span>
           ) : "Verify"}
         </button>
-        <p className="text-center text-sm text-gray-500 mt-5">
+        <p className="text-center text-[13px] text-gray-500 mt-3">
           Didn't receive the code?{" "}
           <button onClick={handleResend} className="text-indigo-600 font-medium hover:underline">
             Resend
@@ -112,27 +112,27 @@ export default function SignUpStep({ persistState }) {
   }
 
   return (
-    <div className="flex flex-col flex-1">
-      <SignUpIllustration />
-      <div className="text-center mt-3 mb-4">
-        <h1 className="text-2xl sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
+    <div className="flex flex-col">
+      <SignUpIllustration className="onb-art" />
+      <div className="text-center mt-2.5 mb-3">
+        <h1 className="text-[21px] sm:text-[26px] font-bold text-gray-800 mb-1.5 leading-tight px-2">
           Create your account
         </h1>
-        <p className="text-gray-500 text-sm px-3 leading-relaxed">
+        <p className="text-[13px] text-gray-500 px-3 leading-snug">
           Sign up to save your journey and pick up where you left off, on any device.
         </p>
       </div>
       {error && (
         <p className="mb-3 text-sm text-red-500 text-center bg-red-50 rounded-xl px-3 py-2">{error}</p>
       )}
-      <form onSubmit={handleSubmit} className="space-y-3 flex flex-col items-center">
+      <form onSubmit={handleSubmit} className="space-y-2.5 flex flex-col items-center">
         <input
           type="text"
           placeholder="First name"
           autoComplete="given-name"
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
-          className="w-full max-w-[400px] border-2 border-gray-200 bg-white rounded-xl px-4 py-3 text-base text-gray-700 outline-none focus:border-indigo-500 transition-colors"
+          className="w-full max-w-[400px] border-2 border-gray-200 bg-white rounded-xl px-3.5 py-2.5 text-[15px] text-gray-700 outline-none focus:border-indigo-500 transition-colors"
         />
         <input
           type="email"
@@ -140,7 +140,7 @@ export default function SignUpStep({ persistState }) {
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full border-2 border-gray-200 bg-white rounded-xl px-4 py-3 text-base text-gray-700 outline-none focus:border-indigo-500 transition-colors"
+          className="w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-2.5 text-[15px] text-gray-700 outline-none focus:border-indigo-500 transition-colors"
           required
         />
         <input
@@ -149,7 +149,7 @@ export default function SignUpStep({ persistState }) {
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full border-2 border-gray-200 bg-white rounded-xl px-4 py-3 text-base text-gray-700 outline-none focus:border-indigo-500 transition-colors"
+          className="w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-2.5 text-[15px] text-gray-700 outline-none focus:border-indigo-500 transition-colors"
           required
         />
         <input
@@ -158,13 +158,13 @@ export default function SignUpStep({ persistState }) {
           autoComplete="new-password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          className="w-full border-2 border-gray-200 bg-white rounded-xl px-4 py-3 text-base text-gray-700 outline-none focus:border-indigo-500 transition-colors"
+          className="w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-2.5 text-[15px] text-gray-700 outline-none focus:border-indigo-500 transition-colors"
           required
         />
         <button
           type="submit"
           disabled={loading}
-          className="w-full max-w-[320px] mx-auto py-4 rounded-full font-semibold text-base bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-60 transition-all active:scale-95"
+          className="onb-cta-btn w-full max-w-[320px] mx-auto rounded-full font-semibold text-base bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-60 transition-all active:scale-95"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -173,7 +173,7 @@ export default function SignUpStep({ persistState }) {
           ) : "Create account"}
         </button>
       </form>
-      <p className="text-center text-xs text-gray-400 mt-5 px-4">
+      <p className="text-center text-[11px] text-gray-400 mt-3 px-4 leading-snug">
         By creating an account, you agree to our Terms of Service and Privacy Policy.
       </p>
     </div>
