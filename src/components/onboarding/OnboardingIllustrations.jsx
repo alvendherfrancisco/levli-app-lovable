@@ -127,8 +127,9 @@ export function ScheduleIllustration({ className }) {
           <stop stopColor="#14B8A6" /><stop offset="1" stopColor="#3B82F6" />
         </linearGradient>
       </defs>
-      {/* syringe */}
-      <g transform="rotate(-25 120 90)">
+      {/* Syringe only — the row of day dots that used to sit under it is gone,
+          so the head-up progress bar is the one progress indicator on screen. */}
+      <g transform="translate(0 26) rotate(-25 120 90)">
         <rect x="80" y="82" width="56" height="16" rx="4" fill="url(#schSyr)" />
         <rect x="74" y="78" width="8" height="24" rx="2" fill="#14B8A6" />
         <rect x="136" y="84" width="6" height="12" fill="#3B82F6" />
@@ -136,12 +137,6 @@ export function ScheduleIllustration({ className }) {
         <line x1="92" y1="82" x2="92" y2="98" stroke="white" strokeWidth="1" strokeOpacity="0.6" />
         <line x1="104" y1="82" x2="104" y2="98" stroke="white" strokeWidth="1" strokeOpacity="0.6" />
         <line x1="116" y1="82" x2="116" y2="98" stroke="white" strokeWidth="1" strokeOpacity="0.6" />
-      </g>
-      {/* day dots */}
-      <g>
-        {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-          <circle key={i} cx={70 + i * 24} cy={160} r="10" fill={i === 3 ? "#6366F1" : "#E5E7EB"} />
-        ))}
       </g>
       {/* sparkle */}
       <g className="animate-onb-sparkle"><path d="M210 45 L 212 50 L 217 52 L 212 54 L 210 59 L 208 54 L 203 52 L 208 50Z" fill="#14B8A6" /></g>

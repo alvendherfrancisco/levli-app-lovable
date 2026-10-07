@@ -7,7 +7,6 @@ import {
   WelcomeIllustration,
   EmpathyIllustration,
   MedicationIllustration,
-  ScheduleIllustration,
   TrackingIllustration,
   PrivacyIllustration,
   CompletionIllustration,
@@ -28,8 +27,13 @@ import {
   firstNameFromUser,
 } from "@/lib/onboardingDraft";
 import FirstNameStep from "@/components/onboarding/FirstNameStep";
-import { MEDICATIONS } from "@/lib/medicationData";
-import { COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE } from "@/lib/medicationCatalogue";
+import ScheduleStep from "@/components/onboarding/ScheduleStep";
+import { getDoseUnit, getMedicationConfig } from "@/lib/medicationConfig";
+import { NAME_TO_ENTRY, getMolecularClass, COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE } from "@/lib/medicationCatalogue";
+import { toDayKey } from "@/lib/dateUtils";
+import {
+  emptySchedule, getDayInterval, medicationScheduleFields, validateScheduleSelection,
+} from "@/lib/medicationSchedule";
 import { Check } from "lucide-react";
 
 const TOTAL_STEPS = 8;
@@ -57,16 +61,6 @@ const MED_OPTIONS = [
   { label: "Other", generic: null },
 ];
 
-const FREQUENCY_OPTIONS = [
-  { label: "Once weekly", days: "7" },
-  { label: "Every two weeks", days: "14" },
-  { label: "Once monthly", days: "30" },
-  { label: "Daily", days: "1" },
-  { label: "Irregular schedule", days: "7" },
-];
-
-const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
-
 const TRACKING_OPTIONS = [
   { key: "symptoms", label: "Symptoms", desc: "Note how you're feeling day to day", Icon: MoodIcon },
   { key: "mood", label: "Mood", desc: "Track emotional wellbeing", Icon: HeartIcon },
@@ -84,13 +78,16 @@ const UNIT_GROUPS = [
 export default function Onboarding() {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
-  const { setProfile, profile } = useAppState();
+  const { setProfile, profile, medications, addMedication } = useAppState();
   const { user, isLoadingAuth } = useAuth();
 
   const [selectedMeds, setSelectedMeds] = useState([]);
+  // The primary medication's dose and schedule. Every one of these belongs to
+  // the medication it was answered for, so all of it resets when that changes
+  // (see selectMedication).
   const [doseAmount, setDoseAmount] = useState("");
-  const [frequency, setFrequency] = useState(null);
-  const [shotDay, setShotDay] = useState(null);
+  const [doseOther, setDoseOther] = useState(false);
+  const [schedule, setSchedule] = useState(() => emptySchedule("", toDayKey(new Date())));
   const [tracking, setTracking] = useState([]);
   const [units, setUnits] = useState({ weight_unit: "lb", height_unit: "in", liquid_unit: "oz" });
   const [gdprConsented, setGdprConsented] = useState(false);
@@ -119,10 +116,11 @@ export default function Onboarding() {
   useEffect(() => {
     const draft = loadDraft();
     if (draft) {
-      setSelectedMeds(draft.selectedMeds || []);
+      const restoredMeds = (draft.selectedMeds || []).slice(0, 1);
+      setSelectedMeds(restoredMeds);
       setDoseAmount(draft.doseAmount || "");
-      setFrequency(draft.frequency || null);
-      setShotDay(draft.shotDay ?? null);
+      setDoseOther(!!draft.doseOther);
+      setSchedule(draft.schedule || emptySchedule(restoredMeds[0], toDayKey(new Date())));
       setTracking(draft.tracking || []);
       setUnits(draft.units || { weight_unit: "lb", height_unit: "in", liquid_unit: "oz" });
       setGdprConsented(!!draft.gdprConsented);
@@ -143,12 +141,12 @@ export default function Onboarding() {
   useEffect(() => {
     if (firstSaveRef.current) { firstSaveRef.current = false; return; }
     saveDraft({
-      step, selectedMeds, doseAmount, frequency, shotDay, tracking, units,
+      step, selectedMeds, doseAmount, doseOther, schedule, tracking, units,
       gdprConsented, birthdate, ageConfirmed, parentalConsentName, firstName,
       email: accountEmail, awaitingVerification, verified: verifiedAccount,
     });
   }, [
-    step, selectedMeds, doseAmount, frequency, shotDay, tracking, units,
+    step, selectedMeds, doseAmount, doseOther, schedule, tracking, units,
     gdprConsented, birthdate, ageConfirmed, parentalConsentName, firstName,
     accountEmail, awaitingVerification, verifiedAccount,
   ]);
@@ -187,12 +185,39 @@ export default function Onboarding() {
     return <Navigate to="/" replace />;
   }
 
+  // The primary medication, and what is still missing from its schedule. Only
+  // the controls the chosen frequency shows are ever required.
+  const primaryMedication = selectedMeds[0] || "";
+  const doseUnit = getDoseUnit(primaryMedication);
+  const scheduleIssue = validateScheduleSelection({
+    medication: primaryMedication,
+    kind: schedule.kind,
+    reminderDays: schedule.reminderDays,
+    intervalDays: schedule.intervalDays,
+    startDate: schedule.startDate,
+    needsStartDate: true,
+  });
+
   const canContinue = (() => {
     if (step === 2) return selectedMeds.length > 0;
     if (step === 4) return gdprConsented && birthdate && ageConfirmed && !isMinor(birthdate);
-    if (step === 5) return frequency !== null;
+    if (step === 5) return !scheduleIssue;
     return true;
   })();
+
+  /**
+   * Picking a medication replaces the answers that belong to the previous one.
+   * Onboarding asks about the primary medication only, so this is one choice:
+   * the schedule and the dose start again from the new product's own defaults,
+   * and nothing from the old one is left behind.
+   */
+  const selectMedication = (med) => {
+    const next = primaryMedication === med ? "" : med;
+    setSelectedMeds(next ? [next] : []);
+    setSchedule(emptySchedule(next, toDayKey(new Date())));
+    setDoseAmount("");
+    setDoseOther(false);
+  };
 
   // The account step's hand-off: everything answered so far, plus whatever that
   // step needs carried with it (the first name, the address awaiting a code, the
@@ -200,7 +225,7 @@ export default function Onboarding() {
   const persistOnboardingState = (extra = {}) => {
     saveDraft({
       step: 4,
-      selectedMeds, doseAmount, frequency, shotDay, tracking, units,
+      selectedMeds, doseAmount, doseOther, schedule, tracking, units,
       gdprConsented, birthdate, ageConfirmed, parentalConsentName,
       firstName, email: accountEmail, verified: verifiedAccount, awaitingVerification,
       ...extra,
@@ -225,18 +250,41 @@ export default function Onboarding() {
     }
     // Completion — one save carries the consent and the rest of the profile, so
     // the consent record is never written separately (or lost) on the way.
-    const realMeds = selectedMeds.filter((m) => m !== "Other");
-    let defaultMed = "Ozempic®";
-    if (realMeds.length && MEDICATIONS.includes(realMeds[0])) {
-      defaultMed = realMeds[0];
-    } else if (realMeds.some((m) => MED_OPTIONS.find((o) => o.label === m)?.generic === "Tirzepatide")) {
+    const chosen = selectedMeds[0] || "";
+    const realMed = chosen && chosen !== "Other" ? chosen : "";
+    let defaultMed = realMed || "Ozempic®";
+    if (!realMed && MED_OPTIONS.some((o) => o.label === chosen && o.generic === "Tirzepatide")) {
       defaultMed = "Zepbound®";
     }
 
-    const freqOption = FREQUENCY_OPTIONS.find((f) => f.label === frequency);
-    const daysBetween = freqOption ? freqOption.days : "7";
-
+    const intervalDays = getDayInterval(schedule);
+    const daysBetween = intervalDays ? String(intervalDays) : "7";
     const weightOptedIn = tracking.includes("weight");
+
+    // The primary medication itself is created once, here, from what was just
+    // answered — one record for the one medication onboarding asked about, and
+    // none at all when "Other" was picked (that name is added in Medications).
+    // If a record for it already exists, it is left exactly as it is.
+    if (realMed && !medications.some((m) => m.medication_name === realMed)) {
+      const doseValue = Number(String(doseAmount).trim());
+      await addMedication({
+        medication_name: realMed,
+        catalogue_id: NAME_TO_ENTRY[realMed]?.id || "",
+        generic_name: getMedicationConfig(realMed)?.genericName || "",
+        molecular_class: getMolecularClass(realMed) || "",
+        route: getMedicationConfig(realMed)?.route || "",
+        ...(Number.isFinite(doseValue) && doseValue > 0
+          ? { prescribed_dose: doseValue, dose_unit: doseUnit }
+          : {}),
+        ...medicationScheduleFields(schedule),
+        start_date: schedule.kind === "every_x_days" && schedule.startDate
+          ? schedule.startDate
+          : toDayKey(new Date()),
+        status: "active",
+        regimen_source: "user-entered",
+        needs_details: false,
+      });
+    }
 
     await setProfile({
       ...profile,
@@ -284,12 +332,13 @@ export default function Onboarding() {
       onBack={back}
       ctaLabel={ctaLabel}
       canContinue={canContinue}
+      ctaNote={step === 5 && !canContinue ? scheduleIssue : undefined}
       hideFooter={step === 3}
       secondaryAction={secondaryAction}
     >
       {step === 0 && <WelcomeStep />}
       {step === 1 && <EmpathyStep />}
-      {step === 2 && <MedicationStep selectedMeds={selectedMeds} setSelectedMeds={setSelectedMeds} />}
+      {step === 2 && <MedicationStep selectedMed={primaryMedication} onSelect={selectMedication} />}
       {step === 3 && (
         isLoadingAuth ? (
           // The session decides whether this screen is needed at all, so the
@@ -330,12 +379,13 @@ export default function Onboarding() {
       )}
       {step === 5 && (
         <ScheduleStep
-          doseAmount={doseAmount}
-          setDoseAmount={setDoseAmount}
-          frequency={frequency}
-          setFrequency={setFrequency}
-          shotDay={shotDay}
-          setShotDay={setShotDay}
+          medication={primaryMedication}
+          dose={doseAmount}
+          onDoseChange={setDoseAmount}
+          doseOther={doseOther}
+          onDoseOtherChange={setDoseOther}
+          schedule={schedule}
+          onScheduleChange={setSchedule}
         />
       )}
       {step === 6 && (
@@ -376,12 +426,12 @@ function EmpathyStep() {
   );
 }
 
-function MedicationStep({ selectedMeds, setSelectedMeds }) {
-  const toggle = (med) => {
-    setSelectedMeds((prev) =>
-      prev.includes(med) ? prev.filter((m) => m !== med) : [...prev, med]
-    );
-  };
+/**
+ * The primary medication — one choice, not a list. Onboarding sets up the
+ * medication a person is mainly on; anything else is added afterwards, from
+ * Home or Medications, so every onboarding screen stays the same length.
+ */
+function MedicationStep({ selectedMed, onSelect }) {
   return (
     <div className="flex flex-col">
       <MedicationIllustration className="onb-art" />
@@ -391,13 +441,15 @@ function MedicationStep({ selectedMeds, setSelectedMeds }) {
         </h1>
         <p className="text-[15px] text-gray-500 leading-relaxed px-2">This helps us tailor your dose schedule and inventory tracking.</p>
       </div>
-      <div className="flex flex-wrap gap-2 justify-center">
+      <div className="flex flex-wrap gap-2 justify-center" role="group" aria-label="Which medication are you on?">
         {MED_OPTIONS.map((opt) => {
-          const selected = selectedMeds.includes(opt.label);
+          const selected = selectedMed === opt.label;
           return (
             <button
               key={opt.label}
-              onClick={() => toggle(opt.label)}
+              type="button"
+              onClick={() => onSelect(opt.label)}
+              aria-pressed={selected}
               className={`flex items-center gap-2 pl-3 pr-3.5 py-2.5 rounded-full border-2 text-[14px] font-medium transition-all active:scale-95 ${
                 selected
                   ? "border-indigo-600 bg-indigo-50 text-indigo-700"
@@ -411,71 +463,9 @@ function MedicationStep({ selectedMeds, setSelectedMeds }) {
           );
         })}
       </div>
-    </div>
-  );
-}
-
-function ScheduleStep({ doseAmount, setDoseAmount, frequency, setFrequency, shotDay, setShotDay }) {
-  return (
-    <div className="flex flex-col">
-      <ScheduleIllustration className="onb-art" />
-      <div className="text-center mt-2.5 mb-3">
-        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
-          Let's set your shot schedule.
-        </h1>
-        <p className="text-[15px] text-gray-500 leading-relaxed px-2">
-          Set it once here, and Levli works out your next dose date from it.
-        </p>
-      </div>
-      {/* Dose amount */}
-      <div className="mb-3">
-        <label className="text-[14px] font-semibold text-gray-600 mb-2 block">Your dose (optional)</label>
-        <input
-          type="text"
-          value={doseAmount}
-          onChange={(e) => setDoseAmount(e.target.value)}
-          placeholder="e.g. 0.5 mg"
-          className="w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-3 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors"
-        />
-      </div>
-      {/* Frequency */}
-      <div className="mb-3">
-        <label className="text-[14px] font-semibold text-gray-600 mb-2 block">How often?</label>
-        <div className="flex flex-wrap gap-1.5">
-          {FREQUENCY_OPTIONS.map((opt) => (
-            <button
-              key={opt.label}
-              onClick={() => setFrequency(opt.label)}
-              className={`px-3.5 py-2.5 rounded-xl border-2 text-[14px] font-medium transition-all active:scale-95 ${
-                frequency === opt.label
-                  ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      {/* Day of week */}
-      <div>
-        <label className="text-[14px] font-semibold text-gray-600 mb-2 block">Preferred day</label>
-        <div className="flex gap-1 justify-between">
-          {DAYS.map((d, i) => (
-            <button
-              key={i}
-              onClick={() => setShotDay(i)}
-              className={`w-10 h-10 rounded-full text-[14px] font-medium transition-all active:scale-95 ${
-                shotDay === i
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-              }`}
-            >
-              {d}
-            </button>
-          ))}
-        </div>
-      </div>
+      <p className="text-[13px] text-gray-500 text-center mt-3 leading-snug px-2">
+        Taking more than one? You can add the others after setup.
+      </p>
     </div>
   );
 }

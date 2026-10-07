@@ -71,8 +71,12 @@ export function frequencyToDays(frequency) {
   return null;
 }
 
-/** The interval this medication is dosed at: its own frequency, else the label. */
+/** The interval this medication is dosed at: its own schedule, else the label. */
 export function medicationIntervalDays(medication, profile) {
+  // The schedule saved on the medication decides first, so a twice-weekly or
+  // every-X-days plan is counted from its own interval rather than guessed.
+  const stated = Number(medication?.interval_days);
+  if (Number.isFinite(stated) && stated > 0) return stated;
   return frequencyToDays(medication?.frequency)
     || effectiveDaysBetween(profile, medication?.medication_name);
 }

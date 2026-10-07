@@ -21,6 +21,7 @@ export default function OnboardingScreen({
   ctaLabel,
   canContinue = true,
   secondaryAction,
+  ctaNote,
   hideFooter = false,
 }) {
   const isFirstStep = step === 0;
@@ -74,12 +75,21 @@ export default function OnboardingScreen({
             hidden to make it fit: the step is drawn at its normal size and
             scrolls inside this area, while the progress header above and the CTA
             below stay put. A short step stays centred in the space they leave. */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 py-4">
-          <div className="min-h-full flex flex-col justify-center">
-            <div key={step} className={`w-full ${animClass}`}>
-              {children}
+        <div className="relative flex-1 min-h-0">
+          <div className="h-full overflow-y-auto overscroll-contain px-5 sm:px-6 py-4">
+            <div className="min-h-full flex flex-col justify-center">
+              <div key={step} className={`w-full ${animClass}`}>
+                {children}
+              </div>
             </div>
           </div>
+          {/* A step taller than the space it has scrolls under the pinned header,
+              so its artwork leaves through a soft edge instead of being cut off
+              in a hard line. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-white/95 to-transparent"
+          />
         </div>
 
         {/* Footer — the single CTA, always on screen: a fixed-height flex
@@ -88,6 +98,13 @@ export default function OnboardingScreen({
             indicator. */}
         {!hideFooter && (
           <div className="onb-cta px-6 sm:px-8 pt-2 flex-shrink-0 flex flex-col items-center">
+            {/* What is still missing, said in short, sitting with the button so
+                it is on screen at the moment the button will not continue. */}
+            {ctaNote && (
+              <p role="status" className="text-[13.5px] font-medium text-orange-700 text-center max-w-[400px] mb-2 px-2 leading-snug">
+                {ctaNote}
+              </p>
+            )}
             <button
               onClick={canContinue ? onContinue : undefined}
               disabled={!canContinue}

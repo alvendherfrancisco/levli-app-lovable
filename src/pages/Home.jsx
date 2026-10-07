@@ -14,6 +14,8 @@ import { useAppState } from "@/lib/AppState";
 import { toDayKey } from "@/lib/dateUtils";
 import LockedFeatureCard from "@/components/LockedFeatureCard";
 import FirstRunCard from "@/components/home/FirstRunCard";
+import AddMedicationCard from "@/components/home/AddMedicationCard";
+import MedicationModal from "@/components/modals/MedicationModal";
 import UnitCheckPrompt from "@/components/home/UnitCheckPrompt";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import { useMountProbe } from "@/lib/perfProbe";
@@ -25,6 +27,7 @@ export default function Home() {
   const [showShot, setShowShot] = useState(false);
   const [shotPreset, setShotPreset] = useState(null);
   const [showSideEffects, setShowSideEffects] = useState(false);
+  const [showAddMedication, setShowAddMedication] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const { getSideEffects, adverseEventsByDay } = useAppState();
   const { isPremium } = useSubscription();
@@ -45,6 +48,7 @@ export default function Home() {
       <div className="max-w-3xl mx-auto pt-4">
         <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
         <FirstRunCard onAddShot={() => { setShotPreset(null); setShowShot(true); }} />
+        <AddMedicationCard onAdd={() => setShowAddMedication(true)} />
         <RepeatDoseCard onEdit={(preset) => { setShotPreset(preset); setShowShot(true); }} />
         <NextShotCard onLogPastShot={(preset) => { setShotPreset(preset); setShowShot(true); }} />
         <MetricsGrid dayKey={dk} />
@@ -122,6 +126,7 @@ export default function Home() {
 
       <AddShotModal open={showShot} onClose={() => { setShowShot(false); setShotPreset(null); }} initialValues={shotPreset} />
       <SideEffectsModal open={showSideEffects} onClose={() => setShowSideEffects(false)} dayKey={dk} />
+      <MedicationModal open={showAddMedication} onClose={() => setShowAddMedication(false)} editing={null} />
       <UnitCheckPrompt />
     </PageContainer>
   );

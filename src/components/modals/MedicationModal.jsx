@@ -4,13 +4,17 @@ import { useAppState } from "@/lib/AppState";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
 import {
-  findMedicationOption, isLabelStrength, scheduleText, statusOptionsFor, validateRegimenForm,
-  DOSE_STEP_HELPER, OTHER_SCHEDULE,
+  findMedicationOption, isLabelStrength, statusOptionsFor, validateRegimenForm,
+  DOSE_STEP_HELPER,
 } from "@/lib/medicationRegimen";
+import {
+  MULTIPLE_GLP1_NOTE, emptySchedule, hasSecondGlp1Gip, medicationScheduleFields,
+  scheduleStateFromRecord,
+} from "@/lib/medicationSchedule";
 import { sound } from "@/lib/sounds";
 import MedicationNamePicker from "@/components/medications/MedicationNamePicker";
 import DoseStrengthPicker from "@/components/medications/DoseStrengthPicker";
-import ScheduleField from "@/components/medications/ScheduleField";
+import ScheduleFields from "@/components/schedule/ScheduleFields";
 import StartDateField from "@/components/medications/StartDateField";
 import IndicationField from "@/components/medications/IndicationField";
 import ClearFieldButton from "@/components/ClearFieldButton";
@@ -23,15 +27,6 @@ const inputClass = "w-full min-h-[52px] rounded-xl border border-gray-200 dark:b
 
 /** The single line shown under the save button. */
 const FOOTER_NOTE = "This app is a tracker, not medical advice.";
-
-/** A stored frequency string as the form's schedule choice. */
-function scheduleFromStored(stored) {
-  const text = String(stored || "").trim();
-  if (!text) return "";
-  if (text.toLowerCase() === "once weekly") return "Once weekly";
-  if (text.toLowerCase() === "once daily") return "Once daily";
-  return OTHER_SCHEDULE;
-}
 
 /** The status chips inside "More details". */
 const STATUS_CHIP_CLASS = "inline-flex items-center gap-1.5 min-h-[44px] rounded-xl border-2 px-3 text-sm font-semibold";
@@ -57,8 +52,7 @@ export default function MedicationModal({ open, onClose, editing }) {
   const [doseSuggested, setDoseSuggested] = useState(false);
   const [doseConfirmed, setDoseConfirmed] = useState(false);
   const [unit, setUnit] = useState("mg");
-  const [schedule, setSchedule] = useState("");
-  const [scheduleOther, setScheduleOther] = useState("");
+  const [schedule, setSchedule] = useState(() => emptySchedule("", todayInput()));
   const [startDate, setStartDate] = useState(todayInput());
   const [showDetails, setShowDetails] = useState(false);
   const [indication, setIndication] = useState("");
@@ -89,17 +83,15 @@ export default function MedicationModal({ open, onClose, editing }) {
     if (editing) {
       const stored = editing.medication_name || "";
       const option = findMedicationOption(stored);
-      const storedFrequency = String(editing.frequency || "").trim();
       const storedIndication = String(editing.indication || "").trim();
       setSelectedName(option ? option.value : "");
       setIsCustom(!option);
       setCustomName(option ? "" : stored);
       setDose(editing.prescribed_dose != null ? String(editing.prescribed_dose) : "");
       setUnit(editing.dose_unit || option?.unit || "mg");
-      setSchedule(scheduleFromStored(storedFrequency));
-      setScheduleOther(
-        storedFrequency && !["once weekly", "once daily"].includes(storedFrequency.toLowerCase())
-          ? storedFrequency : "");
+      // A record saved before schedules were held resolves to the product's own
+      // schedule, so the day and time it was already running on are not lost.
+      setSchedule(scheduleStateFromRecord(editing, option ? option.value : stored, todayInput()));
       setIndication(["Type 2 diabetes", "Weight management", "Heart health"].includes(storedIndication)
         ? storedIndication : storedIndication ? "Other" : "");
       setIndicationOther(
@@ -117,7 +109,7 @@ export default function MedicationModal({ open, onClose, editing }) {
         || editing.prescriber_name || editing.prescriber_contact || editing.notes));
     } else {
       setSelectedName(""); setIsCustom(false); setCustomName(""); setCustomGeneric("");
-      setDose(""); setUnit("mg"); setSchedule(""); setScheduleOther("");
+      setDose(""); setUnit("mg"); setSchedule(emptySchedule("", todayInput()));
       setIndication(""); setIndicationOther("");
       setStartDate(todayInput()); setPlannedEndDate(""); setDoseStep("");
       setPrescriberName(""); setPrescriberContact(""); setStatus("active"); setNotes("");
@@ -129,6 +121,9 @@ export default function MedicationModal({ open, onClose, editing }) {
 
   const option = isCustom ? null : findMedicationOption(selectedName);
   const ready = isCustom || !!option;
+  // A second GLP-1 / GIP medicine: a neutral note, never a block.
+  const chosenName = isCustom ? customName.trim() : selectedName;
+  const secondGlp1 = !!chosenName && hasSecondGlp1Gip(medications, chosenName);
   const clearError = (field) => setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
 
   const filledDetails = [indication, indicationOther, plannedEndDate, doseStep,
@@ -148,15 +143,13 @@ export default function MedicationModal({ open, onClose, editing }) {
       setCustomGeneric("");
       setDose(""); setDoseSuggested(false);
       setUnit("");
-      setSchedule("");
-      setScheduleOther("");
+      setSchedule(emptySchedule("", todayInput()));
       return;
     }
     const picked = findMedicationOption(name);
     setIsCustom(false);
     setSelectedName(name);
     setCustomName("");
-    setScheduleOther("");
     // The label's lowest strength is only pre-filled when nothing was saved for
     // this medication before — an existing dose is never silently changed.
     const lowest = picked?.strengths?.[0]?.value;
@@ -168,7 +161,8 @@ export default function MedicationModal({ open, onClose, editing }) {
       setDoseSuggested(false);
     }
     setUnit(picked?.unit || "mg");
-    setSchedule(picked?.schedule || "");
+    // The new product's own schedule: nothing carries over from the last one.
+    setSchedule(emptySchedule(name, todayInput()));
   };
 
   const handleSave = async () => {
@@ -196,7 +190,7 @@ export default function MedicationModal({ open, onClose, editing }) {
       route: picked?.route || "",
       prescribed_dose: doseNum,
       dose_unit: unit || "mg",
-      frequency: scheduleText(schedule, scheduleOther),
+      ...medicationScheduleFields(schedule),
       // A cleared indication is saved empty, never as the word "undefined".
       indication: (indication === "Other" ? indicationOther.trim() : indication) || "",
       start_date: startDate,
@@ -263,6 +257,14 @@ export default function MedicationModal({ open, onClose, editing }) {
             error={errors.name}
           />
 
+          {/* Two GLP-1 / GIP medicines at once: a neutral note only. Nothing is
+              blocked here and no advice is given. */}
+          {secondGlp1 && (
+            <p className="text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 rounded-xl px-3 py-2.5 leading-snug">
+              {MULTIPLE_GLP1_NOTE}
+            </p>
+          )}
+
           {isCustom && (
             <div>
               <label htmlFor="custom-med-name" className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
@@ -310,12 +312,12 @@ export default function MedicationModal({ open, onClose, editing }) {
                 error={errors.dose}
               />
 
-              <ScheduleField
+              {/* The same schedule block onboarding uses: frequency, day, time
+                  and interval, all read from the medication's own entry. */}
+              <ScheduleFields
+                medication={isCustom ? customName : selectedName}
                 value={schedule}
-                onChange={(v) => { setSchedule(v); clearError("schedule"); }}
-                other={scheduleOther}
-                onOtherChange={setScheduleOther}
-                suggested={!!option?.schedule && schedule === option.schedule}
+                onChange={(next) => { setSchedule(next); clearError("schedule"); }}
                 error={errors.schedule}
               />
             </>

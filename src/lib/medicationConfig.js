@@ -764,3 +764,76 @@ export const LISTED_MEDICATIONS = LISTED_IDS
 export function getMedicationPickerNames() {
   return [...LISTED_MEDICATIONS.map((e) => e.brandName), CUSTOM_MEDICATION_NAME];
 }
+
+// ── Schedule options per product ────────────────────────────────────────────
+// Which frequencies a product may be taken at, and the one it starts on, each
+// with the prescribing information it was checked against and the date it was
+// checked. A product whose label states one schedule offers only that one, as a
+// confirmed row rather than a choice; a product whose protocol varies
+// (compounded strengths, unapproved peptides, "Others") offers the full set and
+// starts on nothing, so nothing is assumed for it.
+//
+// These are the label's own schedules, never a recommendation: whatever is
+// pre-filled can be changed, and Levli never moves a dose.
+//
+// Team to confirm the flexible set and that no default is wanted for it.
+const LABEL_SOURCES = {
+  ozempic: "https://www.novo-pi.com/ozempic.pdf",
+  wegovy: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2025/215256s024lbl.pdf",
+  mounjaro: "https://pi.lilly.com/us/mounjaro-uspi.pdf",
+  zepbound: "https://pi.lilly.com/us/zepbound-uspi.pdf",
+  trulicity: "https://pi.lilly.com/us/trulicity-uspi.pdf",
+  victoza: "https://www.novo-pi.com/victoza.pdf",
+  saxenda: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2023/206321s016lbl.pdf",
+  rybelsus: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2024/213051s018lbl.pdf",
+  foundayo: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/220934Orig1s000lbl.pdf",
+};
+
+/** Products whose label states exactly one schedule, and which one that is. */
+const STATED_SCHEDULES = {
+  ozempic: "weekly",
+  wegovy: "weekly",
+  mounjaro: "weekly",
+  zepbound: "weekly",
+  trulicity: "weekly",
+  victoza: "daily",
+  saxenda: "daily",
+  rybelsus: "daily",
+  foundayo: "daily",
+};
+
+const WEEKLY_ONLY = ["weekly"];
+const DAILY_ONLY = ["daily"];
+const FLEXIBLE_SCHEDULES = ["daily", "weekly", "twice_weekly", "every_x_days", "as_directed"];
+const SCHEDULES_CHECKED = "2026-10-08";
+
+const buildSchedule = (entry) => {
+  const stated = STATED_SCHEDULES[entry.id];
+  if (stated === "weekly") {
+    return {
+      options: WEEKLY_ONLY,
+      default: "weekly",
+      source: LABEL_SOURCES[entry.id] || "",
+      verified: SCHEDULES_CHECKED,
+      note: "The label states one dose a week, on the same day each week.",
+    };
+  }
+  if (stated === "daily") {
+    return {
+      options: DAILY_ONLY,
+      default: "daily",
+      source: LABEL_SOURCES[entry.id] || "",
+      verified: SCHEDULES_CHECKED,
+      note: "The label states one dose a day.",
+    };
+  }
+  return {
+    options: FLEXIBLE_SCHEDULES,
+    default: "",
+    source: "",
+    verified: SCHEDULES_CHECKED,
+    note: "Levli holds no approved schedule for this product, so you set it yourself.",
+  };
+};
+
+MEDICATION_CONFIG.forEach((entry) => { entry.schedule = buildSchedule(entry); });

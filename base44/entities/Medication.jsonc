@@ -35,6 +35,32 @@
       "type": "string",
       "description": "Dosing frequency as entered (e.g., 'once weekly', 'twice daily')"
     },
+    "schedule_kind": {
+      "type": "string",
+      "enum": [
+        "daily",
+        "weekly",
+        "twice_weekly",
+        "every_x_days",
+        "as_directed"
+      ],
+      "description": "Which kind of schedule this medication runs on. Empty for records saved before schedules were stored. Decides which controls the schedule shows and which fields below carry a value."
+    },
+    "reminder_days": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Weekday numbers the dose falls on (0 = Sunday). One entry for a weekly schedule, two for twice weekly, empty for every day or no fixed day."
+    },
+    "reminder_time": {
+      "type": "string",
+      "description": "Local time of day the dose is due (HH:MM). Empty means no reminder."
+    },
+    "interval_days": {
+      "type": "number",
+      "description": "Days between doses: the user's own number for an every-X-days schedule, and the interval the other kinds run at (1 daily, 7 weekly, 3 twice weekly)."
+    },
     "indication": {
       "type": "string",
       "description": "Treatment indication as prescribed"
