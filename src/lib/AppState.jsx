@@ -36,6 +36,7 @@ const DEFAULT_PROFILE = {
   first_name: "",
   weight_tracking_opted_in: false,
   custom_doses: [],
+  shot_schedule: null,
   prescriber_name: "",
   prescriber_contact: "",
 };
@@ -749,6 +750,7 @@ export function AppStateProvider({ children }) {
       first_name: next.first_name || "",
       weight_tracking_opted_in: !!next.weight_tracking_opted_in,
       custom_doses: Array.isArray(next.custom_doses) ? next.custom_doses : [],
+      shot_schedule: next.shot_schedule || null,
       prescriber_name: next.prescriber_name || "",
       prescriber_contact: next.prescriber_contact || "",
     };

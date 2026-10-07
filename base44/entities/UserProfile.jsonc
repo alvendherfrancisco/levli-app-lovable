@@ -29,6 +29,47 @@
       "type": "string",
       "description": "Prescriber-directed override for the days between shots. Empty means the app uses the medication's own interval from the central medications config."
     },
+    "shot_schedule": {
+      "type": "object",
+      "description": "The schedule chosen for the person's medication: how often it is taken, the day or interval it runs on, and an optional reminder time. Levli works the next dose out from the last dose logged plus interval_days; the chosen days are the anchor, not the calculation.",
+      "properties": {
+        "frequency": {
+          "type": "string",
+          "enum": [
+            "daily",
+            "weekly",
+            "twice_weekly",
+            "every_x_days",
+            "as_directed"
+          ],
+          "description": "Dosing frequency key, from the medication's own catalogue entry."
+        },
+        "medication": {
+          "type": "string",
+          "description": "The product this schedule belongs to. A change of medication replaces the schedule with the new product's own default."
+        },
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Chosen weekday numbers (0 = Sunday) for a weekly or twice-weekly schedule. Empty for every other frequency."
+        },
+        "interval_days": {
+          "type": "number",
+          "description": "Days between doses: 1 for daily, 7 for weekly, 3 for twice weekly, or the number entered for every_x_days. null when the frequency sets no interval (as directed), so the product's own label interval applies."
+        },
+        "start_date": {
+          "type": "string",
+          "format": "date",
+          "description": "First dose date of an every_x_days schedule. Empty for every other frequency."
+        },
+        "reminder_time": {
+          "type": "string",
+          "description": "Local time (HH:MM) to be reminded, or empty for no reminder."
+        }
+      }
+    },
     "liquid_unit": {
       "type": "string"
     },

@@ -7,6 +7,8 @@
 // Each record: brandName (the display name — the ®/™ mark lives here and nowhere
 // else), name (the same name plain, used for matching, sorting and exports),
 // genericName, route, dosingIntervalDays, allowedDoses[] (with units),
+// schedule (the frequencies this product's label allows, and the one to start
+// on, with the same source and verification date as the rest of the record),
 // indicationNote, missedDoseRule, source (link to the official prescribing
 // information), lastReviewed.
 //
@@ -27,6 +29,24 @@ export const CUSTOM_MEDICATION_NAME = "Others";
     made under the old name keeps working. */
 export const LEGACY_CUSTOM_NAMES = ["Other / custom (prescriber-directed)"];
 
+// ── Dosing frequency vocabulary ─────────────────────────────────────────────
+// Every entry below carries a `schedule` block: the frequencies its own label
+// allows, and the one a screen starts on. Nothing is invented here — a
+// frequency is listed only where the product's prescribing information states
+// it, and each block cites the same source and verification date as the rest of
+// its record.
+//
+//   "daily"         once a day
+//   "weekly"        once a week, on one day of the week
+//   "twice_weekly"  two days a week
+//   "every_x_days"  a set number of days apart
+//   "as_directed"   whatever the prescriber set — no fixed schedule
+//
+// `default` is where a screen starts, never a recommendation: the person can
+// change it. null means nothing is preselected, which is what a product with no
+// label of its own (compounded, peptide, custom) gets.
+export const FLEXIBLE_SCHEDULE_KEYS = ["daily", "weekly", "twice_weekly", "every_x_days", "as_directed"];
+
 /** Unapproved research peptides: there is no approved product anywhere, so no
     strengths, no schedule and no missed-dose rule. Levli logs only what the user
     types for one of these, and never models exposure for it. */
@@ -45,6 +65,14 @@ const researchPeptideEntry = ({ id, name }) => ({
   genericName: "",
   route: "",
   dosingIntervalDays: null,
+  schedule: {
+    allowed: [...FLEXIBLE_SCHEDULE_KEYS],
+    default: null,
+    status: "no_label",
+    source: "",
+    verified: "",
+    note: `${name} has no approved product and no label, so no interval can be verified. Every flexible choice is offered and none is preselected — the prescriber's instruction is the one that counts.`,
+  },
   allowedDoses: [],
   allowsAnyDose: true,
   minIntervalDays: null,
@@ -119,6 +147,14 @@ export const MEDICATION_CONFIG = [
   {
     id: "ozempic",
     brandName: "Ozempic®",
+    schedule: {
+      allowed: ["weekly"],
+      default: "weekly",
+      status: "confirmed",
+      source: "https://www.novo-pi.com/ozempic.pdf",
+      verified: "2026-10-05",
+      note: "The label states one dose a week. It lists no other interval for this product.",
+    },
     name: "Ozempic",
     genericName: "semaglutide",
     route: "subcutaneous",
@@ -157,6 +193,14 @@ export const MEDICATION_CONFIG = [
   {
     id: "wegovy",
     brandName: "Wegovy®",
+    schedule: {
+      allowed: ["weekly"],
+      default: "weekly",
+      status: "confirmed",
+      source: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2025/215256s024lbl.pdf",
+      verified: "2026-10-05",
+      note: "The label states one dose a week for the injection. It lists no other interval.",
+    },
     name: "Wegovy",
     genericName: "semaglutide",
     route: "subcutaneous",
@@ -197,6 +241,14 @@ export const MEDICATION_CONFIG = [
   {
     id: "mounjaro",
     brandName: "Mounjaro®",
+    schedule: {
+      allowed: ["weekly"],
+      default: "weekly",
+      status: "confirmed",
+      source: "https://pi.lilly.com/us/mounjaro-uspi.pdf",
+      verified: "2026-10-05",
+      note: "The label states one dose a week. It lists no other interval for this product.",
+    },
     name: "Mounjaro",
     genericName: "tirzepatide",
     route: "subcutaneous",
@@ -237,6 +289,14 @@ export const MEDICATION_CONFIG = [
   {
     id: "zepbound",
     brandName: "Zepbound®",
+    schedule: {
+      allowed: ["weekly"],
+      default: "weekly",
+      status: "confirmed",
+      source: "https://pi.lilly.com/us/zepbound-uspi.pdf",
+      verified: "2026-10-05",
+      note: "The label states one dose a week. It lists no other interval for this product.",
+    },
     name: "Zepbound",
     genericName: "tirzepatide",
     route: "subcutaneous",
@@ -277,6 +337,14 @@ export const MEDICATION_CONFIG = [
   {
     id: "victoza",
     brandName: "Victoza®",
+    schedule: {
+      allowed: ["daily"],
+      default: "daily",
+      status: "confirmed",
+      source: "https://www.novo-pi.com/victoza.pdf",
+      verified: "2026-10-05",
+      note: "The label states one dose a day. It lists no other interval for this product.",
+    },
     name: "Victoza",
     genericName: "liraglutide",
     route: "subcutaneous",
@@ -313,6 +381,14 @@ export const MEDICATION_CONFIG = [
   {
     id: "saxenda",
     brandName: "Saxenda®",
+    schedule: {
+      allowed: ["daily"],
+      default: "daily",
+      status: "confirmed",
+      source: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2023/206321s016lbl.pdf",
+      verified: "2026-10-05",
+      note: "The label states one dose a day. It lists no other interval for this product.",
+    },
     name: "Saxenda",
     genericName: "liraglutide",
     route: "subcutaneous",
@@ -354,6 +430,14 @@ export const MEDICATION_CONFIG = [
   {
     id: "rybelsus",
     brandName: "Rybelsus®",
+    schedule: {
+      allowed: ["daily"],
+      default: "daily",
+      status: "confirmed",
+      source: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2024/213051s018lbl.pdf",
+      verified: "2026-10-05",
+      note: "The label states one tablet once daily. The label also sets out how it is taken in relation to food; that wording has not been verified for Levli, so the app does not state it.",
+    },
     name: "Rybelsus",
     genericName: "semaglutide",
     route: "oral_tablet",
@@ -391,6 +475,14 @@ export const MEDICATION_CONFIG = [
   {
     id: "trulicity",
     brandName: "Trulicity®",
+    schedule: {
+      allowed: ["weekly"],
+      default: "weekly",
+      status: "confirmed",
+      source: "https://pi.lilly.com/us/trulicity-uspi.pdf",
+      verified: "2026-10-05",
+      note: "The label states one dose a week. It lists no other interval for this product.",
+    },
     name: "Trulicity",
     genericName: "dulaglutide",
     route: "subcutaneous",
@@ -427,6 +519,14 @@ export const MEDICATION_CONFIG = [
   {
     id: "foundayo",
     brandName: "Foundayo®",
+    schedule: {
+      allowed: ["daily"],
+      default: "daily",
+      status: "confirmed",
+      source: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/220934Orig1s000lbl.pdf",
+      verified: "2026-10-07",
+      note: "The prescribing information states one tablet once daily, with or without food. The form it is held as here — a tablet — is the one the label describes; the team should confirm the marketed form.",
+    },
     name: "Foundayo",
     genericName: "orforglipron",
     route: "oral_tablet",
@@ -467,6 +567,14 @@ export const MEDICATION_CONFIG = [
   {
     id: "compounded_semaglutide",
     brandName: "Semaglutide (generic / compounded)",
+    schedule: {
+      allowed: [...FLEXIBLE_SCHEDULE_KEYS],
+      default: "weekly",
+      status: "no_label",
+      source: "",
+      verified: "",
+      note: "No approved label for compounded products — strengths and intervals differ between pharmacies. Once weekly is preselected only because the approved products of this molecule are weekly; change it to whatever the prescriber set.",
+    },
     name: "Semaglutide (generic / compounded)",
     genericName: "semaglutide",
     route: "subcutaneous",
@@ -492,6 +600,14 @@ export const MEDICATION_CONFIG = [
   {
     id: "compounded_tirzepatide",
     brandName: "Tirzepatide (generic / compounded)",
+    schedule: {
+      allowed: [...FLEXIBLE_SCHEDULE_KEYS],
+      default: "weekly",
+      status: "no_label",
+      source: "",
+      verified: "",
+      note: "No approved label for compounded products — strengths and intervals differ between pharmacies. Once weekly is preselected only because the approved products of this molecule are weekly; change it to whatever the prescriber set.",
+    },
     name: "Tirzepatide (generic / compounded)",
     genericName: "tirzepatide",
     route: "subcutaneous",
@@ -517,6 +633,14 @@ export const MEDICATION_CONFIG = [
   {
     id: "custom",
     brandName: CUSTOM_MEDICATION_NAME,
+    schedule: {
+      allowed: [...FLEXIBLE_SCHEDULE_KEYS],
+      default: null,
+      status: "no_label",
+      source: "",
+      verified: "",
+      note: "Nothing about a custom entry can be verified, so no frequency is preselected and every flexible choice is offered.",
+    },
     name: CUSTOM_MEDICATION_NAME,
     genericName: "",
     route: "",
@@ -658,6 +782,16 @@ export function needsDoseCheck(shot) {
 /** The label's dosing interval in days, or null when not established. */
 export function getIntervalDays(name) {
   return getMedicationConfig(name)?.dosingIntervalDays ?? null;
+}
+
+/**
+ * How often this product is dosed: the frequency keys its own entry allows, the
+ * one to start on, and the source that was checked. null when the product has no
+ * entry of its own — callers then offer the flexible set (see
+ * src/lib/medicationSchedule.js).
+ */
+export function getScheduleConfig(name) {
+  return getMedicationConfig(name)?.schedule || null;
 }
 
 /** The shortest interval the label allows between two doses. */
