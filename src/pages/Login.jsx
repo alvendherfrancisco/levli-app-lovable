@@ -50,6 +50,7 @@ export default function Login() {
 
   return (
     <AuthLayout
+      scrollable={false}
       iconNode={<LevliLogo size={88} />}
       title="Glad you're here"
       subtitle="Log in to your account"
