@@ -1,5 +1,37 @@
 // Weight unit conversions — keeps historical entries stable when the user toggles units.
 
+// ── Starting units, from where the device says it is ───────────────────────
+// Most of the world measures in metric and a handful of places do not. This is
+// only ever a starting point for someone who has not chosen yet: a saved choice
+// on the profile always wins, and every value can be changed.
+const IMPERIAL_REGIONS = ["US", "LR", "MM"];
+
+function deviceRegion() {
+  try {
+    const tag = navigator.language || (navigator.languages || [])[0] || "";
+    if (!tag) return "";
+    // maximize() fills in the region a bare language implies (en → US).
+    if (typeof Intl !== "undefined" && Intl.Locale) {
+      return (new Intl.Locale(tag).maximize().region || "").toUpperCase();
+    }
+    const parts = String(tag).split("-");
+    return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * The units to start someone on: lb / ft-in / oz where those are the everyday
+ * measures, kg / cm / mL everywhere else.
+ */
+export function deviceUnitDefaults() {
+  const imperial = IMPERIAL_REGIONS.includes(deviceRegion());
+  return imperial
+    ? { weight_unit: "lb", height_unit: "in", liquid_unit: "oz" }
+    : { weight_unit: "kg", height_unit: "cm", liquid_unit: "mL" };
+}
+
 export function weightToKg(value, unit) {
   if (value == null) return null;
   return unit === "kg" ? value : value * 0.453592;

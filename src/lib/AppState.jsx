@@ -35,6 +35,7 @@ const DEFAULT_PROFILE = {
   parental_consent_date: "", parental_consent_name: "",
   first_name: "",
   weight_tracking_opted_in: false,
+  tracking_modules: [],
   custom_doses: [],
   prescriber_name: "",
   prescriber_contact: "",
@@ -748,6 +749,8 @@ export function AppStateProvider({ children }) {
       parental_consent_name: next.parental_consent_name || "",
       first_name: next.first_name || "",
       weight_tracking_opted_in: !!next.weight_tracking_opted_in,
+      // What the person chose to keep an eye on in onboarding.
+      tracking_modules: Array.isArray(next.tracking_modules) ? next.tracking_modules : [],
       custom_doses: Array.isArray(next.custom_doses) ? next.custom_doses : [],
       prescriber_name: next.prescriber_name || "",
       prescriber_contact: next.prescriber_contact || "",

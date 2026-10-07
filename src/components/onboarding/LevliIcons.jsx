@@ -58,8 +58,10 @@ export function HeartIcon({ size = 48, className }) {
   return (
     <SvgIcon size={size} className={className}>
       <defs><Grad id={gid} from="#F97316" to="#EC4899" /></defs>
-      <path d="M24 38 C24 38, 8 28, 8 18 a8 8 0 0 1 16 -2 a8 8 0 0 1 16 2 C40 28, 24 38, 24 38Z" fill={`url(#${gid})`} />
-      <path d="M16 16 a3 3 0 0 1 3 -3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.4" />
+      {/* The same circular container as the rest of the set, with the heart as
+          its white glyph, so every icon in a row is one shape. */}
+      <circle cx="24" cy="24" r="18" fill={`url(#${gid})`} />
+      <path d="M24 32 C 24 32, 14 25, 14 20 a5 5 0 0 1 10 -1.2 a5 5 0 0 1 10 1.2 C 34 25, 24 32, 24 32Z" fill="white" fillOpacity="0.92" />
     </SvgIcon>
   );
 }
@@ -147,11 +149,12 @@ export function ScaleIcon({ size = 48, className }) {
   return (
     <SvgIcon size={size} className={className}>
       <defs><Grad id={gid} from="#8B5CF6" to="#6366F1" /></defs>
-      <rect x="8" y="14" width="32" height="24" rx="6" fill={`url(#${gid})`} />
-      <circle cx="24" cy="26" r="7" fill="white" fillOpacity="0.2" />
-      <circle cx="24" cy="26" r="5" fill="none" stroke="white" strokeWidth="1.5" strokeOpacity="0.5" />
-      <line x1="24" y1="26" x2="28" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="24" cy="26" r="1.5" fill="white" />
+      {/* A round dial instead of a rounded square, so it belongs to the same
+          circular family as the icons beside it. */}
+      <circle cx="24" cy="24" r="18" fill={`url(#${gid})`} />
+      <circle cx="24" cy="24" r="8" fill="none" stroke="white" strokeWidth="2" strokeOpacity="0.55" />
+      <line x1="24" y1="24" x2="28.5" y2="19.5" stroke="white" strokeWidth="2.4" strokeLinecap="round" />
+      <circle cx="24" cy="24" r="2" fill="white" />
     </SvgIcon>
   );
 }
@@ -179,6 +182,18 @@ export function InjectionSiteIcon({ size = 48, className }) {
       <circle cx="24" cy="24" r="10" fill="none" stroke="white" strokeWidth="2" strokeOpacity="0.4" />
       <circle cx="24" cy="24" r="5" fill="white" fillOpacity="0.9" />
       <circle cx="24" cy="24" r="2" fill="#14B8A6" />
+    </SvgIcon>
+  );
+}
+
+// ── Side effects (a symptom line) ──────────────────────────────────────────
+export function SideEffectIcon({ size = 48, className }) {
+  const gid = useGid("side");
+  return (
+    <SvgIcon size={size} className={className}>
+      <defs><Grad id={gid} from="#F43F5E" to="#FB923C" /></defs>
+      <circle cx="24" cy="24" r="18" fill={`url(#${gid})`} />
+      <path d="M12 24 H 18 L 21 17 L 26 31 L 29 24 H 36" stroke="white" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </SvgIcon>
   );
 }
