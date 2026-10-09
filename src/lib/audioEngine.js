@@ -9,12 +9,12 @@
 // the app. They are quiet (peak 0.15), brief, and always fade out rather than
 // stopping dead, which is what keeps them from clicking.
 //
-// Audio may only begin once the person has touched the page — that is the
-// browser's rule, and the only thing that can lift it is the browser itself
-// (an installed app, a site it trusts). So the context is created on the first
-// tap of the session, and the launch sequence asks for it on its own before
-// that, purely to find out whether it may start. With no Web Audio available
-// every call is a no-op.
+// Audio may only begin once the person has really tapped or clicked the page —
+// that is the browser's rule, and the only thing that can lift it is the browser
+// itself (an installed app, a site it trusts). So the context is created on the
+// first tap of the session, and the launch sequence asks for it on its own
+// before that, purely to find out whether it may start. With no Web Audio
+// available every call is a no-op.
 //
 // The phone's silent switch is respected by doing nothing at all: Web Audio on
 // iOS already follows the ringer switch, and nothing here tries to override it.
@@ -90,12 +90,20 @@ export async function resumeContext() {
   return ctx.state === "running" ? ctx : null;
 }
 
-// The first tap of the session unlocks audio for the rest of it, so a sound
-// played later (after a save finishes, say) is not blocked.
+// The first real tap of the session unlocks audio for the rest of it, so a sound
+// played later (after a save finishes, say) is not blocked. A browser counts a
+// finger lifting (pointerup / touchend), a click or a key — not the finger first
+// touching down — so those are what is listened for, and the listening carries
+// on until the context is actually running.
 if (typeof window !== "undefined") {
-  const unlock = () => { audioContext(); };
-  window.addEventListener("pointerdown", unlock, { once: true });
-  window.addEventListener("touchstart", unlock, { once: true });
+  const UNLOCK_EVENTS = ["pointerup", "touchend", "click", "keydown"];
+  const unlock = () => {
+    const ctx = audioContext();
+    if (ctx && ctx.state === "running") {
+      UNLOCK_EVENTS.forEach((type) => window.removeEventListener(type, unlock, true));
+    }
+  };
+  UNLOCK_EVENTS.forEach((type) => window.addEventListener(type, unlock, true));
 }
 
 /**

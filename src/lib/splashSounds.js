@@ -10,21 +10,25 @@
 // The cues sit on the animation's own timings (src/lib/splashTiming.js), so
 // retiming the mascot retimes its sound with it.
 //
-// ── When it can be heard ────────────────────────────────────────────────────
-// A browser never lets a page start sound on its own: audio may begin only once
-// the person has touched the page, unless the browser itself says otherwise (an
-// installed app, or a site it considers well used). Nothing in the app can talk
-// it round, so the sequence asks twice and takes the first answer:
+// ── Always in step with the animation ───────────────────────────────────────
+// A sound here belongs to one frame of the animation, and is only ever played
+// while that frame is still ahead of us. Whenever audio starts — at launch, or
+// a moment later — each beat is placed on the animation's own clock, so what is
+// heard is what is on screen. A beat the animation has already passed is
+// skipped, never replayed late, and once the splash is gone nothing is left
+// waiting: a later tap on a button can never set the droplet's sounds off.
 //
-//   1. Straight away at launch — how it plays on a launch the browser allows,
-//      and on the sign-out splash, where the page has already been in use.
-//   2. On the first touch of the splash. The sound still follows the mascot:
-//      the beats that have not gone by play then, and if the animation has
-//      already finished, the droplet answers with its own voice — its landing
-//      and its ring.
+// ── When audio may start ────────────────────────────────────────────────────
+// A browser never lets a page start sound on its own: audio may begin only
+// once the person has really tapped or clicked the page, unless the browser
+// itself says otherwise (an installed app, or a site it considers well used).
+// So the sequence asks twice and takes the first answer:
 //
-// Whichever comes first is the one that plays, and once the splash goes nothing
-// is listened for any more.
+//   1. Straight away at launch — plays from the very first frame wherever the
+//      browser allows it, and on the sign-out splash.
+//   2. On the first real tap during the splash: a finger touching down does not
+//      count to a browser, only the lift (pointerup / touchend), a click or a
+//      key does. The beats still ahead then play, in step with the animation.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { VOLUME, getSoundPreference, playNotes, resumeContext } from "@/lib/audioEngine";
@@ -32,6 +36,9 @@ import { SPLASH_TIMING, SPLASH_SPARKLES } from "@/lib/splashTiming";
 
 /** One note per sparkle, in the order they pop. */
 const SPARKLE_TONES = [1046.5, 1174.7, 1318.5];
+
+/** The events a browser accepts as the person really using the page. */
+const ACTIVATION_EVENTS = ["pointerup", "touchend", "click", "keydown"];
 
 /** The animation's timings are in milliseconds; notes are scheduled in seconds. */
 const seconds = (ms) => ms / 1000;
@@ -82,9 +89,9 @@ function moments() {
 }
 
 /** The beats still ahead of `elapsed` seconds, retimed to play from now. */
-function stillAhead(moments, elapsed) {
+function stillAhead(sequence, elapsed) {
   const notes = [];
-  moments.forEach((moment) => {
+  sequence.forEach((moment) => {
     if (moment.at < elapsed) return;
     moment.notes.forEach((note) => {
       notes.push({ ...note, at: moment.at + (note.at || 0) - elapsed });
@@ -94,57 +101,44 @@ function stillAhead(moments, elapsed) {
 }
 
 /**
- * The droplet's own voice — its landing and its ring — retimed to play from
- * now, with the distance between the two kept. This is what the droplet says
- * when the person touches it after the composition has finished: the two sounds
- * that are simply water, and nothing that belonged to a moment already gone.
- */
-function dropletVoice(moments) {
-  const [landing, ring] = moments;
-  return [
-    ...landing.notes.map((note) => ({ ...note, at: note.at || 0 })),
-    ...ring.notes.map((note) => ({ ...note, at: ring.at - landing.at + (note.at || 0) })),
-  ];
-}
-
-/**
- * Plays the droplet's sequence. Does nothing when sounds are switched off, or
- * when the browser has no Web Audio at all.
+ * Plays the droplet's sequence, in step with the animation. Does nothing when
+ * sounds are switched off, or when the browser has no Web Audio at all.
  *
- * Returns a stop function, which the splash runs when the screen goes so that
- * nothing is listened for afterwards.
+ * Returns a stop function, which the splash runs when the screen goes: from
+ * then on nothing is listened for and nothing can play.
  */
 export function playSplashSounds() {
   if (!getSoundPreference()) return () => {};
 
   const sequence = moments();
-  const startedAt = Date.now();
-  let played = false;
+  const startedAt = performance.now();
+  let finished = false;
 
-  /** Plays once: what is left of the composition, or the droplet's own voice. */
+  const stop = () => {
+    finished = true;
+    ACTIVATION_EVENTS.forEach((type) => window.removeEventListener(type, attempt, true));
+  };
+
+  /** Plays once, from wherever the animation has got to. */
   const playFrom = (ctx) => {
-    if (played || !ctx) return;
-    played = true;
-    const elapsed = (Date.now() - startedAt) / 1000;
-    const remaining = stillAhead(sequence, elapsed);
-    playNotes(ctx, remaining.length ? remaining : dropletVoice(sequence));
+    if (finished || !ctx) return;
+    const remaining = stillAhead(sequence, (performance.now() - startedAt) / 1000);
+    if (!remaining.length) return; // the animation is past every beat
+    stop();
+    playNotes(ctx, remaining);
   };
 
-  // 1. Straight away, for a launch the browser allows sound on.
-  resumeContext().then(playFrom);
-
-  // 2. Otherwise the person's first touch is what starts audio, and it is also
-  //    what asks the droplet to speak.
-  const stopListening = () => {
-    window.removeEventListener("pointerdown", onFirstTouch);
-    window.removeEventListener("touchstart", onFirstTouch);
-  };
-  function onFirstTouch() {
-    stopListening();
+  function attempt() {
     resumeContext().then(playFrom);
   }
-  window.addEventListener("pointerdown", onFirstTouch);
-  window.addEventListener("touchstart", onFirstTouch);
 
-  return stopListening;
+  // 1. Straight away, for a launch the browser allows sound on.
+  attempt();
+
+  // 2. Otherwise on the first real tap, and on every one after it until audio
+  //    has started. Listening is kept until sound has actually played, because
+  //    the first touch of a finger is not yet a tap as far as a browser goes.
+  ACTIVATION_EVENTS.forEach((type) => window.addEventListener(type, attempt, true));
+
+  return stop;
 }
