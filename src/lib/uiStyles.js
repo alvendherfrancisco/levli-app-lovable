@@ -65,6 +65,9 @@ export const CHIP_IDLE = "border border-gray-200 bg-white text-gray-900 hover:bo
 // text. Never a solid dark fill and never a thick outline.
 export const CHIP_ON = "border border-indigo-500 bg-indigo-50 text-indigo-700";
 export const ICON_CIRCLE = "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50";
+// The same circle where it stands alone as a screen's own mark: the slot the
+// illustrations take on the other steps, holding a single centred icon.
+export const ICON_CIRCLE_LG = "flex h-[72px] w-[72px] flex-shrink-0 items-center justify-center rounded-full bg-indigo-50";
 export const CHECK_CIRCLE =
   "flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors";
 export const CHECK_CIRCLE_OFF = "border-gray-300";

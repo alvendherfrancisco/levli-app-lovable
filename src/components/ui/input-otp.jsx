@@ -18,7 +18,11 @@ const InputOTPGroup = React.forwardRef(({ className, ...props }, ref) => (
 ))
 InputOTPGroup.displayName = "InputOTPGroup"
 
-const InputOTPSlot = React.forwardRef(({ index, className, ...props }, ref) => {
+// activeClassName lets a caller draw the focused slot its own way (a hairline
+// indigo border and a soft glow, say) instead of the default ring. It is
+// applied last, so it wins over the className's resting state; callers that
+// pass neither keep exactly the styling they had.
+const InputOTPSlot = React.forwardRef(({ index, className, activeClassName, ...props }, ref) => {
   const inputOTPContext = React.useContext(OTPInputContext)
   const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index]
 
@@ -27,8 +31,8 @@ const InputOTPSlot = React.forwardRef(({ index, className, ...props }, ref) => {
       ref={ref}
       className={cn(
         "relative flex h-9 w-9 items-center justify-center border-y border-r border-input text-sm shadow-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
-        isActive && "z-10 ring-1 ring-ring",
-        className
+        className,
+        isActive && (activeClassName ?? "z-10 ring-1 ring-ring")
       )}
       {...props}>
       {char}

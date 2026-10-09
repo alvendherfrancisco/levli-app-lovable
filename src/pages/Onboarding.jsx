@@ -327,6 +327,7 @@ export default function Onboarding() {
       onBlockedContinue={step === 5 ? () => setScheduleNudge(true) : undefined}
       revealIssues={step === 5}
       hideFooter={step === 3}
+      alignTop={step === 3}
     >
       {step === 0 && <WelcomeStep />}
       {step === 1 && <EmpathyStep />}

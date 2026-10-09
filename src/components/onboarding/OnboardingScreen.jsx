@@ -24,6 +24,10 @@ export default function OnboardingScreen({
   canContinue = true,
   ctaNote,
   hideFooter = false,
+  // A step that shows no artwork of its own length starts at the top of the
+  // step area, so it sits where the other steps' pictures sit, rather than
+  // being centred with empty space above it.
+  alignTop = false,
   // A step that refuses to continue can still let the tap through, so the
   // reason it is not ready yet can be shown at the moment it is wanted. Without
   // these the button is a plain disabled button, as it has always been.
@@ -109,7 +113,7 @@ export default function OnboardingScreen({
                 header and the CTA leave, and lets a step taller than that area
                 scroll from its very top instead of being clipped at the top. */}
             <div className="flex min-h-full flex-col">
-              <div key={step} className={`w-full my-auto ${animClass}`}>
+              <div key={step} className={`w-full ${alignTop ? "" : "my-auto"} ${animClass}`}>
                 {children}
               </div>
             </div>
