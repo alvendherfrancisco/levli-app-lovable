@@ -44,7 +44,6 @@ export default function BottomTabBar() {
                 <NavIcon
                   item={item}
                   size={20}
-                  active={isActive}
                   className={isActive ? "text-indigo-600 dark:text-indigo-400" : ""}
                 />
                 {item.label}
@@ -79,7 +78,7 @@ export default function BottomTabBar() {
                     aria-hidden="true"
                     className={`absolute top-0 h-0.5 w-6 rounded-full ${isActive ? "bg-indigo-600 dark:bg-indigo-400" : "bg-transparent"}`}
                   />
-                  <NavIcon item={item} size={24} active={isActive} />
+                  <NavIcon item={item} size={24} />
                   <span className={`text-xs leading-none truncate max-w-full ${isActive ? "font-semibold" : "font-medium"}`}>
                     {item.label}
                   </span>

@@ -6,14 +6,15 @@ import { plainBrandName } from "@/lib/medicationConfig";
 import { medicationSummaries, isActiveMedication } from "@/lib/medicationLink";
 import MedicationShotCard from "@/components/home/MedicationShotCard";
 import MedicationStatusNote from "@/components/home/MedicationStatusNote";
+import { CARD, CARD_TITLE, INFO_BOX } from "@/lib/uiStyles";
 
 /**
- * Next Shot — one card per medication. Each medication's next date, last dose
- * and total shots come from its own schedule and its own logged shots, so two
+ * Next dose: one card per medication. Each medication's next date, last dose and
+ * total doses come from its own schedule and its own logged shots, so two
  * medications running together are never mixed into one number.
  *
- * A medication that is paused, stopped or archived carries no next-shot date
- * and no reminder: it is only shown for what it is.
+ * A medication that is paused, stopped or archived carries no next-dose date and
+ * no reminder: it is only shown for what it is.
  */
 export default function NextShotCard({ onLogPastShot }) {
   const { shots, medications, repeatSchedules, profile, stopMedication } = useAppState();
@@ -41,11 +42,11 @@ export default function NextShotCard({ onLogPastShot }) {
 
   if (running.length === 0 && halted.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 mx-4 mb-4">
-        <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-2">Next Shot</p>
-        <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-3 flex items-start gap-2">
-          <Syringe size={18} className="text-indigo-500 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-indigo-700 dark:text-indigo-300">No shots recorded yet. Add your first shot to start tracking your schedule.</p>
+      <div className={CARD}>
+        <h3 className={`${CARD_TITLE} mb-3`}>Next dose</h3>
+        <div className={`${INFO_BOX} flex items-center gap-2`}>
+          <Syringe size={16} className="flex-shrink-0" aria-hidden="true" />
+          <p>No doses logged yet.</p>
         </div>
       </div>
     );
