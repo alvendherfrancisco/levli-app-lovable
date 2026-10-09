@@ -4,42 +4,45 @@ import AppleIcon from "@/components/AppleIcon";
 import { sound } from "@/lib/sounds";
 
 /**
- * The two provider options, sitting below the create-account button: an "OR"
- * divider, then Google and Apple as logo-only round buttons side by side.
+ * The divider and the two provider options, sitting in the account card between
+ * the password field and the create-account button.
  *
- * Both send the person away to the provider's own page and bring them back, so
+ * The divider is the login screen's: a hairline with the word resting on it, its
+ * mask painted in the card's own grey so the line appears to break around it.
+ *
+ * Both providers send the person away to their own page and bring them back, so
  * the caller records everything answered so far on the device first (see
  * src/lib/onboardingDraft.js). Apple sits beside Google because Levli offers a
  * third-party sign-in (App Store guideline 4.8).
  *
- * With no label beside them, each mark sits in the middle of its own 56pt
- * circle — the whole circle is the touch target — and the wording lives in the
- * screen-reader label. Each keeps its own brand's ground: Google's mark on
- * white, Apple's on black.
+ * Each is a full-height button carrying its mark alone — the wording lives in
+ * the screen-reader label — and each keeps its own brand's ground: Google's mark
+ * on white, Apple's on black.
  */
 export default function SocialAuthButtons({ onProvider, disabled = false }) {
-  const circle =
-    "flex h-14 w-14 items-center justify-center rounded-full transition-all active:scale-95 disabled:opacity-60";
+  const base =
+    "flex h-12 flex-1 items-center justify-center rounded-xl transition-all active:scale-[0.98] disabled:opacity-60";
 
   return (
     <div className="w-full">
-      {/* 20pt of air above and below the word, with the lines running the full
-          width of the form. */}
-      <div className="my-5 flex items-center gap-3">
-        <span className="h-px flex-1 bg-gray-200" />
-        <span className="text-[12px] font-semibold tracking-wide text-gray-400">OR</span>
-        <span className="h-px flex-1 bg-gray-200" />
+      <div className="relative my-5">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-200" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-gray-100 px-3 text-gray-400">or</span>
+        </div>
       </div>
 
-      <div className="flex items-center justify-center gap-4">
+      <div className="flex gap-3">
         <button
           type="button"
           disabled={disabled}
           aria-label="Continue with Google"
           onClick={() => { sound.tap(); onProvider("google"); }}
-          className={`${circle} border border-gray-200 bg-white hover:border-gray-300`}
+          className={`${base} border border-gray-200 bg-white hover:border-gray-300`}
         >
-          <GoogleIcon className="h-6 w-6" />
+          <GoogleIcon className="h-5 w-5" />
         </button>
 
         <button
@@ -47,9 +50,9 @@ export default function SocialAuthButtons({ onProvider, disabled = false }) {
           disabled={disabled}
           aria-label="Continue with Apple"
           onClick={() => { sound.tap(); onProvider("apple"); }}
-          className={`${circle} bg-black text-white hover:bg-gray-900`}
+          className={`${base} bg-black text-white hover:bg-gray-900`}
         >
-          <AppleIcon className="h-6 w-6" />
+          <AppleIcon className="h-5 w-5" />
         </button>
       </div>
     </div>

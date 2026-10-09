@@ -118,6 +118,9 @@ export default function SignUpStep({
         <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 leading-tight px-2">
           Create your account
         </h1>
+        <p className="mt-2 text-[15px] text-gray-500 leading-relaxed px-3">
+          Sign up to save your journey and pick up where you left off, on any device.
+        </p>
       </div>
 
       {notice && (
