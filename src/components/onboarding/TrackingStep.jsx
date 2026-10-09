@@ -5,8 +5,12 @@ import { TrackingIllustration } from "@/components/onboarding/OnboardingIllustra
 import { TRACKING_MODULES } from "@/lib/trackingModules";
 import { sound } from "@/lib/sounds";
 import {
-  CARD, CARD_FLUSH, CARD_GAP, HEADING, HEAD_BLOCK, LABEL, SUBTITLE,
+  CARD, CARD_GAP, HEADING, HEAD_BLOCK, LABEL, SUBTITLE,
 } from "@/lib/uiStyles";
+
+// The gap between this screen's two cards is the screen's own side margin, so
+// the space between them matches the margin on either side of them.
+const CARD_GAP_MARGIN = "mb-5"; // 20px
 
 const UNIT_GROUPS = [
   { key: "weight_unit", label: "Weight", options: [{ value: "lb", label: "lb" }, { value: "kg", label: "kg" }] },
@@ -43,11 +47,14 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
       </div>
 
       {/* All six choices in one card — one compact row each, divided by a
-          hairline. The card carries the single thin border and soft shadow. */}
+          hairline. The card carries the single thin border and soft shadow, and
+          the inner spacing of the card below it: the same 20px between the card
+          edge and its content on every side, so the icon circles, the tick
+          circles and the dividers all start and stop on the same lines. */}
       <div
         role="group"
         aria-label="What would you like to keep an eye on?"
-        className={`${CARD_FLUSH} ${CARD_GAP} overflow-hidden`}
+        className={`${CARD} ${CARD_GAP_MARGIN} overflow-hidden`}
       >
         <div className="divide-y divide-gray-100 dark:divide-white/[0.08]">
           {TRACKING_MODULES.map((opt) => (

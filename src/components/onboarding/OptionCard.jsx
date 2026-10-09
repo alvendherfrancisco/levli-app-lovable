@@ -9,9 +9,12 @@ import {
  * One row in a card of choices.
  *
  * The rows sit inside a single white card (the caller draws the card and its
- * divider lines), so the row itself carries no border and no shadow — only its
- * own compact 56pt height, the icon circle on the left and the status circle on
- * the right. Every row is the same height, so a list of them lines up exactly.
+ * divider lines), so the row itself carries no border, no shadow and no
+ * horizontal padding of its own — only its compact 56pt height, the icon circle
+ * on the left and the status circle on the right. The card's own inner padding
+ * is what holds both circles in from its edges, so every row starts and stops on
+ * the card's content line, exactly like the rows of the card below it. Every row
+ * is the same height, so a list of them lines up exactly.
  *
  * The row is a label wrapped around a real checkbox, which is how the state is
  * announced — a screen reader reads it as a checkbox with "checked" or "not
@@ -25,7 +28,7 @@ import {
 export default function OptionCard({ icon: Icon, label, selected, onToggle }) {
   return (
     <label
-      className={`flex min-h-[56px] w-full cursor-pointer items-center gap-3 bg-white px-4 py-2 transition-colors focus-within:bg-gray-50 dark:focus-within:bg-white/[0.06] ${
+      className={`flex min-h-[56px] w-full cursor-pointer items-center gap-3 bg-white py-2 transition-colors focus-within:bg-gray-50 dark:focus-within:bg-white/[0.06] ${
         selected ? "bg-indigo-50/70 dark:bg-indigo-500/10" : "dark:bg-transparent"
       }`}
     >
