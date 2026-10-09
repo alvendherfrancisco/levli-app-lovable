@@ -23,6 +23,14 @@ export default function OnboardingScreen({
   canContinue = true,
   ctaNote,
   hideFooter = false,
+  // A step that refuses to continue can still let the tap through, so the
+  // reason it is not ready yet can be shown at the moment it is wanted. Without
+  // these the button is a plain disabled button, as it has always been.
+  revealIssues = false,
+  onBlockedContinue,
+  // The lighter indigo pill the account screen uses for its own blocked button,
+  // in place of the grey one.
+  fadedDisabled = false,
 }) {
   const isFirstStep = step === 0;
   const isLastStep = step === totalSteps - 1;
@@ -30,6 +38,15 @@ export default function OnboardingScreen({
   // Every screen in the flow sounds the same: a soft tap on any control, and the
   // completion chime on the last step, which is where onboarding actually saves.
   const continueCue = () => { if (isLastStep) sound.success(); else sound.tap(); };
+  const blocked = !canContinue;
+  // The button is only tappable while blocked where the caller has something to
+  // say about it.
+  const blockedTap = blocked && revealIssues;
+  const handleCta = () => {
+    if (blocked) { sound.warning(); onBlockedContinue?.(); return; }
+    continueCue();
+    onContinue();
+  };
   const [animClass, setAnimClass] = useState("animate-onb-right");
   // Whether the step has been scrolled: that is what draws the header's
   // hairline, so a short step shows none and a long one divides cleanly.
@@ -117,17 +134,23 @@ export default function OnboardingScreen({
             {/* What is still missing, said in short, sitting with the button so
                 it is on screen at the moment the button will not continue. */}
             {ctaNote && (
-              <p role="status" className="text-[13.5px] font-medium text-orange-700 text-center max-w-[400px] mb-2 px-2 leading-snug">
+              <div
+                role="alert"
+                className="mb-4 w-full max-w-[400px] rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center text-[13px] leading-snug text-amber-800"
+              >
                 {ctaNote}
-              </p>
+              </div>
             )}
             <button
-              onClick={canContinue ? () => { continueCue(); onContinue(); } : undefined}
-              disabled={!canContinue}
+              onClick={blockedTap || !blocked ? handleCta : undefined}
+              disabled={blocked && !blockedTap}
+              aria-disabled={blockedTap || undefined}
               className={`onb-cta-btn w-full max-w-[400px] rounded-full font-semibold text-base sm:text-lg transition-all duration-300 active:scale-95 ${
-                canContinue
+                !blocked
                   ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/25"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : fadedDisabled
+                    ? `bg-indigo-300 text-white shadow-none${blockedTap ? "" : " cursor-not-allowed"}`
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
             >
               {ctaText}

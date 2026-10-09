@@ -80,6 +80,9 @@ export default function Onboarding() {
   // What the draft records about the account itself.
   const [verifiedAccount, setVerifiedAccount] = useState(false);
   const [awaitingVerification, setAwaitingVerification] = useState(false);
+  // Whether Next has been tapped on the schedule screen while it was not ready.
+  // What is still missing is only said after that tap, never before it.
+  const [scheduleNudge, setScheduleNudge] = useState(false);
 
   // ── The answers, held on the device ───────────────────────────────────────
   // Onboarding is answered before anyone is signed in, and the account step can
@@ -174,6 +177,11 @@ export default function Onboarding() {
     needsStartDate: true,
   });
 
+  // The one line the schedule screen shows when Next is tapped too early: the
+  // frequency itself when that is what is missing, otherwise the control that
+  // still has to be filled in.
+  const scheduleNote = schedule.kind ? scheduleIssue : "Choose how often you take it.";
+
   const canContinue = (() => {
     if (step === 2) return selectedMeds.length > 0;
     if (step === 4) return gdprConsented && birthdate && ageConfirmed && !isMinor(birthdate);
@@ -193,6 +201,7 @@ export default function Onboarding() {
     setSchedule(emptySchedule(next, toDayKey(new Date())));
     setDoseAmount("");
     setDoseOther(false);
+    setScheduleNudge(false);
   };
 
   // The account step's hand-off: everything answered so far, plus whatever that
@@ -289,6 +298,13 @@ export default function Onboarding() {
     setStep(Math.max(0, target));
   };
 
+  // Anything tapped on the schedule screen answers what that notice was about,
+  // so it goes as soon as a choice is made.
+  const changeSchedule = (nextSchedule) => {
+    setScheduleNudge(false);
+    setSchedule(nextSchedule);
+  };
+
   const ctaLabel =
     step === 0 ? "Get started" :
     step === 4 ? "Allow & continue" :
@@ -303,7 +319,10 @@ export default function Onboarding() {
       onBack={back}
       ctaLabel={ctaLabel}
       canContinue={canContinue}
-      ctaNote={step === 5 && !canContinue ? scheduleIssue : undefined}
+      ctaNote={step === 5 && scheduleNudge ? scheduleNote : undefined}
+      onBlockedContinue={step === 5 ? () => setScheduleNudge(true) : undefined}
+      revealIssues={step === 5}
+      fadedDisabled={step === 5}
       hideFooter={step === 3}
     >
       {step === 0 && <WelcomeStep />}
@@ -348,7 +367,7 @@ export default function Onboarding() {
           doseOther={doseOther}
           onDoseOtherChange={setDoseOther}
           schedule={schedule}
-          onScheduleChange={setSchedule}
+          onScheduleChange={changeSchedule}
         />
       )}
       {step === 6 && (

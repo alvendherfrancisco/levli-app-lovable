@@ -19,7 +19,7 @@ import { FREQUENCY_INFO, SCHEDULE, withScheduleKind } from "@/lib/medicationSche
  * this is the same block onboarding and Add / Edit Medication both render.
  */
 export default function ScheduleFields({
-  medication, value, onChange, showStartDate = false, error,
+  medication, value, onChange, showStartDate = false, error, frequencyLayout,
 }) {
   const info = FREQUENCY_INFO[value?.kind] || {};
   const patch = (next) => onChange({ ...value, ...next });
@@ -30,6 +30,7 @@ export default function ScheduleFields({
         medication={medication}
         value={value?.kind || ""}
         onChange={(kind) => onChange(withScheduleKind(value, kind))}
+        layout={frequencyLayout}
       />
 
       {info.days > 0 && (

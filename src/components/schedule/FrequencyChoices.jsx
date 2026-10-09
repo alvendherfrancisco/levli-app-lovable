@@ -1,6 +1,7 @@
 import React from "react";
 import { Check } from "lucide-react";
 import OptionChips from "@/components/OptionChips";
+import FrequencyGrid from "./FrequencyGrid";
 import { getScheduleOptions } from "@/lib/medicationSchedule";
 
 /**
@@ -12,9 +13,22 @@ import { getScheduleOptions } from "@/lib/medicationSchedule";
  * The chips are the app's shared option chips, so they look and behave like
  * every other choice in Levli: same shape, same border, same 44pt target, with
  * the selected state announced to a screen reader.
+ *
+ * A caller can ask for `layout="grid"` instead: the same choices, drawn as the
+ * even two-column grid of pill chips the onboarding schedule screen uses.
  */
-export default function FrequencyChoices({ medication, value, onChange }) {
+export default function FrequencyChoices({ medication, value, onChange, layout = "chips" }) {
   const options = getScheduleOptions(medication);
+
+  if (layout === "grid" && options.length > 1) {
+    return (
+      <FrequencyGrid
+        options={options.map((o) => ({ value: o.id, label: o.label }))}
+        value={value}
+        onChange={onChange}
+      />
+    );
+  }
 
   if (options.length === 1) {
     return (

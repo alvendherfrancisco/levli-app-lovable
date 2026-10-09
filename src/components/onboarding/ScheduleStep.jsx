@@ -1,9 +1,10 @@
 import React from "react";
 import { ScheduleIllustration } from "@/components/onboarding/OnboardingIllustrations";
 import DoseChoice from "@/components/schedule/DoseChoice";
+import DoseAmountField from "@/components/schedule/DoseAmountField";
 import ScheduleFields from "@/components/schedule/ScheduleFields";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
-import { getMedicationConfig } from "@/lib/medicationConfig";
+import { allowsAnyDose, getAllowedDoses, getMedicationConfig } from "@/lib/medicationConfig";
 
 /** The one line of guidance on this screen, as the clinical team worded it. */
 const PRESCRIBER_HELPER = "Follow your prescriber's instructions.";
@@ -26,9 +27,13 @@ export default function ScheduleStep({
 }) {
   const route = getMedicationConfig(medication)?.route || "";
   const injectable = !route || INJECTABLE_ROUTES.includes(route);
+  // A product whose label lists no strengths — compounded, a peptide, "Other" —
+  // is asked for the amount directly, in the same field style as the rest of the
+  // card. A product with a label list keeps its own strength chips.
+  const anyDose = getAllowedDoses(medication).length === 0 || allowsAnyDose(medication);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col pb-6">
       <OnboardingArt>
         <ScheduleIllustration />
       </OnboardingArt>
@@ -44,20 +49,25 @@ export default function ScheduleStep({
       {/* The whole answer in one card, drawn like the account screens' own. */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="space-y-5">
-          <DoseChoice
-            medication={medication}
-            value={dose}
-            onChange={onDoseChange}
-            other={doseOther}
-            onOtherChange={onDoseOtherChange}
-          />
+          {anyDose ? (
+            <DoseAmountField medication={medication} value={dose} onChange={onDoseChange} />
+          ) : (
+            <DoseChoice
+              medication={medication}
+              value={dose}
+              onChange={onDoseChange}
+              other={doseOther}
+              onOtherChange={onDoseOtherChange}
+            />
+          )}
           <ScheduleFields
             medication={medication}
             value={schedule}
             onChange={onScheduleChange}
             showStartDate
+            frequencyLayout="grid"
           />
-          <p className="mt-2 text-xs leading-snug text-gray-500">{PRESCRIBER_HELPER}</p>
+          <p className="text-xs leading-snug text-gray-500">{PRESCRIBER_HELPER}</p>
         </div>
       </div>
       {error && (
