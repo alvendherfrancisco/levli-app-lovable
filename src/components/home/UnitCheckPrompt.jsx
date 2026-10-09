@@ -56,7 +56,7 @@ export default function UnitCheckPrompt() {
               {converted} {converted === 1 ? "entry is" : "entries are"} now stored as kilograms. You can undo this at any time.
             </p>
             <button
-              onClick={() => run(async () => { const n = await undoUnitConversion(); setConverted(0); return n; }, (n) => `Undone — ${n} entries back to pounds`)}
+              onClick={() => run(async () => { const n = await undoUnitConversion(); setConverted(0); return n; }, (n) => `Undone. ${n} entries back to pounds`)}
               disabled={busy}
               className="mt-5 w-full py-3 rounded-xl font-semibold border border-gray-200 dark:border-white/10 text-gray-700 dark:text-[#E8E9F0] flex items-center justify-center gap-2 disabled:opacity-60"
             >
@@ -67,7 +67,7 @@ export default function UnitCheckPrompt() {
           <>
             <p className="text-sm text-gray-600 dark:text-[#9A9DAE] mt-3">
               {unitCheck.count} of your weight {unitCheck.count === 1 ? "entry is" : "entries are"} recorded in pounds ({unitCheck.low && unitCheck.high ? `${unitCheck.low}–${unitCheck.high} lb` : ""}).
-              Read together with your height, that gives a body mass index below 15, which is not a plausible value for an adult — so we have not shown it.
+              Read together with your height, that gives a body mass index below 15, which is not a plausible value for an adult, so we have not shown it.
             </p>
             <p className="text-sm text-gray-600 dark:text-[#9A9DAE] mt-3">
               Were these weights entered in kilograms instead? We will not change anything until you choose.

@@ -387,10 +387,10 @@ function WelcomeStep() {
         <WelcomeIllustration />
       </OnboardingArt>
       <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-3 leading-tight px-2">
-        You're starting a journey — we're here for it.
+        You're starting a journey. We're here for it.
       </h1>
       <p className="text-[15px] sm:text-[16px] text-gray-500 leading-relaxed px-3">
-        Levli helps you track your shots, symptoms, and progress, so you can feel more in control, one day at a time.
+        Track your shots, symptoms, and progress in one place.
       </p>
     </div>
   );
@@ -406,7 +406,7 @@ function EmpathyStep() {
         GLP-1 journeys aren't always linear.
       </h1>
       <p className="text-[15px] sm:text-[16px] text-gray-500 leading-relaxed px-3">
-        Good days, hard days, plateaus — Levli helps you notice the patterns, so you're never guessing alone.
+        Good days, hard days, plateaus. Levli helps you notice the patterns.
       </p>
     </div>
   );
@@ -501,7 +501,7 @@ function CompletionStep() {
         You're all set.
       </h1>
       <p className="text-[15px] sm:text-[16px] text-gray-500 leading-relaxed px-3">
-        Your Home is ready — next shot, mood, and progress, all in one calm place.
+        Your Home is ready. Track your next shot, mood, and progress in one place.
       </p>
     </div>
   );

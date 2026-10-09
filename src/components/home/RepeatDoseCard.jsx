@@ -39,7 +39,7 @@ export default function RepeatDoseCard({ onEdit }) {
   const handleSkip = async (schedule, dayKey) => {
     try {
       await skipRepeatDose(schedule, dayKey);
-      toast.success("Dose skipped — nothing logged");
+      toast.success("Dose skipped, nothing logged");
     } catch (e) {
       toast.error("Could not skip that dose");
     }
@@ -74,7 +74,7 @@ export default function RepeatDoseCard({ onEdit }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-indigo-900 dark:text-indigo-200">
-                  {isToday ? "Shot day — ready when you are" : `${daysLate} day${daysLate === 1 ? "" : "s"} late`}
+                  {isToday ? "Shot day, ready when you are" : `${daysLate} day${daysLate === 1 ? "" : "s"} late`}
                 </p>
                 <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                   <DoseBadge medication={schedule.medication} dose={schedule.dose} unit={schedule.dose_unit || "mg"} />
@@ -121,7 +121,7 @@ export default function RepeatDoseCard({ onEdit }) {
 
       {morePending > 0 && (
         <p className="mx-4 -mt-2 mb-4 text-xs text-gray-400 dark:text-gray-500">
-          {morePending} more repeat dose{morePending === 1 ? "" : "s"} waiting — confirm or skip these first.
+          {morePending} more repeat dose{morePending === 1 ? "" : "s"} waiting. Confirm or skip these first.
         </p>
       )}
 

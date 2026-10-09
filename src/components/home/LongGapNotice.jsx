@@ -51,7 +51,7 @@ export default function LongGapNotice({
       <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-2">
         {contact
           ? `Opens ${contact}.`
-          : "No prescriber phone or email saved yet — add one in Profile and this button opens it."}
+          : "No prescriber phone or email saved yet. Add one in Profile and this button opens it."}
       </p>
     </div>
   );

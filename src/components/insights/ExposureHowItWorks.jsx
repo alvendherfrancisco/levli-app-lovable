@@ -35,8 +35,8 @@ export default function ExposureHowItWorks({ open, onClose, medication, halfLife
           <div>
             <h3 className="font-semibold mb-1">What the chart is</h3>
             <p className="text-[13px] leading-relaxed">
-              An illustrative relative-exposure estimate built from the doses you have logged — not a blood-level
-              measurement, and not something to adjust your dose by.
+              An illustrative relative-exposure estimate built from the doses you have logged. It is not a
+              blood-level measurement, and not something to adjust your dose by.
             </p>
           </div>
 
@@ -44,7 +44,7 @@ export default function ExposureHowItWorks({ open, onClose, medication, halfLife
             <h3 className="font-semibold mb-1">The model</h3>
             <ul className="text-[13px] leading-relaxed space-y-1 list-disc pl-4">
               <li>One compartment with first-order elimination: each dose contributes <span className="font-medium">dose × 0.5^(days since ÷ half-life)</span>, and the contributions are added together.</li>
-              <li>Absorption is treated as instantaneous — real injections peak over one to three days.</li>
+              <li>Absorption is treated as instantaneous, though real injections peak over one to three days.</li>
               <li>One fixed volume of distribution is assumed, so the summed amount is proportional to the concentration the half-life describes.</li>
               <li>A bigger dose raises the curve in proportion to its size.</li>
               <li>Only doses inside the last {MODEL_WINDOW_HALF_LIVES} half-lives are used; anything older contributes less than 3% and is left out.</li>
@@ -64,7 +64,7 @@ export default function ExposureHowItWorks({ open, onClose, medication, halfLife
           <div>
             <h3 className="font-semibold mb-1">Where the half-life comes from</h3>
             <p className="text-[13px] leading-relaxed mb-2">
-              Each product's own US prescribing information (Clinical Pharmacology — elimination).
+              Each product's own US prescribing information (Clinical Pharmacology, elimination).
             </p>
             <div className="rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-100 dark:border-white/[0.08] p-3 space-y-1">
               {HALF_LIFE_SOURCE.map((row) => (
@@ -87,7 +87,7 @@ export default function ExposureHowItWorks({ open, onClose, medication, halfLife
             <p className="text-[13px] leading-relaxed">
               How quickly your body absorbs an injection, your body weight and blood volume, antibodies to the
               medication, and differences between products or batches. It follows the label's half-life, so it is an
-              estimate of a typical person on the same dose — your own levels may differ.
+              estimate of a typical person on the same dose. Your own levels may differ.
             </p>
           </div>
 

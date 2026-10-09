@@ -109,8 +109,8 @@ export const MEDICATION_CATALOGUE = [
     half_life_days: { subcutaneous: 7, oral_tablet: 1 }, // oral ~1 week despite daily dosing
     dose_max: { "Ozempic®": 2, "Wegovy®": 2.4, "Rybelsus®": 14, "Semaglutide": 2.4 },
     missed_dose: {
-      subcutaneous: { weekly: true, retitrationDays: 5, advice: "If more than 5 days have passed, skip this dose and contact your prescriber — you may need to restart the dose escalation." },
-      oral_tablet: { weekly: false, retitrationDays: 0, advice: "If you miss a daily dose, skip it and take the next dose at the usual time — do not take a double dose." },
+      subcutaneous: { weekly: true, retitrationDays: 5, advice: "If more than 5 days have passed, skip this dose and contact your prescriber. You may need to restart the dose escalation." },
+      oral_tablet: { weekly: false, retitrationDays: 0, advice: "If you miss a daily dose, skip it and take the next dose at the usual time. Do not take a double dose." },
     },
     capability: caps(),
     last_review: "2025-01-15",
@@ -160,7 +160,7 @@ export const MEDICATION_CATALOGUE = [
     half_life_days: { subcutaneous: 0.5 },
     dose_max: { "Saxenda®": 3.0, "Victoza®": 1.8, "Liraglutide": 3.0 },
     missed_dose: {
-      subcutaneous: { weekly: false, retitrationDays: 0, advice: "If you miss a daily dose, skip it and take the next dose at the usual time — do not take a double dose." },
+      subcutaneous: { weekly: false, retitrationDays: 0, advice: "If you miss a daily dose, skip it and take the next dose at the usual time. Do not take a double dose." },
     },
     capability: caps(),
     last_review: "2025-01-15",
@@ -602,7 +602,7 @@ export const MEDICATION_CATALOGUE = [
     half_life_days: { subcutaneous: 1 },
     dose_max: {},
     capability: caps({ supports_pk_estimation: false, supports_missed_dose_guidance: false, supports_weight_tracking: false, supports_titration_tracking: false, clinical_review_required: true, dosing_calculations_prohibited: true }),
-    note: "Must track clinician-provided regimen only — do not infer dosing.",
+    note: "Must track clinician-provided regimen only. Do not infer dosing.",
     last_review: "2025-01-15",
   },
   {
@@ -791,7 +791,7 @@ export const MEDICATION_CATALOGUE = [
     half_life_days: {},
     dose_max: { "Lutathera®": 7400 }, // MBq
     capability: caps({ supports_pk_estimation: false, supports_injection_site_rotation: false, supports_missed_dose_guidance: false, supports_weight_tracking: false, supports_titration_tracking: false, supports_clinic_administration: true, clinical_review_required: true, dosing_calculations_prohibited: true }),
-    note: "Hospital-administered radioligand therapy. Tracking only — no self-administration.",
+    note: "Hospital-administered radioligand therapy. Tracking only, no self-administration.",
     last_review: "2025-01-15",
   },
   {
@@ -809,7 +809,7 @@ export const MEDICATION_CATALOGUE = [
     half_life_days: {},
     dose_max: { "Pluvicto®": 7400 },
     capability: caps({ supports_pk_estimation: false, supports_injection_site_rotation: false, supports_missed_dose_guidance: false, supports_weight_tracking: false, supports_clinic_administration: true, clinical_review_required: true, dosing_calculations_prohibited: true }),
-    note: "Hospital-administered radioligand therapy. Tracking only — no self-administration.",
+    note: "Hospital-administered radioligand therapy. Tracking only, no self-administration.",
     last_review: "2025-01-15",
   },
 
@@ -846,7 +846,7 @@ export const MEDICATION_CATALOGUE = [
       supports_temperature_excursion_logging: false,
       dosing_calculations_prohibited: true,
     }),
-    note: "Cosmetic ingredient — do not model systemic pharmacokinetics. Evidence is in-vitro/animal; human clinical evidence is limited.",
+    note: "Cosmetic ingredient. Do not model systemic pharmacokinetics. Evidence is in-vitro/animal; human clinical evidence is limited.",
     last_review: "2025-01-15",
   },
   {

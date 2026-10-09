@@ -39,7 +39,7 @@ export default function DoseStatusNotice({ evaluation, brand, windowDays, quote,
         Your dose is overdue by {daysLate} day{daysLate === 1 ? "" : "s"}
       </p>
       <p className="text-xs mt-1 text-rose-800/90 dark:text-rose-200/90">
-        Don't double up. Contact your prescriber or pharmacist for how to continue — whether to continue at this dose is their decision.
+        Don't double up. Contact your prescriber or pharmacist for how to continue. Whether to continue at this dose is their decision.
       </p>
       {source ? (
         <p className="text-[11px] mt-2 text-rose-700/80 dark:text-rose-200/70">
