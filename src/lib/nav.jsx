@@ -1,6 +1,7 @@
 import React from "react";
 import { Syringe, Pill, MoreHorizontal, Settings, CalendarDays, Boxes, User } from "lucide-react";
 import IonIcon from "@/components/IonIcon";
+import { ShotsFilledIcon, MedsFilledIcon } from "@/components/FilledIcons";
 
 /**
  * One source of truth for navigation. The bottom tab bar, the desktop side rail
@@ -24,27 +25,26 @@ export const MORE_ITEMS = [
 
 export const ALL_NAV_ITEMS = [...PRIMARY_TABS, ...MORE_ITEMS];
 
-// One light stroke weight for every destination, current page or not: the
-// current page is marked by the indigo colour and the bar above it, never by a
-// heavier or filled glyph.
-const STROKE = 1.6;
-
-/** The icon for a nav destination. */
-export function NavIcon({ item, size = 24, className = "" }) {
+/** The icon for a nav destination, filled when it is the current page. */
+export function NavIcon({ item, size = 24, active = false, className = "" }) {
   if (item.kind === "ion") {
-    return <IonIcon name={item.outline} size={size} className={className} />;
+    return <IonIcon name={active ? item.active : item.outline} size={size} className={className} />;
   }
   if (item.kind === "shots") {
-    return <Syringe size={size} strokeWidth={STROKE} className={className} />;
+    return active
+      ? <ShotsFilledIcon size={size} className={className} />
+      : <Syringe size={size} strokeWidth={1.8} className={className} />;
   }
   if (item.kind === "meds") {
-    return <Pill size={size} strokeWidth={STROKE} className={className} />;
+    return active
+      ? <MedsFilledIcon size={size} className={className} />
+      : <Pill size={size} strokeWidth={1.8} className={className} />;
   }
   if (item.kind === "more") {
-    return <MoreHorizontal size={size} strokeWidth={STROKE} className={className} />;
+    return <MoreHorizontal size={size} strokeWidth={active ? 2.6 : 1.8} className={className} />;
   }
   const Icon = item.Icon;
-  return <Icon size={size} strokeWidth={STROKE} className={className} />;
+  return <Icon size={size} strokeWidth={1.8} className={className} />;
 }
 
 /** Routes that belong to the More group, used to mark the More tab as current. */

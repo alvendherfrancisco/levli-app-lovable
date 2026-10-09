@@ -80,24 +80,3 @@ export const PRIMARY_BTN = "onb-cta-btn w-full rounded-full text-base font-semib
 export const PRIMARY_BTN_ON = "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 hover:bg-indigo-700";
 // Disabled is faded indigo, never grey.
 export const PRIMARY_BTN_OFF = "cursor-not-allowed bg-indigo-300 text-white shadow-none";
-
-// ── The app's own screens (Home and the sheets it opens) ─────────────────────
-// The same card, the same type scale and the same pill as onboarding, so the
-// app reads as one family with the flow that leads into it. Nothing bold: a
-// card title is 18px medium, body copy 15px regular, helper lines 13px light.
-// One primary button per card, at most.
-export const CARD_TITLE = "text-[18px] font-medium text-gray-900 dark:text-white";
-export const BODY_TEXT = "text-[15px] leading-snug text-gray-500 dark:text-[#9A9DAE]";
-export const HELPER_TEXT = "text-[13px] leading-snug text-gray-400 dark:text-[#9A9DAE]";
-// An info row or box, and the selected state: a very light indigo fill, indigo
-// text, and a thin indigo border only where the thing is selectable. Never a
-// solid dark indigo fill.
-export const INFO_BOX = "rounded-xl bg-indigo-50 px-3 py-2.5 text-[14px] leading-snug text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300";
-export const SELECTED_BOX = `${INFO_BOX} border border-indigo-500 dark:border-indigo-500/40`;
-// The primary pill: onboarding's own button, in white medium-weight text.
-export const BTN_PRIMARY = "inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-5 py-4 font-medium text-white shadow-lg shadow-indigo-600/25 transition-colors hover:bg-indigo-700 active:scale-[0.99]";
-export const BTN_PRIMARY_WIDE = `${BTN_PRIMARY} w-full`;
-// A quiet action: indigo text, no fill and no border.
-export const BTN_TEXT = "inline-flex items-center gap-1 text-[15px] font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400";
-// A secondary pill sitting beside a primary one.
-export const BTN_QUIET = "inline-flex items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-[15px] font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-white/[0.12] dark:bg-transparent dark:text-[#9A9DAE]";

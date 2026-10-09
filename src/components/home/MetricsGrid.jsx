@@ -7,6 +7,7 @@ import AddNutritionModal from "@/components/modals/AddNutritionModal";
 import AddMetricModal from "@/components/modals/AddMetricModal";
 import { todayKey } from "@/lib/dateUtils";
 import { checkWeight } from "@/lib/measure";
+import { useToast } from "@/hooks/useToast";
 import { toast } from "@/lib/toast";
 import { sound } from "@/lib/sounds";
 import { trackingEnabled } from "@/lib/trackingModules";
@@ -138,19 +139,16 @@ export default function MetricsGrid({ dayKey }) {
 
   return (
     <>
-      {/* One clean two-column grid, so the tiles are all the same size and none
-          sits alone: an odd number of tiles makes the last one full width.
-          Nothing at all is drawn when no tile is switched on. */}
+      {/* One compact grid, no horizontal scrolling: 3 columns on phones
+          (3 + 3 + 2, the empty slot stays empty), 4 columns from 600px.
+          Nothing at all is drawn when no card is switched on. */}
       {metrics.length > 0 && (
-        <div className="grid grid-cols-2 gap-3">
-          {metrics.map((m, i) => (
-            <MetricCard
-              key={m.label}
-              {...m}
-              highlighted={flash === m.label}
-              spanFull={metrics.length % 2 === 1 && i === metrics.length - 1}
-            />
-          ))}
+        <div className="mb-4 px-4">
+          <div className="grid grid-cols-3 min-[600px]:grid-cols-4 gap-3">
+            {metrics.map((m) => (
+              <MetricCard key={m.label} {...m} highlighted={flash === m.label} />
+            ))}
+          </div>
         </div>
       )}
       <AddNutritionModal open={showNutrition} onClose={() => setShowNutrition(false)} dayKey={dk} />

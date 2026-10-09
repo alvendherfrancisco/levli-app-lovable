@@ -8,14 +8,11 @@ import { todayKey } from "@/lib/dateUtils";
 import {
   shotDateFromKey, inputTimeToShotTime, shotTimeToInput, describeRepeat, getNextOccurrence,
 } from "@/lib/repeatSchedule";
-import {
-  CARD, BODY_TEXT, HELPER_TEXT, BTN_PRIMARY_WIDE, BTN_QUIET,
-} from "@/lib/uiStyles";
 
 /**
- * Dose-day card for repeat schedules: one tap confirms the dose exactly as set
- * up, with Edit / Skip for anything different. Nothing is logged until the user
- * taps Confirm.
+ * Shot-day card for repeat schedules: one tap confirms the dose exactly as
+ * set up, with Edit / Skip for anything different. Nothing is logged until
+ * the user taps Confirm.
  */
 export default function RepeatDoseCard({ onEdit }) {
   const { pendingRepeatDoses, repeatSchedules, confirmRepeatDose, skipRepeatDose } = useAppState();
@@ -69,19 +66,19 @@ export default function RepeatDoseCard({ onEdit }) {
         return (
           <div
             key={schedule.id + dayKey}
-            className="rounded-2xl border border-indigo-500 bg-indigo-50 p-5 dark:border-indigo-500/40 dark:bg-indigo-500/10"
+            className="mx-4 mb-4 rounded-2xl border border-indigo-200 dark:border-indigo-500/25 bg-indigo-50 dark:bg-indigo-500/10 p-4"
           >
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600">
-                <Repeat size={18} className="text-white" aria-hidden="true" />
+              <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                <Repeat size={18} className="text-white" />
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[15px] font-medium text-indigo-700 dark:text-indigo-300">
-                  {isToday ? "Dose day, ready when you are" : `${daysLate} day${daysLate === 1 ? "" : "s"} late`}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-indigo-900 dark:text-indigo-200">
+                  {isToday ? "Shot day, ready when you are" : `${daysLate} day${daysLate === 1 ? "" : "s"} late`}
                 </p>
-                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                   <DoseBadge medication={schedule.medication} dose={schedule.dose} unit={schedule.dose_unit || "mg"} />
-                  <p className="text-[13px] text-indigo-600/90 dark:text-indigo-300/80">
+                  <p className="text-xs text-indigo-700/80 dark:text-indigo-300/80">
                     {schedule.medication} ·{" "}
                     {isToday
                       ? `due today at ${inputTimeToShotTime(schedule.time)}`
@@ -94,22 +91,28 @@ export default function RepeatDoseCard({ onEdit }) {
             <button
               onClick={() => handleConfirm(schedule, dayKey)}
               disabled={busy}
-              className={`${BTN_PRIMARY_WIDE} mt-4 disabled:opacity-60`}
+              className="mt-3 w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.99] transition-transform"
             >
-              {busy ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} strokeWidth={2.5} />}
+              {busy ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} strokeWidth={3} />}
               {busy ? "Logging…" : "Confirm dose"}
             </button>
 
-            <div className="mt-2 flex gap-2">
-              <button onClick={() => onEdit?.(buildPreset(schedule, dayKey))} className={`${BTN_QUIET} flex-1`}>
-                <Pencil size={14} aria-hidden="true" /> Edit details
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => onEdit?.(buildPreset(schedule, dayKey))}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white dark:bg-white/[0.06] border border-indigo-200 dark:border-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-sm font-semibold"
+              >
+                <Pencil size={14} /> Edit details
               </button>
-              <button onClick={() => handleSkip(schedule, dayKey)} className={`${BTN_QUIET} flex-1`}>
-                <SkipForward size={14} aria-hidden="true" /> Skip
+              <button
+                onClick={() => handleSkip(schedule, dayKey)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white dark:bg-white/[0.06] border border-gray-200 dark:border-white/[0.1] text-gray-500 dark:text-[#9A9DAE] text-sm font-semibold"
+              >
+                <SkipForward size={14} /> Skip
               </button>
             </div>
 
-            <p className={`${HELPER_TEXT} mt-2 text-center`}>
+            <p className="text-[11px] text-indigo-600/70 dark:text-indigo-300/60 mt-2 text-center">
               Nothing is logged until you tap Confirm.
             </p>
           </div>
@@ -117,7 +120,7 @@ export default function RepeatDoseCard({ onEdit }) {
       })}
 
       {morePending > 0 && (
-        <p className={HELPER_TEXT}>
+        <p className="mx-4 -mt-2 mb-4 text-xs text-gray-400 dark:text-gray-500">
           {morePending} more repeat dose{morePending === 1 ? "" : "s"} waiting. Confirm or skip these first.
         </p>
       )}
@@ -129,25 +132,25 @@ export default function RepeatDoseCard({ onEdit }) {
             <Link
               key={schedule.id}
               to="/medications"
-              className={`${CARD} flex items-center justify-between gap-3`}
+              className="mx-4 mb-4 flex items-center justify-between gap-3 bg-white dark:bg-gray-900 rounded-2xl p-3.5 shadow-sm border border-gray-100 dark:border-gray-800"
             >
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-500/15">
-                  <Repeat size={18} className="text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
-                </span>
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/15 flex items-center justify-center flex-shrink-0">
+                  <Repeat size={18} className="text-indigo-600 dark:text-indigo-400" />
+                </div>
                 <div className="min-w-0">
-                  <p className="flex min-w-0 items-center gap-1.5 text-[15px] font-medium text-gray-900 dark:text-white">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 min-w-0">
                     Repeating
                     <DoseBadge medication={schedule.medication} dose={schedule.dose} unit={schedule.dose_unit || "mg"} />
                     <span className="truncate">{schedule.medication}</span>
                   </p>
-                  <p className={`${BODY_TEXT} truncate`}>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
                     {describeRepeat(schedule)}
                     {nextKey ? ` · next ${shotDateFromKey(nextKey)}` : ""}
                   </p>
                 </div>
               </div>
-              <ChevronRight size={16} className="flex-shrink-0 text-gray-300 dark:text-gray-600" aria-hidden="true" />
+              <ChevronRight size={16} className="text-gray-300 dark:text-gray-600 flex-shrink-0" />
             </Link>
           );
         })}
