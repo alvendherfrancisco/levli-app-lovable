@@ -672,6 +672,9 @@ html { background-color: var(--launch-bg); }
    place now — src/components/onboarding/OnboardingArt.jsx — so every page shows
    it at the same size, in the same place. */
 
-/* The CTA: a full-size touch target, with the home-indicator inset respected. */
-.onb-cta { padding-bottom: max(1.75rem, env(safe-area-inset-bottom, 0px)); }
+/* The CTA: a full-size touch target, sitting clear of the home indicator. The
+   inset is added to the footer's own breathing room rather than the two
+   fighting over the same space, so the last line of content — the button and
+   the link under it — is never pressed against the bottom of the screen. */
+.onb-cta { padding-bottom: calc(2.25rem + env(safe-area-inset-bottom, 0px)); }
 .onb-cta-btn { padding-top: 1rem; padding-bottom: 1rem; }
