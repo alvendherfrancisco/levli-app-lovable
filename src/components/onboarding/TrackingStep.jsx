@@ -50,7 +50,7 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col pb-6">
       <OnboardingArt>
         <TrackingIllustration />
       </OnboardingArt>
@@ -59,10 +59,10 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 leading-tight px-2">
           What would you like to keep an eye on?
         </h1>
-        <p className="text-base text-gray-500 leading-relaxed px-2">
+        <p className="text-[15px] text-gray-500 leading-relaxed px-2">
           Log as much or as little as feels right for you.
         </p>
-        <p className="text-sm text-gray-400 leading-relaxed px-2 mt-1.5">
+        <p className="mt-0.5 text-[15px] text-gray-500 leading-relaxed px-2">
           Pick any that apply. You can change this anytime in Settings.
         </p>
       </div>
@@ -70,7 +70,7 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
       <div
         role="group"
         aria-label="What would you like to keep an eye on?"
-        className="flex flex-col gap-2.5 mb-4"
+        className="flex flex-col gap-2 mb-4"
       >
         {TRACKING_OPTIONS.map((opt) => (
           <OptionCard
@@ -85,28 +85,37 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
       </div>
 
       {/* Measurement preferences — how what is logged is shown, not what is
-          tracked, so they stay separate from the cards above. */}
-      <div className="border-t border-border pt-4">
-        <p className="text-sm font-semibold text-gray-600 mb-3">Measurement preferences</p>
-        <div className="space-y-2">
+          tracked, so they sit in their own card below the choices, drawn on the
+          app's standard surface. */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <p className="mb-2 text-sm font-medium text-gray-900">Measurement preferences</p>
+        <div className="divide-y divide-gray-100">
           {UNIT_GROUPS.map((group) => (
-            <div key={group.key} className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">{group.label}</span>
-              <div className="flex gap-1.5">
-                {group.options.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => { sound.tap(); setUnits((prev) => ({ ...prev, [group.key]: opt.value })); }}
-                    className={`min-h-[44px] px-3.5 rounded-xl text-sm font-medium transition-colors ${
-                      units[group.key] === opt.value
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+            <div key={group.key} className="flex items-center justify-between gap-3 py-3">
+              <span className="text-[15px] text-gray-900">{group.label}</span>
+              {/* One pill, split in two: the same width and height on every row,
+                  so the three sit in a neat column. */}
+              <div
+                role="group"
+                aria-label={group.label}
+                className="flex h-11 w-[120px] flex-shrink-0 rounded-full bg-gray-100 p-1"
+              >
+                {group.options.map((opt) => {
+                  const on = units[group.key] === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => { sound.tap(); setUnits((prev) => ({ ...prev, [group.key]: opt.value })); }}
+                      className={`flex-1 rounded-full text-[13px] font-medium transition-colors ${
+                        on ? "bg-indigo-600 text-white" : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ))}

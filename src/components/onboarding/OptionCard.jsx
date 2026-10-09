@@ -4,8 +4,10 @@ import { sound } from "@/lib/sounds";
 
 /**
  * One selectable card, shared by every multi-select step so the shape can never
- * drift apart: one corner radius, one padding, one border width and one border
- * colour from the theme token, and one 44pt tinted circular icon container.
+ * drift apart: one corner radius, one padding, one hairline border and one soft
+ * shadow — the same card the sign-in and account screens are drawn on — with the
+ * 44pt tinted circular icon container on the left and the status circle on the
+ * right.
  *
  * The card is a label wrapped around a real checkbox, which is how the state is
  * announced — a screen reader reads it as a checkbox with "checked" or "not
@@ -20,10 +22,10 @@ import { sound } from "@/lib/sounds";
 export default function OptionCard({ icon: Icon, label, description, selected, onToggle }) {
   return (
     <label
-      className={`flex items-center gap-3.5 min-h-[76px] w-full rounded-2xl border-2 p-3.5 cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-primary ${
+      className={`flex items-center gap-3 min-h-[68px] w-full rounded-2xl border p-3 cursor-pointer shadow-sm transition-colors focus-within:ring-2 focus-within:ring-primary ${
         selected
-          ? "border-primary bg-indigo-50/70 dark:bg-indigo-500/10"
-          : "border-border bg-white dark:bg-white/[0.04]"
+          ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-500/10"
+          : "border-gray-200 bg-white dark:bg-white/[0.04] dark:border-white/[0.12]"
       }`}
     >
       <input
