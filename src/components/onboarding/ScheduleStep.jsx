@@ -57,10 +57,9 @@ export default function ScheduleStep({
             onChange={onScheduleChange}
             showStartDate
           />
+          <p className="mt-2 text-xs leading-snug text-gray-500">{PRESCRIBER_HELPER}</p>
         </div>
       </div>
-
-      <p className="mt-3 text-center text-xs leading-relaxed text-gray-500">{PRESCRIBER_HELPER}</p>
       {error && (
         <p className="text-[13.5px] font-medium text-red-600 mt-1.5 px-1" role="alert">
           {error}
