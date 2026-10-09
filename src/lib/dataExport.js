@@ -54,7 +54,7 @@ export function buildFullExportCsv(data) {
     ``,
     `Profile`,
     toCsv([{
-      first_name: profile.first_name, birthdate: profile.birthdate,
+      first_name: profile.first_name || "", birthdate: profile.birthdate,
       height_cm: profile.height_cm, weight_unit: profile.weight_unit,
       goal_weight_kg: profile.goal_weight_kg, default_medication: plainBrandName(profile.default_medication),
       days_between: profile.days_between, plan_type: profile.plan_type,

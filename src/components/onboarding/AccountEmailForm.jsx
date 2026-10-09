@@ -2,12 +2,13 @@ import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import {
-  emailError, firstNameError, passwordError, passwordStrength, formBlocker,
+  emailError, passwordError, passwordStrength, formBlocker,
 } from "@/lib/accountValidation";
 import { sound } from "@/lib/sounds";
 
+/** The one field style, so the provider buttons above can line up with it exactly. */
 const FIELD =
-  "w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-3 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors";
+  "w-full border-2 border-gray-200 bg-white rounded-xl px-4 py-3.5 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors";
 
 const STRENGTH_BAR = {
   weak: "bg-red-500",
@@ -17,7 +18,12 @@ const STRENGTH_BAR = {
 };
 
 /**
- * The email half of the account step: first name, email, password.
+ * The email half of the account step: an email and a password, and nothing else.
+ *
+ * Levli asks only for the two things an account cannot exist without. A name is
+ * not one of them: it arrives from Google or Apple when the provider gives one,
+ * and otherwise it is optional and added later in Profile — so nothing here
+ * waits on it, and nothing is ever greeted by an empty name.
  *
  * Validation is inline and specific — each message sits beside the field it
  * belongs to, after that field has been touched, and the button says in words
@@ -26,7 +32,7 @@ const STRENGTH_BAR = {
  * live strength hint that never blocks anything.
  */
 export default function AccountEmailForm({
-  firstName, setFirstName, email, setEmail, password, setPassword,
+  email, setEmail, password, setPassword,
   onSubmit, loading, error,
 }) {
   const [touched, setTouched] = useState({});
@@ -35,119 +41,119 @@ export default function AccountEmailForm({
   const passwordRef = useRef(null);
 
   const strength = passwordStrength(password);
-  const blocker = formBlocker({ firstName, email, password });
-  const nameMsg = touched.firstName ? firstNameError(firstName) : "";
+  const blocker = formBlocker({ email, password });
   const emailMsg = touched.email ? emailError(email) : "";
   const passwordMsg = touched.password ? passwordError(password) : "";
 
-  // The return key walks the form: name → email → password → create account.
+  // The return key walks the form: email → password → create account.
   const focusNext = (e, next) => {
     if (e.key !== "Enter") return;
     e.preventDefault();
     next.current?.focus();
   };
 
+  // The keyboard rises over the lower half of the screen, so the field being
+  // typed into is brought into the middle of whatever is left visible.
+  const revealField = (e) => {
+    const field = e.currentTarget;
+    window.setTimeout(() => field.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+  };
+
   const submit = (e) => {
     e.preventDefault();
-    setTouched({ firstName: true, email: true, password: true });
-    if (formBlocker({ firstName, email, password })) return;
+    setTouched({ email: true, password: true });
+    if (formBlocker({ email, password })) return;
     sound.tap();
     onSubmit();
   };
 
   return (
-    <form onSubmit={submit} className="flex flex-col items-center">
+    <form onSubmit={submit} className="flex w-full flex-1 flex-col">
       {error && (
-        <p className="w-full mb-3 text-sm text-red-600 text-center bg-red-50 rounded-xl px-3 py-2">{error}</p>
+        <p className="mb-4 w-full rounded-xl bg-red-50 px-3 py-2 text-center text-sm text-red-600">{error}</p>
       )}
 
-      <input
-        type="text"
-        placeholder="First name"
-        aria-label="First name"
-        autoComplete="given-name"
-        enterKeyHint="next"
-        value={firstName}
-        onChange={(e) => setFirstName(e.target.value)}
-        onBlur={() => setTouched((t) => ({ ...t, firstName: true }))}
-        onKeyDown={(e) => focusNext(e, emailRef)}
-        className={`${FIELD} mb-1`}
-      />
-      {nameMsg && <p className="w-full text-xs text-red-500 mb-1.5">{nameMsg}</p>}
-
-      <input
-        ref={emailRef}
-        type="email"
-        inputMode="email"
-        placeholder="Email"
-        aria-label="Email"
-        autoComplete="email"
-        autoCapitalize="none"
-        autoCorrect="off"
-        spellCheck={false}
-        enterKeyHint="next"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-        onKeyDown={(e) => focusNext(e, passwordRef)}
-        className={`${FIELD} mb-1`}
-      />
-      {emailMsg && <p className="w-full text-xs text-red-500 mb-1.5">{emailMsg}</p>}
-
-      <div className="relative w-full">
+      <div className="w-full">
         <input
-          ref={passwordRef}
-          type={showPassword ? "text" : "password"}
-          placeholder="Password"
-          aria-label="Password"
-          autoComplete="new-password"
-          enterKeyHint="go"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-          className={`${FIELD} pr-11`}
+          ref={emailRef}
+          type="email"
+          inputMode="email"
+          placeholder="Email"
+          aria-label="Email"
+          autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint="next"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onFocus={revealField}
+          onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+          onKeyDown={(e) => focusNext(e, passwordRef)}
+          className={FIELD}
         />
-        <button
-          type="button"
-          onClick={() => { sound.tap(); setShowPassword((s) => !s); }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-          aria-label={showPassword ? "Hide password" : "Show password"}
-        >
-          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-        </button>
+        {emailMsg && <p className="mt-2 text-[13px] text-red-600">{emailMsg}</p>}
       </div>
 
-      {passwordMsg ? (
-        <p className="w-full text-xs text-red-500 mt-1.5">{passwordMsg}</p>
-      ) : strength ? (
-        <div className="w-full mt-1.5">
-          <div className="flex items-center gap-2">
-            <span className="flex-1 flex gap-1">
-              {[1, 2, 3, 4].map((i) => (
-                <span
-                  key={i}
-                  className={`h-1 flex-1 rounded-full ${i <= strength.score ? STRENGTH_BAR[strength.tone] : "bg-gray-200"}`}
-                />
-              ))}
-            </span>
-            <span className="text-[12px] font-semibold text-gray-500">{strength.label}</span>
-          </div>
-          {strength.hint && <p className="text-[12px] text-gray-400 mt-1">{strength.hint}</p>}
+      <div className="mt-3 w-full">
+        <div className="relative w-full">
+          <input
+            ref={passwordRef}
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            aria-label="Password"
+            autoComplete="new-password"
+            enterKeyHint="go"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onFocus={revealField}
+            onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+            className={`${FIELD} pr-14`}
+          />
+          {/* Its own 44pt target, so the eye is as easy to hit as the field. */}
+          <button
+            type="button"
+            onClick={() => { sound.tap(); setShowPassword((s) => !s); }}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 hover:text-gray-600"
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
         </div>
-      ) : null}
 
-      {/* The button is docked to the bottom of the step, so it stays in view while
-          the form scrolls behind it — with the reason it is not ready yet, which
-          waits for the first touch so an untouched form is not scolded, sitting
-          right above it. */}
-      <div className="sticky bottom-0 z-10 w-full pt-3 pb-1 bg-white/85 backdrop-blur-sm">
-        {blocker && !loading && (touched.firstName || touched.email || touched.password || firstName || email || password) && (
-          <p className="text-[13px] text-gray-400 mb-2 text-center">{blocker}</p>
+        {passwordMsg ? (
+          <p className="mt-2 text-[13px] text-red-600">{passwordMsg}</p>
+        ) : strength ? (
+          <div className="mt-2">
+            <div className="flex items-center gap-2">
+              <span className="flex flex-1 gap-1">
+                {[1, 2, 3, 4].map((i) => (
+                  <span
+                    key={i}
+                    className={`h-1 flex-1 rounded-full ${i <= strength.score ? STRENGTH_BAR[strength.tone] : "bg-gray-200"}`}
+                  />
+                ))}
+              </span>
+              <span className="text-[12px] font-semibold text-gray-500">{strength.label}</span>
+            </div>
+            {strength.hint && <p className="mt-1 text-[12px] text-gray-500">{strength.hint}</p>}
+          </div>
+        ) : null}
+      </div>
+
+      {/* Create account, pinned to the bottom of the step so it is there whatever
+          the form is doing — with the reason it is not ready yet, which waits for
+          the first touch so an untouched form is not scolded, directly above it,
+          and the legal line below it. The gradient is what the fields scroll
+          under: a soft fade rather than a plate with an edge. */}
+      <div className="onb-cta sticky bottom-0 z-10 mt-auto w-full bg-gradient-to-t from-white via-white to-transparent pt-6">
+        {blocker && !loading && (touched.email || touched.password || email || password) && (
+          <p className="mb-2 text-center text-[13px] text-gray-500">{blocker}</p>
         )}
         <button
           type="submit"
           disabled={loading || !!blocker}
-          className="onb-cta-btn w-full max-w-[320px] mx-auto rounded-full font-semibold text-base bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-50 transition-all active:scale-95"
+          className="onb-cta-btn w-full rounded-full bg-indigo-600 text-base font-semibold text-white shadow-lg shadow-indigo-600/25 transition-all active:scale-95 disabled:bg-gray-200 disabled:text-gray-600 disabled:shadow-none disabled:active:scale-100"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -155,19 +161,14 @@ export default function AccountEmailForm({
             </span>
           ) : "Create account"}
         </button>
+
+        <p className="mt-4 px-2 text-center text-[12px] leading-relaxed text-gray-500">
+          By creating an account you agree to our{" "}
+          <Link to="/terms" className="text-indigo-600 underline">Terms of Service</Link>{" "}
+          and{" "}
+          <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>.
+        </p>
       </div>
-
-      <p className="text-center text-[12px] text-gray-400 mt-4 px-4 leading-relaxed">
-        By creating an account you agree to our{" "}
-        <Link to="/terms" className="text-indigo-600 underline">Terms of Service</Link>{" "}
-        and{" "}
-        <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>.
-      </p>
-
-      <p className="text-center text-[14px] text-gray-500 mt-4">
-        Already have an account?{" "}
-        <Link to="/login" className="text-indigo-600 font-medium hover:underline">Log in</Link>
-      </p>
     </form>
   );
 }

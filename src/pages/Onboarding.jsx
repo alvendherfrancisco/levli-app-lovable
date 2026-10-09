@@ -20,7 +20,6 @@ import {
   saveDraft, loadDraft, clearDraft, markProviderRedirect, takeProviderRedirect,
   firstNameFromUser,
 } from "@/lib/onboardingDraft";
-import FirstNameStep from "@/components/onboarding/FirstNameStep";
 import ScheduleStep from "@/components/onboarding/ScheduleStep";
 import { getDoseUnit, getMedicationConfig } from "@/lib/medicationConfig";
 import { NAME_TO_ENTRY, getMolecularClass, COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE } from "@/lib/medicationCatalogue";
@@ -81,9 +80,6 @@ export default function Onboarding() {
   // The account step's two text fields live here rather than inside that step:
   // they are part of what has to survive a reload, or a trip out to a provider.
   const [accountEmail, setAccountEmail] = useState("");
-  // A provider signed in but returned no name, so the account step asks for the
-  // first name and nothing else.
-  const [nameOnly, setNameOnly] = useState(false);
   const [providerNotice, setProviderNotice] = useState("");
   // What the draft records about the account itself.
   const [verifiedAccount, setVerifiedAccount] = useState(false);
@@ -149,13 +145,11 @@ export default function Onboarding() {
 
     if (user) {
       if (step !== 3) return;
-      const name = firstNameFromUser(user);
-      if (name) {
-        setFirstName((prev) => prev || name);
-        setStep(4);
-      } else {
-        setNameOnly(true);
-      }
+      // The name comes from the provider when it gave one. When it did not, the
+      // account simply carries on without it: a name is optional, and Profile is
+      // where it can be added later.
+      setFirstName((prev) => prev || firstNameFromUser(user));
+      setStep(4);
       return;
     }
 
@@ -320,6 +314,7 @@ export default function Onboarding() {
       canContinue={canContinue}
       ctaNote={step === 5 && !canContinue ? scheduleIssue : undefined}
       hideFooter={step === 3}
+      fill={step === 3}
       secondaryAction={secondaryAction}
     >
       {step === 0 && <WelcomeStep />}
@@ -333,17 +328,11 @@ export default function Onboarding() {
             <div className="w-6 h-6 border-2 border-gray-200 border-t-indigo-600 rounded-full animate-spin" />
           </div>
         ) : user ? (
-          nameOnly ? (
-            <FirstNameStep
-              firstName={firstName}
-              setFirstName={setFirstName}
-              onContinue={next}
-            />
-          ) : null
+          // A session means this step is already answered, and the effect above
+          // has just moved on to the next one.
+          null
         ) : (
           <SignUpStep
-            firstName={firstName}
-            setFirstName={setFirstName}
             email={accountEmail}
             setEmail={setAccountEmail}
             persistState={persistOnboardingState}

@@ -34,7 +34,7 @@ function friendlySignUpError(err) {
  * onboarding finishes.
  */
 export default function SignUpStep({
-  firstName, setFirstName, email, setEmail,
+  email, setEmail,
   persistState, onProvider, notice = "", startAtVerify = false,
 }) {
   const [view, setView] = useState(startAtVerify ? "verify" : "form");
@@ -50,13 +50,13 @@ export default function SignUpStep({
     setError("");
     setResent("");
     setTaken(false);
-    if (formBlocker({ firstName, email, password })) return;
+    if (formBlocker({ email, password })) return;
     setLoading(true);
     try {
       await base44.auth.register({ email: address, password });
       // Registered, not yet verified. The answers stay on the device, and a
       // reload lands back on the code screen rather than an emptied form.
-      persistState?.({ firstName, email: address, step: 3, awaitingVerification: true, verified: false });
+      persistState?.({ email: address, step: 3, awaitingVerification: true, verified: false });
       setView("verify");
     } catch (err) {
       if (isEmailTakenError(err)) setTaken(true);
@@ -76,7 +76,7 @@ export default function SignUpStep({
       // Verified: everything answered travels on and is saved to the new account
       // in one write when onboarding finishes. Replace, not push, so the account
       // step is not left in the history behind onboarding.
-      persistState?.({ firstName, email: address, step: 4, verified: true, awaitingVerification: false });
+      persistState?.({ email: address, step: 4, verified: true, awaitingVerification: false });
       window.location.replace("/onboarding");
     } catch (err) {
       setError("That code didn't match. Check the most recent email, or ask for a new one.");
@@ -115,7 +115,7 @@ export default function SignUpStep({
         <SignUpIllustration />
       </OnboardingArt>
 
-      <div className="text-center mb-3">
+      <div className="text-center mb-5">
         <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Create your account
         </h1>
@@ -131,7 +131,7 @@ export default function SignUpStep({
       )}
 
       {taken ? (
-        <div className="flex flex-col items-center">
+        <div className="flex w-full flex-col items-center">
           <p className="text-center text-[16px] font-semibold text-gray-800 mb-1.5">
             This email is already registered.
           </p>
@@ -140,11 +140,14 @@ export default function SignUpStep({
           </p>
           <button
             type="button"
+            aria-label="Continue with Google"
             onClick={() => { sound.tap(); onProvider("google"); }}
-            className="w-full h-12 rounded-full border-2 border-gray-200 bg-white text-gray-700 text-[16px] font-semibold flex items-center justify-center gap-2.5 hover:border-gray-300 active:scale-[0.98] transition-all"
+            className="flex min-h-[56px] w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-5 text-[16px] font-semibold text-gray-700 transition-all hover:border-gray-300 active:scale-[0.98]"
           >
-            <GoogleIcon className="w-5 h-5" />
-            Log in with Google
+            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
+              <GoogleIcon className="h-6 w-6" />
+            </span>
+            <span className="min-w-0">Log in with Google</span>
           </button>
           <Link to="/login" className="text-[14px] text-indigo-600 font-medium hover:underline mt-4">
             Log in with email and password
@@ -158,11 +161,9 @@ export default function SignUpStep({
           </button>
         </div>
       ) : (
-        <div className="flex flex-col items-center">
+        <div className="flex w-full flex-1 flex-col">
           <SocialAuthButtons onProvider={onProvider} disabled={loading} />
           <AccountEmailForm
-            firstName={firstName}
-            setFirstName={setFirstName}
             email={email}
             setEmail={setEmail}
             password={password}

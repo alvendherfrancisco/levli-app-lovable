@@ -24,6 +24,7 @@ export default function OnboardingScreen({
   secondaryAction,
   ctaNote,
   hideFooter = false,
+  fill = false,
 }) {
   const isFirstStep = step === 0;
   const isLastStep = step === totalSteps - 1;
@@ -32,6 +33,9 @@ export default function OnboardingScreen({
   // completion chime on the last step, which is where onboarding actually saves.
   const continueCue = () => { if (isLastStep) sound.success(); else sound.tap(); };
   const [animClass, setAnimClass] = useState("animate-onb-right");
+  // Whether the step has been scrolled: that is what draws the header's
+  // hairline, so a short step shows none and a long one divides cleanly.
+  const [scrolled, setScrolled] = useState(false);
   const prevStepRef = useRef(step);
 
   useEffect(() => {
@@ -44,7 +48,11 @@ export default function OnboardingScreen({
       <AmbientBackground />
       <div className="w-full max-w-lg mx-auto flex flex-col h-full sm:h-[88vh] sm:max-h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:shadow-xl bg-white/70 backdrop-blur-md overflow-hidden relative z-10 border border-gray-100/80">
         {/* Header — back + segmented progress */}
-        <div className={`flex items-center px-5 sm:px-6 pt-5 sm:pt-6 pb-1.5 flex-shrink-0 ${isFirstStep ? "" : "gap-3"}`}>
+        <div
+          className={`flex flex-shrink-0 items-center border-b px-5 pt-5 pb-1.5 transition-colors sm:px-6 sm:pt-6 ${
+            scrolled ? "border-gray-200" : "border-transparent"
+          } ${isFirstStep ? "" : "gap-3"}`}
+        >
           {/* The back button keeps its 2rem slot on the first step, where there
               is nothing to go back to, so the row is exactly the same height on
               every step and the bar never moves up or down. */}
@@ -80,9 +88,16 @@ export default function OnboardingScreen({
             scrolls inside this area, while the progress header above and the CTA
             below stay put. A short step stays centred in the space they leave. */}
         <div className="relative flex-1 min-h-0">
-          <div className="h-full overflow-y-auto overscroll-contain px-5 sm:px-6 py-4">
-            <div className="min-h-full flex flex-col justify-center">
-              <div key={step} className={`w-full ${animClass}`}>
+          <div
+            onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 2)}
+            className="h-full overflow-y-auto overscroll-contain px-5 sm:px-6 py-4"
+          >
+            {/* min-h-full with my-auto centres a short step, and lets a tall one
+                scroll from its very top instead of being clipped at the top.
+                A step that carries its own pinned footer fills the space instead
+                (fill), so that footer sits at the bottom on every screen size. */}
+            <div className="flex min-h-full flex-col">
+              <div key={step} className={`w-full ${fill ? "flex flex-1 flex-col" : "my-auto"} ${animClass}`}>
                 {children}
               </div>
             </div>

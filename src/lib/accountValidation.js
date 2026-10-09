@@ -18,10 +18,6 @@ export function emailError(value) {
   return "";
 }
 
-export function firstNameError(value) {
-  return String(value || "").trim() ? "" : "Enter your first name.";
-}
-
 export function passwordError(value) {
   const v = String(value || "");
   if (!v) return "Choose a password.";
@@ -48,9 +44,11 @@ export function passwordStrength(value) {
   return { score: 4, label: "Strong", tone: "strong", hint: "" };
 }
 
-/** Why the Create account button is not ready, as one plain sentence, or "". */
-export function formBlocker({ firstName, email, password }) {
-  if (firstNameError(firstName)) return "Add your first name to continue.";
+/**
+ * Why the Create account button is not ready, as one plain sentence, or "".
+ * A name is never part of this: accounts are an email and a password.
+ */
+export function formBlocker({ email, password }) {
   if (emailError(email)) return email.trim() ? emailError(email) : "Add your email address to continue.";
   if (passwordError(password)) {
     return password ? passwordError(password) : `Choose a password of at least ${MIN_PASSWORD_LENGTH} characters.`;
