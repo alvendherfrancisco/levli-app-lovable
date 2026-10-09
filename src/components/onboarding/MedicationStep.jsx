@@ -4,7 +4,7 @@ import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import { MedicationIllustration } from "@/components/onboarding/OnboardingIllustrations";
 import { COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE } from "@/lib/medicationCatalogue";
 import {
-  InjectionIcon, PillIcon, ComboIcon, NeutralIcon,
+  InjectionIcon, PillIcon, NeutralIcon,
 } from "@/components/onboarding/MedicationIcons";
 import { sound } from "@/lib/sounds";
 
@@ -12,12 +12,12 @@ import { sound } from "@/lib/sounds";
  * The medications onboarding offers, in the order they are shown. Each carries
  * the generic behind it, which is what the dose and schedule screens read from,
  * and the icon that says how it is taken: the pen for the injectables, the
- * capsule for the oral products, both marks for Wegovy, and a plain plus for
- * "Other", which implies no route.
+ * capsule for the oral products, and a plain plus for "Other", which implies no
+ * route. Every chip carries one icon only.
  */
 export const MED_OPTIONS = [
   { label: "Mounjaro®", generic: "Tirzepatide", icon: InjectionIcon },
-  { label: "Wegovy®", generic: "Semaglutide", icon: ComboIcon },
+  { label: "Wegovy®", generic: "Semaglutide", icon: InjectionIcon },
   { label: "Ozempic®", generic: "Semaglutide", icon: InjectionIcon },
   { label: "Zepbound®", generic: "Tirzepatide", icon: InjectionIcon },
   { label: "Saxenda®", generic: "Liraglutide", icon: InjectionIcon },
