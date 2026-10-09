@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import { MedicationIllustration } from "@/components/onboarding/OnboardingIllustrations";
 import { PillIcon } from "@/components/onboarding/LevliIcons";
+import { InjectionIcon, NeutralIcon } from "@/components/onboarding/MedicationIcons";
 import { COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE } from "@/lib/medicationCatalogue";
 import { sound } from "@/lib/sounds";
 
@@ -17,6 +18,7 @@ export const MED_OPTIONS = [
   { label: "Zepbound®", generic: "Tirzepatide" },
   { label: "Saxenda®", generic: "Liraglutide" },
   { label: "Rybelsus®", generic: "Semaglutide" },
+  { label: "Foundayo®", generic: "Orforglipron" },
   { label: COMPOUNDED_SEMAGLUTIDE, generic: "Semaglutide" },
   { label: COMPOUNDED_TIRZEPATIDE, generic: "Tirzepatide" },
   { label: "Other", generic: null },
@@ -29,9 +31,29 @@ const SHORT_MEDS = MED_OPTIONS.filter((o) => o.label !== "Other" && !LONG_LABELS
 const LONG_MEDS = MED_OPTIONS.filter((o) => LONG_LABELS.includes(o.label));
 const OTHER_MED = MED_OPTIONS.find((o) => o.label === "Other");
 
+// The mark each chip carries, following how the product is taken: an injection
+// pen for the injectables, a capsule for the tablets, both for Wegovy (which
+// comes either way), and a plain plus for anything not on the list.
+const ORAL_LABELS = ["Rybelsus®", "Foundayo®"];
+const BOTH_LABELS = ["Wegovy®"];
+
+function medIcon(label) {
+  if (BOTH_LABELS.includes(label)) {
+    return (
+      <>
+        <PillIcon size={14} />
+        <InjectionIcon size={14} />
+      </>
+    );
+  }
+  if (ORAL_LABELS.includes(label)) return <PillIcon size={14} />;
+  if (label === "Other") return <NeutralIcon size={14} />;
+  return <InjectionIcon size={14} />;
+}
+
 /**
  * One medication chip: only as wide as its own name, always on one line, with
- * the pill mark on the left and the checkmark arriving on the right only once
+ * its route mark on the left and the checkmark arriving on the right only once
  * the chip is chosen. Every chip is the same height.
  */
 function MedChip({ label, selected, onSelect, compact = false }) {
@@ -48,7 +70,7 @@ function MedChip({ label, selected, onSelect, compact = false }) {
           : "border border-gray-200 bg-white text-gray-900 hover:border-gray-300 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0]"
       }`}
     >
-      <PillIcon size={14} className="flex-shrink-0" />
+      <span className="flex flex-shrink-0 items-center gap-1">{medIcon(label)}</span>
       {label}
       {selected && <Check size={14} className="flex-shrink-0 text-indigo-600" strokeWidth={3} />}
     </button>
