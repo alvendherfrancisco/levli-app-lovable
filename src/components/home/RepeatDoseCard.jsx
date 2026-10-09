@@ -9,7 +9,7 @@ import {
   shotDateFromKey, inputTimeToShotTime, shotTimeToInput, describeRepeat, getNextOccurrence,
 } from "@/lib/repeatSchedule";
 import {
-  CARD, CARD_TITLE, BODY_TEXT, HELPER_TEXT, BTN_PRIMARY_WIDE, BTN_QUIET,
+  CARD, BODY_TEXT, HELPER_TEXT, BTN_PRIMARY_WIDE, BTN_QUIET,
 } from "@/lib/uiStyles";
 
 /**

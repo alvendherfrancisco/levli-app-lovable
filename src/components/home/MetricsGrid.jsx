@@ -7,7 +7,6 @@ import AddNutritionModal from "@/components/modals/AddNutritionModal";
 import AddMetricModal from "@/components/modals/AddMetricModal";
 import { todayKey } from "@/lib/dateUtils";
 import { checkWeight } from "@/lib/measure";
-import { useToast } from "@/hooks/useToast";
 import { toast } from "@/lib/toast";
 import { sound } from "@/lib/sounds";
 import { trackingEnabled } from "@/lib/trackingModules";

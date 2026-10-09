@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { PRIMARY_TABS, MORE_ITEMS, ALL_NAV_ITEMS, MORE_PATHS, NavIcon } from "@/lib/nav";
+import { PRIMARY_TABS, ALL_NAV_ITEMS, MORE_PATHS, NavIcon } from "@/lib/nav";
 import { sound } from "@/lib/sounds";
 
 /**
