@@ -4,8 +4,9 @@ import AppleIcon from "@/components/AppleIcon";
 import { sound } from "@/lib/sounds";
 
 /**
- * The two provider options, sitting below the create-account button: an "OR"
- * divider, then Google and Apple as logo-only round buttons side by side.
+ * The two provider options, sitting inside the account card below its two
+ * fields: an "OR" divider, then Google and Apple as logo-only round buttons
+ * side by side.
  *
  * Both send the person away to the provider's own page and bring them back, so
  * the caller records everything answered so far on the device first (see
