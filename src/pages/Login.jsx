@@ -1,20 +1,22 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
-import AuthLayout from "@/components/AuthLayout";
+import AmbientBackground from "@/components/onboarding/AmbientBackground";
 import LevliLogo from "@/components/LevliLogo";
-import GoogleIcon from "@/components/GoogleIcon";
+import LoginForm from "@/components/LoginForm";
 
+/**
+ * Signing in, drawn as the same screen as creating an account: the warm
+ * ambient background, the droplet, the greeting, one white card holding the two
+ * labelled fields and the two provider marks, and the screen's own action as a
+ * pill below the card. The page scrolls, and its last line is kept clear of the
+ * home indicator, so nothing is ever cut off on a short phone.
+ */
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   const getSafeRedirect = () => {
     const fromUrl = new URLSearchParams(window.location.search).get("from_url");
@@ -44,107 +46,47 @@ export default function Login() {
     }
   };
 
-  const handleGoogle = () => {
-    base44.auth.loginWithProvider("google", getSafeRedirect());
+  const handleProvider = (provider) => {
+    base44.auth.loginWithProvider(provider, getSafeRedirect());
   };
 
   return (
-    <AuthLayout
-      scrollable={false}
-      iconNode={<LevliLogo size={88} />}
-      title="Glad you're here"
-      subtitle="Log in to your account"
-      footer={
-        <>
-          Don't have an account?{" "}
-          <Link to="/register" className="text-indigo-600 font-medium hover:underline">
-            Create one
-          </Link>
-        </>
-      }
-    >
-      <Button
-        variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
-        onClick={handleGoogle}
-      >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        Continue with Google
-      </Button>
+    <div className="relative min-h-[100dvh] overflow-x-hidden bg-[#FAFAFA]">
+      <AmbientBackground />
+      <div className="auth-page-bottom relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-5 pt-8 sm:px-6 sm:pt-12">
+        {/* A short screen sits centred; a taller one scrolls from its top, so the
+            greeting is never pushed off the top to make room for the card. */}
+        <div className="my-auto w-full py-6">
+          <div className="mb-6 flex justify-center">
+            <LevliLogo size={88} />
+          </div>
 
-      <div className="relative mb-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">or</span>
+          <div className="mb-6 text-center">
+            <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight">
+              Glad you're here
+            </h1>
+            <p className="text-[15px] text-gray-500">Log in to your account</p>
+          </div>
+
+          <LoginForm
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            onSubmit={handleSubmit}
+            loading={loading}
+            error={error}
+            onProvider={handleProvider}
+          />
+
+          <p className="mt-6 text-center text-[14px] text-gray-500">
+            Don't have an account?{" "}
+            <Link to="/register" className="font-semibold text-indigo-600 hover:underline">
+              Create one
+            </Link>
+          </p>
         </div>
       </div>
-
-      {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              autoFocus
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12"
-              required
-            />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <Link to="/forgot-password" className="text-xs text-indigo-600 hover:underline">
-              Forgot password?
-            </Link>
-          </div>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 pr-10 h-12"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-        <Button type="submit" className="w-full h-12 font-medium bg-indigo-600 hover:bg-indigo-700 text-white" disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Logging in...
-            </>
-          ) : (
-            "Log in"
-          )}
-        </Button>
-      </form>
-    </AuthLayout>
+    </div>
   );
 }

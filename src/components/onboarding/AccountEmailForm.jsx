@@ -4,17 +4,10 @@ import SocialAuthButtons from "@/components/onboarding/SocialAuthButtons";
 import {
   emailError, passwordError, passwordStrength, formBlocker,
 } from "@/lib/accountValidation";
+// The field and label style, shared with the sign-in card so the two screens
+// can never drift apart.
+import { FIELD, LABEL } from "@/lib/authFormStyles";
 import { sound } from "@/lib/sounds";
-
-/**
- * The one field style, drawn the way the login screen draws its fields: a 48pt
- * input with the mark in a fixed slot on the left, so the two fields line up
- * exactly and the card reads as a standard sign-up form.
- */
-const FIELD =
-  "h-12 w-full rounded-lg border border-gray-200 bg-white pl-10 pr-4 text-[16px] text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-indigo-500";
-
-const LABEL = "mb-2 block text-sm font-medium text-gray-900";
 
 const STRENGTH_BAR = {
   weak: "bg-red-500",
