@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Navigate, Link } from "react-router-dom";
-import { DISCLAIMER_TEXT, PRIVACY_POLICY_VERSION } from "@/lib/appInfo";
+import { PRIVACY_POLICY_VERSION } from "@/lib/appInfo";
 import OnboardingScreen from "@/components/onboarding/OnboardingScreen";
 import SignUpStep from "@/components/onboarding/SignUpStep";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/components/onboarding/OnboardingIllustrations";
 import { PillIcon } from "@/components/onboarding/LevliIcons";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
+import DateField from "@/components/DateField";
 import TrackingStep, { SUGGESTED_TRACKING } from "@/components/onboarding/TrackingStep";
 import { useAppState } from "@/lib/AppState";
 import { useAuth } from "@/lib/AuthContext";
@@ -27,7 +28,7 @@ import { toDayKey } from "@/lib/dateUtils";
 import {
   emptySchedule, getDayInterval, medicationScheduleFields, validateScheduleSelection,
 } from "@/lib/medicationSchedule";
-import { Check } from "lucide-react";
+import { Check, ClipboardList, Settings2, ShieldCheck } from "lucide-react";
 import { sound } from "@/lib/sounds";
 
 const TOTAL_STEPS = 8;
@@ -42,6 +43,14 @@ function isMinor(birthdate) {
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
   return age < 18;
 }
+
+// What the privacy screen says, in three short rows: what is stored, where it
+// lives, and how it can be taken back.
+const PRIVACY_POINTS = [
+  { icon: ClipboardList, label: "What", value: "Your doses, symptoms, weight and photos." },
+  { icon: ShieldCheck, label: "Where", value: "Encrypted in your account. Never sold or shared." },
+  { icon: Settings2, label: "Your control", value: "Export or delete everything anytime." },
+];
 
 const MED_OPTIONS = [
   { label: "Mounjaro®", generic: "Tirzepatide" },
@@ -341,7 +350,6 @@ export default function Onboarding() {
           setGdprConsented={setGdprConsented}
           birthdate={birthdate}
           setBirthdate={setBirthdate}
-          ageConfirmed={ageConfirmed}
           setAgeConfirmed={setAgeConfirmed}
         />
       )}
@@ -444,8 +452,19 @@ function MedicationStep({ selectedMed, onSelect }) {
   );
 }
 
-function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate, ageConfirmed, setAgeConfirmed }) {
+function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate, setAgeConfirmed }) {
   const minor = isMinor(birthdate);
+
+  // The date itself is the age check: a complete, real date is the whole
+  // confirmation, and the one thing this screen refuses is a date under 18.
+  const handleBirthdate = (iso) => {
+    setBirthdate(iso);
+    setAgeConfirmed(!!iso && !isMinor(iso));
+    // The 18+ notice is a validation result, so it uses the app's own error
+    // cue; any other date is just a control tap.
+    if (iso && isMinor(iso)) sound.warning(); else sound.tap();
+  };
+
   return (
     <div className="flex flex-col">
       <OnboardingArt>
@@ -456,75 +475,55 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
           Your data stays yours.
         </h1>
         <p className="text-[15px] text-gray-600 leading-relaxed px-3">
-          Levli is a personal logbook. It doesn't replace your care team, and it never shares your journey without your say-so.
+          Levli is your personal logbook. Your data stays private.
         </p>
       </div>
 
-      {/* Exactly what is stored, where, and why */}
-      <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 mb-3">
-        <p className="text-[15px] font-semibold text-gray-700 mb-1.5">What Levli stores, and why</p>
-        <ul className="text-[13px] text-gray-600 space-y-1.5 list-disc list-inside leading-relaxed">
-          <li><span className="font-medium">What:</span> what you log — doses, symptoms and side effects, weight, nutrition, journal entries and progress photos.</li>
-          <li><span className="font-medium">Where:</span> in your own account, in our encrypted cloud database. Only your sign-in can read it. It is never sold, never used for advertising, and never shared with another person unless you grant them caregiver access.</li>
-          <li><span className="font-medium">Why:</span> to show your history, trends and reports back to you. Nothing else.</li>
-          <li><span className="font-medium">Your control:</span> export everything as CSV or PDF, or delete your account and all of its data, from Settings at any time.</li>
-        </ul>
+      {/* What, where, and how to take it back — three short rows, no essay. */}
+      <div className="mb-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="space-y-3">
+          {PRIVACY_POINTS.map(({ icon: Icon, label, value }) => (
+            <div key={label} className="flex items-start gap-3">
+              <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50">
+                <Icon className="h-4 w-4 text-indigo-600" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-gray-800">{label}</p>
+                <p className="text-[13px] leading-snug text-gray-500">{value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Health-data consent */}
-      <label className="flex items-start gap-3 cursor-pointer bg-gray-50 rounded-2xl p-3.5 border border-gray-100 mb-3">
+      {/* Health-data consent — one compact row */}
+      <label className="mb-3 flex cursor-pointer items-start gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-3.5">
         <input
           type="checkbox"
           checked={gdprConsented}
           onChange={(e) => { sound.tap(); setGdprConsented(e.target.checked); }}
-          className="w-5 h-5 mt-0.5 accent-indigo-600 flex-shrink-0"
+          className="mt-0.5 h-5 w-5 flex-shrink-0 accent-indigo-600"
         />
-        <span className="text-[14px] text-gray-600 leading-relaxed">
-          I consent to Levli processing my health data as described above and in the{" "}
-          <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>.
+        <span className="text-[14px] leading-snug text-gray-600">
+          I agree to the processing of my health data.{" "}
+          <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>
         </span>
       </label>
 
-      {/* Birthdate — used to check the app's 18+ requirement */}
-      <div className="mb-2">
-        <label className="text-[14px] font-semibold text-gray-600 mb-2 block">Date of birth</label>
-        <input
-          type="date"
+      {/* Date of birth — the age check itself */}
+      <div className="mb-3">
+        <DateField
+          id="birthdate"
+          label="Date of birth"
           value={birthdate}
-          onChange={(e) => {
-            const next = e.target.value;
-            setBirthdate(next);
-            // The 18+ notice is a validation result, so it uses the app's own
-            // error cue; any other date is just a control tap.
-            if (isMinor(next)) sound.warning(); else sound.tap();
-          }}
-          className="w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-3 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors"
+          onChange={handleBirthdate}
+          error={minor ? "You must be 18 or older to use Levli." : ""}
         />
       </div>
 
-      {/* Adult-only confirmation */}
-      {minor ? (
-        <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 mb-3">
-          <p className="text-[15px] font-semibold text-orange-800">Levli is for adults aged 18 and over.</p>
-          <p className="text-[13px] text-orange-700 mt-1.5 leading-relaxed">
-            The date of birth entered is under 18, so Levli can't be used for health tracking. Please check the date, or come back when you're 18.
-          </p>
-        </div>
-      ) : (
-        <label className="flex items-start gap-3 cursor-pointer bg-gray-50 rounded-2xl p-3.5 border border-gray-100 mb-3">
-          <input
-            type="checkbox"
-            checked={ageConfirmed}
-            onChange={(e) => { sound.tap(); setAgeConfirmed(e.target.checked); }}
-            className="w-5 h-5 mt-0.5 accent-indigo-600 flex-shrink-0"
-          />
-          <span className="text-[14px] text-gray-600 leading-relaxed">I confirm that I am 18 years or older.</span>
-        </label>
-      )}
-
-      <p className="text-[12.5px] text-gray-600 leading-relaxed px-1">
-        {DISCLAIMER_TEXT} Read the{" "}
-        <Link to="/medical-disclaimer" className="text-indigo-600 underline">full medical disclaimer</Link>.
+      <p className="mt-3 px-2 text-center text-[12.5px] leading-relaxed text-gray-500">
+        Levli is a logbook, not medical advice.{" "}
+        <Link to="/medical-disclaimer" className="text-indigo-600 underline">Read more</Link>
       </p>
     </div>
   );
