@@ -7,6 +7,7 @@ import {
   InjectionIcon, PillIcon, NeutralIcon,
 } from "@/components/onboarding/MedicationIcons";
 import { sound } from "@/lib/sounds";
+import { CHIP, CHIP_IDLE, CHIP_ON, CHIP_WRAP, HEADING, HEAD_BLOCK, SUBTITLE } from "@/lib/uiStyles";
 
 /**
  * The medications onboarding offers, in the order they are shown. Each carries
@@ -42,23 +43,17 @@ const OTHER_MED = MED_OPTIONS.find((o) => o.label === "Other");
  * rounded, white with a hairline grey border; the chosen one turns light indigo
  * with an indigo hairline. The icon keeps its own gradient in both states.
  */
-function MedChip({ label, Icon, selected, onSelect, compact = false }) {
+function MedChip({ label, Icon, selected, onSelect, wrap = false }) {
   return (
     <button
       type="button"
       onClick={() => { sound.tap(); onSelect(label); }}
       aria-pressed={selected}
-      className={`inline-flex h-11 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full font-medium transition-all active:scale-[0.98] ${
-        compact ? "pl-2.5 pr-3.5 text-[13px]" : "pl-2.5 pr-4 text-[14px]"
-      } ${
-        selected
-          ? "border-[1.5px] border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"
-          : "border border-gray-200 bg-white text-gray-900 hover:border-gray-300 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0]"
-      }`}
+      className={`${wrap ? CHIP_WRAP : CHIP} max-w-full ${selected ? CHIP_ON : CHIP_IDLE}`}
     >
       {Icon && <Icon height={28} />}
       {label}
-      {selected && <Check size={14} className="flex-shrink-0 text-indigo-600" strokeWidth={3} />}
+      {selected && <Check size={14} className="flex-shrink-0 text-indigo-600" strokeWidth={2.5} />}
     </button>
   );
 }
@@ -78,11 +73,9 @@ export default function MedicationStep({ selectedMed, onSelect }) {
       <OnboardingArt>
         <MedicationIllustration />
       </OnboardingArt>
-      <div className="text-center mb-4">
-        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
-          Which medication are you on?
-        </h1>
-        <p className="text-[15px] text-gray-500 leading-relaxed px-2">This helps us tailor your dose schedule and inventory tracking.</p>
+      <div className={HEAD_BLOCK}>
+        <h1 className={HEADING}>Which medication are you on?</h1>
+        <p className={SUBTITLE}>This helps us tailor your dose schedule and inventory tracking.</p>
       </div>
 
       {/* The chips sit straight on the screen's background, centred, with the
@@ -110,7 +103,7 @@ export default function MedicationStep({ selectedMed, onSelect }) {
               Icon={opt.icon}
               selected={selectedMed === opt.label}
               onSelect={onSelect}
-              compact
+              wrap
             />
           </div>
         ))}

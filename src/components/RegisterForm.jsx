@@ -2,7 +2,10 @@ import React from "react";
 import { Loader2, Mail } from "lucide-react";
 import SocialAuthButtons from "@/components/onboarding/SocialAuthButtons";
 import PasswordField from "@/components/PasswordField";
-import { FIELD, LABEL } from "@/lib/authFormStyles";
+import {
+  CARD, FIELD, FIELD_MARK, LABEL, NOTICE,
+  PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON,
+} from "@/lib/uiStyles";
 
 /**
  * The account card, and the button that creates the account.
@@ -27,15 +30,15 @@ export default function RegisterForm({
 
   return (
     <form onSubmit={onSubmit} className="w-full">
-      <div className="w-full rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className={`w-full ${CARD}`}>
         {error && (
-          <p className="mb-4 w-full rounded-xl bg-red-50 px-3 py-2 text-center text-sm text-red-600">{error}</p>
+          <p className={`${NOTICE} mb-4`}>{error}</p>
         )}
 
         <div className="w-full">
           <label htmlFor="register-email" className={LABEL}>Email</label>
           <div className="relative w-full">
-            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+            <Mail className={FIELD_MARK} aria-hidden="true" />
             <input
               id="register-email"
               type="email"
@@ -83,14 +86,12 @@ export default function RegisterForm({
       {/* Create account — the same pill as the sign-in screen's Log in and the
           shell's Next: same indigo, same height, same soft shadow, faded rather
           than grey until the three fields are filled. */}
-      <div className="mt-5 w-full">
+      <div className="mt-6 w-full">
         <button
           type="submit"
           disabled={loading || !ready}
-          className={`flex w-full items-center justify-center rounded-full py-4 text-base font-semibold transition-all duration-300 active:scale-95 sm:text-lg ${
-            loading || !ready
-              ? "cursor-not-allowed bg-indigo-300 text-white shadow-none"
-              : "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 hover:bg-indigo-700"
+          className={`flex items-center justify-center ${PRIMARY_BTN} ${
+            loading || !ready ? PRIMARY_BTN_OFF : PRIMARY_BTN_ON
           }`}
         >
           {loading ? (

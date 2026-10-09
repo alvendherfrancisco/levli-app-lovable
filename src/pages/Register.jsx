@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
@@ -9,6 +8,10 @@ import AmbientBackground from "@/components/onboarding/AmbientBackground";
 import LevliLogo from "@/components/LevliLogo";
 import RegisterForm from "@/components/RegisterForm";
 import { toast } from "@/components/ui/use-toast";
+import {
+  HEADING, LINK, LINK_UNDERLINE, NOTICE,
+  PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON, SUBTITLE,
+} from "@/lib/uiStyles";
 
 /**
  * Creating an account, drawn as the same screen as signing in: the warm ambient
@@ -88,11 +91,7 @@ export default function Register() {
         title="Verify your email"
         subtitle={`We sent a code to ${email}`}
       >
-        {error && (
-          <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-            {error}
-          </div>
-        )}
+        {error && <p className={`${NOTICE} mb-4`}>{error}</p>}
         <div className="flex justify-center mb-6">
           <InputOTP
             maxLength={6}
@@ -111,23 +110,25 @@ export default function Register() {
             </InputOTPGroup>
           </InputOTP>
         </div>
-        <Button
-          className="w-full h-12 font-medium"
+        <button
+          className={`flex items-center justify-center ${PRIMARY_BTN} ${
+            otpCode.length === 6 && !loading ? PRIMARY_BTN_ON : PRIMARY_BTN_OFF
+          }`}
           onClick={handleVerify}
           disabled={loading || otpCode.length < 6}
         >
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Verifying...
             </>
           ) : (
             "Verify"
           )}
-        </Button>
+        </button>
         <p className="text-center text-sm text-muted-foreground mt-4">
           Didn't receive the code?{" "}
-          <button onClick={handleResend} className="text-primary font-medium hover:underline">
+          <button onClick={handleResend} className={LINK}>
             Resend
           </button>
         </p>
@@ -147,10 +148,8 @@ export default function Register() {
           </div>
 
           <div className="mb-6 text-center">
-            <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight">
-              Create your account
-            </h1>
-            <p className="text-[15px] text-gray-500">Sign up to get started</p>
+            <h1 className={HEADING}>Create your account</h1>
+            <p className={`${SUBTITLE} mt-2`}>Sign up to get started</p>
           </div>
 
           <RegisterForm
@@ -166,15 +165,15 @@ export default function Register() {
             onProvider={handleProvider}
           />
 
-          <p className="mt-4 px-1 text-center text-[12.5px] leading-relaxed text-gray-500">
+          <p className="mt-6 px-1 text-center text-[12.5px] leading-relaxed text-gray-500">
             By creating an account you agree to our{" "}
-            <Link to="/terms" className="text-indigo-600 underline">Terms of Service</Link> and{" "}
-            <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>
+            <Link to="/terms" className={LINK_UNDERLINE}>Terms of Service</Link> and{" "}
+            <Link to="/privacy" className={LINK_UNDERLINE}>Privacy Policy</Link>
           </p>
 
-          <p className="mt-5 text-center text-[14px] text-gray-500">
+          <p className="mt-6 text-center text-[15px] text-gray-500">
             Already have an account?{" "}
-            <Link to="/login" className="font-semibold text-indigo-600 hover:underline">
+            <Link to="/login" className={LINK}>
               Log in
             </Link>
           </p>

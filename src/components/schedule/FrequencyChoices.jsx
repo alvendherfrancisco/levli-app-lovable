@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import OptionChips from "@/components/OptionChips";
 import FrequencyGrid from "./FrequencyGrid";
 import { getScheduleOptions } from "@/lib/medicationSchedule";
+import { LABEL, LIST_TEXT } from "@/lib/uiStyles";
 
 /**
  * How often the medication is taken. The choices come from the product's own
@@ -33,14 +34,14 @@ export default function FrequencyChoices({ medication, value, onChange, layout =
   if (options.length === 1) {
     return (
       <div>
-        <p className="mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">How often</p>
+        <p className={LABEL}>How often</p>
         <div
           role="group"
           aria-label="How often"
-          className="flex h-12 items-center justify-between gap-3 rounded-full border border-indigo-600 bg-indigo-50 px-4 dark:border-indigo-500/40 dark:bg-indigo-500/10"
+          className="flex h-12 items-center justify-between gap-3 rounded-full border border-indigo-500 bg-indigo-50 px-4 dark:border-indigo-500/40 dark:bg-indigo-500/10"
         >
-          <span className="flex items-center gap-2 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
-            <Check size={14} strokeWidth={3} aria-hidden="true" />
+          <span className={`flex items-center gap-2 ${LIST_TEXT} text-indigo-700 dark:text-indigo-300`}>
+            <Check size={14} strokeWidth={2.5} aria-hidden="true" />
             {options[0].label}
           </span>
           <span className="flex-shrink-0 text-xs font-medium text-indigo-500 dark:text-indigo-300">

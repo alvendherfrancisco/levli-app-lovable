@@ -1,20 +1,17 @@
 import React from "react";
-import { LABEL } from "@/lib/authFormStyles";
 import { PRESCRIBER_ONLY_NOTE } from "@/lib/medicationRegimen";
 import { getDoseUnit } from "@/lib/medicationConfig";
+import { FIELD_TRAILING, HELP_IN_CARD, LABEL } from "@/lib/uiStyles";
 
 /**
  * The dose amount, for a product whose label lists no strengths — compounded,
- * a peptide, or "Other". It is the app's own field, drawn like the account
- * screens' inputs: pill-rounded, a hairline border, white fill and the unit
- * sitting inside the field on the right rather than beside the label.
+ * a peptide, or "Other". It is the app's own field, drawn from the shared
+ * tokens: the same height, the same pill, the same hairline border, with the
+ * unit sitting inside the field on the right rather than beside the label.
  *
  * The amount stays optional and is never suggested: it is whatever the
  * prescriber said, which is why the helper line is the only note under it.
  */
-const INPUT =
-  "h-12 w-full rounded-full border border-gray-200 bg-white pl-4 pr-16 text-[16px] text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-indigo-500";
-
 export default function DoseAmountField({ medication, value, onChange }) {
   const unit = getDoseUnit(medication);
 
@@ -31,7 +28,7 @@ export default function DoseAmountField({ medication, value, onChange }) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="e.g. 0.5"
-          className={INPUT}
+          className={FIELD_TRAILING}
         />
         <span
           aria-hidden="true"
@@ -40,7 +37,7 @@ export default function DoseAmountField({ medication, value, onChange }) {
           {unit}
         </span>
       </div>
-      <p className="mt-2 text-xs leading-snug text-gray-500">{PRESCRIBER_ONLY_NOTE}</p>
+      <p className={`${HELP_IN_CARD} mt-2`}>{PRESCRIBER_ONLY_NOTE}</p>
     </div>
   );
 }

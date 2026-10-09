@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import AmbientBackground from "./AmbientBackground";
 import { sound } from "@/lib/sounds";
+import { NOTICE, PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON } from "@/lib/uiStyles";
 
 /**
  * Onboarding shell — warm, light-themed layout matching the Levli marketing site.
@@ -28,9 +29,6 @@ export default function OnboardingScreen({
   // these the button is a plain disabled button, as it has always been.
   revealIssues = false,
   onBlockedContinue,
-  // The lighter indigo pill the account screen uses for its own blocked button,
-  // in place of the grey one.
-  fadedDisabled = false,
 }) {
   const isFirstStep = step === 0;
   const isLastStep = step === totalSteps - 1;
@@ -136,7 +134,7 @@ export default function OnboardingScreen({
             {ctaNote && (
               <div
                 role="alert"
-                className="mb-4 w-full max-w-[400px] rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center text-[13px] leading-snug text-amber-800"
+                className={`${NOTICE} mb-4 max-w-[400px]`}
               >
                 {ctaNote}
               </div>
@@ -145,12 +143,12 @@ export default function OnboardingScreen({
               onClick={blockedTap || !blocked ? handleCta : undefined}
               disabled={blocked && !blockedTap}
               aria-disabled={blockedTap || undefined}
-              className={`onb-cta-btn w-full max-w-[400px] rounded-full font-semibold text-base sm:text-lg transition-all duration-300 active:scale-95 ${
+              className={`${PRIMARY_BTN} max-w-[400px] ${
                 !blocked
-                  ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/25"
-                  : fadedDisabled
-                    ? `bg-indigo-300 text-white shadow-none${blockedTap ? "" : " cursor-not-allowed"}`
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  ? PRIMARY_BTN_ON
+                  : blockedTap
+                    ? "bg-indigo-300 text-white shadow-none"
+                    : PRIMARY_BTN_OFF
               }`}
             >
               {ctaText}

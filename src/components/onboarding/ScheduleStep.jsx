@@ -5,6 +5,9 @@ import DoseAmountField from "@/components/schedule/DoseAmountField";
 import ScheduleFields from "@/components/schedule/ScheduleFields";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import { allowsAnyDose, getAllowedDoses, getMedicationConfig } from "@/lib/medicationConfig";
+import {
+  CARD, CARD_GAP, HEADING, HEAD_BLOCK, HELP_IN_CARD, NOTICE, STACK, SUBTITLE,
+} from "@/lib/uiStyles";
 
 /** The one line of guidance on this screen, as the clinical team worded it. */
 const PRESCRIBER_HELPER = "Follow your prescriber's instructions.";
@@ -37,18 +40,18 @@ export default function ScheduleStep({
       <OnboardingArt>
         <ScheduleIllustration />
       </OnboardingArt>
-      <div className="text-center mb-3">
-        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
+      <div className={HEAD_BLOCK}>
+        <h1 className={HEADING}>
           {injectable ? "Let's set your shot schedule." : "Let's set your dose schedule."}
         </h1>
-        <p className="text-[15px] text-gray-500 leading-relaxed px-2">
+        <p className={SUBTITLE}>
           Set it once here, and Levli works out your next dose date from it.
         </p>
       </div>
 
       {/* The whole answer in one card, drawn like the account screens' own. */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="space-y-5">
+      <div className={`${CARD} ${CARD_GAP}`}>
+        <div className={STACK}>
           {anyDose ? (
             <DoseAmountField medication={medication} value={dose} onChange={onDoseChange} />
           ) : (
@@ -67,11 +70,11 @@ export default function ScheduleStep({
             showStartDate
             frequencyLayout="grid"
           />
-          <p className="text-xs leading-snug text-gray-500">{PRESCRIBER_HELPER}</p>
+          <p className={HELP_IN_CARD}>{PRESCRIBER_HELPER}</p>
         </div>
       </div>
       {error && (
-        <p className="text-[13.5px] font-medium text-red-600 mt-1.5 px-1" role="alert">
+        <p className={NOTICE} role="alert">
           {error}
         </p>
       )}

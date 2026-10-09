@@ -1,8 +1,11 @@
 import React from "react";
-import { ChevronDown, Clock } from "lucide-react";
+import { Check, ChevronDown, Clock } from "lucide-react";
 import { DEFAULT_REMINDER_TIME } from "@/lib/medicationSchedule";
-import { FIELD } from "@/lib/authFormStyles";
 import { sound } from "@/lib/sounds";
+import {
+  CHECK_CIRCLE, CHECK_CIRCLE_OFF, CHECK_CIRCLE_ON, FIELD, FIELD_MARK,
+  HELP_IN_CARD, LABEL_TEXT,
+} from "@/lib/uiStyles";
 
 /** "08:00" → "8:00 AM"; anything else is not a time and shows as nothing. */
 function formatTime(value) {
@@ -25,10 +28,7 @@ function formatTime(value) {
 function TimeField({ id, value, onChange, label }) {
   return (
     <div className="relative">
-      <Clock
-        className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-[#9A9DAE]"
-        aria-hidden="true"
-      />
+      <Clock className={`${FIELD_MARK} dark:text-[#9A9DAE]`} aria-hidden="true" />
       <span
         aria-hidden="true"
         className={`${FIELD} flex items-center pr-9 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0]`}
@@ -57,26 +57,34 @@ function TimeField({ id, value, onChange, label }) {
  *
  * A schedule with no fixed day still allows a reminder, so for that one the
  * time is offered as an optional switch rather than a field that is always on.
+ * The switch is the app's own checkbox: 22pt, a hairline border, filled indigo
+ * with a white tick once it is on.
  */
 export default function ReminderTimeField({ value, onChange, optional = false }) {
   if (optional) {
     const on = !!value;
     return (
       <div>
-        <label className="flex items-start gap-3 min-h-[44px] cursor-pointer">
+        <label className="flex min-h-[44px] cursor-pointer items-start gap-3">
           <input
             type="checkbox"
             checked={on}
             onChange={(e) => { sound.tap(); onChange(e.target.checked ? DEFAULT_REMINDER_TIME : ""); }}
-            className="w-5 h-5 mt-0.5 accent-indigo-600 flex-shrink-0"
+            className="sr-only"
           />
-          <span className="text-sm text-gray-700 dark:text-gray-300 leading-snug">
+          <span
+            aria-hidden="true"
+            className={`mt-0.5 ${CHECK_CIRCLE} ${on ? CHECK_CIRCLE_ON : CHECK_CIRCLE_OFF}`}
+          >
+            {on && <Check size={13} strokeWidth={2.5} />}
+          </span>
+          <span className={`${LABEL_TEXT} leading-snug dark:text-gray-300`}>
             Remind me at a time I choose
           </span>
         </label>
         {on && (
           <div className="mt-3">
-            <label htmlFor="reminder-time" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
+            <label htmlFor="reminder-time" className={`${LABEL_TEXT} mb-2 block dark:text-gray-300`}>
               Reminder time
             </label>
             <TimeField id="reminder-time" value={value} onChange={onChange} label="Reminder time" />
@@ -88,11 +96,11 @@ export default function ReminderTimeField({ value, onChange, optional = false })
 
   return (
     <div>
-      <label htmlFor="reminder-time" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
+      <label htmlFor="reminder-time" className={`${LABEL_TEXT} mb-2 block dark:text-gray-300`}>
         Reminder time
       </label>
       <TimeField id="reminder-time" value={value} onChange={onChange} label="Reminder time" />
-      {!value && <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-1.5">No time set, so no reminder.</p>}
+      {!value && <p className={`${HELP_IN_CARD} mt-2 dark:text-[#9A9DAE]`}>No time set, so no reminder.</p>}
     </div>
   );
 }

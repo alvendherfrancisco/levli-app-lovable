@@ -4,6 +4,9 @@ import OptionCard from "@/components/onboarding/OptionCard";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import { TrackingIllustration } from "@/components/onboarding/OnboardingIllustrations";
 import { sound } from "@/lib/sounds";
+import {
+  CARD, CARD_FLUSH, CARD_GAP, HEADING, HEAD_BLOCK, LABEL, SUBTITLE,
+} from "@/lib/uiStyles";
 
 /**
  * The two modules Levli suggests to start with. They are ordinary selections —
@@ -55,13 +58,9 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
         <TrackingIllustration />
       </OnboardingArt>
 
-      <div className="text-center mb-3">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 leading-tight px-2">
-          What would you like to keep an eye on?
-        </h1>
-        <p className="mt-1 text-[15px] text-gray-500 leading-relaxed px-2">
-          Pick any that apply. You can change this later.
-        </p>
+      <div className={HEAD_BLOCK}>
+        <h1 className={HEADING}>What would you like to keep an eye on?</h1>
+        <p className={SUBTITLE}>Pick any that apply. You can change this later.</p>
       </div>
 
       {/* All six choices in one card — one compact row each, divided by a
@@ -69,7 +68,7 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
       <div
         role="group"
         aria-label="What would you like to keep an eye on?"
-        className="mb-3 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04]"
+        className={`${CARD_FLUSH} ${CARD_GAP} overflow-hidden`}
       >
         <div className="divide-y divide-gray-100 dark:divide-white/[0.08]">
           {TRACKING_OPTIONS.map((opt) => (
@@ -87,12 +86,12 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
       {/* Measurement preferences — how what is logged is shown, not what is
           tracked, so they sit in their own card below the choices, drawn on the
           app's standard surface. */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04]">
-        <p className="mb-1.5 text-[13px] font-medium text-gray-900 dark:text-[#E8E9F0]">Measurement preferences</p>
+      <div className={`${CARD} ${CARD_GAP}`}>
+        <p className={LABEL}>Measurement preferences</p>
         <div className="divide-y divide-gray-100 dark:divide-white/[0.08]">
           {UNIT_GROUPS.map((group) => (
-            <div key={group.key} className="flex items-center justify-between gap-3 py-2.5">
-              <span className="text-[15px] text-gray-900 dark:text-[#E8E9F0]">{group.label}</span>
+            <div key={group.key} className="flex items-center justify-between gap-3 py-2">
+              <span className="text-[16px] text-gray-900 dark:text-[#E8E9F0]">{group.label}</span>
               {/* One pill, split in two: the same width and height on every row,
                   so the three sit in a neat column. */}
               <div
@@ -108,7 +107,7 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
                       type="button"
                       aria-pressed={on}
                       onClick={() => { sound.tap(); setUnits((prev) => ({ ...prev, [group.key]: opt.value })); }}
-                      className={`flex-1 rounded-full text-[13px] font-medium transition-colors ${
+                      className={`flex-1 rounded-full text-[14px] font-medium transition-colors ${
                         on ? "bg-indigo-600 text-white" : "text-gray-600 hover:text-gray-900"
                       }`}
                     >

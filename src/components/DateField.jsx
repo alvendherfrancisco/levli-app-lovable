@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Calendar } from "lucide-react";
-import { FIELD, LABEL } from "@/lib/authFormStyles";
+import { ERROR_TEXT, FIELD, FIELD_MARK, LABEL } from "@/lib/uiStyles";
 
 /**
  * A day / month / year field — the app's usual input, with the calendar mark in
@@ -64,7 +64,7 @@ export default function DateField({ id, label, value, onChange, error }) {
     <div className="w-full">
       <label htmlFor={id} className={LABEL}>{label}</label>
       <div className="relative w-full">
-        <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+        <Calendar className={FIELD_MARK} aria-hidden="true" />
         <input
           id={id}
           type="text"
@@ -77,7 +77,7 @@ export default function DateField({ id, label, value, onChange, error }) {
           className={FIELD}
         />
       </div>
-      {error && <p className="mt-2 text-[13px] text-red-600">{error}</p>}
+      {error && <p className={`${ERROR_TEXT} mt-2`}>{error}</p>}
     </div>
   );
 }

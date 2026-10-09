@@ -4,9 +4,12 @@ import SocialAuthButtons from "@/components/onboarding/SocialAuthButtons";
 import {
   emailError, passwordError, passwordStrength, formBlocker,
 } from "@/lib/accountValidation";
-// The field and label style, shared with the sign-in card so the two screens
-// can never drift apart.
-import { FIELD, LABEL } from "@/lib/authFormStyles";
+// The field, label, card, notice and button styles, shared with the sign-in
+// card so the account screens can never drift apart.
+import {
+  CARD, ERROR_TEXT, FIELD, FIELD_MARK, HELP_IN_CARD, LABEL, NOTICE,
+  PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON,
+} from "@/lib/uiStyles";
 import { sound } from "@/lib/sounds";
 
 const STRENGTH_BAR = {
@@ -75,15 +78,15 @@ export default function AccountEmailForm({
 
   return (
     <form onSubmit={submit} className="w-full">
-      <div className="w-full rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className={`w-full ${CARD}`}>
         {error && (
-          <p className="mb-4 w-full rounded-xl bg-red-50 px-3 py-2 text-center text-sm text-red-600">{error}</p>
+          <p className={`${NOTICE} mb-4`}>{error}</p>
         )}
 
         <div className="w-full">
           <label htmlFor="signup-email" className={LABEL}>Email</label>
           <div className="relative w-full">
-            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+            <Mail className={FIELD_MARK} aria-hidden="true" />
             <input
               id="signup-email"
               ref={emailRef}
@@ -103,13 +106,13 @@ export default function AccountEmailForm({
               className={FIELD}
             />
           </div>
-          {emailMsg && <p className="mt-2 text-[13px] text-red-600">{emailMsg}</p>}
+          {emailMsg && <p className={`${ERROR_TEXT} mt-2`}>{emailMsg}</p>}
         </div>
 
         <div className="mt-4 w-full">
           <label htmlFor="signup-password" className={LABEL}>Password</label>
           <div className="relative w-full">
-            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+            <Lock className={FIELD_MARK} aria-hidden="true" />
             <input
               id="signup-password"
               ref={passwordRef}
@@ -135,7 +138,7 @@ export default function AccountEmailForm({
           </div>
 
           {passwordMsg ? (
-            <p className="mt-2 text-[13px] text-red-600">{passwordMsg}</p>
+            <p className={`${ERROR_TEXT} mt-2`}>{passwordMsg}</p>
           ) : strength ? (
             <div className="mt-2">
               <div className="flex items-center gap-2">
@@ -147,7 +150,7 @@ export default function AccountEmailForm({
                     />
                   ))}
                 </span>
-                <span className="text-[12px] font-semibold text-gray-500">{strength.label}</span>
+                <span className="text-[12px] font-medium text-gray-500">{strength.label}</span>
               </div>
               {strength.hint && <p className="mt-1 text-[12px] text-gray-500">{strength.hint}</p>}
             </div>
@@ -162,17 +165,15 @@ export default function AccountEmailForm({
           outside the card, lined up with the card's own edges, with the reason
           it is not ready yet above it, which waits for the first touch so an
           untouched form is not scolded. */}
-      <div className="mt-5 w-full">
+      <div className="mt-6 w-full">
         {blocker && !loading && (touched.email || touched.password || email || password) && (
-          <p className="mb-2 text-center text-[13px] text-gray-500">{blocker}</p>
+          <p className={`${HELP_IN_CARD} mb-2 text-center`}>{blocker}</p>
         )}
         <button
           type="submit"
           disabled={loading || !!blocker}
-          className={`onb-cta-btn flex w-full items-center justify-center rounded-full text-base font-semibold transition-all duration-300 active:scale-95 sm:text-lg ${
-            loading || blocker
-              ? "cursor-not-allowed bg-indigo-300 text-white shadow-none"
-              : "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 hover:bg-indigo-700"
+          className={`flex items-center justify-center ${PRIMARY_BTN} ${
+            loading || blocker ? PRIMARY_BTN_OFF : PRIMARY_BTN_ON
           }`}
         >
           {loading ? (

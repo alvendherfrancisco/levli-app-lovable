@@ -6,16 +6,18 @@ import {
 } from "@/lib/medicationConfig";
 import { PRESCRIBER_ONLY_NOTE } from "@/lib/medicationRegimen";
 import { sound } from "@/lib/sounds";
+import {
+  CHIP_IDLE, CHIP_ON, ERROR_TEXT, FIELD_PLAIN, HELP_IN_CARD, LABEL_TEXT,
+} from "@/lib/uiStyles";
 
-const CHIP = "inline-flex h-11 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold transition-colors";
-const NEUTRAL = "bg-white dark:bg-white/[0.05] border-gray-200 dark:border-white/[0.12] text-gray-900 dark:text-[#E8E9F0]";
-// The chosen strength, drawn the way every other selection in Levli is drawn:
-// an indigo border, a light indigo fill and indigo text. The strength's own
-// colour stays on the unchosen chips, as the dot the maker's pen carries.
-const SELECTED =
-  "border-indigo-600 bg-indigo-50 text-indigo-700 dark:border-indigo-500/40 dark:bg-indigo-500/10 dark:text-indigo-300";
-const INPUT =
-  "w-full min-h-[52px] rounded-xl border border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-3 py-2.5 text-sm outline-none focus:border-indigo-400";
+// The shared chip: one height, one pill and one 16pt text with every other chip
+// in the app, plus the dark overrides this surface needs.
+const NEUTRAL = `${CHIP_IDLE} dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0]`;
+// The chosen strength, drawn the way every other selection in Levli is drawn: a
+// light indigo fill, a hairline indigo border and indigo text. The strength's
+// own colour stays on the unchosen chips, as the dot the maker's pen carries.
+const SELECTED = `${CHIP_ON} dark:border-indigo-500/40 dark:bg-indigo-500/10 dark:text-indigo-300`;
+const INPUT = `${FIELD_PLAIN} dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0]`;
 
 /**
  * The dose: the strengths this product's label lists, as chips, with the number
@@ -48,15 +50,15 @@ export default function DoseChoice({ medication, value, onChange, other = false,
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-sm font-medium text-gray-900 dark:text-gray-300">Dose</span>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className={`${LABEL_TEXT} dark:text-gray-300`}>Dose</span>
         {/* The unit is always on screen beside the amounts. */}
         <span className="text-xs font-medium text-gray-500 dark:text-[#9A9DAE]">{unit}</span>
       </div>
 
       {anyDose ? (
         <div>
-          <label htmlFor="dose-other" className="text-xs font-medium text-gray-600 dark:text-[#9A9DAE] mb-1.5 block">
+          <label htmlFor="dose-other" className={`${LABEL_TEXT} mb-2 block dark:text-[#9A9DAE]`}>
             Dose from your prescription
           </label>
           <input
@@ -82,10 +84,10 @@ export default function DoseChoice({ medication, value, onChange, other = false,
                 onClick={() => pick(d.value)}
                 aria-pressed={selected}
                 aria-label={`${d.value} ${unit}`}
-                className={selected ? `${CHIP} ${SELECTED}` : `${CHIP} ${NEUTRAL}`}
+                className={selected ? SELECTED : NEUTRAL}
               >
                 {selected ? (
-                  <Check size={14} strokeWidth={3} aria-hidden="true" />
+                  <Check size={14} strokeWidth={2.5} aria-hidden="true" />
                 ) : (
                   <span
                     className="w-2.5 h-2.5 rounded-full flex-shrink-0"
@@ -101,11 +103,7 @@ export default function DoseChoice({ medication, value, onChange, other = false,
             type="button"
             onClick={() => { sound.tap(); onOtherChange?.(!openOther); }}
             aria-pressed={openOther}
-            className={`${CHIP} border-dashed ${
-              openOther
-                ? "border-indigo-400 text-indigo-600 dark:text-indigo-300"
-                : "border-gray-300 dark:border-white/[0.18] text-gray-600 dark:text-gray-300"
-            }`}
+            className={openOther ? SELECTED : NEUTRAL}
           >
             + Other
           </button>
@@ -114,7 +112,7 @@ export default function DoseChoice({ medication, value, onChange, other = false,
 
       {!anyDose && openOther && (
         <div className="mt-2">
-          <label htmlFor="dose-other" className="text-xs font-medium text-gray-600 dark:text-[#9A9DAE] mb-1.5 block">
+          <label htmlFor="dose-other" className={`${LABEL_TEXT} mb-2 block dark:text-[#9A9DAE]`}>
             Dose your prescriber directed
           </label>
           <input
@@ -132,10 +130,10 @@ export default function DoseChoice({ medication, value, onChange, other = false,
       )}
 
       {!anyDose && typed !== "" && !isListed && (
-        <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-2 leading-snug">{CUSTOM_MEDICATION_WARNING}</p>
+        <p className={`${HELP_IN_CARD} mt-2 dark:text-[#9A9DAE]`}>{CUSTOM_MEDICATION_WARNING}</p>
       )}
-      <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-2 leading-snug">{PRESCRIBER_ONLY_NOTE}</p>
-      {error && <p className="text-sm font-medium text-red-600 dark:text-red-400 mt-2">{error}</p>}
+      <p className={`${HELP_IN_CARD} mt-2 dark:text-[#9A9DAE]`}>{PRESCRIBER_ONLY_NOTE}</p>
+      {error && <p className={`${ERROR_TEXT} mt-2 dark:text-red-400`}>{error}</p>}
     </div>
   );
 }

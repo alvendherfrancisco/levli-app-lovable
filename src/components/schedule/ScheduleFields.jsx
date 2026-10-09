@@ -4,6 +4,7 @@ import InjectionDays from "./InjectionDays";
 import IntervalField from "./IntervalField";
 import ReminderTimeField from "./ReminderTimeField";
 import { FREQUENCY_INFO, SCHEDULE, withScheduleKind } from "@/lib/medicationSchedule";
+import { ERROR_TEXT } from "@/lib/uiStyles";
 
 /**
  * The whole "how often" answer in one block: the frequency itself, and then
@@ -60,7 +61,7 @@ export default function ScheduleFields({
       )}
 
       {error && (
-        <p className="text-sm font-medium text-red-600 dark:text-red-400" role="alert">
+        <p className={`${ERROR_TEXT} dark:text-red-400`} role="alert">
           {error}
         </p>
       )}

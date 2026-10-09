@@ -28,10 +28,10 @@ export default function AuthLayout({ icon: Icon, iconNode, title, subtitle, foot
               <Icon className="w-7 h-7 text-primary-foreground" aria-hidden="true" />
             </div>
           )}
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">{title}</h1>
-          {subtitle && <p className="text-muted-foreground mt-2 text-sm sm:text-base px-2">{subtitle}</p>}
+          <h1 className="text-[24px] sm:text-[28px] font-bold leading-tight text-foreground">{title}</h1>
+          {subtitle && <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{subtitle}</p>}
         </div>
-        <div className="bg-card rounded-2xl shadow-sm border border-border p-5 sm:p-8">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04] sm:p-8">
           {children}
         </div>
         {footer && (

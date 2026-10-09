@@ -8,6 +8,9 @@ import GoogleIcon from "@/components/GoogleIcon";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import { formBlocker, isEmailTakenError } from "@/lib/accountValidation";
 import { sound } from "@/lib/sounds";
+import {
+  HEADING, HEAD_BLOCK, HELP_ON_SCREEN, LINK, LINK_UNDERLINE, NOTICE, SUBTITLE,
+} from "@/lib/uiStyles";
 
 /** Turns a refusal from the sign-up endpoint into something worth reading. */
 function friendlySignUpError(err) {
@@ -116,47 +119,41 @@ export default function SignUpStep({
         <SignUpIllustration />
       </OnboardingArt>
 
-      <div className="text-center mb-5">
-        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
-          Create your account
-        </h1>
-        <p className="text-[15px] text-gray-500 px-3 leading-relaxed">
+      <div className={HEAD_BLOCK}>
+        <h1 className={HEADING}>Create your account</h1>
+        <p className={SUBTITLE}>
           Sign up to save your journey and pick up where you left off, on any device.
         </p>
       </div>
 
-      {notice && (
-        <p className="mb-4 text-[14px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-center leading-relaxed">
-          {notice}
-        </p>
-      )}
+      {notice && <p className={`${NOTICE} mb-4`}>{notice}</p>}
 
       {taken ? (
         <div className="flex w-full flex-col items-center">
-          <p className="text-center text-[16px] font-semibold text-gray-800 mb-1.5">
+          <p className="mb-2 text-center text-[16px] font-medium text-gray-900">
             This email is already registered.
           </p>
-          <p className="text-center text-[14.5px] text-gray-500 mb-4 px-3 leading-relaxed">
+          <p className={`${SUBTITLE} mb-4`}>
             Nothing was created. Log in with Google, or with the password you set.
           </p>
           <button
             type="button"
             aria-label="Continue with Google"
             onClick={() => { sound.tap(); onProvider("google"); }}
-            className="flex min-h-[56px] w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-5 text-[16px] font-semibold text-gray-700 transition-all hover:border-gray-300 active:scale-[0.98]"
+            className="flex min-h-[56px] w-full items-center justify-center gap-3 rounded-full border border-gray-200 bg-white px-5 text-[16px] font-medium text-gray-900 transition-all hover:border-gray-300 active:scale-[0.98]"
           >
             <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
               <GoogleIcon className="h-6 w-6" />
             </span>
             <span className="min-w-0">Log in with Google</span>
           </button>
-          <Link to="/login" className="text-[14px] text-indigo-600 font-medium hover:underline mt-4">
+          <Link to="/login" className={`${LINK} mt-4 text-[15px]`}>
             Log in with email and password
           </Link>
           <button
             type="button"
             onClick={() => { sound.tap(); setTaken(false); setError(""); }}
-            className="text-[13px] text-gray-400 hover:text-gray-600 mt-2.5"
+            className="mt-3 text-[13px] text-gray-400 hover:text-gray-600"
           >
             Use a different email
           </button>
@@ -177,16 +174,16 @@ export default function SignUpStep({
           {/* Under the card: the legal line, then the way to log in instead —
               the same wording and link the login screen's footer carries when
               read the other way round. */}
-          <p className="mt-5 px-2 text-center text-[12px] leading-relaxed text-gray-500">
+          <p className={`mt-6 ${HELP_ON_SCREEN}`}>
             By creating an account you agree to our{" "}
-            <Link to="/terms" className="text-indigo-600 underline">Terms of Service</Link>{" "}
+            <Link to="/terms" className={LINK_UNDERLINE}>Terms of Service</Link>{" "}
             and{" "}
-            <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>.
+            <Link to="/privacy" className={LINK_UNDERLINE}>Privacy Policy</Link>.
           </p>
 
-          <p className="mt-6 text-center text-[14px] text-gray-500">
+          <p className="mt-6 text-center text-[15px] text-gray-500">
             Already have an account?{" "}
-            <Link to="/login" className="font-medium text-indigo-600 hover:underline">Log in</Link>
+            <Link to="/login" className={LINK}>Log in</Link>
           </p>
         </>
       )}

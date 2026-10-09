@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import AmbientBackground from "@/components/onboarding/AmbientBackground";
 import LevliLogo from "@/components/LevliLogo";
 import LoginForm from "@/components/LoginForm";
+import { HEADING, LINK, SUBTITLE } from "@/lib/uiStyles";
 
 /**
  * Signing in, drawn as the same screen as creating an account: the warm
@@ -62,10 +63,8 @@ export default function Login() {
           </div>
 
           <div className="mb-6 text-center">
-            <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight">
-              Glad you're here
-            </h1>
-            <p className="text-[15px] text-gray-500">Log in to your account</p>
+            <h1 className={HEADING}>Glad you're here</h1>
+            <p className={`${SUBTITLE} mt-2`}>Log in to your account</p>
           </div>
 
           <LoginForm
@@ -79,9 +78,9 @@ export default function Login() {
             onProvider={handleProvider}
           />
 
-          <p className="mt-6 text-center text-[14px] text-gray-500">
+          <p className="mt-6 text-center text-[15px] text-gray-500">
             Don't have an account?{" "}
-            <Link to="/register" className="font-semibold text-indigo-600 hover:underline">
+            <Link to="/register" className={LINK}>
               Create one
             </Link>
           </p>

@@ -2,7 +2,10 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import SocialAuthButtons from "@/components/onboarding/SocialAuthButtons";
-import { FIELD, LABEL } from "@/lib/authFormStyles";
+import {
+  CARD, FIELD, FIELD_MARK, LABEL, LABEL_TEXT, LINK, NOTICE,
+  PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON,
+} from "@/lib/uiStyles";
 
 /**
  * The sign-in card, and the button that signs in.
@@ -26,15 +29,15 @@ export default function LoginForm({
 
   return (
     <form onSubmit={onSubmit} className="w-full">
-      <div className="w-full rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className={`w-full ${CARD}`}>
         {error && (
-          <p className="mb-4 w-full rounded-xl bg-red-50 px-3 py-2 text-center text-sm text-red-600">{error}</p>
+          <p className={`${NOTICE} mb-4`}>{error}</p>
         )}
 
         <div className="w-full">
           <label htmlFor="login-email" className={LABEL}>Email</label>
           <div className="relative w-full">
-            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+            <Mail className={FIELD_MARK} aria-hidden="true" />
             <input
               id="login-email"
               type="email"
@@ -58,13 +61,13 @@ export default function LoginForm({
           {/* The label and the way out of a forgotten password share one row, so
               the pair reads as part of the same field. */}
           <div className="mb-2 flex items-center justify-between">
-            <label htmlFor="login-password" className="text-sm font-medium text-gray-900">Password</label>
-            <Link to="/forgot-password" className="text-[13px] font-medium text-indigo-600 hover:underline">
+            <label htmlFor="login-password" className={LABEL_TEXT}>Password</label>
+            <Link to="/forgot-password" className={LINK}>
               Forgot password?
             </Link>
           </div>
           <div className="relative w-full">
-            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+            <Lock className={FIELD_MARK} aria-hidden="true" />
             <input
               id="login-password"
               type={showPassword ? "text" : "password"}
@@ -94,14 +97,12 @@ export default function LoginForm({
       {/* Log in — the same pill as the shell's Next and the account step's
           Create account: same indigo, same height, same soft shadow, and faded
           rather than grey while the two fields are still empty. */}
-      <div className="mt-5 w-full">
+      <div className="mt-6 w-full">
         <button
           type="submit"
           disabled={loading || !ready}
-          className={`flex w-full items-center justify-center rounded-full py-4 text-base font-semibold transition-all duration-300 active:scale-95 sm:text-lg ${
-            loading || !ready
-              ? "cursor-not-allowed bg-indigo-300 text-white shadow-none"
-              : "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 hover:bg-indigo-700"
+          className={`flex items-center justify-center ${PRIMARY_BTN} ${
+            loading || !ready ? PRIMARY_BTN_OFF : PRIMARY_BTN_ON
           }`}
         >
           {loading ? (

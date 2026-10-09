@@ -27,8 +27,12 @@ import { toDayKey } from "@/lib/dateUtils";
 import {
   emptySchedule, getDayInterval, medicationScheduleFields, validateScheduleSelection,
 } from "@/lib/medicationSchedule";
-import { ClipboardList, Settings2, ShieldCheck } from "lucide-react";
+import { Check, ClipboardList, Settings2, ShieldCheck } from "lucide-react";
 import { sound } from "@/lib/sounds";
+import {
+  CARD, CARD_GAP, CHECK_CIRCLE, CHECK_CIRCLE_OFF, CHECK_CIRCLE_ON,
+  HEADING, HEAD_BLOCK, HELP_ON_SCREEN, ICON_CIRCLE, LINK_UNDERLINE, LIST_VALUE, SUBTITLE,
+} from "@/lib/uiStyles";
 
 const TOTAL_STEPS = 8;
 
@@ -322,7 +326,6 @@ export default function Onboarding() {
       ctaNote={step === 5 && scheduleNudge ? scheduleNote : undefined}
       onBlockedContinue={step === 5 ? () => setScheduleNudge(true) : undefined}
       revealIssues={step === 5}
-      fadedDisabled={step === 5}
       hideFooter={step === 3}
     >
       {step === 0 && <WelcomeStep />}
@@ -386,12 +389,10 @@ function WelcomeStep() {
       <OnboardingArt>
         <WelcomeIllustration />
       </OnboardingArt>
-      <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-3 leading-tight px-2">
-        You're starting a journey. We're here for it.
-      </h1>
-      <p className="text-[15px] sm:text-[16px] text-gray-500 leading-relaxed px-3">
-        Track your shots, symptoms, and progress in one place.
-      </p>
+      <div className={HEAD_BLOCK}>
+        <h1 className={HEADING}>You're starting a journey. We're here for it.</h1>
+        <p className={SUBTITLE}>Track your shots, symptoms, and progress in one place.</p>
+      </div>
     </div>
   );
 }
@@ -402,12 +403,10 @@ function EmpathyStep() {
       <OnboardingArt>
         <EmpathyIllustration />
       </OnboardingArt>
-      <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-3 leading-tight px-2">
-        GLP-1 journeys aren't always linear.
-      </h1>
-      <p className="text-[15px] sm:text-[16px] text-gray-500 leading-relaxed px-3">
-        Good days, hard days, plateaus. Levli helps you notice the patterns.
-      </p>
+      <div className={HEAD_BLOCK}>
+        <h1 className={HEADING}>GLP-1 journeys aren't always linear.</h1>
+        <p className={SUBTITLE}>Good days, hard days, plateaus. Levli helps you notice the patterns.</p>
+      </div>
     </div>
   );
 }
@@ -430,26 +429,22 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
       <OnboardingArt>
         <PrivacyIllustration />
       </OnboardingArt>
-      <div className="text-center mb-3">
-        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
-          Your data stays yours.
-        </h1>
-        <p className="text-[15px] text-gray-600 leading-relaxed px-3">
-          Levli is your personal logbook. Your data stays private.
-        </p>
+      <div className={HEAD_BLOCK}>
+        <h1 className={HEADING}>Your data stays yours.</h1>
+        <p className={SUBTITLE}>Levli is your personal logbook. Your data stays private.</p>
       </div>
 
       {/* What, where, and how to take it back — three short rows, no essay. */}
-      <div className="mb-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="space-y-3">
+      <div className={`${CARD} ${CARD_GAP}`}>
+        <div className="space-y-4">
           {PRIVACY_POINTS.map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-start gap-3">
-              <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50">
-                <Icon className="h-4 w-4 text-indigo-600" aria-hidden="true" />
+              <span className={ICON_CIRCLE}>
+                <Icon size={20} strokeWidth={1.5} className="text-indigo-600" aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-gray-800">{label}</p>
-                <p className="text-[13px] leading-snug text-gray-500">{value}</p>
+                <p className="text-[16px] font-medium text-gray-900">{label}</p>
+                <p className={LIST_VALUE}>{value}</p>
               </div>
             </div>
           ))}
@@ -457,21 +452,27 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
       </div>
 
       {/* Health-data consent — one compact row */}
-      <label className="mb-3 flex cursor-pointer items-start gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-3.5">
+      <label className={`${CARD} ${CARD_GAP} flex cursor-pointer items-start gap-3`}>
         <input
           type="checkbox"
           checked={gdprConsented}
           onChange={(e) => { sound.tap(); setGdprConsented(e.target.checked); }}
-          className="mt-0.5 h-5 w-5 flex-shrink-0 accent-indigo-600"
+          className="sr-only"
         />
-        <span className="text-[14px] leading-snug text-gray-600">
+        <span
+          aria-hidden="true"
+          className={`mt-0.5 ${CHECK_CIRCLE} ${gdprConsented ? CHECK_CIRCLE_ON : CHECK_CIRCLE_OFF}`}
+        >
+          {gdprConsented && <Check size={13} strokeWidth={2.5} />}
+        </span>
+        <span className="text-[15px] leading-snug text-gray-500">
           I agree to the processing of my health data.{" "}
-          <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>
+          <Link to="/privacy" className={LINK_UNDERLINE}>Privacy Policy</Link>
         </span>
       </label>
 
       {/* Date of birth — the age check itself */}
-      <div className="mb-3">
+      <div className={`${CARD} ${CARD_GAP}`}>
         <DateField
           id="birthdate"
           label="Date of birth"
@@ -481,9 +482,9 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
         />
       </div>
 
-      <p className="mt-3 px-2 text-center text-[12.5px] leading-relaxed text-gray-500">
+      <p className={HELP_ON_SCREEN}>
         Levli is a logbook, not medical advice.{" "}
-        <Link to="/medical-disclaimer" className="text-indigo-600 underline">Read more</Link>
+        <Link to="/medical-disclaimer" className={LINK_UNDERLINE}>Read more</Link>
       </p>
     </div>
   );
@@ -497,12 +498,10 @@ function CompletionStep() {
           <CompletionIllustration />
         </OnboardingArt>
       </div>
-      <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-3 leading-tight px-2">
-        You're all set.
-      </h1>
-      <p className="text-[15px] sm:text-[16px] text-gray-500 leading-relaxed px-3">
-        Your Home is ready. Track your next shot, mood, and progress in one place.
-      </p>
+      <div className={HEAD_BLOCK}>
+        <h1 className={HEADING}>You're all set.</h1>
+        <p className={SUBTITLE}>Your Home is ready. Track your next shot, mood, and progress in one place.</p>
+      </div>
     </div>
   );
 }
