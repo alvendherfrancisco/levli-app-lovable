@@ -19,7 +19,7 @@ import { sound } from "@/lib/sounds";
 export default function OptionCard({ icon: Icon, label, selected, onToggle }) {
   return (
     <label
-      className={`flex min-h-[56px] w-full cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors focus-within:bg-gray-50 dark:focus-within:bg-white/[0.06] ${
+      className={`flex min-h-[56px] w-full cursor-pointer items-center gap-3 px-4 py-2 transition-colors focus-within:bg-gray-50 dark:focus-within:bg-white/[0.06] ${
         selected ? "bg-indigo-50/70 dark:bg-indigo-500/10" : "bg-white dark:bg-transparent"
       }`}
     >
@@ -31,7 +31,7 @@ export default function OptionCard({ icon: Icon, label, selected, onToggle }) {
       />
 
       <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-500/15">
-        <Icon size={20} strokeWidth={2} className="text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+        <Icon size={20} strokeWidth={1.5} className="text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
       </span>
 
       <span className="min-w-0 flex-1 text-base font-medium text-gray-900 dark:text-[#E8E9F0]">
@@ -40,13 +40,13 @@ export default function OptionCard({ icon: Icon, label, selected, onToggle }) {
 
       <span
         aria-hidden="true"
-        className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border transition-colors ${
+        className={`flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors ${
           selected
             ? "border-primary bg-primary text-primary-foreground"
             : "border-gray-300 dark:border-white/25"
         }`}
       >
-        {selected && <Check size={14} strokeWidth={3} />}
+        {selected && <Check size={13} strokeWidth={2.5} />}
       </span>
     </label>
   );
