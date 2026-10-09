@@ -22,19 +22,50 @@ export const MED_OPTIONS = [
   { label: "Other", generic: null },
 ];
 
+// The two compounded names are the longest on the list: each is given a line of
+// its own rather than being squeezed beside a neighbour.
+const LONG_LABELS = [COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE];
+const SHORT_MEDS = MED_OPTIONS.filter((o) => o.label !== "Other" && !LONG_LABELS.includes(o.label));
+const LONG_MEDS = MED_OPTIONS.filter((o) => LONG_LABELS.includes(o.label));
+const OTHER_MED = MED_OPTIONS.find((o) => o.label === "Other");
+
+/**
+ * One medication chip: only as wide as its own name, always on one line, with
+ * the pill mark on the left and the checkmark arriving on the right only once
+ * the chip is chosen. Every chip is the same height.
+ */
+function MedChip({ label, selected, onSelect, compact = false }) {
+  return (
+    <button
+      type="button"
+      onClick={() => { sound.tap(); onSelect(label); }}
+      aria-pressed={selected}
+      className={`inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-full px-3 font-medium transition-all active:scale-[0.98] ${
+        compact ? "text-[12px]" : "text-[14px]"
+      } ${
+        selected
+          ? "border-[1.5px] border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"
+          : "border border-gray-200 bg-white text-gray-900 hover:border-gray-300 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0]"
+      }`}
+    >
+      <PillIcon size={14} className="flex-shrink-0" />
+      {label}
+      {selected && <Check size={14} className="flex-shrink-0 text-indigo-600" strokeWidth={3} />}
+    </button>
+  );
+}
+
 /**
  * The primary medication — one choice, not a list. Onboarding sets up the
  * medication a person is mainly on; anything else is added afterwards, from
  * Home or Medications, so every onboarding screen stays the same length.
  *
- * The choices sit in one white card, drawn on the app's standard surface, as a
- * column of equal pill rows: same height, same thin border, the pill mark on the
- * left and the name in the normal text colour, with the checkmark arriving on
- * the right only once a row is chosen.
+ * The choices sit in one white card, drawn on the app's standard surface: pill
+ * chips that wrap and centre themselves, each only as wide as its own name.
  */
 export default function MedicationStep({ selectedMed, onSelect }) {
   return (
-    <div className="flex flex-col pb-6">
+    <div className="flex flex-col pb-8">
       <OnboardingArt>
         <MedicationIllustration />
       </OnboardingArt>
@@ -45,38 +76,46 @@ export default function MedicationStep({ selectedMed, onSelect }) {
         <p className="text-[15px] text-gray-500 leading-relaxed px-2">This helps us tailor your dose schedule and inventory tracking.</p>
       </div>
 
-      {/* Every choice in one card, one equal pill row each — the card carries the
-          thin border and soft shadow, and the helper line sits inside it under
-          the last row so the whole choice lives in one place. */}
+      {/* Every choice in one card — the card carries the thin border and soft
+          shadow, and the chips wrap inside it, centred, with equal gaps both
+          ways. The helper line sits inside the card under the last chip so the
+          whole choice lives in one place. */}
       <div
         role="group"
         aria-label="Which medication are you on?"
-        className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04]"
+        className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04]"
       >
-        <div className="flex flex-col gap-2">
-          {MED_OPTIONS.map((opt) => {
-            const selected = selectedMed === opt.label;
-            return (
-              <button
-                key={opt.label}
-                type="button"
-                onClick={() => { sound.tap(); onSelect(opt.label); }}
-                aria-pressed={selected}
-                className={`flex min-h-[44px] w-full items-center gap-2.5 rounded-full border px-3.5 py-2 text-left text-[15px] font-medium transition-all active:scale-[0.99] ${
-                  selected
-                    ? "border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"
-                    : "border-gray-200 bg-white text-gray-900 hover:border-gray-300 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0]"
-                }`}
-              >
-                <PillIcon size={17} />
-                <span className="min-w-0 flex-1">{opt.label}</span>
-                {selected && <Check size={15} className="flex-shrink-0 text-indigo-600" strokeWidth={3} />}
-              </button>
-            );
-          })}
+        <div className="flex flex-wrap justify-center gap-1.5">
+          {SHORT_MEDS.map((opt) => (
+            <MedChip
+              key={opt.label}
+              label={opt.label}
+              selected={selectedMed === opt.label}
+              onSelect={onSelect}
+            />
+          ))}
+          {/* Too long to sit beside another chip, so each takes a row of its own
+              — still only as wide as its name. */}
+          {LONG_MEDS.map((opt) => (
+            <div key={opt.label} className="flex w-full justify-center">
+              <MedChip
+                label={opt.label}
+                selected={selectedMed === opt.label}
+                onSelect={onSelect}
+                compact
+              />
+            </div>
+          ))}
+          {OTHER_MED && (
+            <MedChip
+              label={OTHER_MED.label}
+              selected={selectedMed === OTHER_MED.label}
+              onSelect={onSelect}
+            />
+          )}
         </div>
 
-        <p className="mt-3 px-1 text-[13px] leading-snug text-gray-500 dark:text-[#9A9DAE]">
+        <p className="mt-3 px-1 text-left text-[13px] leading-snug text-gray-500 dark:text-[#9A9DAE]">
           Taking more than one? You can add the others after setup.
         </p>
       </div>
