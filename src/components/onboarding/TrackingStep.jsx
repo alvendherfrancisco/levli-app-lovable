@@ -59,46 +59,46 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 leading-tight px-2">
           What would you like to keep an eye on?
         </h1>
-        <p className="text-[15px] text-gray-500 leading-relaxed px-2">
-          Log as much or as little as feels right for you.
-        </p>
-        <p className="mt-0.5 text-[15px] text-gray-500 leading-relaxed px-2">
-          Pick any that apply. You can change this anytime in Settings.
+        <p className="mt-1 text-[15px] text-gray-500 leading-relaxed px-2">
+          Pick any that apply. You can change this later.
         </p>
       </div>
 
+      {/* All six choices in one card — one compact row each, divided by a
+          hairline. The card carries the single thin border and soft shadow. */}
       <div
         role="group"
         aria-label="What would you like to keep an eye on?"
-        className="flex flex-col gap-2 mb-4"
+        className="mb-3 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04]"
       >
-        {TRACKING_OPTIONS.map((opt) => (
-          <OptionCard
-            key={opt.key}
-            icon={opt.Icon}
-            label={opt.label}
-            description={opt.desc}
-            selected={tracking.includes(opt.key)}
-            onToggle={(on) => setOne(opt.key, on)}
-          />
-        ))}
+        <div className="divide-y divide-gray-100 dark:divide-white/[0.08]">
+          {TRACKING_OPTIONS.map((opt) => (
+            <OptionCard
+              key={opt.key}
+              icon={opt.Icon}
+              label={opt.label}
+              selected={tracking.includes(opt.key)}
+              onToggle={(on) => setOne(opt.key, on)}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Measurement preferences — how what is logged is shown, not what is
           tracked, so they sit in their own card below the choices, drawn on the
           app's standard surface. */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <p className="mb-2 text-sm font-medium text-gray-900">Measurement preferences</p>
-        <div className="divide-y divide-gray-100">
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04]">
+        <p className="mb-1.5 text-[13px] font-medium text-gray-900 dark:text-[#E8E9F0]">Measurement preferences</p>
+        <div className="divide-y divide-gray-100 dark:divide-white/[0.08]">
           {UNIT_GROUPS.map((group) => (
-            <div key={group.key} className="flex items-center justify-between gap-3 py-3">
-              <span className="text-[15px] text-gray-900">{group.label}</span>
+            <div key={group.key} className="flex items-center justify-between gap-3 py-2.5">
+              <span className="text-[15px] text-gray-900 dark:text-[#E8E9F0]">{group.label}</span>
               {/* One pill, split in two: the same width and height on every row,
                   so the three sit in a neat column. */}
               <div
                 role="group"
                 aria-label={group.label}
-                className="flex h-11 w-[120px] flex-shrink-0 rounded-full bg-gray-100 p-1"
+                className="flex h-10 w-[112px] flex-shrink-0 rounded-full bg-gray-100 p-0.5 dark:bg-white/[0.08]"
               >
                 {group.options.map((opt) => {
                   const on = units[group.key] === opt.value;
