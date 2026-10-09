@@ -39,13 +39,14 @@ export default function SplashScreen({ ready = true, onFinish, onSequenceEnd }) 
 
   // The droplet's own sounds, written onto the same beats as its animation: the
   // landing, the ring, the face, the sparkles. Played once, when the splash
-  // appears. A still logo has nothing to sound out, and whether the browser
-  // allows audio at all is decided inside src/lib/splashSounds.js.
+  // appears, and stopped when it goes. A still logo has nothing to sound out,
+  // and whether the browser has allowed audio yet is handled inside the
+  // sequence itself (src/lib/splashSounds.js).
   const sounded = useRef(false);
   useEffect(() => {
-    if (reduced || sounded.current) return;
+    if (reduced || sounded.current) return undefined;
     sounded.current = true;
-    playSplashSounds();
+    return playSplashSounds();
   }, [reduced]);
 
   const steps = reduced ? [SPLASH_TIMING.reducedHold] : SPLASH_STEPS;

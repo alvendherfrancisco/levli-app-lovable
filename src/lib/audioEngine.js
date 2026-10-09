@@ -9,9 +9,12 @@
 // the app. They are quiet (peak 0.15), brief, and always fade out rather than
 // stopping dead, which is what keeps them from clicking.
 //
-// iOS Safari will not start audio before a user gesture, so the AudioContext is
-// created on the first tap of the session (never on load) and resumed whenever
-// it is found suspended. With no Web Audio available every call is a no-op.
+// Audio may only begin once the person has touched the page — that is the
+// browser's rule, and the only thing that can lift it is the browser itself
+// (an installed app, a site it trusts). So the context is created on the first
+// tap of the session, and the launch sequence asks for it on its own before
+// that, purely to find out whether it may start. With no Web Audio available
+// every call is a no-op.
 //
 // The phone's silent switch is respected by doing nothing at all: Web Audio on
 // iOS already follows the ringer switch, and nothing here tries to override it.
@@ -61,22 +64,30 @@ export function audioContext() {
     try { audio = new AudioCtx(); } catch { return null; }
   }
   if (audio.state === "suspended") {
-    try { audio.resume(); } catch { /* ignore */ }
+    // Asked for, never waited on: while the page is untouched the browser
+    // refuses, and a refusal is simply the answer — not an error to show.
+    try {
+      const resumed = audio.resume();
+      if (resumed && typeof resumed.catch === "function") resumed.catch(() => {});
+    } catch { /* ignore */ }
   }
   return audio;
 }
 
 /**
- * The shared context, but only once the browser has actually started it — which
- * happens on the first gesture of the page.
+ * Tries to start audio without a gesture, which is what a launch needs.
  *
- * A sound nobody asked for with a gesture (the launch sequence) uses this rather
- * than the call above: notes scheduled on a context that is still blocked would
- * all fire late, in a heap, the moment the person first tapped something else.
- * Skipping them is the right silence.
+ * Whether that is allowed is the browser's decision, not ours: it says yes
+ * straight away to an installed app or a site it considers well used, and no to
+ * everything else until the page is touched. Resolves to the shared context
+ * when it may start, and to null when it may not — the caller then waits for
+ * the first tap.
  */
-export function liveContext() {
-  return audio && audio.state === "running" ? audio : null;
+export async function resumeContext() {
+  const ctx = audioContext();
+  if (!ctx || ctx.state === "running") return ctx;
+  try { await ctx.resume(); } catch { /* not allowed yet */ }
+  return ctx.state === "running" ? ctx : null;
 }
 
 // The first tap of the session unlocks audio for the rest of it, so a sound
