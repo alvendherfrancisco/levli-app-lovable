@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { SignUpIllustration } from "@/components/onboarding/OnboardingIllustrations";
-import SocialAuthButtons from "@/components/onboarding/SocialAuthButtons";
 import AccountEmailForm from "@/components/onboarding/AccountEmailForm";
 import VerifyEmailStep from "@/components/onboarding/VerifyEmailStep";
 import GoogleIcon from "@/components/GoogleIcon";
@@ -116,12 +115,9 @@ export default function SignUpStep({
       </OnboardingArt>
 
       <div className="text-center mb-5">
-        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 leading-tight px-2">
           Create your account
         </h1>
-        <p className="text-[15px] text-gray-500 px-3 leading-relaxed">
-          Sign up to save your journey and pick up where you left off, on any device.
-        </p>
       </div>
 
       {notice && (
@@ -161,18 +157,16 @@ export default function SignUpStep({
           </button>
         </div>
       ) : (
-        <div className="flex w-full flex-1 flex-col">
-          <SocialAuthButtons onProvider={onProvider} disabled={loading} />
-          <AccountEmailForm
-            email={email}
-            setEmail={setEmail}
-            password={password}
-            setPassword={setPassword}
-            onSubmit={signUp}
-            loading={loading}
-            error={error}
-          />
-        </div>
+        <AccountEmailForm
+          email={email}
+          setEmail={setEmail}
+          password={password}
+          setPassword={setPassword}
+          onSubmit={signUp}
+          loading={loading}
+          error={error}
+          onProvider={onProvider}
+        />
       )}
     </div>
   );

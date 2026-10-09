@@ -23,7 +23,6 @@ export default function OnboardingScreen({
   canContinue = true,
   ctaNote,
   hideFooter = false,
-  fill = false,
 }) {
   const isFirstStep = step === 0;
   const isLastStep = step === totalSteps - 1;
@@ -91,12 +90,11 @@ export default function OnboardingScreen({
             onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 2)}
             className="h-full overflow-y-auto overscroll-contain px-5 sm:px-6 py-4"
           >
-            {/* min-h-full with my-auto centres a short step, and lets a tall one
-                scroll from its very top instead of being clipped at the top.
-                A step that carries its own pinned footer fills the space instead
-                (fill), so that footer sits at the bottom on every screen size. */}
+            {/* min-h-full with my-auto centres a short step in the space the
+                header and the CTA leave, and lets a step taller than that area
+                scroll from its very top instead of being clipped at the top. */}
             <div className="flex min-h-full flex-col">
-              <div key={step} className={`w-full ${fill ? "flex flex-1 flex-col" : "my-auto"} ${animClass}`}>
+              <div key={step} className={`w-full my-auto ${animClass}`}>
                 {children}
               </div>
             </div>

@@ -309,7 +309,6 @@ export default function Onboarding() {
       canContinue={canContinue}
       ctaNote={step === 5 && !canContinue ? scheduleIssue : undefined}
       hideFooter={step === 3}
-      fill={step === 3}
     >
       {step === 0 && <WelcomeStep />}
       {step === 1 && <EmpathyStep />}

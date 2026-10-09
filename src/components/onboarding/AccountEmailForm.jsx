@@ -1,12 +1,13 @@
 import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import SocialAuthButtons from "@/components/onboarding/SocialAuthButtons";
 import {
   emailError, passwordError, passwordStrength, formBlocker,
 } from "@/lib/accountValidation";
 import { sound } from "@/lib/sounds";
 
-/** The one field style, so the provider buttons above can line up with it exactly. */
+/** The one field style, shared by both fields. */
 const FIELD =
   "w-full border-2 border-gray-200 bg-white rounded-xl px-4 py-3.5 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors";
 
@@ -33,7 +34,7 @@ const STRENGTH_BAR = {
  */
 export default function AccountEmailForm({
   email, setEmail, password, setPassword,
-  onSubmit, loading, error,
+  onSubmit, loading, error, onProvider,
 }) {
   const [touched, setTouched] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -68,7 +69,7 @@ export default function AccountEmailForm({
   };
 
   return (
-    <form onSubmit={submit} className="flex w-full flex-1 flex-col">
+    <form onSubmit={submit} className="onb-cta flex w-full flex-col">
       {error && (
         <p className="mb-4 w-full rounded-xl bg-red-50 px-3 py-2 text-center text-sm text-red-600">{error}</p>
       )}
@@ -141,12 +142,11 @@ export default function AccountEmailForm({
         ) : null}
       </div>
 
-      {/* Create account, pinned to the bottom of the step so it is there whatever
-          the form is doing — with the reason it is not ready yet, which waits for
-          the first touch so an untouched form is not scolded, directly above it,
-          and the legal line below it. The gradient is what the fields scroll
-          under: a soft fade rather than a plate with an edge. */}
-      <div className="onb-cta sticky bottom-0 z-10 mt-auto w-full bg-gradient-to-t from-white via-white to-transparent pt-6">
+      {/* Create account, directly under the two fields — with the reason it is
+          not ready yet, which waits for the first touch so an untouched form is
+          not scolded, directly above it. Below it come the other two ways in,
+          then the legal line and the way to log in instead. */}
+      <div className="mt-6 w-full">
         {blocker && !loading && (touched.email || touched.password || email || password) && (
           <p className="mb-2 text-center text-[13px] text-gray-500">{blocker}</p>
         )}
@@ -161,14 +161,23 @@ export default function AccountEmailForm({
             </span>
           ) : "Create account"}
         </button>
-
-        <p className="mt-4 px-2 text-center text-[12px] leading-relaxed text-gray-500">
-          By creating an account you agree to our{" "}
-          <Link to="/terms" className="text-indigo-600 underline">Terms of Service</Link>{" "}
-          and{" "}
-          <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>.
-        </p>
       </div>
+
+      {/* The divider and the two provider marks sit under the button, below the
+          one tap that creates an account with the email just typed. */}
+      <SocialAuthButtons onProvider={onProvider} disabled={loading} />
+
+      <p className="mt-6 px-2 text-center text-[12px] leading-relaxed text-gray-500">
+        By creating an account you agree to our{" "}
+        <Link to="/terms" className="text-indigo-600 underline">Terms of Service</Link>{" "}
+        and{" "}
+        <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>.
+      </p>
+
+      <p className="mt-4 px-2 text-center text-[14px] text-gray-500">
+        Already have an account?{" "}
+        <Link to="/login" className="font-medium text-indigo-600 hover:underline">Log in</Link>
+      </p>
     </form>
   );
 }
