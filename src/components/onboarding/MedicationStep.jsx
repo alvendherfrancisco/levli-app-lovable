@@ -37,24 +37,28 @@ const OTHER_MED = MED_OPTIONS.find((o) => o.label === "Other");
 const ORAL_LABELS = ["Rybelsus®", "Foundayo®"];
 const BOTH_LABELS = ["Wegovy®"];
 
+/** The mark's size, so every chip carries the same one. */
+const ICON = 28;
+
 function medIcon(label) {
   if (BOTH_LABELS.includes(label)) {
     return (
       <>
-        <PillIcon size={14} />
-        <InjectionIcon size={14} />
+        <PillIcon size={ICON} />
+        <InjectionIcon size={ICON} />
       </>
     );
   }
-  if (ORAL_LABELS.includes(label)) return <PillIcon size={14} />;
-  if (label === "Other") return <NeutralIcon size={14} />;
-  return <InjectionIcon size={14} />;
+  if (ORAL_LABELS.includes(label)) return <PillIcon size={ICON} />;
+  if (label === "Other") return <NeutralIcon size={ICON} />;
+  return <InjectionIcon size={ICON} />;
 }
 
 /**
  * One medication chip: only as wide as its own name, always on one line, with
  * its route mark on the left and the checkmark arriving on the right only once
- * the chip is chosen. Every chip is the same height.
+ * the chip is chosen. Every chip is the same height, tall enough for the full
+ * size of its mark.
  */
 function MedChip({ label, selected, onSelect, compact = false }) {
   return (
@@ -62,7 +66,7 @@ function MedChip({ label, selected, onSelect, compact = false }) {
       type="button"
       onClick={() => { sound.tap(); onSelect(label); }}
       aria-pressed={selected}
-      className={`inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-full px-3 font-medium transition-all active:scale-[0.98] ${
+      className={`inline-flex h-12 items-center gap-2 whitespace-nowrap rounded-full px-3.5 font-medium transition-all active:scale-[0.98] ${
         compact ? "text-[12px]" : "text-[14px]"
       } ${
         selected
@@ -70,7 +74,7 @@ function MedChip({ label, selected, onSelect, compact = false }) {
           : "border border-gray-200 bg-white text-gray-900 hover:border-gray-300 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0]"
       }`}
     >
-      <span className="flex flex-shrink-0 items-center gap-1">{medIcon(label)}</span>
+      <span className="flex flex-shrink-0 items-center gap-2">{medIcon(label)}</span>
       {label}
       {selected && <Check size={14} className="flex-shrink-0 text-indigo-600" strokeWidth={3} />}
     </button>
@@ -82,8 +86,9 @@ function MedChip({ label, selected, onSelect, compact = false }) {
  * medication a person is mainly on; anything else is added afterwards, from
  * Home or Medications, so every onboarding screen stays the same length.
  *
- * The choices sit in one white card, drawn on the app's standard surface: pill
- * chips that wrap and centre themselves, each only as wide as its own name.
+ * The choices sit directly on the screen's own background — no card around
+ * them: pill chips that wrap and centre themselves, each only as wide as its
+ * own name, with the helper line below the block as plain small text.
  */
 export default function MedicationStep({ selectedMed, onSelect }) {
   return (
@@ -98,49 +103,46 @@ export default function MedicationStep({ selectedMed, onSelect }) {
         <p className="text-[15px] text-gray-500 leading-relaxed px-2">This helps us tailor your dose schedule and inventory tracking.</p>
       </div>
 
-      {/* Every choice in one card — the card carries the thin border and soft
-          shadow, and the chips wrap inside it, centred, with equal gaps both
-          ways. The helper line sits inside the card under the last chip so the
-          whole choice lives in one place. */}
+      {/* The chips sit straight on the screen's background, centred, with the
+          same gaps both ways. Each chip keeps its own white fill and hairline
+          border, so it stays visible without a card behind it. */}
       <div
         role="group"
         aria-label="Which medication are you on?"
-        className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-sm dark:border-white/[0.12] dark:bg-white/[0.04]"
+        className="flex flex-wrap justify-center gap-2"
       >
-        <div className="flex flex-wrap justify-center gap-1.5">
-          {SHORT_MEDS.map((opt) => (
+        {SHORT_MEDS.map((opt) => (
+          <MedChip
+            key={opt.label}
+            label={opt.label}
+            selected={selectedMed === opt.label}
+            onSelect={onSelect}
+          />
+        ))}
+        {/* Too long to sit beside another chip, so each takes a row of its own
+            — still only as wide as its name. */}
+        {LONG_MEDS.map((opt) => (
+          <div key={opt.label} className="flex w-full justify-center">
             <MedChip
-              key={opt.label}
               label={opt.label}
               selected={selectedMed === opt.label}
               onSelect={onSelect}
+              compact
             />
-          ))}
-          {/* Too long to sit beside another chip, so each takes a row of its own
-              — still only as wide as its name. */}
-          {LONG_MEDS.map((opt) => (
-            <div key={opt.label} className="flex w-full justify-center">
-              <MedChip
-                label={opt.label}
-                selected={selectedMed === opt.label}
-                onSelect={onSelect}
-                compact
-              />
-            </div>
-          ))}
-          {OTHER_MED && (
-            <MedChip
-              label={OTHER_MED.label}
-              selected={selectedMed === OTHER_MED.label}
-              onSelect={onSelect}
-            />
-          )}
-        </div>
-
-        <p className="mt-3 px-1 text-left text-[13px] leading-snug text-gray-500 dark:text-[#9A9DAE]">
-          Taking more than one? You can add the others after setup.
-        </p>
+          </div>
+        ))}
+        {OTHER_MED && (
+          <MedChip
+            label={OTHER_MED.label}
+            selected={selectedMed === OTHER_MED.label}
+            onSelect={onSelect}
+          />
+        )}
       </div>
+
+      <p className="mt-5 px-2 text-center text-[13px] leading-snug text-gray-500 dark:text-[#9A9DAE]">
+        Taking more than one? You can add the others after setup.
+      </p>
     </div>
   );
 }

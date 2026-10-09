@@ -29,28 +29,28 @@ function Grad({ id }) {
   );
 }
 
-// ── Injection — pen body with a plunger behind and a needle in front ───────
-export function InjectionIcon({ size = 14, className }) {
+// ── Injection pen — dose dial, body with its window, then the needle ───────
+export function InjectionIcon({ size = 28, className }) {
   const gid = useGid("inj");
   return (
     <SvgIcon size={size} className={className}>
       <defs><Grad id={gid} /></defs>
-      <rect x="6" y="20.5" width="8" height="7" rx="2.5" fill={`url(#${gid})`} />
-      <rect x="14" y="17" width="22" height="14" rx="5" fill={`url(#${gid})`} />
-      <line x1="21" y1="20" x2="21" y2="28" stroke="white" strokeWidth="2" strokeOpacity="0.5" />
-      <rect x="36" y="22.5" width="8" height="3" rx="1.5" fill={`url(#${gid})`} />
+      <rect x="4" y="19" width="9" height="10" rx="4" fill={`url(#${gid})`} />
+      <rect x="12" y="16.5" width="24" height="15" rx="7" fill={`url(#${gid})`} />
+      <rect x="18" y="20" width="10" height="8" rx="2.5" fill="white" fillOpacity="0.35" />
+      <rect x="35" y="22.5" width="10" height="3" rx="1.5" fill={`url(#${gid})`} />
     </SvgIcon>
   );
 }
 
 // ── Neutral — a plain plus: no route implied, used for "Other" ─────────────
-export function NeutralIcon({ size = 14, className }) {
+export function NeutralIcon({ size = 28, className }) {
   const gid = useGid("plus");
   return (
     <SvgIcon size={size} className={className}>
       <defs><Grad id={gid} /></defs>
-      <rect x="21.5" y="12" width="5" height="24" rx="2.5" fill={`url(#${gid})`} />
-      <rect x="12" y="21.5" width="24" height="5" rx="2.5" fill={`url(#${gid})`} />
+      <rect x="20.5" y="11" width="7" height="26" rx="3.5" fill={`url(#${gid})`} />
+      <rect x="11" y="20.5" width="26" height="7" rx="3.5" fill={`url(#${gid})`} />
     </SvgIcon>
   );
 }
