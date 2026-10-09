@@ -677,4 +677,8 @@ html { background-color: var(--launch-bg); }
    fighting over the same space, so the last line of content — the button and
    the link under it — is never pressed against the bottom of the screen. */
 .onb-cta { padding-bottom: calc(2.25rem + env(safe-area-inset-bottom, 0px)); }
+/* The onboarding shell's own CTA footer: the button is the last thing in it, so
+   the space above and below the button is balanced rather than reserving a slot
+   under it. The sign-up step's footer keeps .onb-cta, which still does. */
+.onb-shell-cta { padding-top: 1rem; padding-bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px)); }
 .onb-cta-btn { padding-top: 1rem; padding-bottom: 1rem; }

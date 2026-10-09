@@ -21,7 +21,6 @@ export default function OnboardingScreen({
   onBack,
   ctaLabel,
   canContinue = true,
-  secondaryAction,
   ctaNote,
   hideFooter = false,
   fill = false,
@@ -116,7 +115,7 @@ export default function OnboardingScreen({
             Safe-area inset respected via max() for devices with a home
             indicator. */}
         {!hideFooter && (
-          <div className="onb-cta px-6 sm:px-8 pt-2 flex-shrink-0 flex flex-col items-center">
+          <div className="onb-shell-cta px-6 sm:px-8 flex-shrink-0 flex flex-col items-center">
             {/* What is still missing, said in short, sitting with the button so
                 it is on screen at the moment the button will not continue. */}
             {ctaNote && (
@@ -135,14 +134,6 @@ export default function OnboardingScreen({
             >
               {ctaText}
             </button>
-            {secondaryAction && (
-              <button
-                onClick={() => { sound.tap(); secondaryAction.onClick(); }}
-                className="w-full max-w-[400px] text-center text-gray-500 text-sm font-medium mt-3 hover:text-gray-700 transition-colors"
-              >
-                {secondaryAction.label}
-              </button>
-            )}
           </div>
         )}
       </div>
