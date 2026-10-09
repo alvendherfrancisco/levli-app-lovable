@@ -23,12 +23,16 @@ export default function SocialAuthButtons({ onProvider, disabled = false }) {
 
   return (
     <div className="w-full">
-      {/* 20pt of air above and below the word, with the lines running the full
-          width of the form. */}
-      <div className="my-5 flex items-center gap-3">
-        <span className="h-px flex-1 bg-gray-200" />
-        <span className="text-[12px] font-semibold tracking-wide text-gray-400">OR</span>
-        <span className="h-px flex-1 bg-gray-200" />
+      {/* The divider, drawn the way the login screen draws it: a hairline the
+          full width of the card, with the word sitting in a gap on the card's
+          own surface. */}
+      <div className="relative my-5">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-200" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-white px-3 text-gray-400">or</span>
+        </div>
       </div>
 
       <div className="flex items-center justify-center gap-4">

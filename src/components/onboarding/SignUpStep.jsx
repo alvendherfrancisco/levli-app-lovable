@@ -108,16 +108,21 @@ export default function SignUpStep({
     );
   }
 
+  // .onb-cta carries the bottom breathing room, so the last line of content
+  // stays clear of the home indicator; the step area above scrolls.
   return (
-    <div className="flex flex-col">
+    <div className="onb-cta flex flex-col">
       <OnboardingArt>
         <SignUpIllustration />
       </OnboardingArt>
 
       <div className="text-center mb-5">
-        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 leading-tight px-2">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
           Create your account
         </h1>
+        <p className="text-[15px] text-gray-500 px-3 leading-relaxed">
+          Sign up to save your journey and pick up where you left off, on any device.
+        </p>
       </div>
 
       {notice && (
@@ -157,16 +162,33 @@ export default function SignUpStep({
           </button>
         </div>
       ) : (
-        <AccountEmailForm
-          email={email}
-          setEmail={setEmail}
-          password={password}
-          setPassword={setPassword}
-          onSubmit={signUp}
-          loading={loading}
-          error={error}
-          onProvider={onProvider}
-        />
+        <>
+          <AccountEmailForm
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            onSubmit={signUp}
+            loading={loading}
+            error={error}
+            onProvider={onProvider}
+          />
+
+          {/* Under the card: the legal line, then the way to log in instead —
+              the same wording and link the login screen's footer carries when
+              read the other way round. */}
+          <p className="mt-5 px-2 text-center text-[12px] leading-relaxed text-gray-500">
+            By creating an account you agree to our{" "}
+            <Link to="/terms" className="text-indigo-600 underline">Terms of Service</Link>{" "}
+            and{" "}
+            <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>.
+          </p>
+
+          <p className="mt-6 text-center text-[14px] text-gray-500">
+            Already have an account?{" "}
+            <Link to="/login" className="font-medium text-indigo-600 hover:underline">Log in</Link>
+          </p>
+        </>
       )}
     </div>
   );

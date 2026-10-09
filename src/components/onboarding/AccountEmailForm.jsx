@@ -1,15 +1,20 @@
 import React, { useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import SocialAuthButtons from "@/components/onboarding/SocialAuthButtons";
 import {
   emailError, passwordError, passwordStrength, formBlocker,
 } from "@/lib/accountValidation";
 import { sound } from "@/lib/sounds";
 
-/** The one field style, shared by both fields. */
+/**
+ * The one field style, drawn the way the login screen draws its fields: a 48pt
+ * input with the mark in a fixed slot on the left, so the two fields line up
+ * exactly and the card reads as a standard sign-up form.
+ */
 const FIELD =
-  "w-full border-2 border-gray-200 bg-white rounded-xl px-4 py-3.5 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors";
+  "h-12 w-full rounded-lg border border-gray-200 bg-white pl-10 pr-4 text-[16px] text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-indigo-500";
+
+const LABEL = "mb-2 block text-sm font-medium text-gray-900";
 
 const STRENGTH_BAR = {
   weak: "bg-red-500",
@@ -19,7 +24,7 @@ const STRENGTH_BAR = {
 };
 
 /**
- * The email half of the account step: an email and a password, and nothing else.
+ * The account card: an email and a password, and nothing else.
  *
  * Levli asks only for the two things an account cannot exist without. A name is
  * not one of them: it arrives from Google or Apple when the provider gives one,
@@ -31,6 +36,11 @@ const STRENGTH_BAR = {
  * what still needs filling rather than failing silently. The password is shown
  * behind an eye toggle instead of a second confirmation field, and carries a
  * live strength hint that never blocks anything.
+ *
+ * The card holds, in order: the two labelled fields, the divider and the two
+ * provider marks, and the button that creates the account — the same card,
+ * labels, marks and indigo button the login screen uses. What sits under the
+ * card (the legal line and the way to log in instead) is the caller's.
  */
 export default function AccountEmailForm({
   email, setEmail, password, setPassword,
@@ -69,40 +79,46 @@ export default function AccountEmailForm({
   };
 
   return (
-    <form onSubmit={submit} className="onb-cta flex w-full flex-col">
+    <form onSubmit={submit} className="w-full rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       {error && (
         <p className="mb-4 w-full rounded-xl bg-red-50 px-3 py-2 text-center text-sm text-red-600">{error}</p>
       )}
 
       <div className="w-full">
-        <input
-          ref={emailRef}
-          type="email"
-          inputMode="email"
-          placeholder="Email"
-          aria-label="Email"
-          autoComplete="email"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          enterKeyHint="next"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onFocus={revealField}
-          onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-          onKeyDown={(e) => focusNext(e, passwordRef)}
-          className={FIELD}
-        />
+        <label htmlFor="signup-email" className={LABEL}>Email</label>
+        <div className="relative w-full">
+          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+          <input
+            id="signup-email"
+            ref={emailRef}
+            type="email"
+            inputMode="email"
+            placeholder="you@example.com"
+            autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="next"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onFocus={revealField}
+            onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+            onKeyDown={(e) => focusNext(e, passwordRef)}
+            className={FIELD}
+          />
+        </div>
         {emailMsg && <p className="mt-2 text-[13px] text-red-600">{emailMsg}</p>}
       </div>
 
-      <div className="mt-3 w-full">
+      <div className="mt-4 w-full">
+        <label htmlFor="signup-password" className={LABEL}>Password</label>
         <div className="relative w-full">
+          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
           <input
+            id="signup-password"
             ref={passwordRef}
             type={showPassword ? "text" : "password"}
-            placeholder="Password"
-            aria-label="Password"
+            placeholder="••••••••"
             autoComplete="new-password"
             enterKeyHint="go"
             value={password}
@@ -118,7 +134,7 @@ export default function AccountEmailForm({
             aria-label={showPassword ? "Hide password" : "Show password"}
             className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 hover:text-gray-600"
           >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
 
@@ -142,42 +158,26 @@ export default function AccountEmailForm({
         ) : null}
       </div>
 
-      {/* Create account, directly under the two fields — with the reason it is
-          not ready yet, which waits for the first touch so an untouched form is
-          not scolded, directly above it. Below it come the other two ways in,
-          then the legal line and the way to log in instead. */}
-      <div className="mt-6 w-full">
-        {blocker && !loading && (touched.email || touched.password || email || password) && (
-          <p className="mb-2 text-center text-[13px] text-gray-500">{blocker}</p>
-        )}
-        <button
-          type="submit"
-          disabled={loading || !!blocker}
-          className="onb-cta-btn w-full rounded-full bg-indigo-600 text-base font-semibold text-white shadow-lg shadow-indigo-600/25 transition-all active:scale-95 disabled:bg-gray-200 disabled:text-gray-600 disabled:shadow-none disabled:active:scale-100"
-        >
-          {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" /> Creating account...
-            </span>
-          ) : "Create account"}
-        </button>
-      </div>
-
-      {/* The divider and the two provider marks sit under the button, below the
-          one tap that creates an account with the email just typed. */}
+      {/* The divider and the two provider marks sit between the fields and the
+          button, exactly as they do on the login screen. */}
       <SocialAuthButtons onProvider={onProvider} disabled={loading} />
 
-      <p className="mt-6 px-2 text-center text-[12px] leading-relaxed text-gray-500">
-        By creating an account you agree to our{" "}
-        <Link to="/terms" className="text-indigo-600 underline">Terms of Service</Link>{" "}
-        and{" "}
-        <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>.
-      </p>
-
-      <p className="mt-4 px-2 text-center text-[14px] text-gray-500">
-        Already have an account?{" "}
-        <Link to="/login" className="font-medium text-indigo-600 hover:underline">Log in</Link>
-      </p>
+      {/* Why the button is not ready yet, which waits for the first touch so an
+          untouched form is not scolded, directly above it. */}
+      {blocker && !loading && (touched.email || touched.password || email || password) && (
+        <p className="mb-2 text-center text-[13px] text-gray-500">{blocker}</p>
+      )}
+      <button
+        type="submit"
+        disabled={loading || !!blocker}
+        className="flex h-12 w-full items-center justify-center rounded-lg bg-indigo-600 text-[15px] font-medium text-white transition-colors hover:bg-indigo-700 active:scale-[0.99] disabled:bg-gray-200 disabled:text-gray-400 disabled:hover:bg-gray-200 disabled:active:scale-100"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...
+          </>
+        ) : "Create account"}
+      </button>
     </form>
   );
 }
