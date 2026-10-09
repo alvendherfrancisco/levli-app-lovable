@@ -3,6 +3,7 @@ import { useNavigate, Navigate, Link } from "react-router-dom";
 import { PRIVACY_POLICY_VERSION } from "@/lib/appInfo";
 import OnboardingScreen from "@/components/onboarding/OnboardingScreen";
 import SignUpStep from "@/components/onboarding/SignUpStep";
+import VerifyEmailStep from "@/components/onboarding/VerifyEmailStep";
 import {
   WelcomeIllustration,
   EmpathyIllustration,
@@ -28,6 +29,7 @@ import {
   emptySchedule, getDayInterval, medicationScheduleFields, validateScheduleSelection,
 } from "@/lib/medicationSchedule";
 import { Check, ClipboardList, Settings2, ShieldCheck } from "lucide-react";
+import { useEmailVerification } from "@/hooks/useEmailVerification";
 import { sound } from "@/lib/sounds";
 import {
   CARD, CARD_GAP, CHECK_CIRCLE, CHECK_CIRCLE_OFF, CHECK_CIRCLE_ON,
@@ -164,6 +166,28 @@ export default function Onboarding() {
     if (!verifiedAccount && step > 3) setStep(3);
   }, [isLoadingAuth, user, step, verifiedAccount]);
 
+  // The account step's hand-off: everything answered so far, plus whatever that
+  // step needs carried with it (the first name, the address awaiting a code, the
+  // step to resume at).
+  const persistOnboardingState = (extra = {}) => {
+    saveDraft({
+      step: 4,
+      selectedMeds, doseAmount, doseOther, schedule, tracking, units,
+      gdprConsented, birthdate, ageConfirmed, parentalConsentName,
+      firstName, email: accountEmail, verified: verifiedAccount, awaitingVerification,
+      ...extra,
+    });
+  };
+
+  // The 6-digit code that turns the just-registered address into a session. It
+  // is kept here, with the account step's other answers, because the screen that
+  // shows it borrows the shell's own pinned CTA — the shell has to know when the
+  // six digits are complete and what to do with them when it is tapped.
+  const verification = useEmailVerification({
+    email: accountEmail.trim(),
+    persistState: persistOnboardingState,
+  });
+
   if (profile?.onboarding_completed) {
     return <Navigate to="/" replace />;
   }
@@ -206,19 +230,6 @@ export default function Onboarding() {
     setDoseAmount("");
     setDoseOther(false);
     setScheduleNudge(false);
-  };
-
-  // The account step's hand-off: everything answered so far, plus whatever that
-  // step needs carried with it (the first name, the address awaiting a code, the
-  // step to resume at).
-  const persistOnboardingState = (extra = {}) => {
-    saveDraft({
-      step: 4,
-      selectedMeds, doseAmount, doseOther, schedule, tracking, units,
-      gdprConsented, birthdate, ageConfirmed, parentalConsentName,
-      firstName, email: accountEmail, verified: verifiedAccount, awaitingVerification,
-      ...extra,
-    });
   };
 
   /**
@@ -309,6 +320,11 @@ export default function Onboarding() {
     setSchedule(nextSchedule);
   };
 
+  // Whether the account step is showing the code screen rather than the form.
+  // That screen draws no button of its own: it borrows the shell's, so its
+  // action is pinned above the home indicator exactly like Next everywhere else.
+  const verifying = step === 3 && awaitingVerification && !user && !isLoadingAuth;
+
   const ctaLabel =
     step === 0 ? "Get started" :
     step === 4 ? "Allow & continue" :
@@ -319,15 +335,16 @@ export default function Onboarding() {
     <OnboardingScreen
       step={step}
       totalSteps={TOTAL_STEPS}
-      onContinue={next}
+      onContinue={verifying ? verification.verify : next}
       onBack={back}
-      ctaLabel={ctaLabel}
-      canContinue={canContinue}
+      ctaLabel={verifying ? "Verify and continue" : ctaLabel}
+      canContinue={verifying ? verification.ready : canContinue}
+      ctaBusy={verifying && verification.loading}
       ctaNote={step === 5 && scheduleNudge ? scheduleNote : undefined}
       onBlockedContinue={step === 5 ? () => setScheduleNudge(true) : undefined}
       revealIssues={step === 5}
-      hideFooter={step === 3}
-      alignTop={step === 3}
+      hideFooter={step === 3 && !verifying}
+      alignTop={step === 3 && !verifying}
     >
       {step === 0 && <WelcomeStep />}
       {step === 1 && <EmpathyStep />}
@@ -343,6 +360,16 @@ export default function Onboarding() {
           // A session means this step is already answered, and the effect above
           // has just moved on to the next one.
           null
+        ) : awaitingVerification ? (
+          <VerifyEmailStep
+            email={accountEmail.trim()}
+            code={verification.code}
+            onCodeChange={verification.setCode}
+            onResend={verification.resend}
+            onBackToForm={() => { verification.clear(); setAwaitingVerification(false); }}
+            error={verification.error}
+            notice={verification.notice}
+          />
         ) : (
           <SignUpStep
             email={accountEmail}
@@ -350,7 +377,7 @@ export default function Onboarding() {
             persistState={persistOnboardingState}
             onProvider={startProvider}
             notice={providerNotice}
-            startAtVerify={awaitingVerification}
+            onRegistered={() => setAwaitingVerification(true)}
           />
         )
       )}

@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Loader2, MailCheck } from "lucide-react";
+import { MailCheck } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { sound } from "@/lib/sounds";
+import { VERIFICATION_CODE_LENGTH } from "@/lib/accountValidation";
 import {
-  ERROR_TEXT, HEADING, HEAD_BLOCK, ICON_CIRCLE_LG, LINK,
-  PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON, SUBTITLE,
+  ERROR_TEXT, HEADING, HEAD_BLOCK, ICON_CIRCLE_LG, SUBTITLE,
 } from "@/lib/uiStyles";
 
-const CODE_LENGTH = 6;
 const RESEND_COOLDOWN = 30; // seconds, so a code is never asked for twice at once
 
 // One code box: 56px tall, up to 48px wide, a 12px corner, white with a
@@ -21,6 +20,11 @@ const BOX_ON = "border-indigo-500 shadow-[0_0_0_4px_rgba(79,70,229,0.12)]";
 // Refused: the same hairline border, softened to red.
 const BOX_ERROR = "border-red-300 shadow-[0_0_0_4px_rgba(239,68,68,0.10)]";
 
+// The two ways on from here, under the boxes: one size, indigo, medium weight,
+// and no underline at all — not even the hover one, which on a phone flashes
+// for a moment after every tap.
+const LINK_PLAIN = "font-medium text-indigo-600";
+
 /**
  * The verification half of the email path.
  *
@@ -28,16 +32,16 @@ const BOX_ERROR = "border-red-300 shadow-[0_0_0_4px_rgba(239,68,68,0.10)]";
  * the account into a session. The screen offers a fresh code, and a way back to
  * the form with everything already typed still in place.
  *
- * It is drawn on the same tokens as every other onboarding screen: the same
- * heading, the same subtitle, the same code boxes and the same primary button,
- * starting at the top of the step area where the other screens' artwork starts.
+ * The icon, the heading and the six boxes are one group, held in the middle of
+ * the space between the progress bar and the pinned CTA — the same position the
+ * artwork and heading take on every other step, so no screen ends in empty
+ * space. The button itself is not drawn here: it is the shell's own, so it is
+ * pinned above the home indicator exactly like Next (see OnboardingScreen).
  */
 export default function VerifyEmailStep({
-  email, onVerify, onResend, onBackToForm, loading, error, notice,
+  email, code, onCodeChange, onResend, onBackToForm, error, notice,
 }) {
-  const [code, setCode] = useState("");
   const [cooldown, setCooldown] = useState(0);
-  const ready = code.length === CODE_LENGTH && !loading;
 
   // One tick a second while the countdown runs, and nothing once it is done.
   useEffect(() => {
@@ -54,11 +58,7 @@ export default function VerifyEmailStep({
   };
 
   return (
-    // .onb-cta carries the bottom breathing room, so the last link stays clear
-    // of the home indicator now that the shell's own CTA is hidden here.
-    <div className="onb-cta flex flex-col">
-      {/* The icon takes the place the illustrations take on every other step:
-          the top of the step, centred, with the same gap below it. */}
+    <div className="flex flex-col items-center">
       <div className="mb-4 flex justify-center">
         <span className={ICON_CIRCLE_LG}>
           <MailCheck size={32} strokeWidth={1.5} className="text-indigo-600" aria-hidden="true" />
@@ -79,14 +79,14 @@ export default function VerifyEmailStep({
       )}
 
       <InputOTP
-        maxLength={CODE_LENGTH}
+        maxLength={VERIFICATION_CODE_LENGTH}
         value={code}
-        onChange={setCode}
+        onChange={onCodeChange}
         autoFocus
         containerClassName="w-full"
       >
         <InputOTPGroup className="flex w-full items-center justify-center gap-1.5">
-          {Array.from({ length: CODE_LENGTH }).map((_, i) => (
+          {Array.from({ length: VERIFICATION_CODE_LENGTH }).map((_, i) => (
             <InputOTPSlot
               key={i}
               index={i}
@@ -104,34 +104,27 @@ export default function VerifyEmailStep({
         </p>
       )}
 
-      <button
-        onClick={() => { sound.tap(); onVerify(code); }}
-        disabled={!ready}
-        className={`${PRIMARY_BTN} mt-6 ${ready ? PRIMARY_BTN_ON : PRIMARY_BTN_OFF}`}
-      >
-        {loading ? (
-          <span className="flex items-center justify-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" /> Verifying...
-          </span>
-        ) : "Verify and continue"}
-      </button>
-
-      <p className="mt-4 text-center text-[15px] text-gray-500">
-        Didn't get it?{" "}
-        {cooldown > 0 ? (
-          <span className="font-medium text-indigo-400">Resend in {cooldown}s</span>
-        ) : (
-          <button onClick={askForAnother} className={LINK}>
-            Resend email
-          </button>
-        )}
-      </p>
-      <button
-        onClick={() => { sound.tap(); onBackToForm(); }}
-        className={`${LINK} mt-4 text-[15px]`}
-      >
-        Use a different email
-      </button>
+      {/* Directly under the boxes, centred, part of the same group: ask for
+          another code, or go back and use a different address. */}
+      <div className="mt-6 flex w-full flex-col items-center gap-4">
+        <p className="text-center text-[15px] text-gray-500">
+          Didn't get it?{" "}
+          {cooldown > 0 ? (
+            <span className="font-medium text-indigo-400">Resend in {cooldown}s</span>
+          ) : (
+            <button type="button" onClick={askForAnother} className={LINK_PLAIN}>
+              Resend email
+            </button>
+          )}
+        </p>
+        <button
+          type="button"
+          onClick={() => { sound.tap(); onBackToForm(); }}
+          className={`${LINK_PLAIN} text-[15px]`}
+        >
+          Use a different email
+        </button>
+      </div>
     </div>
   );
 }

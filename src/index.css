@@ -675,6 +675,18 @@ html { background-color: var(--launch-bg); }
    place now — src/components/onboarding/OnboardingArt.jsx — so every page shows
    it at the same size, in the same place. */
 
+/* The onboarding shell and the keyboard. A phone's keyboard rises over the
+   bottom of the screen, which is exactly where the pinned CTA and the end of a
+   step sit. OnboardingScreen measures the part of the screen it covers and
+   writes it to --kb on the shell (0 while no field has focus, and on any device
+   without a visual viewport). The shell gives up that much of its own height, so
+   the CTA stays above the keyboard and the step keeps every line it has,
+   scrolling within what is left. A wide screen is untouched: the card there
+   centres inside its own padding, with no keyboard to work around. */
+@media (max-width: 1023px) {
+  .onb-shell { padding-bottom: var(--kb, 0px); }
+}
+
 /* The CTA: a full-size touch target, sitting clear of the home indicator. The
    inset is added to the footer's own breathing room rather than the two
    fighting over the same space, so the last line of content — the button and

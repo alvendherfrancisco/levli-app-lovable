@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Loader2 } from "lucide-react";
 import AmbientBackground from "./AmbientBackground";
 import { sound } from "@/lib/sounds";
 import { NOTICE, PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON } from "@/lib/uiStyles";
@@ -21,6 +21,10 @@ export default function OnboardingScreen({
   onContinue,
   onBack,
   ctaLabel,
+  // A CTA whose own work is still running: the label stays, with a spinner
+  // beside it, so a step that verifies something on tap says so on the button
+  // that started it.
+  ctaBusy = false,
   canContinue = true,
   ctaNote,
   hideFooter = false,
@@ -60,8 +64,42 @@ export default function OnboardingScreen({
     prevStepRef.current = step;
   }, [step]);
 
+  // ── The keyboard ──────────────────────────────────────────────────────────
+  // The keyboard rises over the bottom of the screen, which is exactly where the
+  // pinned CTA and the end of the step sit. Where the browser says how much of
+  // the screen it covers (visualViewport), the shell gives up that much of its
+  // own height — see .onb-shell in src/index.css — so the CTA stays above the
+  // keyboard and the step keeps every line it has, scrolling within what is
+  // left. Nothing is given up while no field has focus, so a zoomed page and a
+  // wide screen are both left exactly as they are.
+  const shellRef = useRef(null);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const shell = shellRef.current;
+    if (!viewport || !shell) return;
+    const measure = () => {
+      const focused = document.activeElement;
+      const typing = !!focused && /^(input|textarea|select)$/i.test(focused.tagName);
+      const covered = typing
+        ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+        : 0;
+      shell.style.setProperty("--kb", `${covered}px`);
+    };
+    measure();
+    viewport.addEventListener("resize", measure);
+    viewport.addEventListener("scroll", measure);
+    return () => {
+      viewport.removeEventListener("resize", measure);
+      viewport.removeEventListener("scroll", measure);
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-[#FAFAFA] flex items-stretch sm:items-center justify-center sm:p-6 overflow-hidden">
+    <div
+      ref={shellRef}
+      className="onb-shell fixed inset-0 bg-[#FAFAFA] flex items-stretch sm:items-center justify-center sm:p-6 overflow-hidden"
+    >
       <AmbientBackground />
       <div className="w-full max-w-lg mx-auto flex flex-col h-full sm:h-[88vh] sm:max-h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:shadow-xl bg-white/70 backdrop-blur-md overflow-hidden relative z-10 border border-gray-100/80">
         {/* Header — back + segmented progress */}
@@ -155,7 +193,11 @@ export default function OnboardingScreen({
                     : PRIMARY_BTN_OFF
               }`}
             >
-              {ctaText}
+              {ctaBusy ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> {ctaText}
+                </span>
+              ) : ctaText}
             </button>
           </div>
         )}

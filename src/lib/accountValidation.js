@@ -9,6 +9,9 @@
 
 export const MIN_PASSWORD_LENGTH = 8;
 
+// The code emailed to a new address: six digits, in six boxes.
+export const VERIFICATION_CODE_LENGTH = 6;
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
 
 export function emailError(value) {

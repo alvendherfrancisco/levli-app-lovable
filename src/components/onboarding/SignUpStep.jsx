@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { SignUpIllustration } from "@/components/onboarding/OnboardingIllustrations";
 import AccountEmailForm from "@/components/onboarding/AccountEmailForm";
-import VerifyEmailStep from "@/components/onboarding/VerifyEmailStep";
 import GoogleIcon from "@/components/GoogleIcon";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import { formBlocker, isEmailTakenError } from "@/lib/accountValidation";
@@ -29,20 +28,21 @@ function friendlySignUpError(err) {
  *  - Google and Apple hand off to the provider and come back already signed in.
  *    Nothing is asked twice: the name and email come from the provider, that
  *    email is already verified, and the account step is skipped altogether.
- *  - Email creates the account, verifies the address with the emailed code, and
- *    reloads so the new session starts.
+ *  - Email creates the account, then the address is verified with the emailed
+ *    code. That code screen, and the button that submits it, belong to the page
+ *    and its shell (see Onboarding.jsx and VerifyEmailStep.jsx): this step hands
+ *    the page the address and says the account exists, and the page takes it
+ *    from there.
  * Either way the answers given so far are already on the device (see
  * src/lib/onboardingDraft.js) and are saved to the account in one write when
  * onboarding finishes.
  */
 export default function SignUpStep({
   email, setEmail,
-  persistState, onProvider, notice = "", startAtVerify = false,
+  persistState, onProvider, notice = "", onRegistered,
 }) {
-  const [view, setView] = useState(startAtVerify ? "verify" : "form");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [resent, setResent] = useState("");
   const [taken, setTaken] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -50,16 +50,16 @@ export default function SignUpStep({
 
   const signUp = async () => {
     setError("");
-    setResent("");
     setTaken(false);
     if (formBlocker({ email, password })) return;
     setLoading(true);
     try {
       await base44.auth.register({ email: address, password });
-      // Registered, not yet verified. The answers stay on the device, and a
-      // reload lands back on the code screen rather than an emptied form.
-      persistState?.({ email: address, step: 3, awaitingVerification: true, verified: false });
-      setView("verify");
+      // Registered, not yet verified. The answers stay on the device, and the
+      // page moves to the code screen — a reload lands back on it rather than on
+      // an emptied form.
+      persistState?.({ email: address, step: 4, awaitingVerification: true, verified: false });
+      onRegistered?.();
     } catch (err) {
       if (isEmailTakenError(err)) setTaken(true);
       else setError(friendlySignUpError(err));
@@ -67,49 +67,6 @@ export default function SignUpStep({
       setLoading(false);
     }
   };
-
-  const verify = async (code) => {
-    setError("");
-    setResent("");
-    setLoading(true);
-    try {
-      const result = await base44.auth.verifyOtp({ email: address, otpCode: code });
-      if (result?.access_token) base44.auth.setToken(result.access_token);
-      // Verified: everything answered travels on and is saved to the new account
-      // in one write when onboarding finishes. Replace, not push, so the account
-      // step is not left in the history behind onboarding.
-      persistState?.({ email: address, step: 4, verified: true, awaitingVerification: false });
-      window.location.replace("/onboarding");
-    } catch (err) {
-      setError("That code didn't match. Check the most recent email, or ask for a new one.");
-      setLoading(false);
-    }
-  };
-
-  const resend = async () => {
-    setError("");
-    setResent("");
-    try {
-      await base44.auth.resendOtp(address);
-      setResent("Sent. Check your inbox for a new code.");
-    } catch (err) {
-      setError("We couldn't send another code just now. Please try again in a moment.");
-    }
-  };
-
-  if (view === "verify") {
-    return (
-      <VerifyEmailStep
-        email={address}
-        onVerify={verify}
-        onResend={resend}
-        onBackToForm={() => { setView("form"); setError(""); setResent(""); setTaken(false); }}
-        loading={loading}
-        error={error}
-        notice={resent}
-      />
-    );
-  }
 
   // .onb-cta carries the bottom breathing room, so the last line of content
   // stays clear of the home indicator; the step area above scrolls.
