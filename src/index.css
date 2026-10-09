@@ -339,7 +339,14 @@ input[type="range"].pain-slider:active::-moz-range-thumb { transform: scale(1.1)
 .animate-onb-right { animation: onbSlideRight 0.3s ease-out; }
 .animate-onb-left { animation: onbSlideLeft 0.3s ease-out; }
 .animate-onb-bounce { animation: onbBounce 0.6s ease-out; }
-.animate-onb-sparkle { animation: onbSparkle 3s ease-in-out infinite; }
+/* Each sparkle pulses around its own middle. An SVG element scales from the
+   corner of the drawing unless it is told otherwise, which sent them swinging
+   across the picture instead of twinkling where they sit. */
+.animate-onb-sparkle {
+  animation: onbSparkle 3s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
 
 /* ── "Possible duplicate" warning (Add Shot Log) ───────────────────────────
    A one-second glow on the card's border, drawn the moment it appears. The card
