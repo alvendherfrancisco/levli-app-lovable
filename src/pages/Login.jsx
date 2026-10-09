@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import LevliLogo from "@/components/LevliLogo";
-import SocialAuthButtons from "@/components/onboarding/SocialAuthButtons";
+import GoogleIcon from "@/components/GoogleIcon";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -44,9 +44,8 @@ export default function Login() {
     }
   };
 
-  // The provider hand-off, through the same button the account step uses.
-  const handleProvider = (provider) => {
-    base44.auth.loginWithProvider(provider, getSafeRedirect());
+  const handleGoogle = () => {
+    base44.auth.loginWithProvider("google", getSafeRedirect());
   };
 
   return (
@@ -64,11 +63,22 @@ export default function Login() {
         </>
       }
     >
-      {/* The same provider button and divider as the account step, so the two
-          screens line up: the button is the width, height and radius of the
-          fields beneath it. */}
-      <div className="mb-2">
-        <SocialAuthButtons tone="theme" providers={["google"]} onProvider={handleProvider} />
+      <Button
+        variant="outline"
+        className="w-full h-12 text-sm font-medium mb-6"
+        onClick={handleGoogle}
+      >
+        <GoogleIcon className="w-5 h-5 mr-2" />
+        Continue with Google
+      </Button>
+
+      <div className="relative mb-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-3 text-muted-foreground">or</span>
+        </div>
       </div>
 
       {error && (

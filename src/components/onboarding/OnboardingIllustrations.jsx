@@ -6,10 +6,6 @@ import React from "react";
  * Consistent 280×200 viewBox, responsive width.
  */
 
-/** One four-pointed star, 18×18 units around its own centre, used by every
- *  sparkle so they are all the same size. */
-const SPARK_STAR = "M0 -9 L2.4 -2.4 L9 0 L2.4 2.4 L0 9 L-2.4 2.4 L-9 0 L-2.4 -2.4 Z";
-
 function Scene({ blobStyle, children, className = "" }) {
   return (
     <div className={`relative w-full max-w-[280px] mx-auto aspect-[7/5] ${className}`}>
@@ -234,14 +230,13 @@ export function SignUpIllustration({ className }) {
       <line x1="146" y1="98" x2="192" y2="98" stroke="#E5E7EB" strokeWidth="4" strokeLinecap="round" />
       <line x1="146" y1="112" x2="184" y2="112" stroke="#E5E7EB" strokeWidth="4" strokeLinecap="round" />
       <line x1="146" y1="126" x2="190" y2="126" stroke="#E5E7EB" strokeWidth="4" strokeLinecap="round" />
-      {/* small "+" new-account badge, at the card's bottom corner, clear of its edge */}
-      <circle cx="204" cy="166" r="14" fill="#F97316" />
-      <path d="M198 166 H 210 M 204 160 V 172" stroke="white" strokeWidth="3" strokeLinecap="round" />
-      {/* The sparkles: one star, drawn once and placed three times at the same
-          size, in the open space around the card rather than across its edge. */}
-      <g transform="translate(58 46)"><g className="animate-onb-sparkle"><path d={SPARK_STAR} fill="#F59E0B" /></g></g>
-      <g transform="translate(224 62)"><g className="animate-onb-sparkle" style={{ animationDelay: "1s" }}><path d={SPARK_STAR} fill="#6366F1" /></g></g>
-      <g transform="translate(52 152)"><g className="animate-onb-sparkle" style={{ animationDelay: "0.5s" }}><path d={SPARK_STAR} fill="#14B8A6" /></g></g>
+      {/* small "+" new-account badge */}
+      <circle cx="188" cy="150" r="14" fill="#F97316" />
+      <path d="M182 150 H 194 M 188 144 V 156" stroke="white" strokeWidth="3" strokeLinecap="round" />
+      {/* sparkles */}
+      <g className="animate-onb-sparkle"><path d="M55 50 L 57 55 L 62 57 L 57 59 L 55 64 L 53 59 L 48 57 L 53 55Z" fill="#F59E0B" /></g>
+      <g className="animate-onb-sparkle" style={{ animationDelay: "1s" }}><path d="M225 60 L 227 65 L 232 67 L 227 69 L 225 74 L 223 69 L 218 67 L 223 65Z" fill="#6366F1" /></g>
+      <g className="animate-onb-sparkle" style={{ animationDelay: "0.5s" }}><path d="M50 150 L 52 155 L 57 157 L 52 159 L 50 164 L 48 159 L 43 157 L 48 155Z" fill="#14B8A6" /></g>
     </Scene>
   );
 }

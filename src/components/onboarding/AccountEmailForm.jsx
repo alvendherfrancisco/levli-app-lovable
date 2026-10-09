@@ -1,32 +1,32 @@
 import React, { useRef, useState } from "react";
-import { AlertCircle, Eye, EyeOff } from "lucide-react";
-import AccountField from "@/components/onboarding/AccountField";
-import AccountFooter from "@/components/onboarding/AccountFooter";
-import PasswordStrength from "@/components/onboarding/PasswordStrength";
-import { ICON_BUTTON } from "@/components/onboarding/formStyles";
+import { Link } from "react-router-dom";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import {
-  MIN_PASSWORD_LENGTH, emailError, firstNameError, formBlocker, passwordError, passwordStrength,
+  emailError, firstNameError, passwordError, passwordStrength, formBlocker,
 } from "@/lib/accountValidation";
 import { sound } from "@/lib/sounds";
 
-/** What the waiting button asks for before anything has been touched. */
-const MISSING = "Enter your name, a valid email, and a password of 8+ characters.";
+const FIELD =
+  "w-full border-2 border-gray-200 bg-white rounded-xl px-3.5 py-3 text-[16px] text-gray-700 outline-none focus:border-indigo-500 transition-colors";
+
+const STRENGTH_BAR = {
+  weak: "bg-red-500",
+  fair: "bg-orange-400",
+  good: "bg-amber-400",
+  strong: "bg-teal-500",
+};
 
 /**
- * The account form — first name, email, password — and the footer that creates
- * the account.
+ * The email half of the account step: first name, email, password.
  *
- * It owns the whole column: the caller passes the illustration, the title and
- * the provider buttons in as children, because the fields and the button that
- * submits them are one form, and the button has to stay put while the fields
- * scroll behind it.
- *
- * Each field says what it wants under itself. A message appears when the field
- * is left, so nothing is scolded before it has been filled in, and the button
- * waits with one plain sentence above it saying what is still missing.
+ * Validation is inline and specific — each message sits beside the field it
+ * belongs to, after that field has been touched, and the button says in words
+ * what still needs filling rather than failing silently. The password is shown
+ * behind an eye toggle instead of a second confirmation field, and carries a
+ * live strength hint that never blocks anything.
  */
 export default function AccountEmailForm({
-  children, firstName, setFirstName, email, setEmail, password, setPassword,
+  firstName, setFirstName, email, setEmail, password, setPassword,
   onSubmit, loading, error,
 }) {
   const [touched, setTouched] = useState({});
@@ -39,18 +39,8 @@ export default function AccountEmailForm({
   const nameMsg = touched.firstName ? firstNameError(firstName) : "";
   const emailMsg = touched.email ? emailError(email) : "";
   const passwordMsg = touched.password ? passwordError(password) : "";
-  const started = Object.keys(touched).length > 0;
 
-  /** Leaving a field is what asks it to speak: its message, and the error cue. */
-  const leave = (field, problem) => {
-    setTouched((t) => ({ ...t, [field]: true }));
-    if (problem) sound.warning();
-  };
-
-  // The keyboard must never come up over the field being typed into.
-  const keepInView = (e) => e.target.scrollIntoView({ block: "center", behavior: "smooth" });
-
-  // The return key walks the form, and submits it from the last field.
+  // The return key walks the form: name → email → password → create account.
   const focusNext = (e, next) => {
     if (e.key !== "Enter") return;
     e.preventDefault();
@@ -59,93 +49,125 @@ export default function AccountEmailForm({
 
   const submit = (e) => {
     e.preventDefault();
-    if (loading) return; // one account, however fast the button is tapped
     setTouched({ firstName: true, email: true, password: true });
-    if (blocker) { sound.warning(); return; }
+    if (formBlocker({ firstName, email, password })) return;
+    sound.tap();
     onSubmit();
   };
 
   return (
-    <form onSubmit={submit} noValidate className="w-full flex flex-col">
-      <div className="w-full flex flex-col">
-        {children}
+    <form onSubmit={submit} className="flex flex-col items-center">
+      {error && (
+        <p className="w-full mb-3 text-sm text-red-600 text-center bg-red-50 rounded-xl px-3 py-2">{error}</p>
+      )}
 
-        {error && (
-          <p
-            role="alert"
-            className="w-full flex items-start gap-2 text-left text-[14px] text-red-700 bg-red-50 border border-red-200 rounded-xl px-3.5 py-3 mb-4 leading-relaxed"
-          >
-            <AlertCircle size={18} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
-            <span>{error}</span>
-          </p>
-        )}
+      <input
+        type="text"
+        placeholder="First name"
+        aria-label="First name"
+        autoComplete="given-name"
+        enterKeyHint="next"
+        value={firstName}
+        onChange={(e) => setFirstName(e.target.value)}
+        onBlur={() => setTouched((t) => ({ ...t, firstName: true }))}
+        onKeyDown={(e) => focusNext(e, emailRef)}
+        className={`${FIELD} mb-1`}
+      />
+      {nameMsg && <p className="w-full text-xs text-red-500 mb-1.5">{nameMsg}</p>}
 
-        <div className="w-full flex flex-col gap-4">
-          <AccountField
-            id="account-first-name"
-            label="First name"
-            placeholder="Jamie"
-            autoComplete="given-name"
-            enterKeyHint="next"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            onBlur={() => leave("firstName", firstNameError(firstName))}
-            onFocus={keepInView}
-            onKeyDown={(e) => focusNext(e, emailRef)}
-            error={nameMsg}
-          />
+      <input
+        ref={emailRef}
+        type="email"
+        inputMode="email"
+        placeholder="Email"
+        aria-label="Email"
+        autoComplete="email"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        enterKeyHint="next"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+        onKeyDown={(e) => focusNext(e, passwordRef)}
+        className={`${FIELD} mb-1`}
+      />
+      {emailMsg && <p className="w-full text-xs text-red-500 mb-1.5">{emailMsg}</p>}
 
-          <AccountField
-            id="account-email"
-            label="Email"
-            type="email"
-            inputMode="email"
-            placeholder="you@example.com"
-            autoComplete="email"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            enterKeyHint="next"
-            inputRef={emailRef}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onBlur={() => leave("email", emailError(email))}
-            onFocus={keepInView}
-            onKeyDown={(e) => focusNext(e, passwordRef)}
-            error={emailMsg}
-          />
-
-          <AccountField
-            id="account-password"
-            label="Password"
-            type={showPassword ? "text" : "password"}
-            placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
-            autoComplete="new-password"
-            enterKeyHint="go"
-            inputRef={passwordRef}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onBlur={() => leave("password", passwordError(password))}
-            onFocus={keepInView}
-            error={passwordMsg}
-            hint={`At least ${MIN_PASSWORD_LENGTH} characters.`}
-            extra={<PasswordStrength strength={strength} />}
-            trailing={
-              <button
-                type="button"
-                onClick={() => { sound.tap(); setShowPassword((s) => !s); }}
-                className={`${ICON_BUTTON} text-gray-400 hover:text-gray-600`}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                aria-pressed={showPassword}
-              >
-                {showPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
-              </button>
-            }
-          />
-        </div>
+      <div className="relative w-full">
+        <input
+          ref={passwordRef}
+          type={showPassword ? "text" : "password"}
+          placeholder="Password"
+          aria-label="Password"
+          autoComplete="new-password"
+          enterKeyHint="go"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+          className={`${FIELD} pr-11`}
+        />
+        <button
+          type="button"
+          onClick={() => { sound.tap(); setShowPassword((s) => !s); }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
+          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
       </div>
 
-      <AccountFooter blocker={blocker} message={started ? blocker : MISSING} loading={loading} />
+      {passwordMsg ? (
+        <p className="w-full text-xs text-red-500 mt-1.5">{passwordMsg}</p>
+      ) : strength ? (
+        <div className="w-full mt-1.5">
+          <div className="flex items-center gap-2">
+            <span className="flex-1 flex gap-1">
+              {[1, 2, 3, 4].map((i) => (
+                <span
+                  key={i}
+                  className={`h-1 flex-1 rounded-full ${i <= strength.score ? STRENGTH_BAR[strength.tone] : "bg-gray-200"}`}
+                />
+              ))}
+            </span>
+            <span className="text-[12px] font-semibold text-gray-500">{strength.label}</span>
+          </div>
+          {strength.hint && <p className="text-[12px] text-gray-400 mt-1">{strength.hint}</p>}
+        </div>
+      ) : null}
+
+      {/* The button is docked to the bottom of the step, so it stays in view while
+          the form scrolls behind it — with the reason it is not ready yet, which
+          waits for the first touch so an untouched form is not scolded, sitting
+          right above it. */}
+      <div className="sticky bottom-0 z-10 w-full pt-3 pb-1 bg-white/85 backdrop-blur-sm">
+        {blocker && !loading && (touched.firstName || touched.email || touched.password || firstName || email || password) && (
+          <p className="text-[13px] text-gray-400 mb-2 text-center">{blocker}</p>
+        )}
+        <button
+          type="submit"
+          disabled={loading || !!blocker}
+          className="onb-cta-btn w-full max-w-[320px] mx-auto rounded-full font-semibold text-base bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-50 transition-all active:scale-95"
+        >
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" /> Creating account...
+            </span>
+          ) : "Create account"}
+        </button>
+      </div>
+
+      <p className="text-center text-[12px] text-gray-400 mt-4 px-4 leading-relaxed">
+        By creating an account you agree to our{" "}
+        <Link to="/terms" className="text-indigo-600 underline">Terms of Service</Link>{" "}
+        and{" "}
+        <Link to="/privacy" className="text-indigo-600 underline">Privacy Policy</Link>.
+      </p>
+
+      <p className="text-center text-[14px] text-gray-500 mt-4">
+        Already have an account?{" "}
+        <Link to="/login" className="text-indigo-600 font-medium hover:underline">Log in</Link>
+      </p>
     </form>
   );
 }
