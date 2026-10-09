@@ -13,7 +13,7 @@ import {
 import MedicationStep, { MED_OPTIONS } from "@/components/onboarding/MedicationStep";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import DateField from "@/components/DateField";
-import TrackingStep, { SUGGESTED_TRACKING } from "@/components/onboarding/TrackingStep";
+import TrackingStep from "@/components/onboarding/TrackingStep";
 import { useAppState } from "@/lib/AppState";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
@@ -70,9 +70,9 @@ export default function Onboarding() {
   const [doseAmount, setDoseAmount] = useState("");
   const [doseOther, setDoseOther] = useState(false);
   const [schedule, setSchedule] = useState(() => emptySchedule("", toDayKey(new Date())));
-  // Suggestions to start from, not decisions: both are ordinary selections the
-  // person can untick, and Next never waits on any of them.
-  const [tracking, setTracking] = useState(SUGGESTED_TRACKING);
+  // Nothing is ticked to begin with. Every module is the person's own choice,
+  // an empty answer is a real one, and Next never waits on any of them.
+  const [tracking, setTracking] = useState([]);
   const [units, setUnits] = useState({ weight_unit: "lb", height_unit: "in", liquid_unit: "oz" });
   const [gdprConsented, setGdprConsented] = useState(false);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
@@ -105,10 +105,9 @@ export default function Onboarding() {
       setDoseAmount(draft.doseAmount || "");
       setDoseOther(!!draft.doseOther);
       setSchedule(draft.schedule || emptySchedule(restoredMeds[0], toDayKey(new Date())));
-      // A draft always carries the person's own choice, including "none of
-      // them"; only a draft written before these cards existed falls back to
-      // the suggestions.
-      setTracking(Array.isArray(draft.tracking) ? draft.tracking : SUGGESTED_TRACKING);
+      // The draft carries the person's own choice, including "none of them".
+      // Only a device with nothing saved starts empty.
+      setTracking(Array.isArray(draft.tracking) ? draft.tracking : []);
       setUnits(draft.units || { weight_unit: "lb", height_unit: "in", liquid_unit: "oz" });
       setGdprConsented(!!draft.gdprConsented);
       setAgeConfirmed(!!draft.ageConfirmed);
@@ -299,6 +298,9 @@ export default function Onboarding() {
       age_confirmed_at: ageConfirmed ? new Date().toISOString() : "",
       onboarding_completed: true,
       weight_tracking_opted_in: weightOptedIn,
+      // The one list the app reads before showing a tracking section. An empty
+      // list is the answer "none of them", not a missing choice.
+      tracking_modules: tracking,
     });
     // Those answers now live on the account, so the device's copy of them is done.
     clearDraft();

@@ -10,6 +10,7 @@ import { ICON_SIZE_ROW } from "@/lib/iconConstants";
 import { APP_VERSION, SUPPORT_EMAIL, DISCLAIMER_TEXT } from "@/lib/appInfo";
 import { getSoundPreference, setSoundPreference, sound } from "@/lib/sounds";
 import { buildFullExportCsv, downloadTextFile } from "@/lib/dataExport";
+import { TRACKING_MODULES, trackingEnabled, chosenTrackingModules } from "@/lib/trackingModules";
 import ScreenHeader from "@/components/ScreenHeader";
 import SettingsRow from "@/components/SettingsRow";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -41,7 +42,7 @@ const CARD = "bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray
 const CARD_ROWS = `${CARD} px-4 divide-y divide-gray-100 dark:divide-white/[0.07]`;
 
 export default function SettingsPage() {
-  const { darkMode, setDarkMode, profile, shots, journalEntries, dayMetrics, adverseEvents, medications, inventory, repeatSchedules, proxyAccess, resetState } = useAppState();
+  const { darkMode, setDarkMode, profile, setProfile, shots, journalEntries, dayMetrics, adverseEvents, medications, inventory, repeatSchedules, proxyAccess, resetState } = useAppState();
   const { logout, user } = useAuth();
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -72,6 +73,16 @@ export default function SettingsPage() {
   const handleNotifications = (val) => {
     setNotifEnabled(val);
     try { localStorage.setItem(NOTIF_PREF_KEY, val ? "true" : "false"); } catch { /* private mode */ }
+  };
+
+  // What Home and Insights show. A profile that has never answered the question
+  // (an account from before it existed) starts from every module on, so
+  // switching one off is what hides it; once the answer is stored it is the
+  // only thing that decides.
+  const handleTracking = (key, on) => {
+    const current = chosenTrackingModules(profile) ?? TRACKING_MODULES.map((m) => m.key);
+    const next = on ? [...new Set([...current, key])] : current.filter((k) => k !== key);
+    setProfile({ ...profile, tracking_modules: next });
   };
 
   // Every record the account holds, in one CSV. The PDF report (doses, side
@@ -151,6 +162,26 @@ export default function SettingsPage() {
               </div>
               <Toggle value={soundOn} onChange={handleSound} />
             </div>
+          </div>
+        </div>
+
+        {/* What you're tracking — the same six modules onboarding offers. One
+            that is off is simply not drawn on Home or in Insights; this is where
+            it is added back. */}
+        <div className="px-4 mb-4">
+          <SectionHeading>What you're tracking</SectionHeading>
+          <div className={`${CARD} p-4 space-y-3`}>
+            {TRACKING_MODULES.map(({ key, label, Icon }) => (
+              <div key={key} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                    <Icon size={ICON_SIZE_ROW} className="text-gray-500 dark:text-gray-400" />
+                  </div>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                </div>
+                <Toggle value={trackingEnabled(profile, key)} onChange={(on) => handleTracking(key, on)} />
+              </div>
+            ))}
           </div>
         </div>
 

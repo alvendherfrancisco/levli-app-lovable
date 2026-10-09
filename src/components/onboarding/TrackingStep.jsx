@@ -1,34 +1,12 @@
 import React from "react";
-import { Activity, Apple, Dumbbell, Heart, Scale, Syringe } from "lucide-react";
 import OptionCard from "@/components/onboarding/OptionCard";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import { TrackingIllustration } from "@/components/onboarding/OnboardingIllustrations";
+import { TRACKING_MODULES } from "@/lib/trackingModules";
 import { sound } from "@/lib/sounds";
 import {
   CARD, CARD_FLUSH, CARD_GAP, HEADING, HEAD_BLOCK, LABEL, SUBTITLE,
 } from "@/lib/uiStyles";
-
-/**
- * The two modules Levli suggests to start with. They are ordinary selections —
- * shown ticked, and unticked like any other if the person would rather track
- * neither.
- */
-export const SUGGESTED_TRACKING = ["symptoms", "weight"];
-
-/**
- * One card per module, named exactly as the thing it turns on: the Home card,
- * the Insights panel and the report section all read the same words. Water sits
- * inside nutrition and mood inside the journal, so neither gets a card of its
- * own — one module, one choice.
- */
-export const TRACKING_OPTIONS = [
-  { key: "symptoms", label: "Side effects", desc: "Note how you feel after a dose", Icon: Activity },
-  { key: "weight", label: "Weight", desc: "Track progress toward your goal", Icon: Scale },
-  { key: "nutrition", label: "Nutrition and water", desc: "Log meals, protein and water", Icon: Apple },
-  { key: "exercise", label: "Exercise", desc: "Note your activity each day", Icon: Dumbbell },
-  { key: "sites", label: "Injection sites and pain", desc: "Rotate with confidence", Icon: Syringe },
-  { key: "journal", label: "Journal and mood", desc: "Keep a private diary of how you feel", Icon: Heart },
-];
 
 const UNIT_GROUPS = [
   { key: "weight_unit", label: "Weight", options: [{ value: "lb", label: "lb" }, { value: "kg", label: "kg" }] },
@@ -40,8 +18,9 @@ const UNIT_GROUPS = [
  * What the person wants to keep an eye on.
  *
  * This is a multi-select with no wrong answer: any combination is fine, an empty
- * one is fine too, and nothing here ever holds Next back. The choices are what
- * the tracking modules on Home and in Reports are read from.
+ * one is fine too, and nothing here ever holds Next back. Nothing starts ticked:
+ * the first-time screen shows every row empty, and what is ticked here is exactly
+ * what Home and Insights show (both read from src/lib/trackingModules.js).
  */
 export default function TrackingStep({ tracking, setTracking, units, setUnits }) {
   const setOne = (key, on) => {
@@ -71,7 +50,7 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
         className={`${CARD_FLUSH} ${CARD_GAP} overflow-hidden`}
       >
         <div className="divide-y divide-gray-100 dark:divide-white/[0.08]">
-          {TRACKING_OPTIONS.map((opt) => (
+          {TRACKING_MODULES.map((opt) => (
             <OptionCard
               key={opt.key}
               icon={opt.Icon}

@@ -118,6 +118,13 @@
       "default": false,
       "description": "Whether the user opted into weight tracking during onboarding"
     },
+    "tracking_modules": {
+      "type": "array",
+      "description": "The tracking modules the person chose during onboarding: symptoms, weight, nutrition, exercise, sites, journal. An empty list means they chose none and the app shows none until one is added back in Settings. A profile that has never answered leaves this field unset, which keeps every module.",
+      "items": {
+        "type": "string"
+      }
+    },
     "custom_doses": {
       "type": "array",
       "description": "Doses the user added themselves, one entry per medication, offered as dose chips next time",

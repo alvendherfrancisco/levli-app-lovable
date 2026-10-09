@@ -10,6 +10,7 @@ import { checkWeight } from "@/lib/measure";
 import { useToast } from "@/hooks/useToast";
 import { toast } from "@/lib/toast";
 import { sound } from "@/lib/sounds";
+import { trackingEnabled } from "@/lib/trackingModules";
 
 // Card order — also the order of the value signature used for the saved flash.
 const METRIC_LABELS = ["Weight", "Calories", "Protein", "Fiber", "Carbs", "Water", "Exercise", "Progress"];
@@ -126,17 +127,30 @@ export default function MetricsGrid({ dayKey }) {
     },
   ];
 
+  // Which module each card belongs to. A card whose module was not chosen is
+  // left out altogether; Settings is where it is added back.
+  const METRIC_MODULE = {
+    Weight: "weight", Progress: "weight",
+    Calories: "nutrition", Protein: "nutrition", Fiber: "nutrition",
+    Carbs: "nutrition", Water: "nutrition",
+    Exercise: "exercise",
+  };
+  const metrics = allMetrics.filter((m) => trackingEnabled(profile, METRIC_MODULE[m.label]));
+
   return (
     <>
       {/* One compact grid, no horizontal scrolling: 3 columns on phones
-          (3 + 3 + 2, the empty slot stays empty), 4 columns from 600px. */}
-      <div className="mb-4 px-4">
-        <div className="grid grid-cols-3 min-[600px]:grid-cols-4 gap-3">
-          {allMetrics.map((m) => (
-            <MetricCard key={m.label} {...m} highlighted={flash === m.label} />
-          ))}
+          (3 + 3 + 2, the empty slot stays empty), 4 columns from 600px.
+          Nothing at all is drawn when no card is switched on. */}
+      {metrics.length > 0 && (
+        <div className="mb-4 px-4">
+          <div className="grid grid-cols-3 min-[600px]:grid-cols-4 gap-3">
+            {metrics.map((m) => (
+              <MetricCard key={m.label} {...m} highlighted={flash === m.label} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       <AddNutritionModal open={showNutrition} onClose={() => setShowNutrition(false)} dayKey={dk} />
       {metricModal && (
         <AddMetricModal

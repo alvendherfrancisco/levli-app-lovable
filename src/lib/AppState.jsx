@@ -748,6 +748,9 @@ export function AppStateProvider({ children }) {
       parental_consent_name: next.parental_consent_name || "",
       first_name: next.first_name || "",
       weight_tracking_opted_in: !!next.weight_tracking_opted_in,
+      // Only written once the question has been answered, so a profile saved
+      // before it existed stays unanswered rather than reading as "none".
+      ...(Array.isArray(next.tracking_modules) ? { tracking_modules: next.tracking_modules } : {}),
       custom_doses: Array.isArray(next.custom_doses) ? next.custom_doses : [],
       prescriber_name: next.prescriber_name || "",
       prescriber_contact: next.prescriber_contact || "",

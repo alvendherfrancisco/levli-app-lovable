@@ -17,6 +17,7 @@ import FirstRunCard from "@/components/home/FirstRunCard";
 import AddMedicationCard from "@/components/home/AddMedicationCard";
 import MedicationModal from "@/components/modals/MedicationModal";
 import UnitCheckPrompt from "@/components/home/UnitCheckPrompt";
+import { trackingEnabled } from "@/lib/trackingModules";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import { useMountProbe } from "@/lib/perfProbe";
 
@@ -29,7 +30,7 @@ export default function Home() {
   const [showSideEffects, setShowSideEffects] = useState(false);
   const [showAddMedication, setShowAddMedication] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const { getSideEffects, adverseEventsByDay } = useAppState();
+  const { getSideEffects, adverseEventsByDay, profile } = useAppState();
   const { isPremium } = useSubscription();
   const dk = toDayKey(selectedDate);
   const sideEffects = getSideEffects(dk);
@@ -53,7 +54,9 @@ export default function Home() {
         <NextShotCard onLogPastShot={(preset) => { setShotPreset(preset); setShowShot(true); }} />
         <MetricsGrid dayKey={dk} />
 
-        {/* Side Effects card */}
+        {/* Side Effects card — shown only when side effects are one of the
+            modules this account chose. Otherwise it is added back in Settings. */}
+        {trackingEnabled(profile, "symptoms") && (
         <button
           onClick={() => setShowSideEffects(true)}
           className="relative overflow-hidden mx-3 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 w-[calc(100%-1.5rem)] text-left"
@@ -86,6 +89,7 @@ export default function Home() {
           )}
           </div>
         </button>
+        )}
 
         {/* Medication Levels card */}
         <div className="mx-3 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
