@@ -162,22 +162,30 @@ export default function AccountEmailForm({
           button, exactly as they do on the login screen. */}
       <SocialAuthButtons onProvider={onProvider} disabled={loading} />
 
-      {/* Why the button is not ready yet, which waits for the first touch so an
-          untouched form is not scolded, directly above it. */}
-      {blocker && !loading && (touched.email || touched.password || email || password) && (
-        <p className="mb-2 text-center text-[13px] text-gray-500">{blocker}</p>
-      )}
-      <button
-        type="submit"
-        disabled={loading || !!blocker}
-        className="flex h-12 w-full items-center justify-center rounded-lg bg-indigo-600 text-[15px] font-medium text-white transition-colors hover:bg-indigo-700 active:scale-[0.99] disabled:bg-gray-200 disabled:text-gray-400 disabled:hover:bg-gray-200 disabled:active:scale-100"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...
-          </>
-        ) : "Create account"}
-      </button>
+      {/* Create account, which is the shell's own Next button in everything but
+          the wording — same pill, same indigo, same height, same soft shadow —
+          with the reason it is not ready yet above it, waiting for the first
+          touch so an untouched form is not scolded. */}
+      <div className="mt-6 w-full">
+        {blocker && !loading && (touched.email || touched.password || email || password) && (
+          <p className="mb-2 text-center text-[13px] text-gray-500">{blocker}</p>
+        )}
+        <button
+          type="submit"
+          disabled={loading || !!blocker}
+          className={`onb-cta-btn flex w-full items-center justify-center rounded-full text-base font-semibold transition-all duration-300 active:scale-95 sm:text-lg ${
+            loading || blocker
+              ? "cursor-not-allowed bg-indigo-300 text-white shadow-none"
+              : "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 hover:bg-indigo-700"
+          }`}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...
+            </>
+          ) : "Create account"}
+        </button>
+      </div>
     </form>
   );
 }
