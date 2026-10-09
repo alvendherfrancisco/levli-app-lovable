@@ -1,4 +1,5 @@
 import React from "react";
+import { LABEL } from "@/lib/authFormStyles";
 import { sound } from "@/lib/sounds";
 import { WEEKDAY_NAMES, WEEKDAY_SHORT, daysAreClose } from "@/lib/medicationSchedule";
 
@@ -9,6 +10,13 @@ import { WEEKDAY_NAMES, WEEKDAY_SHORT, daysAreClose } from "@/lib/medicationSche
  *
  * The letters S M T W T F S are ambiguous, so each button carries the full day
  * name as its accessible label and announces whether it is chosen.
+ *
+ * The row is drawn as the card's own chips, not a second style: the label is the
+ * same label every other field in the card uses, and the days are seven round
+ * chips — white with a hairline border when unchosen, light indigo with an
+ * indigo hairline when chosen, exactly like the "How often" chips above them.
+ * They sit on an even spread, each the same size, sized to the width the card
+ * actually has so the row never reaches past its padding.
  */
 export default function InjectionDays({ count, value = [], onChange }) {
   const chosen = value || [];
@@ -30,10 +38,10 @@ export default function InjectionDays({ count, value = [], onChange }) {
 
   return (
     <div>
-      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+      <p className={`${LABEL} dark:text-gray-300`}>
         {twoDays ? "Injection days" : "Injection day"}
       </p>
-      <div className="flex gap-1 justify-between" role="group" aria-label={twoDays ? "Injection days" : "Injection day"}>
+      <div className="flex justify-between gap-1" role="group" aria-label={twoDays ? "Injection days" : "Injection day"}>
         {WEEKDAY_SHORT.map((letter, index) => {
           const selected = chosen.includes(index);
           return (
@@ -43,10 +51,10 @@ export default function InjectionDays({ count, value = [], onChange }) {
               onClick={() => tap(index)}
               aria-pressed={selected}
               aria-label={WEEKDAY_NAMES[index]}
-              className={`w-10 h-10 rounded-full text-[14px] font-medium transition-all active:scale-95 ${
+              className={`flex aspect-square max-w-[44px] flex-1 items-center justify-center rounded-full text-[14px] font-medium transition-colors active:scale-[0.98] ${
                 selected
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-100 dark:bg-white/[0.07] text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/[0.12]"
+                  ? "border-[1.5px] border-indigo-500 bg-indigo-50 text-indigo-700"
+                  : "border border-gray-200 bg-white text-gray-900 hover:border-gray-300"
               }`}
             >
               {letter}
