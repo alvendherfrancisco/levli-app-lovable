@@ -41,23 +41,26 @@ export default function ScheduleStep({
         </p>
       </div>
 
-      <div className="space-y-5">
-        <DoseChoice
-          medication={medication}
-          value={dose}
-          onChange={onDoseChange}
-          other={doseOther}
-          onOtherChange={onDoseOtherChange}
-        />
-        <ScheduleFields
-          medication={medication}
-          value={schedule}
-          onChange={onScheduleChange}
-          showStartDate
-        />
+      {/* The whole answer in one card, drawn like the account screens' own. */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="space-y-5">
+          <DoseChoice
+            medication={medication}
+            value={dose}
+            onChange={onDoseChange}
+            other={doseOther}
+            onOtherChange={onDoseOtherChange}
+          />
+          <ScheduleFields
+            medication={medication}
+            value={schedule}
+            onChange={onScheduleChange}
+            showStartDate
+          />
+        </div>
       </div>
 
-      <p className="text-[12.5px] text-gray-600 leading-relaxed px-1 mt-4">{PRESCRIBER_HELPER}</p>
+      <p className="mt-3 text-center text-xs leading-relaxed text-gray-500">{PRESCRIBER_HELPER}</p>
       {error && (
         <p className="text-[13.5px] font-medium text-red-600 mt-1.5 px-1" role="alert">
           {error}

@@ -7,15 +7,22 @@ import {
 import { PRESCRIBER_ONLY_NOTE } from "@/lib/medicationRegimen";
 import { sound } from "@/lib/sounds";
 
-const CHIP = "inline-flex items-center gap-1.5 min-h-[44px] rounded-xl border-2 px-3 text-sm font-semibold transition-colors";
+const CHIP = "inline-flex h-11 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold transition-colors";
 const NEUTRAL = "bg-white dark:bg-white/[0.05] border-gray-200 dark:border-white/[0.12] text-gray-900 dark:text-[#E8E9F0]";
+// The chosen strength, drawn the way every other selection in Levli is drawn:
+// an indigo border, a light indigo fill and indigo text. The strength's own
+// colour stays on the unchosen chips, as the dot the maker's pen carries.
+const SELECTED =
+  "border-indigo-600 bg-indigo-50 text-indigo-700 dark:border-indigo-500/40 dark:bg-indigo-500/10 dark:text-indigo-300";
 const INPUT =
   "w-full min-h-[52px] rounded-xl border border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-3 py-2.5 text-sm outline-none focus:border-indigo-400";
 
 /**
- * The dose: the strengths this product's label lists, as chips, in the
- * manufacturer's own colour for each strength, with the number always written
- * on the chip — the colour is a recognition cue and never the only signal.
+ * The dose: the strengths this product's label lists, as chips, with the number
+ * always written on the chip and the manufacturer's own colour on the dot beside
+ * it — the colour is a recognition cue and never the only signal. The chosen
+ * chip is the app's own selected style, so the shape of the answer reads the
+ * same here as it does on every other screen.
  *
  * "+ Other" takes an amount the prescriber directed instead. It stays optional,
  * and a typed dose is drawn as a neutral chip rather than as a labelled
@@ -23,7 +30,7 @@ const INPUT =
  * "Others") asks for the amount straight away.
  */
 export default function DoseChoice({ medication, value, onChange, other = false, onOtherChange, error }) {
-  const { color, style } = useDoseColors();
+  const { color } = useDoseColors();
   const strengths = getAllowedDoses(medication);
   const unit = getDoseUnit(medication);
   const typed = String(value ?? "").trim();
@@ -42,9 +49,9 @@ export default function DoseChoice({ medication, value, onChange, other = false,
   return (
     <div>
       <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Dose</span>
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-300">Dose</span>
         {/* The unit is always on screen beside the amounts. */}
-        <span className="text-sm text-gray-600 dark:text-[#9A9DAE]">{unit}</span>
+        <span className="text-xs font-medium text-gray-500 dark:text-[#9A9DAE]">{unit}</span>
       </div>
 
       {anyDose ? (
@@ -68,7 +75,6 @@ export default function DoseChoice({ medication, value, onChange, other = false,
         <div className="flex flex-wrap gap-2" role="group" aria-label="Dose">
           {strengths.map((d) => {
             const selected = !openOther && typed === String(d.value);
-            const filled = style(medication, d.value);
             return (
               <button
                 key={d.value}
@@ -76,8 +82,7 @@ export default function DoseChoice({ medication, value, onChange, other = false,
                 onClick={() => pick(d.value)}
                 aria-pressed={selected}
                 aria-label={`${d.value} ${unit}`}
-                className={selected ? CHIP : `${CHIP} ${NEUTRAL}`}
-                style={selected ? { background: filled.background, borderColor: filled.borderColor, color: filled.color } : undefined}
+                className={selected ? `${CHIP} ${SELECTED}` : `${CHIP} ${NEUTRAL}`}
               >
                 {selected ? (
                   <Check size={14} strokeWidth={3} aria-hidden="true" />
