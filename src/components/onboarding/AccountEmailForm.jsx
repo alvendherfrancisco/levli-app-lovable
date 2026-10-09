@@ -1,8 +1,9 @@
 import React, { useRef, useState } from "react";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import SocialAuthButtons from "@/components/onboarding/SocialAuthButtons";
+import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
 import {
-  emailError, passwordError, passwordStrength, formBlocker,
+  emailError, passwordError, formBlocker,
 } from "@/lib/accountValidation";
 // The field, label, card, notice and button styles, shared with the sign-in
 // card so the account screens can never drift apart.
@@ -11,13 +12,6 @@ import {
   PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON,
 } from "@/lib/uiStyles";
 import { sound } from "@/lib/sounds";
-
-const STRENGTH_BAR = {
-  weak: "bg-red-500",
-  fair: "bg-orange-400",
-  good: "bg-amber-400",
-  strong: "bg-teal-500",
-};
 
 /**
  * The account card, and the button that creates the account.
@@ -49,7 +43,6 @@ export default function AccountEmailForm({
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
 
-  const strength = passwordStrength(password);
   const blocker = formBlocker({ email, password });
   const emailMsg = touched.email ? emailError(email) : "";
   const passwordMsg = touched.password ? passwordError(password) : "";
@@ -137,24 +130,9 @@ export default function AccountEmailForm({
             </button>
           </div>
 
-          {passwordMsg ? (
-            <p className={`${ERROR_TEXT} mt-2`}>{passwordMsg}</p>
-          ) : strength ? (
-            <div className="mt-2">
-              <div className="flex items-center gap-2">
-                <span className="flex flex-1 gap-1">
-                  {[1, 2, 3, 4].map((i) => (
-                    <span
-                      key={i}
-                      className={`h-1 flex-1 rounded-full ${i <= strength.score ? STRENGTH_BAR[strength.tone] : "bg-gray-200"}`}
-                    />
-                  ))}
-                </span>
-                <span className="text-[12px] font-medium text-gray-500">{strength.label}</span>
-              </div>
-              {strength.hint && <p className="mt-1 text-[12px] text-gray-500">{strength.hint}</p>}
-            </div>
-          ) : null}
+          {passwordMsg
+            ? <p className={`${ERROR_TEXT} mt-2`}>{passwordMsg}</p>
+            : <PasswordStrengthMeter password={password} />}
         </div>
 
         <SocialAuthButtons onProvider={onProvider} disabled={loading} />

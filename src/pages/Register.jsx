@@ -15,17 +15,16 @@ import {
 
 /**
  * Creating an account, drawn as the same screen as signing in: the warm ambient
- * background, the droplet, the greeting, one white card holding the three
- * labelled fields and the two provider marks, and the screen's own action as a
- * pill below the card. The page scrolls, and its last line is kept clear of the
- * home indicator, so nothing is ever cut off on a short phone.
+ * background, the droplet, the greeting, one white card holding the two labelled
+ * fields and the two provider marks, and the screen's own action as a pill below
+ * the card. The page scrolls, and its last line is kept clear of the home
+ * indicator, so nothing is ever cut off on a short phone.
  *
  * Verifying the emailed code is the step after this one and is its own screen.
  */
 export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
@@ -34,10 +33,6 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
     setLoading(true);
     try {
       await base44.auth.register({ email, password });
@@ -157,8 +152,6 @@ export default function Register() {
             setEmail={setEmail}
             password={password}
             setPassword={setPassword}
-            confirmPassword={confirmPassword}
-            setConfirmPassword={setConfirmPassword}
             onSubmit={handleSubmit}
             loading={loading}
             error={error}

@@ -2,6 +2,8 @@ import React from "react";
 import { Loader2, Mail } from "lucide-react";
 import SocialAuthButtons from "@/components/onboarding/SocialAuthButtons";
 import PasswordField from "@/components/PasswordField";
+import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
+import { formBlocker } from "@/lib/accountValidation";
 import {
   CARD, FIELD, FIELD_MARK, LABEL, NOTICE,
   PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON,
@@ -11,22 +13,23 @@ import {
  * The account card, and the button that creates the account.
  *
  * The same card the sign-in screen draws, with the extra field creating an
- * account needs: the two passwords, each behind its own eye. The card holds the
- * three labelled fields, the divider and the two provider marks; Create account
- * sits below it, outside the card, so the screen's main action reads as the
- * screen's own rather than as part of the form — it is still the form's submit
- * button, so the return key and a tap do the same thing. What sits beneath it
- * (the terms line and the way to log in instead) is the page's.
+ * account needs: the email and the password, each behind its own eye. The card
+ * holds the two labelled fields, the divider and the two provider marks; Create
+ * account sits below it, outside the card, so the screen's main action reads as
+ * the screen's own rather than as part of the form — it is still the form's
+ * submit button, so the return key and a tap do the same thing. What sits beneath
+ * it (the terms line and the way to log in instead) is the page's.
  *
- * Whether the two passwords match is the only thing there is to check here, and
- * that is said above the fields on submit. The button itself simply waits,
- * faded, until all three fields have something in them.
+ * The password carries the same live strength hint the onboarding account screen
+ * shows, so the two screens read identically. That hint is guidance and nothing
+ * more: the button simply waits, faded, until the address is a real one and the
+ * password clears the minimum length.
  */
 export default function RegisterForm({
-  email, setEmail, password, setPassword, confirmPassword, setConfirmPassword,
+  email, setEmail, password, setPassword,
   onSubmit, loading, error, onProvider,
 }) {
-  const ready = !!email.trim() && !!password && !!confirmPassword;
+  const ready = !formBlocker({ email, password });
 
   return (
     <form onSubmit={onSubmit} className="w-full">
@@ -65,19 +68,11 @@ export default function RegisterForm({
             value={password}
             onChange={setPassword}
             autoComplete="new-password"
-            enterKeyHint="next"
-          />
-        </div>
-
-        <div className="mt-4 w-full">
-          <PasswordField
-            id="register-confirm"
-            label="Confirm Password"
-            value={confirmPassword}
-            onChange={setConfirmPassword}
-            autoComplete="new-password"
             enterKeyHint="go"
           />
+          {/* The same live hint, and the same gap under the field, as the
+              onboarding account screen. */}
+          <PasswordStrengthMeter password={password} />
         </div>
 
         <SocialAuthButtons onProvider={onProvider} disabled={loading} />
@@ -85,7 +80,7 @@ export default function RegisterForm({
 
       {/* Create account — the same pill as the sign-in screen's Log in and the
           shell's Next: same indigo, same height, same soft shadow, faded rather
-          than grey until the three fields are filled. */}
+          than grey until the two fields are filled. */}
       <div className="mt-6 w-full">
         <button
           type="submit"
