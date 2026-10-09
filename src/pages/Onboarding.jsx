@@ -6,11 +6,10 @@ import SignUpStep from "@/components/onboarding/SignUpStep";
 import {
   WelcomeIllustration,
   EmpathyIllustration,
-  MedicationIllustration,
   PrivacyIllustration,
   CompletionIllustration,
 } from "@/components/onboarding/OnboardingIllustrations";
-import { PillIcon } from "@/components/onboarding/LevliIcons";
+import MedicationStep, { MED_OPTIONS } from "@/components/onboarding/MedicationStep";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import DateField from "@/components/DateField";
 import TrackingStep, { SUGGESTED_TRACKING } from "@/components/onboarding/TrackingStep";
@@ -23,12 +22,12 @@ import {
 } from "@/lib/onboardingDraft";
 import ScheduleStep from "@/components/onboarding/ScheduleStep";
 import { getDoseUnit, getMedicationConfig } from "@/lib/medicationConfig";
-import { NAME_TO_ENTRY, getMolecularClass, COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE } from "@/lib/medicationCatalogue";
+import { NAME_TO_ENTRY, getMolecularClass } from "@/lib/medicationCatalogue";
 import { toDayKey } from "@/lib/dateUtils";
 import {
   emptySchedule, getDayInterval, medicationScheduleFields, validateScheduleSelection,
 } from "@/lib/medicationSchedule";
-import { Check, ClipboardList, Settings2, ShieldCheck } from "lucide-react";
+import { ClipboardList, Settings2, ShieldCheck } from "lucide-react";
 import { sound } from "@/lib/sounds";
 
 const TOTAL_STEPS = 8;
@@ -50,18 +49,6 @@ const PRIVACY_POINTS = [
   { icon: ClipboardList, label: "What", value: "Your doses, symptoms, weight and photos." },
   { icon: ShieldCheck, label: "Where", value: "Encrypted in your account. Never sold or shared." },
   { icon: Settings2, label: "Your control", value: "Export or delete everything anytime." },
-];
-
-const MED_OPTIONS = [
-  { label: "Mounjaro®", generic: "Tirzepatide" },
-  { label: "Wegovy®", generic: "Semaglutide" },
-  { label: "Ozempic®", generic: "Semaglutide" },
-  { label: "Zepbound®", generic: "Tirzepatide" },
-  { label: "Saxenda®", generic: "Liraglutide" },
-  { label: "Rybelsus®", generic: "Semaglutide" },
-  { label: COMPOUNDED_SEMAGLUTIDE, generic: "Semaglutide" },
-  { label: COMPOUNDED_TIRZEPATIDE, generic: "Tirzepatide" },
-  { label: "Other", generic: null },
 ];
 
 export default function Onboarding() {
@@ -401,52 +388,6 @@ function EmpathyStep() {
       </h1>
       <p className="text-[15px] sm:text-[16px] text-gray-500 leading-relaxed px-3">
         Good days, hard days, plateaus — Levli helps you notice the patterns, so you're never guessing alone.
-      </p>
-    </div>
-  );
-}
-
-/**
- * The primary medication — one choice, not a list. Onboarding sets up the
- * medication a person is mainly on; anything else is added afterwards, from
- * Home or Medications, so every onboarding screen stays the same length.
- */
-function MedicationStep({ selectedMed, onSelect }) {
-  return (
-    <div className="flex flex-col">
-      <OnboardingArt>
-        <MedicationIllustration />
-      </OnboardingArt>
-      <div className="text-center mb-3">
-        <h1 className="text-[24px] sm:text-[28px] font-bold text-gray-800 mb-2 leading-tight px-2">
-          Which medication are you on?
-        </h1>
-        <p className="text-[15px] text-gray-500 leading-relaxed px-2">This helps us tailor your dose schedule and inventory tracking.</p>
-      </div>
-      <div className="flex flex-wrap gap-2 justify-center" role="group" aria-label="Which medication are you on?">
-        {MED_OPTIONS.map((opt) => {
-          const selected = selectedMed === opt.label;
-          return (
-            <button
-              key={opt.label}
-              type="button"
-              onClick={() => { sound.tap(); onSelect(opt.label); }}
-              aria-pressed={selected}
-              className={`flex items-center gap-2 pl-3 pr-3.5 py-2.5 rounded-full border-2 text-[14px] font-medium transition-all active:scale-95 ${
-                selected
-                  ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-              }`}
-            >
-              <PillIcon size={17} />
-              {opt.label}
-              {selected && <Check size={14} className="text-indigo-600 ml-0.5" strokeWidth={3} />}
-            </button>
-          );
-        })}
-      </div>
-      <p className="text-[13px] text-gray-500 text-center mt-3 leading-snug px-2">
-        Taking more than one? You can add the others after setup.
       </p>
     </div>
   );
