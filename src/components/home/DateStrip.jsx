@@ -15,9 +15,11 @@ import { sound } from "@/lib/sounds";
  *
  * At rest the strip is exactly what it was: the same five days across the same
  * width, each tile a fifth of it, the container the middle one. The days
- * outside it are drawn beneath it (they slide behind it); the day inside it is
- * lifted above it, so its own white lettering sits on the container's fill just
- * as a selected tile always has.
+ * outside it are drawn beneath it (they slide behind it), and the container
+ * draws the day sitting in it itself — the same three lines, at the same sizes
+ * and colours a tile draws them — so that day's lettering is always on the
+ * container's fill. A tile inside the row cannot be lifted above it: a row that
+ * scrolls paints as its own group, so the container is always in front.
  *
  * The window of days is built around the day in hand and re-centred on it, so
  * the row always comes to rest with that day in the middle: the days either
@@ -135,6 +137,13 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
     bringToCenter(index, "smooth");
   };
 
+  // The day sitting in the container right now: the day in hand at rest, and
+  // whichever day the dates have slid under it mid-drag. The container draws
+  // this day's own three lines, so they are part of its own layer and can never
+  // be covered by its fill.
+  const inSlotDay = days[activeIndex] || selected;
+  const inSlotHasShot = shotDayKeys.has(toDayKey(inSlotDay));
+
   const dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -186,12 +195,29 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
       {/* The day in hand's container: held at the middle, in the shape and
           colour the chosen day has always had, while the dates travel behind
           it. Centred at one tile's width — 48px is the four 6px gaps the five
-          visible tiles leave, so it lands exactly on the tile inside it. */}
+          visible tiles leave, so it lands exactly on the tile inside it.
+
+          It draws the day sitting in it itself, in the same three lines and the
+          same sizes its tile uses, so that day's date is always readable on the
+          fill. The tile's own copy of those lines stays where it is (behind the
+          fill, as everything in the row is) and carries the same text for a
+          screen reader; this layer is the visible one, and its day changes as
+          the dates slide underneath. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-3 bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-[22px] bg-indigo-600 dark:bg-indigo-500/80 shadow-lg dark:[box-shadow:0_0_18px_4px_rgba(99,102,241,0.35)]"
+        className="pointer-events-none absolute top-3 bottom-6 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center justify-center gap-1.5 rounded-[22px] bg-indigo-600 dark:bg-indigo-500/80 shadow-lg dark:[box-shadow:0_0_18px_4px_rgba(99,102,241,0.35)]"
         style={{ width: "calc((100% - 48px) / 5)" }}
-      />
+      >
+        <span className="text-[10px] font-medium leading-[1.3] text-white">{dayNames[inSlotDay.getDay()]}</span>
+        <span className="text-[15px] font-bold leading-[1.3] text-white">{inSlotDay.getDate()}</span>
+        <span className="text-[10px] leading-[1.3] text-indigo-200">{monthNames[inSlotDay.getMonth()]}</span>
+        {inSlotHasShot && (
+          <div
+            className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-teal-400"
+            style={{ boxShadow: "0 0 6px 2px rgba(45,212,191,0.5)" }}
+          />
+        )}
+      </div>
     </div>
   );
 }
