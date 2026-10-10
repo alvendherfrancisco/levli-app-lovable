@@ -30,11 +30,18 @@ const check = (ok, message) => { if (!ok) failures.push(message); };
 
 const confirmed = MEDICATION_CONFIG.filter((e) => e.colorScheme?.status === "confirmed");
 const review = MEDICATION_CONFIG.filter((e) => e.colorScheme?.status === "review");
+// Every labelled strength of a product: the list on the product itself plus the
+// list each of its forms carries. Ozempic's tablet strengths live on its tablet
+// form, so a tablet colour is checked exactly like a pen's.
+const labelledStrengths = (entry) => [
+  ...entry.allowedDoses,
+  ...(entry.forms || []).flatMap((f) => (f.doses || []).map((d) => ({ ...d, unit: d.unit || "mg" }))),
+];
 // Brand colours per theme: the scale only has to stay clear of the colours that
 // can actually appear beside it on screen.
 const brandByMode = {
-  light: confirmed.flatMap((e) => e.allowedDoses.map((d) => d.color?.light).filter(Boolean)),
-  dark: confirmed.flatMap((e) => e.allowedDoses.map((d) => d.color?.dark).filter(Boolean)),
+  light: confirmed.flatMap((e) => labelledStrengths(e).map((d) => d.color?.light).filter(Boolean)),
+  dark: confirmed.flatMap((e) => labelledStrengths(e).map((d) => d.color?.dark).filter(Boolean)),
 };
 
 // 1. Tokens, sources and dates on every confirmed product.
@@ -42,8 +49,9 @@ confirmed.forEach((entry) => {
   const { source, verified } = entry.colorScheme;
   check(/^https:\/\//.test(source || ""), `${entry.id}: no source link recorded`);
   check(/^\d{4}-\d{2}-\d{2}$/.test(verified || ""), `${entry.id}: no verified date recorded`);
-  check(entry.allowedDoses.length > 0, `${entry.id}: no labelled strengths`);
-  entry.allowedDoses.forEach((d) => {
+  const strengths = labelledStrengths(entry);
+  check(strengths.length > 0, `${entry.id}: no labelled strengths`);
+  strengths.forEach((d) => {
     check(!!d.color?.light && !!d.color?.dark,
       `${entry.id} ${d.value} ${d.unit}: needs a light and a dark token`);
   });
@@ -51,7 +59,7 @@ confirmed.forEach((entry) => {
 
 // 2. Every chip the app draws, in both modes, meets WCAG AA.
 const chipRows = [];
-confirmed.forEach((entry) => entry.allowedDoses.forEach((d) => {
+confirmed.forEach((entry) => labelledStrengths(entry).forEach((d) => {
   [false, true].forEach((isDark) => {
     const chip = getDoseStyle(entry.brandName, d.value, isDark);
     const ratio = contrastRatio(chip.background, chip.color);
@@ -110,7 +118,7 @@ confirmed.forEach((entry) => {
 });
 
 // 5. The print swatch: pale enough to survive greyscale, dark text on it.
-confirmed.forEach((entry) => entry.allowedDoses.forEach((d) => {
+confirmed.forEach((entry) => labelledStrengths(entry).forEach((d) => {
   const print = getPrintDoseStyle(entry.brandName, d.value);
   const ratio = contrastRatio(print.background, print.color);
   check(ratio >= 7, `${entry.id} ${d.value} ${d.unit}: print swatch contrast ${ratio.toFixed(2)} is under 7`);
@@ -130,7 +138,7 @@ LISTED_MEDICATIONS.forEach((entry) => {
     check(["confirmed", "review"].includes(entry.colorScheme.status),
       `${entry.id}: unexpected colour scheme status "${entry.colorScheme.status}"`);
   }
-  entry.allowedDoses.forEach((d) => {
+  labelledStrengths(entry).forEach((d) => {
     check(!!getDoseColor(entry.brandName, d.value), `${entry.id}: ${d.value} resolves to no colour`);
   });
 });
@@ -146,7 +154,7 @@ if (process.argv.includes("--table")) {
       if (!e.allowedDoses.length) {
         return `| ${e.name} | all doses | standard scale | standard scale | n/a | n/a | ${status} |`;
       }
-      return e.allowedDoses
+      return labelledStrengths(e)
         .map((d) => {
           const light = d.color?.light || "standard scale";
           const dark = d.color?.dark || "standard scale";

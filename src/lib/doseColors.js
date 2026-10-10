@@ -60,6 +60,19 @@ export function hasOfficialScheme(medication) {
 }
 
 /**
+ * Every labelled strength of a product: the list on the product itself and, for a
+ * product sold in more than one form, the list each form carries. Ozempic's
+ * tablet strengths live on its tablet form, so they are drawn in the pack colour
+ * the oral formulation carries rather than as a typed dose.
+ */
+function labelledStrengths(entry) {
+  return [
+    ...entry.allowedDoses,
+    ...(entry.forms || []).flatMap((form) => form.doses || []),
+  ];
+}
+
+/**
  * The dose's step on the standard scale, 1 being the product's lowest dose.
  * A product with no labelled strengths has no scale to step along, so it sits on
  * step 1 rather than implying a strength it does not have.
@@ -83,7 +96,7 @@ export function getDoseToken(medication, dose) {
   const value = Number(dose);
   if (!entry || !Number.isFinite(value) || value <= 0) return null;
   if (entry.colorScheme?.status === "confirmed") {
-    const labelled = entry.allowedDoses.find((d) => Math.abs(Number(d.value) - value) < 1e-9);
+    const labelled = labelledStrengths(entry).find((d) => Math.abs(Number(d.value) - value) < 1e-9);
     return labelled?.color || null;
   }
   return STANDARD_SCALE[standardStep(entry, value) - 1];

@@ -88,6 +88,12 @@ const COLOR_TOKENS = {
   ozempicRed: { light: "#D61D29", dark: "#E4444F" },
   ozempicTeal: { light: "#00868B", dark: "#12999E" },
   ozempicGold: { light: "#F5A41C", dark: "#F8B84A" },
+  // Ozempic tablets — the oral formulation's own pack colour per strength: the
+  // green band on the 1.5 mg carton, the red badge on the 4 mg bottle and the
+  // blue badge on the 9 mg bottle.
+  ozempicTabletGreen: { light: "#23A455", dark: "#2FB866" },
+  ozempicTabletRed: { light: "#B71C1C", dark: "#D02C2C" },
+  ozempicTabletBlue: { light: "#0D47A1", dark: "#1F5CBF" },
   // Wegovy — one colour-coded pen label per strength, per the pen reference.
   wegovyTeal: { light: "#4BB4A5", dark: "#63C7B8" },
   wegovyRaspberry: { light: "#A93C66", dark: "#C25580" },
@@ -133,7 +139,7 @@ export const MEDICATION_CONFIG = [
     // Sold as a weekly pen and as a once-daily tablet, and the two carry
     // different strengths, so the log sheet asks which one is being taken. The
     // pen strengths are `allowedDoses` below; the tablet's own list is on the
-    // tablet form.
+    // tablet form, each strength in the colour its own pack carries.
     forms: [
       { id: "injection", label: "Injection", route: "subcutaneous" },
       {
@@ -141,9 +147,9 @@ export const MEDICATION_CONFIG = [
         label: "Pill",
         route: "oral_tablet",
         doses: [
-          { value: 1.5, unit: "mg" },
-          { value: 4, unit: "mg" },
-          { value: 9, unit: "mg" },
+          { value: 1.5, unit: "mg", color: COLOR_TOKENS.ozempicTabletGreen },
+          { value: 4, unit: "mg", color: COLOR_TOKENS.ozempicTabletRed },
+          { value: 9, unit: "mg", color: COLOR_TOKENS.ozempicTabletBlue },
         ],
       },
     ],
@@ -157,11 +163,17 @@ export const MEDICATION_CONFIG = [
       { value: 2, unit: "mg", role: "standard", color: COLOR_TOKENS.ozempicGold },
     ],
     colorScheme: {
-      basis: "pen",
+      basis: "pen and tablet",
       source: "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/073735cb4_image.png",
-      verified: "2026-10-08",
+      verified: "2026-10-10",
       status: "confirmed",
-      note: "Pen label colour per strength, read from the manufacturer pen reference image: grey 0.25 mg, red 0.5 mg, teal 1 mg, gold 2 mg. Every pen shares the same body; only the label band changes with the strength.",
+      note: "Two packs, two colour bases. Pen, from the pen reference image: grey 0.25 mg, red 0.5 mg, teal 1 mg, gold 2 mg — every pen shares one body and only the label band changes. Tablet, from the oral formulation's own pack (see tabletSources): green 1.5 mg, red 4 mg, blue 9 mg, the colour its carton band and its bottle's strength badge carry.",
+      // The oral formulation's own pack, read for the tablet strengths: the carton
+      // for 1.5 mg, the bottles' strength badges for 4 mg and 9 mg.
+      tabletSources: [
+        { strengths: "1.5 mg", url: "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/84decc905_image.png" },
+        { strengths: "4 mg, 9 mg", url: "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/0ef9fd8c8_image.png" },
+      ],
     },
     minIntervalDays: 2,
     maxDoseMg: 2,
@@ -177,7 +189,7 @@ export const MEDICATION_CONFIG = [
     lastReviewed: "2026-10-05",
     verified: true,
     verifiedNote:
-      "The tablet form carries the oral semaglutide strengths (1.5, 4 and 9 mg). They are listed without a colour: the strength is printed on the tablet's carton, not on a colour-coded pen.",
+      "The tablet form carries the oral semaglutide strengths (1.5, 4 and 9 mg), each in its own pack colour: green 1.5 mg, red 4 mg, blue 9 mg — read from the oral formulation's carton band and bottle badge, not from a colour-coded pen. The pen strengths are a separate set and are not substitutable mg for mg.",
     exposureEligible: true,
   },
   {
