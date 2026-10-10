@@ -53,15 +53,23 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
             key={d.getTime()}
             onClick={() => { sound.tap(); onSelectDate && onSelectDate(d); }}
             aria-current={isSelected ? "date" : undefined}
-            className={`date-chip relative flex min-w-0 w-full h-[72px] flex-col items-center justify-center gap-0.5 transition-all ${
+            // The three lines get room to breathe: a ~1.3 line box and 6px
+            // between them, inside a 90px tile with 14px of padding top and
+            // bottom. Every day is built the same way — same height, same
+            // padding, same gaps — so the weekday, the date and the month sit
+            // on the same three rows in all five tiles and the row of days
+            // stays level. min-height rather than a fixed height, so a larger
+            // text size grows the tile instead of clipping a line; all five
+            // grow together, so they still line up.
+            className={`date-chip relative flex min-w-0 w-full min-h-[90px] py-[14px] flex-col items-center justify-center gap-1.5 transition-all ${
               isSelected
                 ? "bg-indigo-600 dark:bg-indigo-500/80 text-white shadow-lg dark:[box-shadow:0_0_18px_4px_rgba(99,102,241,0.35)]"
                 : "text-gray-400 dark:text-[#9A9DAE]"
             }`}
           >
-            <span className="text-[10px] font-medium leading-none">{dayNames[d.getDay()]}</span>
-            <span className={`text-[15px] font-bold leading-none ${isSelected ? "text-white" : "text-gray-600 dark:text-[#E8E9F0]"}`}>{d.getDate()}</span>
-            <span className={`text-[10px] leading-none ${isSelected ? "text-indigo-200" : "text-gray-500 dark:text-[#9A9DAE]"}`}>{monthNames[d.getMonth()]}</span>
+            <span className="text-[10px] font-medium leading-[1.3]">{dayNames[d.getDay()]}</span>
+            <span className={`text-[15px] font-bold leading-[1.3] ${isSelected ? "text-white" : "text-gray-600 dark:text-[#E8E9F0]"}`}>{d.getDate()}</span>
+            <span className={`text-[10px] leading-[1.3] ${isSelected ? "text-indigo-200" : "text-gray-500 dark:text-[#9A9DAE]"}`}>{monthNames[d.getMonth()]}</span>
             {hasShot && (
               <div
                 className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-teal-400"
