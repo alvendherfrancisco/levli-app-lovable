@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, ChevronDown, AlertTriangle } from "lucide-react";
+import { X, ChevronDown, Check, AlertTriangle } from "lucide-react";
 import CustomMedicationFields from "@/components/modals/CustomMedicationFields";
 import ShotMedicationPicker from "@/components/modals/ShotMedicationPicker";
-import { getIntervalDays, getMedicationConfig, isOralMedication, validateDosePair } from "@/lib/medicationConfig";
+import {
+  getIntervalDays, getMedicationConfig, isFreeDoseMedication, isOralMedication,
+  medicationForms, validateDosePair,
+} from "@/lib/medicationConfig";
 import { regimenFromShot, saveShotWithMedication } from "@/lib/shotMedication";
 import { pickerMedications } from "@/lib/medicationLink";
 import { useAppState } from "@/lib/AppState";
-import { MEDICATIONS, DRUG_CLASS, isInvestigational, getDoseMax, getMolecularClass, isCompoundedGeneric } from "@/lib/medicationData";
+import { DRUG_CLASS, isInvestigational, getDoseMax, getMolecularClass, isCompoundedGeneric } from "@/lib/medicationData";
 import { getShotDeviceOptions, getDeliveryMethodLabel, RETIRED_DELIVERY_METHODS } from "@/lib/deliveryMethods";
 import { getCapabilityProfile, getCapabilityWarning } from "@/lib/capabilityProfile";
 import { detectDuplicateActiveIngredient } from "@/lib/drugSafety";
@@ -32,6 +35,7 @@ import ClearFieldButton from "@/components/ClearFieldButton";
 import SheetField from "@/components/modals/shot/SheetField";
 import SheetPickerRow from "@/components/modals/shot/SheetPickerRow";
 import SheetSelect from "@/components/modals/shot/SheetSelect";
+import SheetDoseField from "@/components/modals/shot/SheetDoseField";
 import ShotDateTimeFields from "@/components/modals/shot/ShotDateTimeFields";
 import {
   SHEET_CHIP, SHEET_CHIP_OFF, SHEET_CHIP_ON, SHEET_DATE_FIELD, SHEET_DIVIDER, SHEET_FIELD,
@@ -175,6 +179,12 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const activeRoute = route || getDefaultRoute(medication);
   // Compounded / generic products take a free-text concentration.
   const isCompounded = isCompoundedGeneric(medication);
+  // A product with no strengths to choose from (a compounded or research
+  // product) is logged by typing the dose with its unit, never from a chip.
+  const freeDose = !isCustomProduct && isFreeDoseMedication(medication);
+  // A product sold in more than one form (a pen and a tablet) offers the choice
+  // here, because it decides which fields follow and the words on the button.
+  const formChoices = isCustomProduct ? [] : medicationForms(medication);
   const isInjectable = !isCustomProduct && INJECTABLE_ROUTES.includes(activeRoute);
   // The action is named for the product in hand: a dose is taken, a shot is given.
   const isOral = isOralMedication(medication, activeRoute);
@@ -187,7 +197,16 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // Device type starts empty. A product with no catalogue routes (an
   // "Other / custom" entry) gets the generic route choices.
   const routeChoices = getRouteChoices(medication);
-  const routeOptions = routeChoices.length ? routeChoices : ROUTE_CHOICES;
+  // The product's own routes, plus the form its picker offers when that is not
+  // already one of them (Wegovy® logs as a pen or as a tablet), so this dropdown
+  // always shows the form that is actually being logged.
+  const routeOptions = (() => {
+    const base = routeChoices.length ? routeChoices : ROUTE_CHOICES;
+    const extra = formChoices
+      .filter((form) => !base.some((o) => o.value === form.route))
+      .map((form) => ({ value: form.route, label: form.label }));
+    return [...base, ...extra];
+  })();
   // A device already on a record stays selectable even if it is no longer
   // offered, so an old log is never silently rewritten.
   const deviceOptions = getShotDeviceOptions(medication, activeRoute);
@@ -221,7 +240,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const doseNum = parseFloat(dose) || 0;
   const maxDoseMg = getDoseMax(medication);
   const doseInMg = convertDose(doseNum, doseUnit, "mg");
-  const aboveMax = maxDoseMg < 100 && doseInMg != null && doseInMg > maxDoseMg;
+  // Never for a product with no label strengths: its dose is the prescriber's
+  // own number, so no maximum is ever read back to the user as guidance.
+  const aboveMax = !freeDose && maxDoseMg < 100 && doseInMg != null && doseInMg > maxDoseMg;
   const previousShot = shots.find((s) => s.medication === medication && s.id !== editingShot?.id) || null;
   const doseChanged = !!(
     previousShot && previousShot.dose != null && doseNum > 0 &&
@@ -401,12 +422,14 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setShowMedDropdown(false);
   };
 
-  // "Other / custom": the name and dose are typed on the form itself, and the
-  // entry stays out of the catalogue's verified dose lists.
-  const chooseCustom = () => {
+  // "Other / custom": the name is typed in the picker itself, the dose and its
+  // unit on the form. The entry stays out of the catalogue's verified dose lists,
+  // and its name is kept as one of the user's own medications once the shot is
+  // saved, so it is offered under "Your medications" next time.
+  const chooseCustom = (name = "") => {
     setCustomChosen(true);
-    setMedication("");
-    setCustomName("");
+    setMedication(name);
+    setCustomName(name);
     setMedicationId("");
     setDose("");
     setDoseUnit("mg");
@@ -755,6 +778,14 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                       onChooseCustom={chooseCustom}
                     />
                   )}
+                  {/* A compounded or research product carries the one note that
+                      belongs with its name, in the sheet's own small grey. */}
+                  {freeDose && (
+                    <p className={`mt-2 ${SHEET_HINT}`}>
+                      Not an approved treatment in all regions. Log only what your prescriber told you.
+                    </p>
+                  )}
+
                   {/* Two active regimens for the same medication: one question */}
                   {needsRegimenChoice && (
                     <div className="mt-6">
@@ -777,9 +808,31 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                   )}
                 </SheetField>
 
+                {/* A product sold in two forms: which one is being logged. */}
+                {formChoices.length > 1 && (
+                  <SheetField label="Form">
+                    <div className="flex flex-wrap gap-2">
+                      {formChoices.map((form) => (
+                        <button
+                          key={form.id}
+                          type="button"
+                          onClick={() => { sound.tap(); setRoute(form.route); }}
+                          aria-pressed={activeRoute === form.route}
+                          className={`${SHEET_CHIP} ${activeRoute === form.route ? SHEET_CHIP_ON : SHEET_CHIP_OFF}`}
+                        >
+                          {activeRoute === form.route && <Check size={15} strokeWidth={3} aria-hidden="true" />}
+                          {form.label}
+                        </button>
+                      ))}
+                    </div>
+                  </SheetField>
+                )}
+
                 {/* Dose: the strengths the label lists for the chosen product, as
-                    neutral pills carrying the dose's own colour in a small dot.
-                    An "Others" entry asks for the drug name and dose instead. */}
+                    neutral pills carrying the dose's own colour in a small dot. A
+                    compounded or research product has no list to choose from, so
+                    its amount and unit are typed instead. An "Others" entry asks
+                    for the drug name and dose on the form itself. */}
                 <div>
                   {/* Nothing chosen yet: the picker above is the way in, and no
                       dose is offered until a medication is chosen. */}
@@ -800,16 +853,29 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                     />
                   ) : (
                     <>
-                      <DoseChips
-                        key={medication}
-                        medication={medication}
-                        options={doseChips}
-                        value={doseNum}
-                        unit={doseUnit}
-                        onSelect={(v) => setDose(String(v))}
-                        onAddCustom={addCustomDose}
-                        variant="neutral"
-                      />
+                      {freeDose ? (
+                        /* Nothing to choose from: the amount and its unit are
+                           typed, exactly as the prescriber or the label states. */
+                        <SheetField label="Dose">
+                          <SheetDoseField
+                            value={dose}
+                            onChange={setDose}
+                            unit={doseUnit}
+                            onUnitChange={setDoseUnit}
+                          />
+                        </SheetField>
+                      ) : (
+                        <DoseChips
+                          key={medication}
+                          medication={medication}
+                          options={doseChips}
+                          value={doseNum}
+                          unit={doseUnit}
+                          onSelect={(v) => setDose(String(v))}
+                          onAddCustom={addCustomDose}
+                          variant="neutral"
+                        />
+                      )}
                       {doseChanged && (
                         <p className="mt-2 text-[13px] font-medium leading-snug text-amber-600 dark:text-amber-400">
                           Dose changed from {previousShot.dose} {doseUnitLabel(previousShot.dose_unit || "mg")} to {dose} {doseUnitLabel(doseUnit)}.

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Search, Check } from "lucide-react";
 import { MEDICATION_OPTIONS } from "@/lib/medicationRegimen";
+import { matchesMedicationSearch } from "@/lib/medicationConfig";
 import { sound } from "@/lib/sounds";
 
 /**
@@ -24,11 +25,11 @@ export default function MedicationNamePicker({ selectedName, isCustom, onSelect,
   const [query, setQuery] = useState("");
 
   const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return MEDICATION_OPTIONS;
-    // Searching runs over the plain name, so "ozempic" finds "Ozempic®".
+    if (!query.trim()) return MEDICATION_OPTIONS;
+    // Searching ignores case, the ® mark, spaces and hyphens, so "bpc" finds
+    // BPC-157 and "ozempic" finds Ozempic®. The generic name matches too.
     return MEDICATION_OPTIONS.filter(
-      (o) => o.plain.toLowerCase().includes(q) || o.generic.toLowerCase().includes(q));
+      (o) => matchesMedicationSearch(query, o.name, o.generic));
   }, [query]);
 
   const pick = (selection) => {

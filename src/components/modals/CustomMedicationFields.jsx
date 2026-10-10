@@ -1,8 +1,9 @@
 import React from "react";
-import { AlertTriangle, ChevronDown } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { CUSTOM_MEDICATION_WARNING } from "@/lib/medicationConfig";
 import SheetField from "@/components/modals/shot/SheetField";
-import { SHEET_FIELD, SHEET_FIELD_SELECT } from "@/components/modals/shot/sheetUi";
+import SheetDoseField from "@/components/modals/shot/SheetDoseField";
+import { SHEET_FIELD } from "@/components/modals/shot/sheetUi";
 
 const UNIT_CHOICES = ["mg", "mcg", "units", "IU", "mL"];
 
@@ -38,31 +39,13 @@ export default function CustomMedicationFields({
       </SheetField>
 
       <SheetField label="Dose">
-        <div className="flex items-center gap-2">
-          <input
-            type="number" min="0" step="any" inputMode="decimal"
-            value={dose}
-            onChange={(e) => onDoseChange(e.target.value)}
-            placeholder="0.5"
-            aria-label="Dose amount"
-            className={`${SHEET_FIELD} flex-1 basis-0`}
-          />
-          <div className="relative w-[104px] max-w-[40%] flex-shrink-0">
-            <select
-              value={unit}
-              onChange={(e) => onUnitChange(e.target.value)}
-              aria-label="Dose unit"
-              className={SHEET_FIELD_SELECT}
-            >
-              {UNIT_CHOICES.map((u) => <option key={u} value={u}>{u}</option>)}
-            </select>
-            <ChevronDown
-              size={16}
-              aria-hidden="true"
-              className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-          </div>
-        </div>
+        <SheetDoseField
+          value={dose}
+          onChange={onDoseChange}
+          unit={unit}
+          onUnitChange={onUnitChange}
+          units={UNIT_CHOICES}
+        />
       </SheetField>
 
       <div className="rounded-2xl border border-orange-200 dark:border-orange-500/20 bg-orange-50 dark:bg-orange-500/10 px-3.5 py-3">

@@ -2,39 +2,31 @@ import React from "react";
 import { Check } from "lucide-react";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import { MedicationIllustration } from "@/components/onboarding/OnboardingIllustrations";
-import { COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE } from "@/lib/medicationCatalogue";
+import {
+  CUSTOM_MEDICATION_NAME, LISTED_MEDICATIONS, medicationFormTag,
+} from "@/lib/medicationConfig";
 import {
   InjectionIcon, PillIcon, NeutralIcon,
 } from "@/components/onboarding/MedicationIcons";
 import { sound } from "@/lib/sounds";
-import { ACCENT_TEXT, CHIP, CHIP_IDLE, CHIP_ON, CHIP_WRAP, HEADING, HEAD_BLOCK, SUBTITLE } from "@/lib/uiStyles";
+import { ACCENT_TEXT, CHIP, CHIP_IDLE, CHIP_ON, HEADING, HEAD_BLOCK, SUBTITLE } from "@/lib/uiStyles";
 
 /**
- * The medications onboarding offers, in the order they are shown. Each carries
- * the generic behind it, which is what the dose and schedule screens read from,
- * and the icon that says how it is taken: the pen for the injectables, the
- * capsule for the oral products, and a plain plus for "Other", which implies no
- * route. Every chip carries one icon only.
+ * The medications onboarding offers: the app's one shared product list, in the
+ * same A to Z order every other screen uses, with "Others" always last.
+ *
+ * Each chip's icon says how the product is taken — the pen for the injectables,
+ * the capsule for the oral products, and a plain plus for "Others", which
+ * implies no route. Every chip carries one icon only.
  */
 export const MED_OPTIONS = [
-  { label: "Mounjaro®", generic: "Tirzepatide", icon: InjectionIcon },
-  { label: "Wegovy®", generic: "Semaglutide", icon: InjectionIcon },
-  { label: "Ozempic®", generic: "Semaglutide", icon: InjectionIcon },
-  { label: "Zepbound®", generic: "Tirzepatide", icon: InjectionIcon },
-  { label: "Saxenda®", generic: "Liraglutide", icon: InjectionIcon },
-  { label: "Rybelsus®", generic: "Semaglutide", icon: PillIcon },
-  { label: "Foundayo®", generic: "Orforglipron", icon: PillIcon },
-  { label: COMPOUNDED_SEMAGLUTIDE, generic: "Semaglutide", icon: InjectionIcon },
-  { label: COMPOUNDED_TIRZEPATIDE, generic: "Tirzepatide", icon: InjectionIcon },
-  { label: "Other", generic: null, icon: NeutralIcon },
+  ...LISTED_MEDICATIONS.map((entry) => ({
+    label: entry.brandName,
+    generic: entry.genericName || "",
+    icon: medicationFormTag(entry.brandName) === "Pill" ? PillIcon : InjectionIcon,
+  })),
+  { label: CUSTOM_MEDICATION_NAME, generic: null, icon: NeutralIcon },
 ];
-
-// The two compounded names are the longest on the list: each is given a line of
-// its own rather than being squeezed beside a neighbour.
-const LONG_LABELS = [COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE];
-const SHORT_MEDS = MED_OPTIONS.filter((o) => o.label !== "Other" && !LONG_LABELS.includes(o.label));
-const LONG_MEDS = MED_OPTIONS.filter((o) => LONG_LABELS.includes(o.label));
-const OTHER_MED = MED_OPTIONS.find((o) => o.label === "Other");
 
 /**
  * One medication chip: its route icon, then the name, and a small check when it
@@ -45,13 +37,13 @@ const OTHER_MED = MED_OPTIONS.find((o) => o.label === "Other");
  * in both states, and every colour here comes from the tokens, so the chips
  * follow the device's light/dark setting like the rest of the flow.
  */
-function MedChip({ label, Icon, selected, onSelect, wrap = false }) {
+function MedChip({ label, Icon, selected, onSelect }) {
   return (
     <button
       type="button"
       onClick={() => { sound.tap(); onSelect(label); }}
       aria-pressed={selected}
-      className={`${wrap ? CHIP_WRAP : CHIP} max-w-full ${selected ? CHIP_ON : CHIP_IDLE}`}
+      className={`${CHIP} max-w-full ${selected ? CHIP_ON : CHIP_IDLE}`}
     >
       {Icon && <Icon height={28} />}
       {label}
@@ -89,7 +81,7 @@ export default function MedicationStep({ selectedMed, onSelect }) {
         aria-label="Which medication are you on?"
         className="flex flex-wrap justify-center gap-2"
       >
-        {SHORT_MEDS.map((opt) => (
+        {MED_OPTIONS.map((opt) => (
           <MedChip
             key={opt.label}
             label={opt.label}
@@ -98,25 +90,6 @@ export default function MedicationStep({ selectedMed, onSelect }) {
             onSelect={onSelect}
           />
         ))}
-        {LONG_MEDS.map((opt) => (
-          <div key={opt.label} className="flex w-full justify-center">
-            <MedChip
-              label={opt.label}
-              Icon={opt.icon}
-              selected={selectedMed === opt.label}
-              onSelect={onSelect}
-              wrap
-            />
-          </div>
-        ))}
-        {OTHER_MED && (
-          <MedChip
-            label={OTHER_MED.label}
-            Icon={OTHER_MED.icon}
-            selected={selectedMed === OTHER_MED.label}
-            onSelect={onSelect}
-          />
-        )}
       </div>
     </div>
   );

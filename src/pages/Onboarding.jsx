@@ -22,7 +22,7 @@ import {
   firstNameFromUser,
 } from "@/lib/onboardingDraft";
 import ScheduleStep from "@/components/onboarding/ScheduleStep";
-import { getDoseUnit, getMedicationConfig } from "@/lib/medicationConfig";
+import { CUSTOM_MEDICATION_NAME, getDoseUnit, getMedicationConfig } from "@/lib/medicationConfig";
 import { NAME_TO_ENTRY, getMolecularClass } from "@/lib/medicationCatalogue";
 import { toDayKey } from "@/lib/dateUtils";
 import {
@@ -251,9 +251,9 @@ export default function Onboarding() {
     // Completion — one save carries the consent and the rest of the profile, so
     // the consent record is never written separately (or lost) on the way.
     const chosen = selectedMeds[0] || "";
-    const realMed = chosen && chosen !== "Other" ? chosen : "";
+    const realMed = chosen && chosen !== CUSTOM_MEDICATION_NAME ? chosen : "";
     let defaultMed = realMed || "Ozempic®";
-    if (!realMed && MED_OPTIONS.some((o) => o.label === chosen && o.generic === "Tirzepatide")) {
+    if (!realMed && MED_OPTIONS.some((o) => o.label === chosen && String(o.generic).toLowerCase() === "tirzepatide")) {
       defaultMed = "Zepbound®";
     }
 

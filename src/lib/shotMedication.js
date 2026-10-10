@@ -8,37 +8,30 @@
 import {
   LISTED_MEDICATIONS,
   CUSTOM_MEDICATION_NAME,
-  allowsAnyDose,
-  describeAllowedDoses,
-  getDoseUnit,
   getIntervalDays,
   getMedicationConfig,
-  plainBrandName,
+  matchesMedicationSearch,
+  medicationFormTag,
 } from "@/lib/medicationConfig";
 import { pickerMedications } from "@/lib/medicationLink";
 import { parseShotDate, toDayKey } from "@/lib/dateUtils";
 
-/** The catalogue the picker browses: brand, generic, dose unit and strengths. */
+/** The catalogue the picker browses: the shared list, with its form tag. */
 const CATALOGUE_ROWS = LISTED_MEDICATIONS.map((entry) => ({
   key: `catalogue:${entry.id}`,
   catalogueId: entry.id,
   name: entry.brandName,
-  plain: plainBrandName(entry.brandName),
   generic: entry.genericName || "",
-  unit: getDoseUnit(entry.brandName),
-  strengths: describeAllowedDoses(entry.brandName),
-  anyDose: allowsAnyDose(entry.brandName),
   route: entry.route || "",
+  tag: medicationFormTag(entry.brandName),
   status: "",
 }));
 
-const searchText = (value) => String(value || "").trim().toLowerCase();
-
-// Searching runs over the plain name as well as the shown one, so "ozempic"
-// finds "Ozempic®" and a typed ® is never needed.
+// Searching runs over the shown name, the generic name and the product it
+// resolves to, so "bpc", "BPC-157" and "bpc157" all find the same product. Case,
+// the ® mark, spaces and hyphens are ignored (see matchesMedicationSearch).
 const matches = (row, query) =>
-  !query || searchText(row.name).includes(query) || searchText(row.plain).includes(query)
-  || searchText(row.generic).includes(query);
+  matchesMedicationSearch(query, row.name, row.generic, row.catalogueId);
 
 /** One row for a medication the user already has in Meds. */
 function storeRow(medication) {
@@ -48,12 +41,11 @@ function storeRow(medication) {
     id: medication.id || "",
     catalogueId: entry?.id || "",
     name: medication.medication_name,
-    plain: plainBrandName(medication.medication_name),
     generic: medication.generic_name || entry?.genericName || "",
-    unit: medication.dose_unit || getDoseUnit(medication.medication_name),
-    strengths: describeAllowedDoses(medication.medication_name),
-    anyDose: allowsAnyDose(medication.medication_name),
     route: medication.route || "",
+    // A name the app holds nothing for (one the user typed) carries no form tag:
+    // nothing is assumed about a medication there is no information about.
+    tag: entry ? medicationFormTag(medication.medication_name) : "",
     status: medication.status || "active",
   };
 }
@@ -65,17 +57,22 @@ function storeRow(medication) {
  * removed, so one product never appears in both. The search narrows both.
  */
 export function medicationPickerGroups({ medications = [], current = "", query = "" } = {}) {
-  const q = searchText(query);
   // Only a name that is really in the store travels in as "the current one";
   // a product merely chosen in the picker is not a saved medication yet.
   const currentRecord = medications.find((m) => m.medication_name === current) || null;
   const mine = pickerMedications(medications, currentRecord)
     .map(storeRow)
-    .filter((row) => matches(row, q));
-  const saved = new Set(medications.map((m) => m.medication_name));
+    .filter((row) => matches(row, query));
+  // A product the user already has is never offered twice. It is matched on the
+  // name and on the product it resolves to, so a regimen saved under an older
+  // name of the same product still keeps the list free of repeats.
+  const savedNames = new Set(medications.map((m) => m.medication_name));
+  const savedIds = new Set(
+    medications.map((m) => getMedicationConfig(m.medication_name)?.id).filter(Boolean),
+  );
   const catalogue = CATALOGUE_ROWS
-    .filter((row) => !saved.has(row.name))
-    .filter((row) => matches(row, q));
+    .filter((row) => !savedNames.has(row.name) && !savedIds.has(row.catalogueId))
+    .filter((row) => matches(row, query));
   return { mine, catalogue };
 }
 

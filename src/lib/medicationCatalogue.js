@@ -81,7 +81,12 @@ const caps = (overrides = {}) => ({ ...DEFAULT_CAPS, ...overrides });
 // flexible) and they accept a free-text concentration on the logged shot.
 export const COMPOUNDED_SEMAGLUTIDE = "Semaglutide (generic / compounded)";
 export const COMPOUNDED_TIRZEPATIDE = "Tirzepatide (generic / compounded)";
-export const COMPOUNDED_GENERIC_NAMES = [COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE];
+// The names the compounded / generic forms are chosen under: the plain name the
+// pickers show first, then the longer names they carried before, kept so a log
+// made under one of those still resolves.
+export const COMPOUNDED_GENERIC_NAMES = [
+  "Semaglutide", "Tirzepatide", COMPOUNDED_SEMAGLUTIDE, COMPOUNDED_TIRZEPATIDE,
+];
 
 export const MEDICATION_CATALOGUE = [
   // ═════════════════════════════════════════════════════════════════════════
@@ -90,7 +95,7 @@ export const MEDICATION_CATALOGUE = [
   {
     id: "semaglutide",
     generic_name: "Semaglutide",
-    brand_names: ["Ozempic®", "Wegovy®", "Rybelsus®", COMPOUNDED_SEMAGLUTIDE],
+    brand_names: ["Ozempic®", "Wegovy®", "Rybelsus®", "Semaglutide", COMPOUNDED_SEMAGLUTIDE],
     aliases: [],
     dev_codes: ["NN9536", "NNC0113-0217"],
     medication_class: "metabolic",
@@ -118,7 +123,7 @@ export const MEDICATION_CATALOGUE = [
   {
     id: "tirzepatide",
     generic_name: "Tirzepatide",
-    brand_names: ["Mounjaro®", "Zepbound®", COMPOUNDED_TIRZEPATIDE],
+    brand_names: ["Mounjaro®", "Zepbound®", "Tirzepatide", COMPOUNDED_TIRZEPATIDE],
     medication_class: "metabolic",
     molecular_class: MOL.PEPTIDE_ANALOGUE,
     amino_acid_length: 39,

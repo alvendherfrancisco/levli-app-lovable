@@ -27,6 +27,14 @@ export const CUSTOM_MEDICATION_NAME = "Others";
     made under the old name keeps working. */
 export const LEGACY_CUSTOM_NAMES = ["Other / custom (prescriber-directed)"];
 
+/** Product names that have been renamed. Still resolved, so a log or a regimen
+    made under the old name keeps working — the two compounded products are now
+    offered under their own plain name. */
+const LEGACY_PRODUCT_NAMES = {
+  compounded_semaglutide: ["Semaglutide (generic / compounded)"],
+  compounded_tirzepatide: ["Tirzepatide (generic / compounded)"],
+};
+
 /** Unapproved research peptides: there is no approved product anywhere, so no
     strengths, no schedule and no missed-dose rule. Levli logs only what the user
     types for one of these, and never models exposure for it. */
@@ -160,6 +168,12 @@ export const MEDICATION_CONFIG = [
     name: "Wegovy",
     genericName: "semaglutide",
     route: "subcutaneous",
+    // Wegovy is sold as a pen and as a once-daily tablet, so the log sheet asks
+    // which one is being taken instead of assuming the pen.
+    forms: [
+      { id: "injection", label: "Injection", route: "subcutaneous" },
+      { id: "pill", label: "Pill", route: "oral_tablet" },
+    ],
     dosingIntervalDays: 7,
     allowedDoses: [
       // One colour-coded pen label per strength, read from the manufacturer pen
@@ -466,8 +480,8 @@ export const MEDICATION_CONFIG = [
   ...RESEARCH_PEPTIDE_NAMES.map(researchPeptideEntry),
   {
     id: "compounded_semaglutide",
-    brandName: "Semaglutide (generic / compounded)",
-    name: "Semaglutide (generic / compounded)",
+    brandName: "Semaglutide",
+    name: "Semaglutide",
     genericName: "semaglutide",
     route: "subcutaneous",
     dosingIntervalDays: 7,
@@ -491,8 +505,8 @@ export const MEDICATION_CONFIG = [
   },
   {
     id: "compounded_tirzepatide",
-    brandName: "Tirzepatide (generic / compounded)",
-    name: "Tirzepatide (generic / compounded)",
+    brandName: "Tirzepatide",
+    name: "Tirzepatide",
     genericName: "tirzepatide",
     route: "subcutaneous",
     dosingIntervalDays: 7,
@@ -545,10 +559,19 @@ const normalise = (name) => String(name || "").replace(/[®™]/g, "").trim().to
 const BY_KEY = (() => {
   const map = {};
   const customEntry = MEDICATION_CONFIG.find((e) => e.id === "custom");
+  // A generic name belongs to the first product that carries it, so it never
+  // shadows a product listed later.
   MEDICATION_CONFIG.forEach((entry) => {
-    map[normalise(entry.brandName)] = entry;
-    if (entry.name) map[normalise(entry.name)] = entry;
-    if (entry.genericName && !map[normalise(entry.genericName)]) map[normalise(entry.genericName)] = entry;
+    const key = normalise(entry.genericName);
+    if (key && !map[key]) map[key] = entry;
+  });
+  // Then every product's own names, which always resolve to that product: a
+  // name can be both a product's own name and another product's generic
+  // ("Semaglutide" is the compounded product and Ozempic's active ingredient).
+  MEDICATION_CONFIG.forEach((entry) => {
+    [entry.brandName, entry.name, ...(LEGACY_PRODUCT_NAMES[entry.id] || [])]
+      .filter(Boolean)
+      .forEach((name) => { map[normalise(name)] = entry; });
   });
   // A log made while this option still carried its old name still resolves to it.
   LEGACY_CUSTOM_NAMES.forEach((name) => { if (customEntry) map[normalise(name)] = customEntry; });
@@ -587,6 +610,54 @@ export function allowsAnyDose(name) {
   const entry = getMedicationConfig(name);
   if (!entry) return true;
   return !!entry.allowsAnyDose || entry.allowedDoses.length === 0;
+}
+
+// ── How a product is taken, and whether it has strengths to offer ────────────
+// Both answers live here, so every list, tag and form in the app describes a
+// product the same way.
+
+/** The forms a product comes in — the pen and/or the tablet it is sold as. */
+export function medicationForms(name) {
+  const entry = getMedicationConfig(name);
+  // Nothing known, or a product the user named themselves: no form is assumed.
+  if (!entry || entry.id === "custom") return [];
+  if (entry.forms?.length) return entry.forms;
+  return isOralMedication(name, entry.route)
+    ? [{ id: "pill", label: "Pill", route: entry.route }]
+    : [{ id: "injection", label: "Injection", route: "subcutaneous" }];
+}
+
+/** The small grey tag a picker row carries: how the product is taken. */
+export function medicationFormTag(name) {
+  const forms = medicationForms(name);
+  if (!forms.length) return "";
+  return forms.length > 1 ? "Pill or injection" : forms[0].label;
+}
+
+/**
+ * true when a product has no strengths to offer — a compounded or research
+ * product whose dose is only ever the one the prescriber stated. These are
+ * logged by typing the amount with its unit, never from a row of chips.
+ */
+export function isFreeDoseMedication(name) {
+  const entry = getMedicationConfig(name);
+  if (!entry || entry.id === "custom") return false;
+  return allowsAnyDose(name);
+}
+
+/**
+ * A name reduced to what a search looks at: case, the ®/™ mark, spaces and
+ * hyphens are all ignored, so "bpc" finds BPC-157 and "ghk cu" finds GHK-Cu.
+ */
+export function medicationSearchKey(value) {
+  return String(value || "").toLowerCase().replace(/[®™]/g, "").replace(/[\s\-–—_.]/g, "");
+}
+
+/** true when a search term matches a name, or any other word passed with it. */
+export function matchesMedicationSearch(query, ...values) {
+  const q = medicationSearchKey(query);
+  if (!q) return true;
+  return values.some((value) => medicationSearchKey(value).includes(q));
 }
 
 /** true when this product's dose list comes from an official label. */
@@ -743,32 +814,39 @@ export function isCustomDoseSource(shot) {
 // ── Pickers ────────────────────────────────────────────────────────────────
 
 // ── What the pickers offer, and in what order ───────────────────────────────
-// The product list, in the order it is shown. A product that is NOT here is
-// still defined above (Trulicity, Victoza) so anyone already logging it
-// keeps its strengths, its interval and its missed-dose rule — it is simply no
-// longer offered as a new choice, and a product outside this list is logged
-// through "Others" instead.
+// ONE product list for the whole app: the Log shot picker, onboarding, the
+// Add / Edit Medication form, the inventory product list and the reports all
+// read it, so changing it here changes every screen at once.
+//
+// The order is A to Z by the product's plain name, with the ® mark and any
+// hyphen ignored (so TB-500 sits between Semaglutide and Tirzepatide), and
+// "Others" is always last (see CUSTOM_MEDICATION_NAME).
+//
+// A product that is NOT here is still defined above (Trulicity, Victoza,
+// Saxenda) so anyone already logging it keeps its strengths, its interval and
+// its missed-dose rule — it is simply no longer offered as a new choice, and a
+// product outside this list is logged through "Others" instead.
 const LISTED_IDS = [
+  "bpc157",
+  "cjc1295",
   "foundayo",
+  "ghkcu",
+  "ipamorelin",
   "mounjaro",
   "ozempic",
   "rybelsus",
   "compounded_semaglutide",
+  "tb500",
   "compounded_tirzepatide",
-  "saxenda",
   "wegovy",
   "zepbound",
-  "bpc157",
-  "cjc1295",
-  "ghkcu",
-  "ipamorelin",
-  "tb500",
 ];
 
-/** The products the pickers offer, in order (the custom entry is not one of them). */
+/** The products the pickers offer, A to Z (the custom entry is not one of them). */
 export const LISTED_MEDICATIONS = LISTED_IDS
   .map((id) => MEDICATION_CONFIG.find((e) => e.id === id))
-  .filter(Boolean);
+  .filter(Boolean)
+  .sort((a, b) => medicationSearchKey(a.name).localeCompare(medicationSearchKey(b.name)));
 
 /** Medication names for the pickers, in the order above, then "Others". */
 export function getMedicationPickerNames() {
