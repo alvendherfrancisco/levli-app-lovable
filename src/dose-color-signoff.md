@@ -34,6 +34,10 @@ as that reference shows them.
 | Wegovy | 1 mg | `#A66E3E` | `#BC8654` | 2026-10-08 | pen reference image |
 | Wegovy | 1.7 mg | `#0079A4` | `#1E93BF` | 2026-10-08 | pen reference image |
 | Wegovy | 2.4 mg | `#3B4044` | `#585F64` | 2026-10-08 | pen reference image |
+| Wegovy | 1.5 mg (tablet) | `#4BB4A5` | `#63C7B8` | 2026-10-10 | oral dosing chart |
+| Wegovy | 4 mg (tablet) | `#A93C66` | `#C25580` | 2026-10-10 | oral dosing chart |
+| Wegovy | 9 mg (tablet) | `#A66E3E` | `#BC8654` | 2026-10-10 | oral dosing chart |
+| Wegovy | 25 mg (tablet) | `#0079A4` | `#1E93BF` | 2026-10-10 | oral dosing chart |
 | Rybelsus | 3 mg | `#009933` | `#12AC47` | 2026-10-08 | tablet reference image |
 | Rybelsus | 7 mg | `#E32D1C` | `#EF5243` | 2026-10-08 | tablet reference image |
 | Rybelsus | 14 mg | `#008BCF` | `#21A0DE` | 2026-10-08 | tablet reference image |
@@ -67,9 +71,11 @@ Mirrored manufacturer behaviour worth signing off deliberately:
   grey, red, teal and gold on a shared body; the oral tablet carries green
   1.5 mg, red 4 mg and blue 9 mg on the carton band and the bottle's strength
   badge. The two sets are separate strengths and are not substitutable mg for mg.
-- **Wegovy** — one colour-coded pen label per strength. Its oral tablet (25 mg)
-  has no pack colour sourced yet, so that strength is drawn as a neutral outline
-  rather than being given an invented colour.
+- **Wegovy** — the pen labels each strength in its own colour. The oral tablet is a
+  set of its own, taken once daily, that reuses the same four pack colours for its
+  own strengths: teal 1.5 mg to start, raspberry 4 mg and tan 9 mg while stepping
+  up, blue 25 mg for maintenance. The tablet's colours are read from the maker's
+  oral dosing chart, and the pen's from the pen reference.
 - **Rybelsus** — the colour belongs to the carton, not the tablet (every tablet
   is white). The reference image also shows lower tablet strengths (1.5 mg,
   4 mg, 9 mg) that this config does not list yet; the entry records that.
@@ -124,9 +130,9 @@ block on each dose — the entry already has the slot, the source and the date.
 
 | Rule | Result |
 |---|---|
-| Confirmed products carry a light and dark token per labelled strength, a source link and a verified date | pass, 7 products, 38 labelled strengths |
-| Every chip meets WCAG AA in light and dark mode | 76 chip calculations, lowest 4.51:1 (Rybelsus 7 mg); 23 colours needed a lightness step with the hue kept |
-| A form's strengths are all coloured or all not | pass (Ozempic's tablets carry three tokens; Wegovy's tablet carries none) |
+| Confirmed products carry a light and dark token per labelled strength, a source link and a verified date | pass, 7 products, 42 labelled strengths |
+| Every chip meets WCAG AA in light and dark mode | 84 chip calculations, lowest 4.51:1 (Rybelsus 7 mg); 26 colours needed a lightness step with the hue kept |
+| A form's strengths are all coloured or all not | pass (Ozempic's tablets carry three tokens, Wegovy's four) |
 | Standard scale ordered light → dark | pass in both modes |
 | Standard scale never reads as a brand colour | minimum distance 74 (light) / 59 (dark) from any brand token |
 | Labelled dose filled, typed dose neutral | pass on all seven branded products |
@@ -139,6 +145,8 @@ block on each dose — the entry already has the slot, the source and the date.
       Zepbound, Saxenda and a compounded product — chips change at once, no colour carries over.
 - [ ] Ozempic, Pill form: 1.5 mg green, 4 mg red, 9 mg blue, matching the carton and
       the bottle badges; switch to Injection and the pen set takes over.
+- [ ] Wegovy, Pill form: 1.5 mg teal, 4 mg raspberry, 9 mg tan, 25 mg blue, matching
+      the tablet packs; switch to Injection and the pen set takes over.
 - [ ] Compare each chip against the pen or carton in hand for the strength being logged.
 - [ ] Selected chip: checkmark and ring visible with colour ignored.
 - [ ] "+ Other" typed dose: outlined, not filled, in the picker, on the day card and in history.

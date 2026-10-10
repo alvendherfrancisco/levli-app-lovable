@@ -202,12 +202,20 @@ export const MEDICATION_CONFIG = [
     // which one is being taken instead of assuming the pen.
     forms: [
       { id: "injection", label: "Injection", route: "subcutaneous" },
-      // The tablet's one strength, from the label note on this entry below.
+      // The oral tablet's own once-daily strengths, each in the pack colour the
+      // pen family uses for that step (see colorScheme.tabletSources): teal
+      // 1.5 mg to start, raspberry 4 mg and tan 9 mg while stepping up, blue
+      // 25 mg for maintenance.
       {
         id: "pill",
         label: "Pill",
         route: "oral_tablet",
-        doses: [{ value: 25, unit: "mg", role: "standard" }],
+        doses: [
+          { value: 1.5, unit: "mg", role: "initiation", color: COLOR_TOKENS.wegovyTeal },
+          { value: 4, unit: "mg", role: "titration_only", color: COLOR_TOKENS.wegovyRaspberry },
+          { value: 9, unit: "mg", role: "titration_only", color: COLOR_TOKENS.wegovyTan },
+          { value: 25, unit: "mg", role: "standard", color: COLOR_TOKENS.wegovyBlue },
+        ],
       },
     ],
     dosingIntervalDays: 7,
@@ -221,14 +229,21 @@ export const MEDICATION_CONFIG = [
       { value: 2.4, unit: "mg", role: "standard", color: COLOR_TOKENS.wegovyCharcoal },
     ],
     colorScheme: {
-      basis: "pen",
+      basis: "pen and tablet",
       source: "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/fe3b5c170_image.png",
-      verified: "2026-10-08",
+      verified: "2026-10-10",
       status: "confirmed",
-      note: "Each strength has its own colour-coded pen label, read from the manufacturer pen reference image: teal 0.25 mg, raspberry 0.5 mg, tan 1 mg, blue 1.7 mg, charcoal 2.4 mg.",
+      note: "The pen labels each strength in its own colour, read from the manufacturer pen reference image: teal 0.25 mg, raspberry 0.5 mg, tan 1 mg, blue 1.7 mg, charcoal 2.4 mg. The oral tablet carries the same four colours on its own pack for its own once-daily strengths, read from the maker's oral dosing chart (see tabletSources): teal 1.5 mg to start, raspberry 4 mg and tan 9 mg while stepping up, blue 25 mg for maintenance.",
+      // The oral tablet's pack colours, from the maker's own dosing chart.
+      tabletSources: [
+        { strengths: "1.5 mg, 4 mg, 9 mg, 25 mg", url: "https://media.base44.com/images/public/6a47a256ca9a7d18b85d511f/622cdfaaf_image.png" },
+      ],
     },
     minIntervalDays: 2,
-    maxDoseMg: 2.4,
+    // The two forms have their own maxima: the pen tops out at 2.4 mg weekly, the
+    // tablet at 25 mg once daily. This is the product's own maximum, so a 25 mg
+    // tablet dose is not read back to the user as above the maximum.
+    maxDoseMg: 25,
     indicationNote:
       "Chronic weight management in adults and in adolescents aged 12 and older with obesity or with overweight plus a weight-related condition. Also lowers major heart-event risk in adults with established heart disease, and treats noncirrhotic MASH with moderate to advanced liver fibrosis.",
     missedDoseRule:
@@ -241,7 +256,7 @@ export const MEDICATION_CONFIG = [
     lastReviewed: "2026-10-05",
     verified: true,
     verifiedNote:
-      "Wegovy is also sold as an oral tablet (oral semaglutide 25 mg once daily): its one strength sits on the tablet form, with no pen colour because the tablet has none. The label states the missed-dose rule as a condition on the next dose rather than a plain day count; the 4-day window is derived from it and the card shows the label's own wording.",
+      "Wegovy is also sold as an oral tablet, once daily, in its own four strengths: 1.5 mg to start, 4 mg and 9 mg as step-up doses, 25 mg for maintenance. Each tablet strength carries the pack colour the pen family uses for that step, read from the maker's oral dosing chart, not from the pen. The label states the missed-dose rule as a condition on the next dose rather than a plain day count; the 4-day window is derived from it and the card shows the label's own wording.",
     exposureEligible: true,
   },
   {
