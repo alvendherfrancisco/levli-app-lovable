@@ -1,4 +1,5 @@
 import React from "react";
+import DateInput from "@/components/DateInput";
 import OptionChips from "@/components/OptionChips";
 
 /** Today, as the value a date input expects ("YYYY-MM-DD"). */
@@ -33,13 +34,7 @@ export default function StartDateField({ value, onChange, error }) {
       wrapClass="flex flex-wrap gap-2 mb-2"
       labelClass="text-sm font-semibold text-gray-700 dark:text-gray-300"
     >
-      <input
-        id="start-date"
-        type="date"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full min-w-0 box-border min-h-[52px] rounded-xl border border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-3 py-2.5 text-sm outline-none focus:border-indigo-400 dark:[color-scheme:dark]"
-      />
+      <DateInput id="start-date" value={value} onChange={onChange} ariaLabel="Start date" />
 
       {value === today && (
         <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-1.5 leading-snug">

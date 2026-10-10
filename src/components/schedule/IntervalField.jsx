@@ -1,4 +1,5 @@
 import React from "react";
+import DateInput from "@/components/DateInput";
 import { FIELD_PLAIN, HELP_IN_CARD, LABEL_TEXT } from "@/lib/uiStyles";
 
 // The shared field, so a date input and a number input are the same pill on every
@@ -43,12 +44,11 @@ export default function IntervalField({
           <label htmlFor="schedule-start" className={`${LABEL_TEXT} mb-2 block`}>
             First dose date
           </label>
-          <input
+          <DateInput
             id="schedule-start"
-            type="date"
-            value={startDate || ""}
-            onChange={(e) => onStartDateChange(e.target.value)}
-            className={INPUT}
+            value={startDate}
+            onChange={onStartDateChange}
+            ariaLabel="First dose date"
           />
         </div>
       )}

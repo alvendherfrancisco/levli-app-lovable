@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { X, Save, ChevronDown } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
+import DateInput from "@/components/DateInput";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
 import {
@@ -363,12 +364,11 @@ export default function MedicationModal({ open, onClose, editing }) {
                     </label>
                     <ClearFieldButton show={!!plannedEndDate} onClear={() => { setPlannedEndDate(""); clearError("plannedEndDate"); }} />
                   </div>
-                  <input
+                  <DateInput
                     id="end-date"
-                    type="date"
                     value={plannedEndDate}
-                    onChange={(e) => { setPlannedEndDate(e.target.value); clearError("plannedEndDate"); }}
-                    className={`${inputClass} box-border w-full min-w-0`}
+                    onChange={(value) => { setPlannedEndDate(value); clearError("plannedEndDate"); }}
+                    ariaLabel="Planned end"
                   />
                   {errors.plannedEndDate && <p className="text-sm font-medium text-red-600 dark:text-red-400 mt-2">{errors.plannedEndDate}</p>}
                 </div>

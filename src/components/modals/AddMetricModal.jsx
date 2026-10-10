@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, Camera, Image, Trash2, Save, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { todayKey } from "@/lib/dateUtils";
+import DateInput from "@/components/DateInput";
 import CameraCapture from "@/components/modals/CameraCapture";
 import SafeImage from "@/components/SafeImage";
 import useModal from "@/hooks/useModal";
@@ -79,12 +81,13 @@ function ExerciseModal({ open, onClose, value, onSave, onDelete }) {
 function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
   const hasExisting = value && value !== "–";
   const [imgUrl, setImgUrl] = useState(hasExisting ? value : null);
-  const [photoDate, setPhotoDate] = useState(dayKey || "");
+  // Today unless the sheet was opened from a day the strip has selected.
+  const [photoDate, setPhotoDate] = useState(dayKey || todayKey());
   const [uploading, setUploading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const galleryRef = useRef();
 
-  useEffect(() => { if (open) { setImgUrl(hasExisting ? value : null); setPhotoDate(dayKey || ""); setUploading(false); setShowCamera(false); } }, [open]);
+  useEffect(() => { if (open) { setImgUrl(hasExisting ? value : null); setPhotoDate(dayKey || todayKey()); setUploading(false); setShowCamera(false); } }, [open]);
 
   const sheetRef = useModal({ open, onDismiss: onClose });
 
@@ -150,13 +153,8 @@ function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
             <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
           </div>
           <div className="mt-4">
-            <label className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-2 block">Date</label>
-            <input
-              type="date"
-              value={photoDate}
-              onChange={(e) => setPhotoDate(e.target.value)}
-              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] rounded-xl px-4 py-3 outline-none text-gray-900 dark:text-[#E8E9F0] dark:[color-scheme:dark]"
-            />
+            <label htmlFor="progress-date" className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-2 block">Date</label>
+            <DateInput id="progress-date" value={photoDate} onChange={setPhotoDate} ariaLabel="Date" />
           </div>
         </div>
         {showCamera && <CameraCapture onCapture={handleCameraCapture} onClose={() => setShowCamera(false)} />}
@@ -185,7 +183,7 @@ function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
 }
 
 // ── Generic (Weight, and any future metric) ───────────────────────────────────
-function GenericMetricModal({ open, onClose, label, unit, value, onSave, validate }) {
+function GenericMetricModal({ open, onClose, label, unit, value, placeholder, onSave, validate }) {
   const [val, setVal] = useState("");
   const [error, setError] = useState("");
   useEffect(() => { if (open) { setVal(value && value !== "–" ? String(value) : ""); setError(""); } }, [open, value]);
@@ -219,7 +217,7 @@ function GenericMetricModal({ open, onClose, label, unit, value, onSave, validat
             value={val}
             onChange={(e) => { setVal(numericOnly(e.target.value)); setError(""); }}
             onFocus={(e) => e.target.select()}
-            placeholder="0.0"
+            placeholder={placeholder || "0.0"}
             className="flex-1 outline-none text-lg font-medium bg-transparent text-gray-900 dark:text-[#E8E9F0] placeholder-gray-300 dark:placeholder-[#9A9DAE]"
             autoFocus
           />
@@ -235,7 +233,8 @@ function GenericMetricModal({ open, onClose, label, unit, value, onSave, validat
           </button>
           <button
             onClick={handleSave}
-            className="btn-pill btn-pill-sm btn-primary">
+            disabled={!val}
+            className="btn-pill btn-pill-sm btn-primary disabled:opacity-50">
             Save
           </button>
         </div>
@@ -244,12 +243,12 @@ function GenericMetricModal({ open, onClose, label, unit, value, onSave, validat
   );
 }
 
-export default function AddMetricModal({ open, onClose, label, unit, value, dayKey, onSave, onDelete, validate }) {
+export default function AddMetricModal({ open, onClose, label, unit, value, dayKey, placeholder, onSave, onDelete, validate }) {
   if (label === "Exercise") {
     return <ExerciseModal open={open} onClose={onClose} value={value} onSave={onSave} onDelete={onDelete || (() => onSave("0"))} />;
   }
   if (label === "Progress") {
     return <ProgressModal open={open} onClose={onClose} value={value} dayKey={dayKey} onSave={onSave} onDelete={onDelete || (() => onSave("–"))} />;
   }
-  return <GenericMetricModal open={open} onClose={onClose} label={label} unit={unit} value={value} onSave={onSave} validate={validate} />;
+  return <GenericMetricModal open={open} onClose={onClose} label={label} unit={unit} value={value} placeholder={placeholder} onSave={onSave} validate={validate} />;
 }

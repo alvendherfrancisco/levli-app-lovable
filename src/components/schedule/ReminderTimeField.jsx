@@ -42,7 +42,7 @@ function TimeField({ id, value, onChange, label }) {
         value={value || ""}
         onChange={(e) => onChange(e.target.value)}
         aria-label={label}
-        className="absolute inset-0 h-full w-full cursor-pointer opacity-0 dark:[color-scheme:dark]"
+        className="absolute inset-0 h-full w-full min-w-0 box-border cursor-pointer opacity-0 dark:[color-scheme:dark]"
       />
     </div>
   );

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { X, Plus, Trash2, ExternalLink } from "lucide-react";
+import { X, Save, Trash2, ExternalLink } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { todayKey } from "@/lib/dateUtils";
 import { getRecentMedication } from "@/lib/medicationData";
 import { classifyRedFlag } from "@/lib/redFlags";
 import { SIDE_EFFECT_SYMPTOMS, SEVERITY_LEVELS, symptomByKey } from "@/lib/sideEffectSymptoms";
 import OptionChips from "@/components/OptionChips";
+import DateInput from "@/components/DateInput";
 import SideEffectChecklist from "@/components/sideEffects/SideEffectChecklist";
 import UrgentHelpCard from "@/components/sideEffects/UrgentHelpCard";
 import useModal from "@/hooks/useModal";
@@ -27,7 +28,9 @@ const severityLabel = (value) => SEVERITY_LEVELS.find((s) => s.value === value)?
 export default function SideEffectsModal({ open, onClose, dayKey }) {
   const { shots, getSideEffects, adverseEvents, addAdverseEvent, deleteAdverseEvent } = useAppState();
   const [selected, setSelected] = useState([]);
-  const [severity, setSeverity] = useState("mild");
+  // Neither the symptom nor the severity is pre-selected: both are the user's
+  // own report, and neither is ever guessed on their behalf.
+  const [severity, setSeverity] = useState("");
   const [date, setDate] = useState(dayKey || todayKey());
   const [note, setNote] = useState("");
   const [urgentOpen, setUrgentOpen] = useState(false);
@@ -37,7 +40,7 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
   useEffect(() => {
     if (!open) return;
     setSelected([]);
-    setSeverity("mild");
+    setSeverity("");
     setDate(dayKey || todayKey());
     setNote("");
     setUrgentOpen(false);
@@ -87,6 +90,10 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
       toast.success(selected.length === 1 ? "Side effect logged" : `${selected.length} side effects logged`);
       setSelected([]);
       setNote("");
+      // One save, one finish: the sheet closes itself once the entry is safely
+      // saved. A severe entry stays open, so the urgent-help list it just
+      // opened is read rather than dismissed.
+      if (severity !== "severe") onClose();
     } catch (err) {
       toast.error("Couldn't save. Please try again.", { actionLabel: "Retry", onAction: handleAdd });
     }
@@ -152,11 +159,10 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
             wrapClass="flex gap-2"
           />
 
-          {/* Date */}
+          {/* Date — the day the sheet was opened from, today by default */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Date</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-              className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300" />
+            <label htmlFor="side-effect-date" className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Date</label>
+            <DateInput id="side-effect-date" value={date} onChange={setDate} ariaLabel="Date" />
           </div>
 
           {/* Note */}
@@ -166,11 +172,6 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
               placeholder="Anything you want to remember about it..."
               className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-sm resize-none outline-none focus:border-indigo-300" />
           </div>
-
-          <button onClick={handleAdd} disabled={!selected.length || saving}
-            className="w-full py-3 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
-            <Plus size={16} /> {saving ? "Saving…" : "Log side effect"}
-          </button>
 
           {/* Entries already logged for this date */}
           {dayEvents.length > 0 && (
@@ -239,7 +240,10 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
         </div>
 
         <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
-          <button onClick={onClose} className="w-full py-3.5 btn-pill btn-primary font-semibold">Done</button>
+          <button onClick={handleAdd} disabled={!selected.length || saving}
+            className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+            <Save size={16} /> {saving ? "Saving…" : "Save"}
+          </button>
         </div>
       </div>
     </div>

@@ -25,6 +25,8 @@ import ShotSuccessPanel from "@/components/modals/ShotSuccessPanel";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import OptionChips from "@/components/OptionChips";
+import DateInput from "@/components/DateInput";
+import TimeInput from "@/components/TimeInput";
 import ClearFieldButton from "@/components/ClearFieldButton";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
@@ -49,7 +51,12 @@ const idSites = [
 
 const pad = (n) => String(n).padStart(2, "0");
 function toInputDate(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
-function toInputTime(d) { return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+/** The time a new log opens on: now, to the nearest five minutes. */
+function toInputTime(d) {
+  const rounded = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), 0);
+  rounded.setMinutes(Math.round(d.getMinutes() / 5) * 5);
+  return `${pad(rounded.getHours())}:${pad(rounded.getMinutes())}`;
+}
 function toShotTime(d) {
   const h = d.getHours(), m = d.getMinutes();
   const ampm = h >= 12 ? "PM" : "AM";
@@ -839,19 +846,15 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                   </div>
                 )}
 
-                {/* Date & Time */}
-                {/* flex row, 12px gap, each field flex-1 / min-width:0 with an
-                    explicit border-box so a native date/time input can never add
-                    its padding+border on top of its width and spill out of the
-                    sheet — the row stays inside the same px-5 gutter as the
-                    Medication, Dose and Injection site sections above it. */}
+                {/* Date & Time — the app's shared date and time fields (see
+                    src/components/DateInput.jsx), which carry the width reset a
+                    native control needs, so the row stays inside the same px-5
+                    gutter as the sections above it. */}
                 <div>
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Date & time</label>
                   <div className="flex w-full gap-3">
-                    <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Shot date"
-                      className="flex-1 basis-0 w-full min-w-0 box-border h-12 text-center border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-2 text-base outline-none focus:border-indigo-300" />
-                    <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="Shot time"
-                      className="flex-1 basis-0 w-full min-w-0 box-border h-12 text-center border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-2 text-base outline-none focus:border-indigo-300" />
+                    <DateInput value={date} onChange={setDate} ariaLabel="Shot date" className="flex-1 basis-0" />
+                    <TimeInput value={time} onChange={setTime} ariaLabel="Shot time" className="flex-1 basis-0" />
                   </div>
                 </div>
 
@@ -948,7 +951,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                             <input type="text" value={patchSite} onChange={(e) => setPatchSite(e.target.value)} placeholder="e.g. Abdomen, upper arm" className={inputClass} />
                           </InputField>
                           <InputField label="Application date">
-                            <input type="date" value={applicationDate} onChange={(e) => setApplicationDate(e.target.value)} className={`${inputClass} dark:[color-scheme:dark]`} />
+                            <DateInput value={applicationDate} onChange={setApplicationDate} ariaLabel="Application date" />
                           </InputField>
                         </>
                       )}
@@ -970,7 +973,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                             <input type="text" value={clinicLocation} onChange={(e) => setClinicLocation(e.target.value)} className={inputClass} />
                           </InputField>
                           <InputField label="Insertion date">
-                            <input type="date" value={insertionDate} onChange={(e) => setInsertionDate(e.target.value)} className={`${inputClass} dark:[color-scheme:dark]`} />
+                            <DateInput value={insertionDate} onChange={setInsertionDate} ariaLabel="Insertion date" />
                           </InputField>
                         </>
                       )}
@@ -981,7 +984,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                             <input type="number" min="0" step="0.1" value={pumpRate} onChange={(e) => setPumpRate(e.target.value)} className={inputClass} />
                           </InputField>
                           <InputField label="Site change date">
-                            <input type="date" value={siteChangeDate} onChange={(e) => setSiteChangeDate(e.target.value)} className={`${inputClass} dark:[color-scheme:dark]`} />
+                            <DateInput value={siteChangeDate} onChange={setSiteChangeDate} ariaLabel="Site change date" />
                           </InputField>
                         </>
                       )}
@@ -991,10 +994,10 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                         <>
                           <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Reconstitution</div>
                           <InputField label="Reconstitution date">
-                            <input type="date" value={reconstitutionDate} onChange={(e) => setReconstitutionDate(e.target.value)} className={`${inputClass} dark:[color-scheme:dark]`} />
+                            <DateInput value={reconstitutionDate} onChange={setReconstitutionDate} ariaLabel="Reconstitution date" />
                           </InputField>
                           <InputField label="In-use expiry date">
-                            <input type="date" value={inUseExpiry} onChange={(e) => setInUseExpiry(e.target.value)} className={`${inputClass} dark:[color-scheme:dark]`} />
+                            <DateInput value={inUseExpiry} onChange={setInUseExpiry} ariaLabel="In-use expiry date" />
                           </InputField>
                         </>
                       )}

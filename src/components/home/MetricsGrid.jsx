@@ -22,6 +22,7 @@ export default function MetricsGrid({ dayKey }) {
     getExercise, saveExercise,
     getProgressPhoto, addProgressPhotoRecord, deleteLatestProgressPhoto,
     profile,
+    weightHistory,
   } = useAppState();
 
   const [showNutrition, setShowNutrition] = useState(false);
@@ -33,6 +34,9 @@ export default function MetricsGrid({ dayKey }) {
   const photo = getProgressPhoto(dk);
   const weightUnit = profile?.weight_unit || "lb";
   const liquidUnit = profile?.liquid_unit || "oz";
+  // The weight last put on record, offered as the field's placeholder only —
+  // the app never fills a measurement in as a value the person could save.
+  const lastLoggedWeight = weightHistory[weightHistory.length - 1]?.weight;
 
   // Number formatting for a narrow card: whole numbers for nutrients and
   // exercise, at most one decimal for weight and water.
@@ -72,12 +76,13 @@ export default function MetricsGrid({ dayKey }) {
       icon: <WeightFilledIcon size={20} className="text-amber-500 dark:text-amber-400" />, label: "Weight",
       value: weight != null ? oneDec(weight) : "–", unit: weightUnit, color: "bg-amber-50 dark:bg-amber-500/10",
       ariaLabel: addLabel("Weight", weight != null ? `${oneDec(weight)} ${weightUnit}` : "no entry today"),
-      // The unit is shown next to the input, and a value outside the plausible
-      // adult range is not saved.
+      // The unit is shown next to the input, a value outside the plausible adult
+      // range is not saved, and the last weight on record is the placeholder.
       onAdd: () => setMetricModal({
         label: "Weight",
         unit: weightUnit,
         current: weight != null ? String(weight) : "",
+        placeholder: weight == null && lastLoggedWeight != null ? oneDec(lastLoggedWeight) : "",
         validate: (v) => { const check = checkWeight(v, weightUnit); return check.ok ? "" : check.message; },
         onSave: async (v) => { await saveWeight(dk, v); weight != null ? toast.success("Weight updated") : toast.success("Weight added"); },
       }),
@@ -147,6 +152,7 @@ export default function MetricsGrid({ dayKey }) {
           unit={metricModal.unit}
           value={metricModal.current}
           dayKey={metricModal.dayKey}
+          placeholder={metricModal.placeholder}
           onSave={metricModal.onSave}
           onDelete={metricModal.onDelete}
           validate={metricModal.validate}

@@ -5,6 +5,8 @@
 import { getMedicationRoutes, isCompoundedGeneric } from "@/lib/medicationData";
 import { ROUTE_LABELS } from "@/lib/medicationCatalogue";
 import { chipsForMedication } from "@/lib/doseOptions";
+import { evaluateDoseSchedule } from "@/lib/missedDose";
+import { parseShotDate, toDayKey } from "@/lib/dateUtils";
 
 export const INJECTABLE_ROUTES = ["subcutaneous", "intramuscular", "intradermal"];
 
@@ -98,6 +100,31 @@ export function getDoseDefault({ medication, medications = [], shots = [], legac
 }
 
 /**
+ * The active medication whose next dose falls first — an overdue one before a
+ * due-later one. Each medication's own schedule decides it: a running repeat
+ * when there is one, otherwise its last dose and its own interval. A regimen
+ * with nothing to count from is skipped, so the order of the rest still holds.
+ */
+function nextDueMedication(regimens, shots) {
+  let pick = "";
+  let pickKey = null;
+  regimens.forEach((regimen) => {
+    const lastShot = shots.find(
+      (s) => (s.medication_id && s.medication_id === regimen.id) || s.medication === regimen.medication_name
+    );
+    const { dueDate } = evaluateDoseSchedule({
+      lastShot,
+      intervalDays: regimen.interval_days || null,
+      windowDays: 0,
+    });
+    const key = dueDate ? toDayKey(parseShotDate(dueDate)) : "";
+    if (!key) return;
+    if (pickKey === null || key < pickKey) { pickKey = key; pick = regimen.medication_name; }
+  });
+  return pick;
+}
+
+/**
  * Everything a new shot log is pre-filled with: the user's active medication
  * (or the last one logged), its current dose, the next injection site and the
  * product's normal route. A dose above the product's standard maximum is never
@@ -105,10 +132,15 @@ export function getDoseDefault({ medication, medications = [], shots = [], legac
  */
 export function getSmartShotDefaults({ medications = [], shots = [], profile, recommendedSite = "" }) {
   const activeRegimens = medications.filter((m) => m.status === "active").sort(byCreatedDesc);
-  // The user's own active medication is the source; the last logged medication
-  // covers an entry whose regimen has not been saved yet. With neither, the
-  // sheet asks for a medication rather than inventing one.
-  const medication = activeRegimens[0]?.medication_name || shots[0]?.medication || "";
+  // The user's own active medication is the source: with more than one running,
+  // the one that is next due (an overdue one first) is the dose about to be
+  // taken, so that is the one the sheet opens on. The last logged medication
+  // covers an entry whose regimen has not been saved yet, and with none at all
+  // the sheet asks for a medication rather than inventing one.
+  const medication = nextDueMedication(activeRegimens, shots)
+    || activeRegimens[0]?.medication_name
+    || shots[0]?.medication
+    || "";
   const regimens = activeRegimensFor(medications, medication);
   const { dose, unit } = getDoseDefault({
     medication, medications, shots, legacyCustomDoses: profile?.custom_doses || [],

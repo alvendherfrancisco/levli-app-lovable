@@ -1,5 +1,6 @@
 import React from "react";
 import { CORE_IDS, RANGE_OPTIONS } from "@/lib/reportOptions";
+import DateInput from "@/components/DateInput";
 import SectionChecklist from "@/components/report/SectionChecklist";
 
 const chip = (active) =>
@@ -31,14 +32,8 @@ export default function ReportOptions({ options, onChange, medications, availabl
         </div>
         {options.rangeId === "custom" && (
           <div className="flex gap-2 mt-3">
-            <input
-              type="date" value={options.customFrom} onChange={(e) => onChange({ customFrom: e.target.value })}
-              className="flex-1 min-w-0 border border-gray-200 dark:border-white/10 dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-3 py-2 text-sm"
-            />
-            <input
-              type="date" value={options.customTo} onChange={(e) => onChange({ customTo: e.target.value })}
-              className="flex-1 min-w-0 border border-gray-200 dark:border-white/10 dark:bg-white/[0.05] dark:text-[#E8E9F0] dark:[color-scheme:dark] rounded-xl px-3 py-2 text-sm"
-            />
+            <DateInput value={options.customFrom} onChange={(v) => onChange({ customFrom: v })} ariaLabel="From date" className="flex-1" />
+            <DateInput value={options.customTo} onChange={(v) => onChange({ customTo: v })} ariaLabel="To date" className="flex-1" />
           </div>
         )}
       </div>

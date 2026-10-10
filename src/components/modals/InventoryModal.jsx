@@ -8,12 +8,12 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import InventoryProductPicker, { OTHER_PRODUCT } from "@/components/inventory/InventoryProductPicker";
 import InventoryQuantityField from "@/components/inventory/InventoryQuantityField";
 import InventoryDetails from "@/components/inventory/InventoryDetails";
+import DateInput from "@/components/DateInput";
 import {
   EXPIRY_WARNING_OPTIONS, STORAGE_OPTIONS, defaultQuantityUnit, suggestedInUseExpiry,
 } from "@/lib/inventoryDefaults";
 
 const LABEL_CLASS = "text-sm font-semibold text-gray-700 dark:text-gray-300";
-const INPUT_CLASS = "w-full min-h-[52px] box-border rounded-xl border border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-3 py-2.5 text-base outline-none focus:border-indigo-400 dark:[color-scheme:dark]";
 
 /** A new product: only what the four fields need, everything else at default. */
 const EMPTY_FORM = {
@@ -220,12 +220,11 @@ export default function InventoryModal({ open, onClose, editing }) {
             {/* The only date the box always carries. */}
             <div>
               <label htmlFor="inv-expiry" className={`${LABEL_CLASS} mb-2 block`}>Expiry date</label>
-              <input
+              <DateInput
                 id="inv-expiry"
-                type="date"
                 value={form.expiryDate}
-                onChange={(e) => { set("expiryDate", e.target.value); setErrors((p) => ({ ...p, expiry: undefined })); }}
-                className={`${INPUT_CLASS} box-border w-full min-w-0`}
+                onChange={(value) => { set("expiryDate", value); setErrors((p) => ({ ...p, expiry: undefined })); }}
+                ariaLabel="Expiry date"
               />
               {errors.expiry && <p className="text-sm font-medium text-red-600 dark:text-red-400 mt-2">{errors.expiry}</p>}
             </div>

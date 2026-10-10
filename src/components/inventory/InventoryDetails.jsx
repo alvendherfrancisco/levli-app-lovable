@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import OptionChips from "@/components/OptionChips";
 import ClearFieldButton from "@/components/ClearFieldButton";
+import DateInput from "@/components/DateInput";
 import { EXPIRY_WARNING_OPTIONS, STORAGE_OPTIONS, statusOptionsFor } from "@/lib/inventoryDefaults";
 import { todayKey } from "@/lib/dateUtils";
 
@@ -114,12 +115,11 @@ export default function InventoryDetails({ form, set, isEditing, unit, errors, i
           onChange={pickOpened}
           soundOnSelect
         />
-        <input
-          type="date"
+        <DateInput
           value={form.openedDate}
-          onChange={(e) => set("openedDate", e.target.value)}
-          aria-label="Opened date"
-          className={`${INPUT_CLASS} mt-2`}
+          onChange={(value) => set("openedDate", value)}
+          ariaLabel="Opened date"
+          className="mt-2"
         />
       </div>
 
@@ -129,12 +129,11 @@ export default function InventoryDetails({ form, set, isEditing, unit, errors, i
           <label htmlFor="inv-in-use" className={LABEL_CLASS}>In-use expiry</label>
           <ClearFieldButton show={!!form.inUseExpiry} onClear={() => set("inUseExpiry", "")} />
         </div>
-        <input
+        <DateInput
           id="inv-in-use"
-          type="date"
           value={form.inUseExpiry}
-          onChange={(e) => set("inUseExpiry", e.target.value)}
-          className={INPUT_CLASS}
+          onChange={(value) => set("inUseExpiry", value)}
+          ariaLabel="In-use expiry"
         />
         {inUseIsSuggested && <p className={HINT_CLASS}>Suggested from the product label, change if needed.</p>}
         {errors.inUseExpiry && <p className="text-sm font-medium text-red-600 dark:text-red-400 mt-2">{errors.inUseExpiry}</p>}
