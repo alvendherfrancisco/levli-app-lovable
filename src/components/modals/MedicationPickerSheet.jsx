@@ -1,4 +1,5 @@
 import React, { useId, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, Plus, Search, X } from "lucide-react";
 import { medicationPickerGroups } from "@/lib/shotMedication";
 import { sound } from "@/lib/sounds";
@@ -46,6 +47,13 @@ function MedicationRow({ row, selected, onSelect }) {
  * at the end of the list. Choosing a row writes nothing: the record is created
  * only when the log is saved, and a name typed under "Others" is kept the same
  * way — so it is waiting in the user's own section next time.
+ *
+ * It is drawn through a portal, straight onto the page, rather than inside the
+ * sheet that opened it. That sheet scrolls its own body, and a fixed overlay
+ * rendered inside a scroll container is clipped to that container's bounds: the
+ * bottom of this list — its last products and its "Others" row — would be cut off
+ * by the footer of the sheet behind it and could not be reached at all. On the
+ * page itself, the list ends where it should and every product is selectable.
  */
 export default function MedicationPickerSheet({
   open, onClose, medications = [], current = "", isCustom = false, onChoose, onChooseCustom,
@@ -80,7 +88,7 @@ export default function MedicationPickerSheet({
     onChooseCustom(customName.trim());
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={onClose} aria-hidden="true" />
       <div
@@ -194,6 +202,7 @@ export default function MedicationPickerSheet({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

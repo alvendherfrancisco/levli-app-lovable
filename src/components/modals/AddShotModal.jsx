@@ -416,6 +416,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     // The medication is required: tapping the one already chosen keeps it as it
     // is (and only closes the list) rather than resetting the dose.
     if (name === medication) { setShowMedDropdown(false); return; }
+    // The log has changed in hand, so it is an edit.
+    markEdited();
     // How the new product is logged decides its route and which strengths are
     // offered. The date, the time and the notes already typed are left as they
     // are — only the dose follows the product, and it is cleared when it is not
@@ -446,6 +448,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // and its name is kept as one of the user's own medications once the shot is
   // saved, so it is offered under "Your medications" next time.
   const chooseCustom = (name = "") => {
+    markEdited();
     setCustomChosen(true);
     setMedication(name);
     setCustomName(name);
@@ -467,6 +470,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const chooseForm = (next) => {
     if (next === activeForm) return;
     sound.tap();
+    markEdited();
     setForm(next);
     setRoute(formRoute(next) || "");
     if (next !== FORM_INJECTION) setDeviceType("");
@@ -813,7 +817,10 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                       ariaLabel="Choose medication"
                     />
                   </div>
-                  {/* Choosing one opens a sheet of its own, over this one. */}
+                  {/* Choosing one opens a sheet of its own, over this one. It is
+                      drawn onto the page rather than inside this sheet (see the
+                      component), so browsing or closing it never marks the log as
+                      edited — only the choice itself does. */}
                   <MedicationPickerSheet
                     open={showMedDropdown}
                     onClose={() => setShowMedDropdown(false)}

@@ -53,27 +53,33 @@ function storeRow(medication) {
 /**
  * The two groups the picker shows. "My medications" is the user's own store —
  * its active regimens plus the one this log is already on — and "All
- * medications" is the built-in catalogue with anything the user already has
- * removed, so one product never appears in both. The search narrows both.
+ * medications" is the built-in catalogue with the products offered above removed
+ * from it, so one product never appears in both groups. The search narrows both.
  */
 export function medicationPickerGroups({ medications = [], current = "", query = "" } = {}) {
   // Only a name that is really in the store travels in as "the current one";
   // a product merely chosen in the picker is not a saved medication yet.
   const currentRecord = medications.find((m) => m.medication_name === current) || null;
-  const mine = pickerMedications(medications, currentRecord)
-    .map(storeRow)
+  const mineRows = pickerMedications(medications, currentRecord).map(storeRow);
+  const mine = mineRows
     // The medication already in hand comes first, so the list opens on it.
     .sort((a, b) => (a.name === current ? -1 : b.name === current ? 1 : 0))
     .filter((row) => matches(row, query));
-  // A product the user already has is never offered twice. It is matched on the
-  // name and on the product it resolves to, so a regimen saved under an older
-  // name of the same product still keeps the list free of repeats.
-  const savedNames = new Set(medications.map((m) => m.medication_name));
-  const savedIds = new Set(
-    medications.map((m) => getMedicationConfig(m.medication_name)?.id).filter(Boolean),
-  );
+  // A product already offered above is never offered twice. Only the rows that
+  // really are in "Your medications" count, and the test runs over all of them
+  // rather than the searched part, so a search can never show one product in both
+  // groups.
+  //
+  // A regimen that is no longer running (archived, stopped or switched) is not
+  // one of those rows — it has left the store's active list — so its product
+  // stays in the catalogue below and can be chosen again, which is exactly what
+  // is wanted when the same product is started again later. The name is matched
+  // as well as the product it resolves to, so a regimen saved under an older name
+  // still keeps the list free of repeats.
+  const mineNames = new Set(mineRows.map((row) => row.name));
+  const mineIds = new Set(mineRows.map((row) => row.catalogueId).filter(Boolean));
   const catalogue = CATALOGUE_ROWS
-    .filter((row) => !savedNames.has(row.name) && !savedIds.has(row.catalogueId))
+    .filter((row) => !mineNames.has(row.name) && !mineIds.has(row.catalogueId))
     .filter((row) => matches(row, query));
   return { mine, catalogue };
 }
