@@ -934,9 +934,11 @@ html { background-color: var(--launch-bg); }
   --btn-2-line: 232 234 240;
   --btn-danger-bg: 220 38 38;   /* red-600 — a solid destructive action */
   --btn-danger-bg-hover: 185 28 28;
-  --btn-danger-soft: 254 242 242;  /* red-50 — the soft destructive fill */
-  --btn-danger-fg: 220 38 38;
-  --btn-danger-line: 254 202 202;
+  /* The soft destructive pill: the red an edit sheet's Delete is drawn in — a
+     very light red fill, its own red words, and a light red hairline. */
+  --btn-danger-soft: 254 236 236;  /* #FEECEC */
+  --btn-danger-fg: 217 45 32;      /* #D92D20 */
+  --btn-danger-line: 254 202 202;  /* #FECACA */
 }
 
 .dark {
@@ -946,9 +948,9 @@ html { background-color: var(--launch-bg); }
   --btn-2-bg: 255 255 255 / 0.06;
   --btn-2-fg: 232 233 240;
   --btn-2-line: 255 255 255 / 0.1;
-  --btn-danger-soft: 239 68 68 / 0.12;
-  --btn-danger-fg: 248 113 113;
-  --btn-danger-line: 239 68 68 / 0.35;
+  --btn-danger-soft: 239 68 68 / 0.15;  /* a red tint on the dark surface */
+  --btn-danger-fg: 249 112 102;         /* #F97066 */
+  --btn-danger-line: 239 68 68 / 0.3;   /* its hairline, held well back */
 }
 
 .btn-pill {
@@ -1054,6 +1056,26 @@ button.btn-fab-home {
 .btn-danger-solid:hover { background-color: rgb(var(--btn-danger-bg-hover)); }
 .btn-danger:disabled,
 .btn-danger-solid:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── The Delete pill in an edit sheet's footer ──────────────────────────────
+   The app's soft destructive pill, with its word a step lighter than a Save
+   button's and a little tighter at the sides — so "Delete" holds inside the
+   35% of the footer it is given, on the narrowest phone in the app. It is never
+   dimmed: removing an entry is always available while it is in front of you. */
+.btn-danger.btn-foot-delete {
+  font-weight: 500;
+  padding-left: 0.875rem;
+  padding-right: 0.875rem;
+}
+
+/* When even that is too tight — a very large text size, or a narrower screen —
+   the pill keeps its icon and drops its word. The em threshold follows the
+   browser's own text-size setting as well as the screen, so it trips exactly
+   when the space runs out; the aria-label the button always carries holds the
+   word for a screen reader. */
+@media (max-width: 17em) {
+  .btn-foot-delete .btn-foot-delete-label { display: none; }
+}
 
 /* A text button: indigo words, no box at all. */
 .btn-link {

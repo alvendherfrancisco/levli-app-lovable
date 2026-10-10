@@ -30,7 +30,7 @@ import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import OptionChips from "@/components/OptionChips";
 import DateInput from "@/components/DateInput";
-import EntryDeleteLink from "@/components/home/EntryDeleteLink";
+import SaveDeleteFooter from "@/components/SaveDeleteFooter";
 import ClearFieldButton from "@/components/ClearFieldButton";
 import SheetField from "@/components/modals/shot/SheetField";
 import SheetPickerRow from "@/components/modals/shot/SheetPickerRow";
@@ -1176,20 +1176,6 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                     </div>
                   )}
                 </div>
-
-                {/* The way out of the log, at the foot of the form and behind a
-                    question, so removing an entry is never a stray tap. */}
-                {editingShot && !saved && (
-                  <div data-skip-dirty className="pt-2">
-                    <EntryDeleteLink
-                      label="Delete this shot"
-                      title="Delete this shot?"
-                      message="The dose, site, time and notes for this log are removed from your history."
-                      confirmLabel="Delete shot"
-                      onDelete={handleDelete}
-                    />
-                  </div>
-                )}
               </div>
 
               {duplicatePrompt && (
@@ -1232,14 +1218,16 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                 Done
               </button>
             ) : (
-              <button
-                onClick={handleSave}
-                disabled={!canSave}
-                aria-disabled={!canSave || undefined}
-                className="btn-pill btn-primary w-full"
-              >
-                {saving ? "Saving…" : saveLabel}
-              </button>
+              <SaveDeleteFooter
+                saveLabel={saveLabel}
+                onSave={handleSave}
+                saveDisabled={!canSave}
+                saveBusy={saving}
+                // Only an entry that is already saved has something to remove.
+                onDelete={editingShot ? handleDelete : undefined}
+                deleteTitle="Delete this shot?"
+                deleteAriaLabel="Delete shot"
+              />
             )}
           </div>
         </div>

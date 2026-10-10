@@ -10,7 +10,6 @@ import { parseShotDate, toDayKey, formatLocaleDate } from "@/lib/dateUtils";
 import { classifyRedFlag } from "@/lib/redFlags";
 import { getRecentMedication } from "@/lib/medicationData";
 import { toast } from "@/lib/toast";
-import { sound } from "@/lib/sounds";
 
 export default function Journal() {
   const {
@@ -62,7 +61,6 @@ export default function Journal() {
   };
 
   const handleDelete = async (id) => {
-    sound.delete();
     try {
       await deleteJournalEntry(id);
       toast.deleted("Journal entry deleted");

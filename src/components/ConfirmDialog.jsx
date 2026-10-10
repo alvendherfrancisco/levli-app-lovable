@@ -15,7 +15,9 @@ const ANIM_MS = 180;
 const TONES = {
   destructive: {
     badge: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400",
-    primary: "btn-danger-solid",
+    // The app's own soft red: the same pill an edit sheet's Delete is drawn in,
+    // so the red on offer here and the red on the button that opened it match.
+    primary: "btn-danger",
     Icon: Trash2,
   },
   warning: {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, Trash2 } from "lucide-react";
+import { X, Save } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { getRecentMedication } from "@/lib/medicationData";
 import RedFlagBanner from "@/components/RedFlagBanner";
@@ -9,6 +9,7 @@ import { SEVERITY_LEVELS } from "@/lib/sideEffectSymptoms";
 import useModal from "@/hooks/useModal";
 import useDiscardConfirm from "@/hooks/useDiscardConfirm";
 import { hasChanged } from "@/lib/formValidity";
+import SaveDeleteFooter from "@/components/SaveDeleteFooter";
 import { toast } from "@/lib/toast";
 
 function nowFormatted() {
@@ -102,10 +103,7 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
           </div>
           <div className="flex items-center justify-between px-5 pb-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0]">{initialEntry ? "Edit Entry" : "New Journal Entry"}</h2>
-            <div className="flex items-center gap-3">
-              {onDelete && <button onClick={onDelete}><Trash2 size={20} className="text-gray-400" /></button>}
-              <button onClick={requestClose}><X size={22} className="text-gray-400" /></button>
-            </div>
+            <button onClick={requestClose} aria-label="Close" className="w-11 h-11 flex items-center justify-center rounded-full"><X size={22} className="text-gray-400" /></button>
           </div>
         </div>
 
@@ -193,10 +191,17 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
         )}
 
         <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
-          <button onClick={handleSave} disabled={!canSave} aria-disabled={!canSave || undefined}
-            className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2">
-            <Save size={16} /> {initialEntry ? "Update Entry" : "Save Entry"}
-          </button>
+          {/* The way to remove this entry sits beside the update button, in red,
+              and only on an entry that is already saved. It asks first. */}
+          <SaveDeleteFooter
+            saveLabel={initialEntry ? "Update Entry" : "Save Entry"}
+            saveIcon={<Save size={16} aria-hidden="true" />}
+            onSave={handleSave}
+            saveDisabled={!canSave}
+            onDelete={onDelete || undefined}
+            deleteTitle="Delete this entry?"
+            deleteAriaLabel="Delete entry"
+          />
         </div>
       </div>
     </div>

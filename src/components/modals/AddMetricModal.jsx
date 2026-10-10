@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { X, Camera, Image, Trash2, Save, Loader2 } from "lucide-react";
+import { X, Camera, Image, Save, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { todayKey } from "@/lib/dateUtils";
 import DateInput from "@/components/DateInput";
@@ -8,6 +8,7 @@ import SafeImage from "@/components/SafeImage";
 import useModal from "@/hooks/useModal";
 import useDiscardConfirm from "@/hooks/useDiscardConfirm";
 import { hasChanged, isAboveZero, isBlank } from "@/lib/formValidity";
+import SaveDeleteFooter from "@/components/SaveDeleteFooter";
 
 function numericOnly(value) {
   let v = value.replace(/[^0-9.]/g, "");
@@ -15,11 +16,6 @@ function numericOnly(value) {
   if (parts.length > 2) v = parts[0] + "." + parts.slice(1).join("");
   return v;
 }
-
-// The Cancel every Update sheet uses — the app's secondary pill: a light gray
-// fill, a thin hairline and normal text, never red. Shared by the Exercise and
-// Weight sheets so both footers carry the same two buttons at the same size.
-const CANCEL_BTN = "btn-pill btn-pill-sm bg-gray-100 dark:bg-white/[0.07] text-gray-500 dark:text-[#9A9DAE] border border-gray-200 dark:border-white/[0.08]";
 
 // ── Shared dark-mode dialog shell ───────────────────────────────────────────
 function ModalShell({ onClose, children, bottom = false }) {
@@ -32,7 +28,7 @@ function ModalShell({ onClose, children, bottom = false }) {
 }
 
 // ── Exercise ─────────────────────────────────────────────────────────────────
-function ExerciseModal({ open, onClose, value, onSave }) {
+function ExerciseModal({ open, onClose, value, onSave, onDelete }) {
   const [val, setVal] = useState("");
   const [error, setError] = useState("");
   // A value is judged only once the field has been left: nothing is flagged
@@ -79,20 +75,17 @@ function ExerciseModal({ open, onClose, value, onSave }) {
         </div>
         {shownError && <p className="text-xs text-red-500 mb-4">{shownError}</p>}
         {!shownError && <div className="mb-5" />}
-        <div className="flex items-center justify-end gap-4">
-          <button
-            onClick={requestClose}
-            className={CANCEL_BTN}>
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!canSave}
-            aria-disabled={!canSave || undefined}
-            className="btn-pill btn-pill-sm btn-primary">
-            Save
-          </button>
-        </div>
+        <SaveDeleteFooter
+          small
+          cancelLabel="Cancel"
+          onCancel={requestClose}
+          saveLabel="Save"
+          onSave={handleSave}
+          saveDisabled={!canSave}
+          onDelete={onDelete}
+          deleteTitle="Delete this exercise entry?"
+          deleteAriaLabel="Delete exercise entry"
+        />
       </div>
     </ModalShell>
     {dialog}
@@ -192,15 +185,16 @@ function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
         </div>
         {showCamera && <CameraCapture onCapture={handleCameraCapture} onClose={() => setShowCamera(false)} />}
         {hasExisting ? (
-          <div className="sticky bottom-0 flex gap-3 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
-            <button onClick={() => { onDelete(); onClose(); }}
-              className="btn-pill btn-danger flex-1">
-              <Trash2 size={18} /> Delete
-            </button>
-            <button disabled={!canSave} aria-disabled={!canSave || undefined} onClick={() => { if (canSave) { onSave(imgUrl, photoDate); onClose(); } }}
-              className="flex-1 py-3 btn-pill btn-primary font-semibold flex items-center justify-center gap-2">
-              <Save size={18} /> Update
-            </button>
+          <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
+            <SaveDeleteFooter
+              saveLabel="Update"
+              saveIcon={<Save size={18} aria-hidden="true" />}
+              onSave={() => { if (canSave) { onSave(imgUrl, photoDate); onClose(); } }}
+              saveDisabled={!canSave}
+              onDelete={async () => { onDelete(); onClose(); }}
+              deleteTitle="Delete this progress photo?"
+              deleteAriaLabel="Delete progress photo"
+            />
           </div>
         ) : (
           <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
@@ -218,7 +212,7 @@ function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
 }
 
 // ── Generic (Weight, and any future metric) ───────────────────────────────────
-function GenericMetricModal({ open, onClose, label, unit, value, placeholder, onSave, validate }) {
+function GenericMetricModal({ open, onClose, label, unit, value, placeholder, onSave, onDelete, validate }) {
   const [val, setVal] = useState("");
   const [error, setError] = useState("");
   const [touched, setTouched] = useState(false);
@@ -263,20 +257,17 @@ function GenericMetricModal({ open, onClose, label, unit, value, placeholder, on
         </div>
         {shownError && <p className="text-xs text-red-500 mb-4">{shownError}</p>}
         {!shownError && <div className="mb-5" />}
-        <div className="flex items-center justify-end gap-4">
-          <button
-            onClick={requestClose}
-            className={CANCEL_BTN}>
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!canSave}
-            aria-disabled={!canSave || undefined}
-            className="btn-pill btn-pill-sm btn-primary">
-            Save
-          </button>
-        </div>
+        <SaveDeleteFooter
+          small
+          cancelLabel="Cancel"
+          onCancel={requestClose}
+          saveLabel="Save"
+          onSave={handleSave}
+          saveDisabled={!canSave}
+          onDelete={onDelete}
+          deleteTitle={`Delete this ${label.toLowerCase()} entry?`}
+          deleteAriaLabel={`Delete ${label.toLowerCase()} entry`}
+        />
       </div>
     </ModalShell>
     {dialog}
@@ -286,10 +277,10 @@ function GenericMetricModal({ open, onClose, label, unit, value, placeholder, on
 
 export default function AddMetricModal({ open, onClose, label, unit, value, dayKey, placeholder, onSave, onDelete, validate }) {
   if (label === "Exercise") {
-    return <ExerciseModal open={open} onClose={onClose} value={value} onSave={onSave} />;
+    return <ExerciseModal open={open} onClose={onClose} value={value} onSave={onSave} onDelete={onDelete} />;
   }
   if (label === "Progress") {
     return <ProgressModal open={open} onClose={onClose} value={value} dayKey={dayKey} onSave={onSave} onDelete={onDelete || (() => onSave("–"))} />;
   }
-  return <GenericMetricModal open={open} onClose={onClose} label={label} unit={unit} value={value} placeholder={placeholder} onSave={onSave} validate={validate} />;
+  return <GenericMetricModal open={open} onClose={onClose} label={label} unit={unit} value={value} placeholder={placeholder} onSave={onSave} onDelete={onDelete} validate={validate} />;
 }
