@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAppState } from "@/lib/AppState";
 import { parseShotDate, toDayKey } from "@/lib/dateUtils";
 import { sound } from "@/lib/sounds";
@@ -6,35 +6,33 @@ import { sound } from "@/lib/sounds";
 /**
  * The day strip on Home: five days in view, the day in hand in the middle.
  *
- * The day in hand's container never moves. It is drawn once, held at the middle
- * of the strip in exactly the shape, size and colour the chosen day has always
- * had, and it stays there while the dates travel behind it: dragging the row
- * left or right slides the days under the container, and the one that comes to
- * rest inside it becomes the day in hand. The strip therefore reads like the
- * middle slot of a picker rather than a row that jumps.
+ * The row is fixed. It holds fifteen days — the seven either side of today —
+ * built once and keyed by date, so choosing a day never rebuilds the list and
+ * never re-creates a tile: the only thing a choice changes is which day is drawn
+ * as chosen. The row is therefore never moved on its own, and never fights the
+ * finger that is moving it.
  *
- * At rest the strip is exactly what it was: the same five days across the same
- * width, each tile a fifth of it, the container the middle one. The days
- * outside it are drawn beneath it (they slide behind it), and the container
- * draws the day sitting in it itself — the same three lines, at the same sizes
- * and colours a tile draws them — so that day's lettering is always on the
- * container's fill. A tile inside the row cannot be lifted above it: a row that
- * scrolls paints as its own group, so the container is always in front.
+ * The day in hand's tile is drawn in exactly the shape, size and colour it has
+ * always had, and the row's own snapping keeps a tile under the middle of the
+ * strip, so the day the dates come to rest on is the day in hand. Dragging slides
+ * the days under the finger; the day that settles in the middle becomes the day
+ * in hand. Tapping a day chooses it at once and asks the row for one smooth
+ * movement to bring it into the middle, after which the row is left exactly where
+ * it stopped.
  *
- * The window of days is built around the day in hand and re-centred on it, so
- * the row always comes to rest with that day in the middle: the days either
- * side are the same before and after a re-centre, which is why the strip never
- * appears to jump.
+ * The window is built around today, so the day in hand is always inside it; a
+ * selection arriving from elsewhere simply draws as chosen, wherever it sits.
  */
-const EACH_SIDE = 30;     // days reachable either side of the day in hand
-const CENTER = EACH_SIDE; // the middle slot: the day in hand's container
-const SETTLE_MS = 140;    // how long the dates must stop before a day is chosen
+const EACH_SIDE = 7;       // the seven days either side of today: fifteen in all
+const SETTLE_MS = 140;     // how long the dates must stop before a day is chosen
+const TAP_TRAVEL_MS = 900; // how long a tapped day may take to reach the middle
 
 export default function DateStrip({ selectedDate, onSelectDate }) {
   const { shots } = useAppState();
   const today = new Date();
   const selected = selectedDate || today;
   const selectedKey = toDayKey(selected);
+  const todayKey = toDayKey(today);
 
   const scrollerRef = useRef(null);
   // The tile's own width and the distance between two tiles, read from the row
@@ -42,20 +40,46 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
   // size or screen width.
   const metricsRef = useRef({ tileW: 0, step: 0 });
   const settleRef = useRef(null);
-  const [activeIndex, setActiveIndex] = useState(CENTER);
+  // Until this moment the row is travelling because a day was just tapped. That
+  // day is already the day in hand, so its movement chooses nothing further.
+  const tapTravelRef = useRef(0);
+  // The day sitting in the middle slot while the dates are being moved, so the
+  // tile arriving there is already drawn as chosen. Null when nothing is moving.
+  const [slidIndex, setSlidIndex] = useState(null);
 
-  const shotDayKeys = new Set(shots.map((s) => {
+  // Fifteen days, fixed: built once, and rebuilt only when the date itself
+  // changes — never around the day in hand.
+  const days = useMemo(() => {
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    const list = [];
+    for (let i = -EACH_SIDE; i <= EACH_SIDE; i++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      list.push(d);
+    }
+    return list;
+  }, [todayKey]);
+
+  // Where the day in hand sits in the fixed window — today's slot when it lies
+  // outside the window altogether.
+  const selectedIndex = useMemo(() => {
+    const i = days.findIndex((d) => toDayKey(d) === selectedKey);
+    return i >= 0 ? i : EACH_SIDE;
+  }, [days, selectedKey]);
+
+  // Always the current value, for the one-off work below (the first paint and a
+  // resize) without making it a dependency that would re-run that work.
+  const selectedIndexRef = useRef(selectedIndex);
+  selectedIndexRef.current = selectedIndex;
+
+  const activeIndex = slidIndex ?? selectedIndex;
+
+  // Which days carry a shot. Held between renders so a drag never rebuilds it.
+  const shotDayKeys = useMemo(() => new Set(shots.map((s) => {
     const d = parseShotDate(s.date);
     return d ? toDayKey(d) : null;
-  }).filter(Boolean));
-
-  // The window of days, centred on the day in hand.
-  const days = [];
-  for (let i = -EACH_SIDE; i <= EACH_SIDE; i++) {
-    const d = new Date(selected);
-    d.setDate(selected.getDate() + i);
-    days.push(d);
-  }
+  }).filter(Boolean)), [shots]);
 
   const measure = () => {
     const el = scrollerRef.current;
@@ -65,16 +89,16 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
     metricsRef.current = { tileW: first.offsetWidth, step: second.offsetLeft - first.offsetLeft };
   };
 
-  /** The day sitting in the container at a given scroll position. */
+  /** The day sitting in the middle slot at a given scroll position. */
   const indexAt = (scrollLeft) => {
     const el = scrollerRef.current;
     const { tileW, step } = metricsRef.current;
-    if (!el || !step) return CENTER;
+    if (!el || !step) return EACH_SIDE;
     const raw = (scrollLeft + (el.clientWidth - tileW) / 2) / step;
     return Math.max(0, Math.min(days.length - 1, Math.round(raw)));
   };
 
-  /** The scroll position that puts a day in the container. */
+  /** The scroll position that puts a day in the middle slot. */
   const leftFor = (index) => {
     const el = scrollerRef.current;
     const { tileW, step } = metricsRef.current;
@@ -90,16 +114,17 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
     el.scrollTo({ left, behavior });
   };
 
-  // Runs before the first paint, so the day in hand is in the middle from the
-  // very first frame, and again whenever it changes — including when another
-  // screen or control picks a different day.
+  // The row starts with the day in hand in the middle: on the first paint, and
+  // again if the window itself is rebuilt or the screen is resized. Choosing a
+  // day is deliberately not in this list — a selection never moves the row, which
+  // is what keeps the strip still while the screen below it reloads.
   useLayoutEffect(() => {
     measure();
-    bringToCenter(CENTER);
-  }, [selectedKey]);
+    bringToCenter(selectedIndexRef.current);
+  }, [days]);
 
   useEffect(() => {
-    const onResize = () => { measure(); bringToCenter(CENTER); };
+    const onResize = () => { measure(); bringToCenter(selectedIndexRef.current); };
     window.addEventListener("resize", onResize);
     return () => {
       window.removeEventListener("resize", onResize);
@@ -111,38 +136,37 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
     const el = scrollerRef.current;
     if (!el) return;
 
-    // Which day is in the container right now — followed frame by frame, so the
-    // day arriving under it is already drawn in it.
-    const index = indexAt(el.scrollLeft);
-    setActiveIndex((prev) => (prev === index ? prev : index));
+    // The row is travelling because a day was just tapped: that day is already
+    // the day in hand, so its own movement chooses nothing and nothing follows it.
+    if (Date.now() < tapTravelRef.current) return;
 
-    // And once the dates have stopped moving, that day is the day in hand.
+    // The day in the middle slot right now — followed frame by frame, so the tile
+    // arriving there is already drawn as chosen.
+    const index = indexAt(el.scrollLeft);
+    setSlidIndex((prev) => (prev === index ? prev : index));
+
+    // And once the dates have stopped moving, that day is the day in hand. The
+    // row is left exactly where the snapping put it.
     clearTimeout(settleRef.current);
     settleRef.current = setTimeout(() => {
       const node = scrollerRef.current;
       if (!node) return;
       const settled = indexAt(node.scrollLeft);
-      setActiveIndex(settled);
+      setSlidIndex(null);
       const day = days[settled];
       if (day && toDayKey(day) !== selectedKey) onSelectDate?.(new Date(day));
-      // Already the day in hand: just sit square in its container.
-      else bringToCenter(CENTER);
     }, SETTLE_MS);
   };
 
   const pickDay = (index) => {
     sound.tap();
-    // The chosen day travels into the container and, on coming to rest there,
-    // becomes the day in hand.
+    // Chosen now, and moved once: the row travels smoothly to bring the day into
+    // the middle (or as close to it as the window's end allows) and is then left
+    // alone.
+    tapTravelRef.current = Date.now() + TAP_TRAVEL_MS;
+    onSelectDate?.(new Date(days[index]));
     bringToCenter(index, "smooth");
   };
-
-  // The day sitting in the container right now: the day in hand at rest, and
-  // whichever day the dates have slid under it mid-drag. The container draws
-  // this day's own three lines, so they are part of its own layer and can never
-  // be covered by its fill.
-  const inSlotDay = days[activeIndex] || selected;
-  const inSlotHasShot = shotDayKeys.has(toDayKey(inSlotDay));
 
   const dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -155,32 +179,35 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
       <div
         ref={scrollerRef}
         onScroll={handleScroll}
+        // A finger on the row always takes it over.
+        onPointerDown={() => { tapTravelRef.current = 0; }}
         className="flex gap-1.5 overflow-x-auto overscroll-x-contain no-scrollbar snap-x snap-mandatory"
       >
         {days.map((d, index) => {
           const key = toDayKey(d);
-          const isSelected = key === selectedKey;
-          const inContainer = index === activeIndex;
+          const chosen = index === activeIndex;
           const hasShot = shotDayKeys.has(key);
           return (
             <button
-              // Keyed by position: the row is uniform, so a re-centred window
-              // keeps its tiles and only the dates inside them change.
-              key={index}
+              // Keyed by date, so the day in hand changing re-draws a tile rather
+              // than re-creating one — nothing in the row is rebuilt or moved.
+              key={key}
               type="button"
               onClick={() => pickDay(index)}
-              aria-current={isSelected ? "date" : undefined}
-              // The same tile as always — a fifth of the strip's width, the
-              // same three lines inside it — but carrying no fill of its own:
-              // the container behind it is what draws the chosen day.
+              aria-current={key === selectedKey ? "date" : undefined}
+              // The tile as it has always been — a fifth of the strip's width,
+              // the same three lines inside it — carrying the chosen day's own
+              // fill so the day in hand is drawn where it stands.
               style={{ width: "calc((100% - 24px) / 5)" }}
               className={`date-chip relative flex shrink-0 snap-center min-w-0 min-h-[90px] py-[14px] flex-col items-center justify-center gap-1.5 transition-colors ${
-                inContainer ? "z-20 text-white" : "z-0 text-gray-400 dark:text-[#9A9DAE]"
+                chosen
+                  ? "text-white bg-indigo-600 dark:bg-indigo-500/80 shadow-lg dark:[box-shadow:0_0_18px_4px_rgba(99,102,241,0.35)]"
+                  : "text-gray-400 dark:text-[#9A9DAE]"
               }`}
             >
               <span className="text-[10px] font-medium leading-[1.3]">{dayNames[d.getDay()]}</span>
-              <span className={`text-[15px] font-bold leading-[1.3] ${inContainer ? "text-white" : "text-gray-600 dark:text-[#E8E9F0]"}`}>{d.getDate()}</span>
-              <span className={`text-[10px] leading-[1.3] ${inContainer ? "text-indigo-200" : "text-gray-500 dark:text-[#9A9DAE]"}`}>{monthNames[d.getMonth()]}</span>
+              <span className={`text-[15px] font-bold leading-[1.3] ${chosen ? "text-white" : "text-gray-600 dark:text-[#E8E9F0]"}`}>{d.getDate()}</span>
+              <span className={`text-[10px] leading-[1.3] ${chosen ? "text-indigo-200" : "text-gray-500 dark:text-[#9A9DAE]"}`}>{monthNames[d.getMonth()]}</span>
               {hasShot && (
                 <div
                   className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-teal-400"
@@ -190,33 +217,6 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
             </button>
           );
         })}
-      </div>
-
-      {/* The day in hand's container: held at the middle, in the shape and
-          colour the chosen day has always had, while the dates travel behind
-          it. Centred at one tile's width — 48px is the four 6px gaps the five
-          visible tiles leave, so it lands exactly on the tile inside it.
-
-          It draws the day sitting in it itself, in the same three lines and the
-          same sizes its tile uses, so that day's date is always readable on the
-          fill. The tile's own copy of those lines stays where it is (behind the
-          fill, as everything in the row is) and carries the same text for a
-          screen reader; this layer is the visible one, and its day changes as
-          the dates slide underneath. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-3 bottom-6 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center justify-center gap-1.5 rounded-[22px] bg-indigo-600 dark:bg-indigo-500/80 shadow-lg dark:[box-shadow:0_0_18px_4px_rgba(99,102,241,0.35)]"
-        style={{ width: "calc((100% - 48px) / 5)" }}
-      >
-        <span className="text-[10px] font-medium leading-[1.3] text-white">{dayNames[inSlotDay.getDay()]}</span>
-        <span className="text-[15px] font-bold leading-[1.3] text-white">{inSlotDay.getDate()}</span>
-        <span className="text-[10px] leading-[1.3] text-indigo-200">{monthNames[inSlotDay.getMonth()]}</span>
-        {inSlotHasShot && (
-          <div
-            className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-teal-400"
-            style={{ boxShadow: "0 0 6px 2px rgba(45,212,191,0.5)" }}
-          />
-        )}
       </div>
     </div>
   );
