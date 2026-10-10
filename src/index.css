@@ -91,6 +91,77 @@
   }
 }
 
+/* ── The sign-in screens' own theme ─────────────────────────────────────────
+   Login and the standalone Create account screen follow the device's own
+   light/dark setting, so nothing on them is drawn in a fixed colour: every value
+   below is defined for both modes, and the classes that use them are the same in
+   both (see src/lib/authStyles.js). Light is the look these screens have always
+   had.
+
+   Dark is a near-black navy surface with a soft indigo glow reaching down from
+   the top — the light gradient's counterpart, drawn by .auth-screen below — on
+   which the card sits a step lighter with a low-opacity hairline instead of a
+   shadow.
+
+   Channels are space-separated, so a value can carry its own alpha:
+   rgb(var(--auth-border)) resolves a low-opacity white in dark mode. */
+:root {
+  --auth-page: 250 250 250;
+  --auth-card: 255 255 255;
+  --auth-border: 229 231 235;
+  --auth-hover: 209 213 219;
+  --auth-input: 255 255 255;
+  --auth-input-border: 229 231 235;
+  --auth-text: 17 24 39;
+  --auth-heading: 31 41 55;
+  --auth-muted: 107 114 128;
+  --auth-faint: 156 163 175;
+  --auth-link: 79 70 229;
+  --auth-focus: 99 102 241;
+  --auth-track: 229 231 235;
+  --auth-glow: 99 102 241 / 0;
+  --auth-notice-bg: 255 251 235;
+  --auth-notice-border: 253 230 138;
+  --auth-notice-text: 146 64 14;
+  --auth-apple: 0 0 0;
+  --auth-apple-fg: 255 255 255;
+}
+
+.dark {
+  --auth-page: 21 23 30;
+  --auth-card: 26 29 42;
+  --auth-border: 255 255 255 / 0.1;
+  --auth-hover: 139 141 245;
+  --auth-input: 33 37 53;
+  --auth-input-border: 255 255 255 / 0.14;
+  --auth-text: 244 245 250;
+  --auth-heading: 244 245 250;
+  --auth-muted: 165 171 190;
+  --auth-faint: 133 139 160;
+  --auth-link: 139 141 245;
+  --auth-focus: 139 141 245;
+  --auth-track: 255 255 255 / 0.12;
+  --auth-glow: 99 102 241 / 0.2;
+  --auth-notice-bg: 245 158 11 / 0.12;
+  --auth-notice-border: 245 158 11 / 0.35;
+  --auth-notice-text: 253 230 138;
+  --auth-apple: 255 255 255;
+  --auth-apple-fg: 10 10 12;
+}
+
+/* The sign-in screens' page. In light mode the token's base colour is all there
+   is — the ambient blobs draw the rest. In dark mode a soft indigo glow from the
+   top is what the light gradient becomes. The surface reaches every edge of the
+   screen, so the status bar area and the home indicator area show the page and
+   never a strip of their own. */
+.auth-screen {
+  background-image: none;
+}
+
+.dark .auth-screen {
+  background-image: radial-gradient(125% 75% at 50% -10%, rgb(var(--auth-glow)) 0%, transparent 62%);
+}
+
 /* Safe area padding for bottom tab bar */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);

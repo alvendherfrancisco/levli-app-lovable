@@ -51,6 +51,9 @@ export const FIELD_TRAILING = `${FIELD_BASE} pl-4 pr-16`;
 export const FIELD = FIELD_ICON;
 // The mark itself, in that fixed left slot.
 export const FIELD_MARK = "absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400";
+// The eye that reveals a password: its own 44pt target in the field's right slot.
+export const FIELD_EYE =
+  "absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 hover:text-gray-600";
 
 // ── Chips and the circles that carry a state ─────────────────────────────────
 export const CHIP =

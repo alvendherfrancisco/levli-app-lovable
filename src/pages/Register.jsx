@@ -4,23 +4,26 @@ import { base44 } from "@/api/base44Client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
-import AmbientBackground from "@/components/onboarding/AmbientBackground";
+import AuthScreen from "@/components/auth/AuthScreen";
 import LevliLogo from "@/components/LevliLogo";
 import RegisterForm from "@/components/RegisterForm";
 import { toast } from "@/components/ui/use-toast";
-import {
-  HEADING, LINK, LINK_UNDERLINE, NOTICE,
-  PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON, SUBTITLE,
-} from "@/lib/uiStyles";
+import { AUTH_BODY, AUTH_HELP, AUTH_LINK, AUTH_LINK_UNDERLINE } from "@/lib/authStyles";
+import { NOTICE, PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON } from "@/lib/uiStyles";
 
 /**
- * Creating an account, drawn as the same screen as signing in: the warm ambient
- * background, the droplet, the greeting, one white card holding the two labelled
- * fields and the two provider marks, and the screen's own action as a pill below
- * the card. The page scrolls, and its last line is kept clear of the home
- * indicator, so nothing is ever cut off on a short phone.
+ * Creating an account, drawn as the same screen as signing in: the ambient
+ * background, the droplet, the greeting, one card holding the two labelled fields
+ * and the two provider marks, and the screen's own action as a pill below the
+ * card.
  *
- * Verifying the emailed code is the step after this one and is its own screen.
+ * The whole screen follows the device's own light/dark setting — see AuthScreen
+ * and src/lib/authStyles.js — so no part of it is painted in a fixed white or
+ * grey. The page scrolls, and its last line is kept clear of the home indicator,
+ * so nothing is ever cut off on a short phone.
+ *
+ * Verifying the emailed code is the step after this one and is its own screen,
+ * which draws its colours from the app's own theme tokens.
  */
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -82,7 +85,7 @@ export default function Register() {
   if (showOtp) {
     return (
       <AuthLayout
-        iconNode={<LevliLogo size={88} />}
+        iconNode={<LevliLogo size={88} lighterOnDark />}
         title="Verify your email"
         subtitle={`We sent a code to ${email}`}
       >
@@ -123,7 +126,7 @@ export default function Register() {
         </button>
         <p className="text-center text-sm text-muted-foreground mt-4">
           Didn't receive the code?{" "}
-          <button onClick={handleResend} className={LINK}>
+          <button onClick={handleResend} className={AUTH_LINK}>
             Resend
           </button>
         </p>
@@ -132,46 +135,30 @@ export default function Register() {
   }
 
   return (
-    <div className="relative min-h-[100dvh] overflow-x-hidden bg-[#FAFAFA]">
-      <AmbientBackground />
-      <div className="auth-page-bottom relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-5 pt-8 sm:px-6 sm:pt-12">
-        {/* A short screen sits centred; a taller one scrolls from its top, so the
-            greeting is never pushed off the top to make room for the card. */}
-        <div className="my-auto w-full py-6">
-          <div className="mb-6 flex justify-center">
-            <LevliLogo size={88} />
-          </div>
+    <AuthScreen title="Create your account" subtitle="Sign up to get started">
+      <RegisterForm
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        onSubmit={handleSubmit}
+        loading={loading}
+        error={error}
+        onProvider={handleProvider}
+      />
 
-          <div className="mb-6 text-center">
-            <h1 className={HEADING}>Create your account</h1>
-            <p className={`${SUBTITLE} mt-2`}>Sign up to get started</p>
-          </div>
+      <p className={`mt-6 px-1 text-center ${AUTH_HELP}`}>
+        By creating an account you agree to our{" "}
+        <Link to="/terms" className={AUTH_LINK_UNDERLINE}>Terms of Service</Link> and{" "}
+        <Link to="/privacy" className={AUTH_LINK_UNDERLINE}>Privacy Policy</Link>
+      </p>
 
-          <RegisterForm
-            email={email}
-            setEmail={setEmail}
-            password={password}
-            setPassword={setPassword}
-            onSubmit={handleSubmit}
-            loading={loading}
-            error={error}
-            onProvider={handleProvider}
-          />
-
-          <p className="mt-6 px-1 text-center text-[12.5px] leading-relaxed text-gray-500">
-            By creating an account you agree to our{" "}
-            <Link to="/terms" className={LINK_UNDERLINE}>Terms of Service</Link> and{" "}
-            <Link to="/privacy" className={LINK_UNDERLINE}>Privacy Policy</Link>
-          </p>
-
-          <p className="mt-6 text-center text-[15px] text-gray-500">
-            Already have an account?{" "}
-            <Link to="/login" className={LINK}>
-              Log in
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+      <p className={`mt-6 text-center ${AUTH_BODY}`}>
+        Already have an account?{" "}
+        <Link to="/login" className={AUTH_LINK}>
+          Log in
+        </Link>
+      </p>
+    </AuthScreen>
   );
 }

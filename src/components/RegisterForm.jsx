@@ -5,9 +5,10 @@ import PasswordField from "@/components/PasswordField";
 import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
 import { formBlocker } from "@/lib/accountValidation";
 import {
-  CARD, FIELD, FIELD_MARK, LABEL, NOTICE,
-  PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON,
-} from "@/lib/uiStyles";
+  AUTH_CARD, AUTH_FIELD, AUTH_FIELD_MARK, AUTH_LABEL, AUTH_NOTICE,
+} from "@/lib/authStyles";
+// The pill is the app's own indigo in both modes, so it stays the shared one.
+import { PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON } from "@/lib/uiStyles";
 
 /**
  * The account card, and the button that creates the account.
@@ -33,15 +34,15 @@ export default function RegisterForm({
 
   return (
     <form onSubmit={onSubmit} className="w-full">
-      <div className={`w-full ${CARD}`}>
+      <div className={`w-full ${AUTH_CARD}`}>
         {error && (
-          <p className={`${NOTICE} mb-4`}>{error}</p>
+          <p className={`${AUTH_NOTICE} mb-4`}>{error}</p>
         )}
 
         <div className="w-full">
-          <label htmlFor="register-email" className={LABEL}>Email</label>
+          <label htmlFor="register-email" className={AUTH_LABEL}>Email</label>
           <div className="relative w-full">
-            <Mail className={FIELD_MARK} aria-hidden="true" />
+            <Mail className={AUTH_FIELD_MARK} aria-hidden="true" />
             <input
               id="register-email"
               type="email"
@@ -56,7 +57,7 @@ export default function RegisterForm({
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={FIELD}
+              className={AUTH_FIELD}
             />
           </div>
         </div>
@@ -69,13 +70,14 @@ export default function RegisterForm({
             onChange={setPassword}
             autoComplete="new-password"
             enterKeyHint="go"
+            themed
           />
           {/* The same live hint, and the same gap under the field, as the
               onboarding account screen. */}
-          <PasswordStrengthMeter password={password} />
+          <PasswordStrengthMeter password={password} themed />
         </div>
 
-        <SocialAuthButtons onProvider={onProvider} disabled={loading} />
+        <SocialAuthButtons onProvider={onProvider} disabled={loading} themed />
       </div>
 
       {/* Create account — the same pill as the sign-in screen's Log in and the

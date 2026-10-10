@@ -1,5 +1,6 @@
 import React, { useId } from "react";
-import { DROPLET_PATH, DROPLET_RATIO, DROPLET_COLORS } from "@/lib/levliMark";
+import { DROPLET_PATH, DROPLET_RATIO, DROPLET_COLORS, DROPLET_COLORS_DARK } from "@/lib/levliMark";
+import useLiveDarkTheme from "@/hooks/useLiveDarkTheme";
 
 /**
  * The Levli droplet mark, drawn as vector shapes — the same mascot the launch
@@ -13,13 +14,21 @@ import { DROPLET_PATH, DROPLET_RATIO, DROPLET_COLORS } from "@/lib/levliMark";
  * There is no entrance animation: the mark is complete the moment it renders,
  * which is what the sign-in screens want. The splash has its own animated copy
  * of the same artwork (src/components/splash/SplashDroplet.jsx).
+ *
+ * `lighterOnDark` is for the screens that follow the device's light/dark setting
+ * (see src/components/auth/AuthScreen.jsx): on their dark surface the mark is
+ * drawn from the lifted palette, so it keeps its shape instead of sinking into
+ * the background. Everywhere else the mark is the brand gradient in both modes,
+ * exactly as it has always been.
  */
-export default function LevliLogo({ size = 80, className = "" }) {
+export default function LevliLogo({ size = 80, className = "", lighterOnDark = false }) {
   // One gradient and one clip per instance, so two marks on the same screen
   // never share (or lose) each other's fills.
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const gradientId = `levliDropFill${uid}`;
   const clipId = `levliDropClip${uid}`;
+  const dark = useLiveDarkTheme();
+  const palette = lighterOnDark && dark ? DROPLET_COLORS_DARK : DROPLET_COLORS;
 
   return (
     <svg
@@ -33,9 +42,9 @@ export default function LevliLogo({ size = 80, className = "" }) {
     >
       <defs>
         <linearGradient id={gradientId} x1="10" y1="2" x2="58" y2="96" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor={DROPLET_COLORS.light} />
-          <stop offset="52%" stopColor={DROPLET_COLORS.mid} />
-          <stop offset="100%" stopColor={DROPLET_COLORS.deep} />
+          <stop offset="0%" stopColor={palette.light} />
+          <stop offset="52%" stopColor={palette.mid} />
+          <stop offset="100%" stopColor={palette.deep} />
         </linearGradient>
         <clipPath id={clipId}>
           <path d={DROPLET_PATH} />
@@ -46,16 +55,16 @@ export default function LevliLogo({ size = 80, className = "" }) {
 
       {/* The lighter left side, kept inside the droplet's own outline. */}
       <g clipPath={`url(#${clipId})`}>
-        <ellipse cx="21" cy="38" rx="8.5" ry="15.5" transform="rotate(-18 21 38)" fill={DROPLET_COLORS.face} fillOpacity="0.18" />
-        <circle cx="18" cy="26" r="2.6" fill={DROPLET_COLORS.face} fillOpacity="0.45" />
+        <ellipse cx="21" cy="38" rx="8.5" ry="15.5" transform="rotate(-18 21 38)" fill={palette.face} fillOpacity="0.18" />
+        <circle cx="18" cy="26" r="2.6" fill={palette.face} fillOpacity="0.45" />
       </g>
 
-      <ellipse cx="23" cy="58" rx="4.2" ry="5.2" fill={DROPLET_COLORS.face} />
-      <ellipse cx="41" cy="58" rx="4.2" ry="5.2" fill={DROPLET_COLORS.face} />
+      <ellipse cx="23" cy="58" rx="4.2" ry="5.2" fill={palette.face} />
+      <ellipse cx="41" cy="58" rx="4.2" ry="5.2" fill={palette.face} />
       <path
         d="M21 67.5 Q32 77.5 43 67.5"
         fill="none"
-        stroke={DROPLET_COLORS.face}
+        stroke={palette.face}
         strokeWidth="3.4"
         strokeLinecap="round"
       />

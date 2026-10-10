@@ -43,6 +43,29 @@ module.exports = {
   		border: 'hsl(var(--border))',
   		input: 'hsl(var(--input))',
   		ring: 'hsl(var(--ring))',
+  		// The sign-in screens' own tokens (Login and Create account), defined for
+  		// light and dark in src/index.css. Values can carry their own alpha, so a
+  		// hairline is a low-opacity white in dark mode.
+  		auth: {
+  			page: 'rgb(var(--auth-page))',
+  			card: 'rgb(var(--auth-card))',
+  			border: 'rgb(var(--auth-border))',
+  			hover: 'rgb(var(--auth-hover))',
+  			input: 'rgb(var(--auth-input))',
+  			'input-border': 'rgb(var(--auth-input-border))',
+  			text: 'rgb(var(--auth-text))',
+  			heading: 'rgb(var(--auth-heading))',
+  			muted: 'rgb(var(--auth-muted))',
+  			faint: 'rgb(var(--auth-faint))',
+  			link: 'rgb(var(--auth-link))',
+  			focus: 'rgb(var(--auth-focus))',
+  			track: 'rgb(var(--auth-track))',
+  			notice: 'rgb(var(--auth-notice-bg))',
+  			'notice-border': 'rgb(var(--auth-notice-border))',
+  			'notice-text': 'rgb(var(--auth-notice-text))',
+  			apple: 'rgb(var(--auth-apple))',
+  			'apple-fg': 'rgb(var(--auth-apple-fg))'
+  		},
   		chart: {
   			'1': 'hsl(var(--chart-1))',
   			'2': 'hsl(var(--chart-2))',

@@ -3,9 +3,11 @@ import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import SocialAuthButtons from "@/components/onboarding/SocialAuthButtons";
 import {
-  CARD, FIELD, FIELD_MARK, LABEL, LABEL_TEXT, LINK, NOTICE,
-  PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON,
-} from "@/lib/uiStyles";
+  AUTH_CARD, AUTH_FIELD, AUTH_FIELD_EYE, AUTH_FIELD_MARK, AUTH_LABEL,
+  AUTH_LABEL_TEXT, AUTH_LINK_SMALL, AUTH_NOTICE,
+} from "@/lib/authStyles";
+// The pill is the app's own indigo in both modes, so it stays the shared one.
+import { PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON } from "@/lib/uiStyles";
 
 /**
  * The sign-in card, and the button that signs in.
@@ -29,15 +31,15 @@ export default function LoginForm({
 
   return (
     <form onSubmit={onSubmit} className="w-full">
-      <div className={`w-full ${CARD}`}>
+      <div className={`w-full ${AUTH_CARD}`}>
         {error && (
-          <p className={`${NOTICE} mb-4`}>{error}</p>
+          <p className={`${AUTH_NOTICE} mb-4`}>{error}</p>
         )}
 
         <div className="w-full">
-          <label htmlFor="login-email" className={LABEL}>Email</label>
+          <label htmlFor="login-email" className={AUTH_LABEL}>Email</label>
           <div className="relative w-full">
-            <Mail className={FIELD_MARK} aria-hidden="true" />
+            <Mail className={AUTH_FIELD_MARK} aria-hidden="true" />
             <input
               id="login-email"
               type="email"
@@ -52,22 +54,24 @@ export default function LoginForm({
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={FIELD}
+              className={AUTH_FIELD}
             />
           </div>
         </div>
 
         <div className="mt-4 w-full">
           {/* The label and the way out of a forgotten password share one row, so
-              the pair reads as part of the same field. */}
+              the pair reads as part of the same field. The link is the label's own
+              size and weight, sitting on the same line, so it can never outweigh
+              the field it belongs to. */}
           <div className="mb-2 flex items-center justify-between">
-            <label htmlFor="login-password" className={LABEL_TEXT}>Password</label>
-            <Link to="/forgot-password" className={LINK}>
+            <label htmlFor="login-password" className={AUTH_LABEL_TEXT}>Password</label>
+            <Link to="/forgot-password" className={AUTH_LINK_SMALL}>
               Forgot password?
             </Link>
           </div>
           <div className="relative w-full">
-            <Lock className={FIELD_MARK} aria-hidden="true" />
+            <Lock className={AUTH_FIELD_MARK} aria-hidden="true" />
             <input
               id="login-password"
               type={showPassword ? "text" : "password"}
@@ -77,21 +81,21 @@ export default function LoginForm({
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={`${FIELD} pr-14`}
+              className={`${AUTH_FIELD} pr-14`}
             />
             {/* Its own 44pt target, so the eye is as easy to hit as the field. */}
             <button
               type="button"
               onClick={() => setShowPassword((s) => !s)}
               aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 hover:text-gray-600"
+              className={AUTH_FIELD_EYE}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
         </div>
 
-        <SocialAuthButtons onProvider={onProvider} disabled={loading} />
+        <SocialAuthButtons onProvider={onProvider} disabled={loading} themed />
       </div>
 
       {/* Log in — the same pill as the shell's Next and the account step's

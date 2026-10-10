@@ -18,3 +18,16 @@ export const DROPLET_COLORS = {
   deep: "#3b35b8",
   face: "#ffffff",
 };
+
+/**
+ * The same gradient lifted a step, for a dark surface: the mark keeps its shape
+ * there instead of sinking into the background. These are the launch splash's own
+ * dark droplet values (the --splash-drop-* tokens in src/index.css), so the mark
+ * a launch hands over to is the mark the next screen draws.
+ */
+export const DROPLET_COLORS_DARK = {
+  light: "#9596fa",
+  mid: "#7b7bf0",
+  deep: "#5d57dd",
+  face: "#ffffff",
+};

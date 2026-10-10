@@ -1,17 +1,20 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import AmbientBackground from "@/components/onboarding/AmbientBackground";
-import LevliLogo from "@/components/LevliLogo";
+import AuthScreen from "@/components/auth/AuthScreen";
 import LoginForm from "@/components/LoginForm";
-import { HEADING, LINK, SUBTITLE } from "@/lib/uiStyles";
+import { AUTH_BODY, AUTH_LINK } from "@/lib/authStyles";
 
 /**
- * Signing in, drawn as the same screen as creating an account: the warm
- * ambient background, the droplet, the greeting, one white card holding the two
- * labelled fields and the two provider marks, and the screen's own action as a
- * pill below the card. The page scrolls, and its last line is kept clear of the
- * home indicator, so nothing is ever cut off on a short phone.
+ * Signing in, drawn as the same screen as creating an account: the ambient
+ * background, the droplet, the greeting, one card holding the two labelled fields
+ * and the two provider marks, and the screen's own action as a pill below the
+ * card.
+ *
+ * The whole screen follows the device's own light/dark setting — see AuthScreen
+ * and src/lib/authStyles.js — so no part of it is painted in a fixed white or
+ * grey. The page scrolls, and its last line is kept clear of the home indicator,
+ * so nothing is ever cut off on a short phone.
  */
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -52,40 +55,24 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-[100dvh] overflow-x-hidden bg-[#FAFAFA]">
-      <AmbientBackground />
-      <div className="auth-page-bottom relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-5 pt-8 sm:px-6 sm:pt-12">
-        {/* A short screen sits centred; a taller one scrolls from its top, so the
-            greeting is never pushed off the top to make room for the card. */}
-        <div className="my-auto w-full py-6">
-          <div className="mb-6 flex justify-center">
-            <LevliLogo size={88} />
-          </div>
+    <AuthScreen title="Glad you're here" subtitle="Log in to your account">
+      <LoginForm
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        onSubmit={handleSubmit}
+        loading={loading}
+        error={error}
+        onProvider={handleProvider}
+      />
 
-          <div className="mb-6 text-center">
-            <h1 className={HEADING}>Glad you're here</h1>
-            <p className={`${SUBTITLE} mt-2`}>Log in to your account</p>
-          </div>
-
-          <LoginForm
-            email={email}
-            setEmail={setEmail}
-            password={password}
-            setPassword={setPassword}
-            onSubmit={handleSubmit}
-            loading={loading}
-            error={error}
-            onProvider={handleProvider}
-          />
-
-          <p className="mt-6 text-center text-[15px] text-gray-500">
-            Don't have an account?{" "}
-            <Link to="/register" className={LINK}>
-              Create one
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+      <p className={`mt-6 text-center ${AUTH_BODY}`}>
+        Don't have an account?{" "}
+        <Link to="/register" className={AUTH_LINK}>
+          Create one
+        </Link>
+      </p>
+    </AuthScreen>
   );
 }
