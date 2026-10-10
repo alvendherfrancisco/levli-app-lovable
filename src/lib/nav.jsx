@@ -1,7 +1,7 @@
 import React from "react";
 import { Syringe, Pill, MoreHorizontal, Settings, CalendarDays, Boxes, User } from "lucide-react";
 import IonIcon from "@/components/IonIcon";
-import { ShotsFilledIcon, MedsFilledIcon } from "@/components/FilledIcons";
+import { ShotsFilledIcon, MedsFilledIcon, MoreFilledIcon } from "@/components/FilledIcons";
 
 /**
  * One source of truth for navigation. The bottom tab bar, the desktop side rail
@@ -25,26 +25,33 @@ export const MORE_ITEMS = [
 
 export const ALL_NAV_ITEMS = [...PRIMARY_TABS, ...MORE_ITEMS];
 
-/** The icon for a nav destination, filled when it is the current page. */
-export function NavIcon({ item, size = 24, active = false, className = "" }) {
+/**
+ * The icon for a nav destination, filled when it is the current page.
+ *
+ * `strokeWidth` is the weight of the outlined (lucide) icons, so a bar can ask
+ * for a lighter line than the rail does. The filled icon takes the same size.
+ */
+export function NavIcon({ item, size = 24, active = false, className = "", strokeWidth = 1.8 }) {
   if (item.kind === "ion") {
     return <IonIcon name={active ? item.active : item.outline} size={size} className={className} />;
   }
   if (item.kind === "shots") {
     return active
       ? <ShotsFilledIcon size={size} className={className} />
-      : <Syringe size={size} strokeWidth={1.8} className={className} />;
+      : <Syringe size={size} strokeWidth={strokeWidth} className={className} />;
   }
   if (item.kind === "meds") {
     return active
       ? <MedsFilledIcon size={size} className={className} />
-      : <Pill size={size} strokeWidth={1.8} className={className} />;
+      : <Pill size={size} strokeWidth={strokeWidth} className={className} />;
   }
   if (item.kind === "more") {
-    return <MoreHorizontal size={size} strokeWidth={active ? 2.6 : 1.8} className={className} />;
+    return active
+      ? <MoreFilledIcon size={size} className={className} />
+      : <MoreHorizontal size={size} strokeWidth={strokeWidth} className={className} />;
   }
   const Icon = item.Icon;
-  return <Icon size={size} strokeWidth={1.8} className={className} />;
+  return <Icon size={size} strokeWidth={strokeWidth} className={className} />;
 }
 
 /** Routes that belong to the More group, used to mark the More tab as current. */

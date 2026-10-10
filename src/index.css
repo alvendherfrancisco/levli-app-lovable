@@ -1138,3 +1138,14 @@ button.date-chip {
   padding: var(--strip-pad-top) var(--strip-pad-x) var(--strip-pad-bottom);
   margin: calc(-1 * var(--strip-pad-top)) calc(-1 * var(--strip-pad-x)) calc(-1 * var(--strip-pad-bottom));
 }
+
+/* ── The bottom tab bar's tabs ─────────────────────────────────────────────
+   A tab shows its state with its icon and its label alone: there is no indicator
+   line above the current tab, and no box behind a pressed or hovered one. A tap
+   still answers immediately — the icon dips a fraction and the whole tab steps
+   back a little (see BottomTabBar.jsx) — and the device's own tap highlight,
+   which would otherwise flash a grey box behind the tab, is switched off here so
+   nothing frames the tab at all. */
+.tab-item {
+  -webkit-tap-highlight-color: transparent;
+}

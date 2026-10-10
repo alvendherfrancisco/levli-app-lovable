@@ -9,8 +9,10 @@ import { sound } from "@/lib/sounds";
  * Wider screens: the side rail, which lists every destination.
  *
  * Targets are at least 44pt tall with 8px between them, labels are always
- * visible at 12px, and the current page is marked by a filled icon, a bolder
- * label and a top indicator — never by colour alone.
+ * visible at 11px, and the current page is marked by its icon filling in and its
+ * label turning indigo. Nothing else marks it: no indicator line, and no box
+ * behind a pressed or hovered tab. A tap still answers at once — the icon dips a
+ * fraction and the whole tab steps back a little.
  */
 export default function BottomTabBar() {
   const location = useLocation();
@@ -68,19 +70,17 @@ export default function BottomTabBar() {
                   to={item.path}
                   onClick={() => sound.tap()}
                   aria-current={isActive ? "page" : undefined}
-                  className={`relative flex flex-col items-center justify-center gap-1 pt-2 pb-1.5 min-h-[52px] rounded-xl transition-colors ${
+                  className={`tab-item group flex flex-col items-center justify-center gap-1 py-1.5 min-h-[54px] transition-opacity hover:opacity-80 active:opacity-70 ${
                     isActive
-                      ? "text-indigo-600 dark:text-indigo-400"
+                      ? "text-indigo-600 dark:text-[#8B8DF5]"
                       : "text-gray-500 dark:text-[#9A9DAE]"
                   }`}
                 >
-                  {/* Shape, not colour alone, marks the current tab */}
-                  <span
-                    aria-hidden="true"
-                    className={`absolute top-0 h-0.5 w-6 rounded-full ${isActive ? "bg-indigo-600 dark:bg-indigo-400" : "bg-transparent"}`}
-                  />
-                  <NavIcon item={item} size={24} active={isActive} />
-                  <span className={`text-xs leading-none truncate max-w-full ${isActive ? "font-semibold" : "font-medium"}`}>
+                  {/* The icon filling in is what marks the current tab */}
+                  <span className="inline-flex transition-transform duration-150 ease-out group-active:scale-95">
+                    <NavIcon item={item} size={24} active={isActive} strokeWidth={1.5} />
+                  </span>
+                  <span className={`text-[11px] leading-none truncate max-w-full ${isActive ? "font-medium" : "font-normal"}`}>
                     {item.label}
                   </span>
                 </Link>
