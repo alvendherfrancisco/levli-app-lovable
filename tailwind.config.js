@@ -136,7 +136,8 @@ module.exports = {
   		},
   		boxShadow: {
   			card: 'var(--card-shadow)',
-  			// The soft indigo shadow a primary button carries.
+  			// The soft indigo shadow the app's floating action button keeps; the
+  			// app's Save pills are flat (see the button tokens in src/index.css).
   			btn: 'var(--btn-shadow)'
   		},
   		fontFamily: {

@@ -2,8 +2,9 @@
  * The app's buttons, in one place.
  *
  * Every button in the app is the same pill: a full radius (half its own height),
- * one indigo fill, white semibold text and a soft indigo shadow for a primary
- * action. The values behind these classes are the button tokens in
+ * one indigo fill and white semibold text for a primary action, with no drop
+ * shadow — a Save button sits on the page, and only the floating action button
+ * is lifted. The values behind these classes are the button tokens in
  * src/index.css (`--btn-*`), which are also mapped in tailwind.config.js as
  * `rounded-pill`, `h-btn`, `h-btn-sm`, `bg-btn`, `text-btn`, `border-btn-line`
  * and `shadow-btn` — so a new button follows the same style whether it is

@@ -892,9 +892,12 @@ html { background-color: var(--launch-bg); }
 
 /* ── Buttons: one pill, one set of colours, everywhere ──────────────────────
    Every button in the app is drawn from the tokens below: a full-radius pill
-   (half the button's own height), one indigo fill, white semibold text and a
-   soft indigo shadow for a primary action; a thin hairline pill with dark text
-   for a secondary one; red, never indigo, for anything destructive.
+   (half the button's own height), one indigo fill and white semibold text for a
+   primary action, flat rather than shadowed — the app's Save buttons sit on the
+   page, and only the floating action button stays lifted; a thin hairline pill
+   with dark text for a secondary one; red, never indigo, for anything
+   destructive. The onboarding and sign-in screens draw their own pill and keep
+   their own soft shadow (see src/lib/uiStyles.js), so nothing here reaches them.
 
    The tokens reach the app two ways:
 
@@ -981,10 +984,20 @@ html { background-color: var(--launch-bg); }
   background-color: rgb(var(--btn-bg));
   color: rgb(var(--btn-fg));
   border: 0;
-  box-shadow: var(--btn-shadow);
+  /* Flat, with no drop shadow: a Save button sits on the page rather than above
+     it. The lift belongs to the floating action button alone (.btn-fab below);
+     the onboarding and sign-in screens draw their own shadowed pill and are
+     untouched (src/lib/uiStyles.js). */
+  box-shadow: none;
 }
 .btn-primary:hover { background-color: rgb(var(--btn-bg-hover)); }
 .btn-primary:active { background-color: rgb(var(--btn-bg-press)); }
+
+/* The floating action button: the one primary pill the app keeps lifted. It
+   floats over the screen's own content, so it keeps the soft indigo shadow
+   every other primary button has given up. */
+button.btn-fab { box-shadow: var(--btn-shadow); }
+
 /* A pill with nothing to save yet: the same shape and size, a faded indigo
    fill, a held-back label, no shadow, and no reaction to a press. The dimmed
    state is set in code (both `disabled` and `aria-disabled`), so a tap does
