@@ -37,11 +37,13 @@ const labelledStrengths = (entry) => [
   ...entry.allowedDoses,
   ...(entry.forms || []).flatMap((f) => (f.doses || []).map((d) => ({ ...d, unit: d.unit || "mg" }))),
 ];
+// A strength drawn as a filled chip is one that carries a token.
+const colouredStrengths = (entry) => labelledStrengths(entry).filter((d) => d.color?.light);
 // Brand colours per theme: the scale only has to stay clear of the colours that
 // can actually appear beside it on screen.
 const brandByMode = {
-  light: confirmed.flatMap((e) => labelledStrengths(e).map((d) => d.color?.light).filter(Boolean)),
-  dark: confirmed.flatMap((e) => labelledStrengths(e).map((d) => d.color?.dark).filter(Boolean)),
+  light: confirmed.flatMap((e) => colouredStrengths(e).map((d) => d.color.light)),
+  dark: confirmed.flatMap((e) => colouredStrengths(e).map((d) => d.color.dark)),
 };
 
 // 1. Tokens, sources and dates on every confirmed product.
@@ -49,17 +51,31 @@ confirmed.forEach((entry) => {
   const { source, verified } = entry.colorScheme;
   check(/^https:\/\//.test(source || ""), `${entry.id}: no source link recorded`);
   check(/^\d{4}-\d{2}-\d{2}$/.test(verified || ""), `${entry.id}: no verified date recorded`);
-  const strengths = labelledStrengths(entry);
-  check(strengths.length > 0, `${entry.id}: no labelled strengths`);
-  strengths.forEach((d) => {
+  check(entry.allowedDoses.length > 0, `${entry.id}: no labelled strengths`);
+  entry.allowedDoses.forEach((d) => {
     check(!!d.color?.light && !!d.color?.dark,
       `${entry.id} ${d.value} ${d.unit}: needs a light and a dark token`);
+  });
+  // A form is coloured as a set or not at all: when the maker's pack colour is in
+  // hand every strength on that form carries a token (Ozempic's tablets), and a
+  // form with no reference stays uncoloured on purpose, drawn as a neutral
+  // outline rather than being given an invented colour.
+  (entry.forms || []).forEach((form) => {
+    const doses = form.doses || [];
+    if (!doses.length) return;
+    const coloured = doses.filter((d) => d.color?.light);
+    check(coloured.length === 0 || coloured.length === doses.length,
+      `${entry.id} ${form.label}: ${coloured.length} of ${doses.length} strengths carry a token`);
+    coloured.forEach((d) => {
+      check(!!d.color?.light && !!d.color?.dark,
+        `${entry.id} ${form.label} ${d.value} ${d.unit}: needs a light and a dark token`);
+    });
   });
 });
 
 // 2. Every chip the app draws, in both modes, meets WCAG AA.
 const chipRows = [];
-confirmed.forEach((entry) => labelledStrengths(entry).forEach((d) => {
+confirmed.forEach((entry) => colouredStrengths(entry).forEach((d) => {
   [false, true].forEach((isDark) => {
     const chip = getDoseStyle(entry.brandName, d.value, isDark);
     const ratio = contrastRatio(chip.background, chip.color);
@@ -118,7 +134,7 @@ confirmed.forEach((entry) => {
 });
 
 // 5. The print swatch: pale enough to survive greyscale, dark text on it.
-confirmed.forEach((entry) => labelledStrengths(entry).forEach((d) => {
+confirmed.forEach((entry) => colouredStrengths(entry).forEach((d) => {
   const print = getPrintDoseStyle(entry.brandName, d.value);
   const ratio = contrastRatio(print.background, print.color);
   check(ratio >= 7, `${entry.id} ${d.value} ${d.unit}: print swatch contrast ${ratio.toFixed(2)} is under 7`);
@@ -156,8 +172,9 @@ if (process.argv.includes("--table")) {
       }
       return labelledStrengths(e)
         .map((d) => {
-          const light = d.color?.light || "standard scale";
-          const dark = d.color?.dark || "standard scale";
+          const fallback = e.colorScheme ? "neutral (no pack colour)" : "standard scale";
+          const light = d.color?.light || fallback;
+          const dark = d.color?.dark || fallback;
           return `| ${e.name} | ${d.value} ${d.unit} | ${light} | ${dark} | ${scheme?.source || "n/a"} | ${scheme?.verified || "n/a"} | ${status} |`;
         })
         .join("\n");

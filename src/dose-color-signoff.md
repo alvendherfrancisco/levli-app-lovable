@@ -26,6 +26,9 @@ as that reference shows them.
 | Ozempic | 0.5 mg | `#D61D29` | `#E4444F` | 2026-10-08 | pen reference image |
 | Ozempic | 1 mg | `#00868B` | `#12999E` | 2026-10-08 | pen reference image |
 | Ozempic | 2 mg | `#F5A41C` | `#F8B84A` | 2026-10-08 | pen reference image |
+| Ozempic | 1.5 mg (tablet) | `#23A455` | `#2FB866` | 2026-10-10 | oral formulation carton |
+| Ozempic | 4 mg (tablet) | `#B71C1C` | `#D02C2C` | 2026-10-10 | oral formulation bottle badge |
+| Ozempic | 9 mg (tablet) | `#0D47A1` | `#1F5CBF` | 2026-10-10 | oral formulation bottle badge |
 | Wegovy | 0.25 mg | `#4BB4A5` | `#63C7B8` | 2026-10-08 | pen reference image |
 | Wegovy | 0.5 mg | `#A93C66` | `#C25580` | 2026-10-08 | pen reference image |
 | Wegovy | 1 mg | `#A66E3E` | `#BC8654` | 2026-10-08 | pen reference image |
@@ -60,9 +63,13 @@ as that reference shows them.
 
 Mirrored manufacturer behaviour worth signing off deliberately:
 
-- **Ozempic** — four strengths, four label colours (grey, red, teal, gold) on a
-  single shared pen body.
-- **Wegovy** — one colour-coded pen label per strength.
+- **Ozempic** — two packs, two colour bases. The pen labels its four strengths
+  grey, red, teal and gold on a shared body; the oral tablet carries green
+  1.5 mg, red 4 mg and blue 9 mg on the carton band and the bottle's strength
+  badge. The two sets are separate strengths and are not substitutable mg for mg.
+- **Wegovy** — one colour-coded pen label per strength. Its oral tablet (25 mg)
+  has no pack colour sourced yet, so that strength is drawn as a neutral outline
+  rather than being given an invented colour.
 - **Rybelsus** — the colour belongs to the carton, not the tablet (every tablet
   is white). The reference image also shows lower tablet strengths (1.5 mg,
   4 mg, 9 mg) that this config does not list yet; the entry records that.
@@ -101,6 +108,8 @@ block on each dose — the entry already has the slot, the source and the date.
 
 - One indigo hue, stepping light to dark with the product's own dose size. Steps
   are fixed, so adding a higher strength never repaints the ones below it.
+- A dose that sits exactly on a step boundary (7/8 of a product's maximum, say)
+  stays on its own step rather than tipping onto the next one.
 - The scale was retuned in this pass so no step reads as a brand's own colour now
   that the brand blues are in place: its closest step is 74 RGB units from any
   brand colour in light mode and 59 in dark mode.
@@ -115,8 +124,9 @@ block on each dose — the entry already has the slot, the source and the date.
 
 | Rule | Result |
 |---|---|
-| Confirmed products carry a light and dark token per labelled strength, a source link and a verified date | pass, 7 products, 35 labelled strengths |
-| Every chip meets WCAG AA in light and dark mode | 70 chip calculations, lowest 4.51:1 (Rybelsus 7 mg); 23 colours needed a lightness step with the hue kept |
+| Confirmed products carry a light and dark token per labelled strength, a source link and a verified date | pass, 7 products, 38 labelled strengths |
+| Every chip meets WCAG AA in light and dark mode | 76 chip calculations, lowest 4.51:1 (Rybelsus 7 mg); 23 colours needed a lightness step with the hue kept |
+| A form's strengths are all coloured or all not | pass (Ozempic's tablets carry three tokens; Wegovy's tablet carries none) |
 | Standard scale ordered light → dark | pass in both modes |
 | Standard scale never reads as a brand colour | minimum distance 74 (light) / 59 (dark) from any brand token |
 | Labelled dose filled, typed dose neutral | pass on all seven branded products |
@@ -127,6 +137,8 @@ block on each dose — the entry already has the slot, the source and the date.
 
 - [ ] Add Shot Log: switch between Ozempic, Wegovy, Rybelsus, Foundayo, Mounjaro,
       Zepbound, Saxenda and a compounded product — chips change at once, no colour carries over.
+- [ ] Ozempic, Pill form: 1.5 mg green, 4 mg red, 9 mg blue, matching the carton and
+      the bottle badges; switch to Injection and the pen set takes over.
 - [ ] Compare each chip against the pen or carton in hand for the strength being logged.
 - [ ] Selected chip: checkmark and ring visible with colour ignored.
 - [ ] "+ Other" typed dose: outlined, not filled, in the picker, on the day card and in history.

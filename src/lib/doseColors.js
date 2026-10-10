@@ -80,7 +80,10 @@ function labelledStrengths(entry) {
 function standardStep(entry, value) {
   const max = Number(entry?.maxDoseMg);
   if (Number.isFinite(max) && max > 0) {
-    const step = Math.ceil((value / max) * STANDARD_SCALE.length);
+    // The tiny epsilon keeps a dose that lands exactly on a boundary (7/8 of the
+    // maximum, say) on its own step: in floating point the product lands a hair
+    // over the whole number, which would push it onto the step above.
+    const step = Math.ceil((value / max) * STANDARD_SCALE.length - 1e-9);
     return Math.min(STANDARD_SCALE.length, Math.max(1, step));
   }
   return 1;
