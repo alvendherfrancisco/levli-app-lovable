@@ -31,6 +31,12 @@ export const AUTH_CARD =
 // turns indigo on focus in both modes.
 export const AUTH_FIELD =
   "h-12 w-full rounded-full border border-auth-input-border bg-auth-input text-[16px] text-auth-text outline-none transition-colors placeholder:text-auth-faint focus:border-auth-focus";
+// The same field where a mark sits in it (AUTH_FIELD_MARK, at 12px from the
+// edge). The value and the placeholder both start clear of the mark at 40px, so
+// neither ever runs underneath it; without that slot the text begins at the
+// field's own edge. A field with no mark in it — an amount, an interval — keeps
+// the plain one above. A password field adds its own pr-14 for the eye.
+export const AUTH_FIELD_ICON = `${AUTH_FIELD} pl-10`;
 export const AUTH_FIELD_MARK = "absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-auth-faint";
 // The eye that reveals a password: its own 44pt target in the field's right slot.
 export const AUTH_FIELD_EYE =

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import SocialAuthButtons from "@/components/onboarding/SocialAuthButtons";
 import {
-  AUTH_CARD, AUTH_FIELD, AUTH_FIELD_EYE, AUTH_FIELD_MARK, AUTH_LABEL,
+  AUTH_CARD, AUTH_FIELD_EYE, AUTH_FIELD_ICON, AUTH_FIELD_MARK, AUTH_LABEL,
   AUTH_LABEL_TEXT, AUTH_LINK_SMALL, AUTH_NOTICE,
 } from "@/lib/authStyles";
 // The pill is the app's own indigo in both modes, so it stays the shared one.
@@ -54,7 +54,7 @@ export default function LoginForm({
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={AUTH_FIELD}
+              className={AUTH_FIELD_ICON}
             />
           </div>
         </div>
@@ -81,7 +81,7 @@ export default function LoginForm({
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={`${AUTH_FIELD} pr-14`}
+              className={`${AUTH_FIELD_ICON} pr-14`}
             />
             {/* Its own 44pt target, so the eye is as easy to hit as the field. */}
             <button

@@ -5,7 +5,7 @@ import PasswordField from "@/components/PasswordField";
 import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
 import { formBlocker } from "@/lib/accountValidation";
 import {
-  AUTH_CARD, AUTH_FIELD, AUTH_FIELD_MARK, AUTH_LABEL, AUTH_NOTICE,
+  AUTH_CARD, AUTH_FIELD_ICON, AUTH_FIELD_MARK, AUTH_LABEL, AUTH_NOTICE,
 } from "@/lib/authStyles";
 // The pill is the app's own indigo in both modes, so it stays the shared one.
 import { PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON } from "@/lib/uiStyles";
@@ -57,7 +57,7 @@ export default function RegisterForm({
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={AUTH_FIELD}
+              className={AUTH_FIELD_ICON}
             />
           </div>
         </div>

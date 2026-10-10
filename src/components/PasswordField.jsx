@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, Lock } from "lucide-react";
-import { AUTH_FIELD, AUTH_FIELD_EYE, AUTH_FIELD_MARK, AUTH_LABEL } from "@/lib/authStyles";
+import { AUTH_FIELD_EYE, AUTH_FIELD_ICON, AUTH_FIELD_MARK, AUTH_LABEL } from "@/lib/authStyles";
 
 /**
  * A password field: the label above it, the lock in the field's left slot, and
@@ -33,7 +33,7 @@ export default function PasswordField({
           required
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`${AUTH_FIELD} pr-14`}
+          className={`${AUTH_FIELD_ICON} pr-14`}
         />
         <button
           type="button"
