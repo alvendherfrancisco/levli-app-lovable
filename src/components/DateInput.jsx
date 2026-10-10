@@ -10,9 +10,11 @@ import { DATE_TIME_FIELD } from "@/lib/dateTimeField";
  * field, exactly as it was.
  *
  * `className` is for the row the field sits in — `flex-1` for a pair — never for
- * resizing the field itself.
+ * resizing the field itself. A form with its own field style passes it as
+ * `fieldClass`: the width reset is replaced with the caller's own look, never
+ * dropped, so the field still lines up with the fields beside it.
  */
-export default function DateInput({ id, value, onChange, ariaLabel, className = "", disabled = false }) {
+export default function DateInput({ id, value, onChange, ariaLabel, className = "", disabled = false, fieldClass }) {
   return (
     <input
       id={id}
@@ -21,7 +23,7 @@ export default function DateInput({ id, value, onChange, ariaLabel, className = 
       onChange={(e) => onChange(e.target.value)}
       aria-label={ariaLabel}
       disabled={disabled}
-      className={`${DATE_TIME_FIELD} ${className}`}
+      className={`${fieldClass || DATE_TIME_FIELD} ${className}`}
     />
   );
 }

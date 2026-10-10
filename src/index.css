@@ -366,7 +366,7 @@ input[type="range"].pain-slider::-webkit-slider-thumb {
   margin-top: -10px; /* centres the 24px thumb on the 4px track */
   border-radius: 50%;
   background: hsl(var(--primary));
-  border: 2px solid #ffffff;
+  border: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
@@ -392,7 +392,7 @@ input[type="range"].pain-slider::-moz-range-thumb {
   height: 24px;
   border-radius: 50%;
   background: hsl(var(--primary));
-  border: 2px solid #ffffff;
+  border: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;

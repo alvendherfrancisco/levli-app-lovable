@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Save, Star, ChevronDown, Trash2, AlertTriangle } from "lucide-react";
+import { X, ChevronDown, AlertTriangle } from "lucide-react";
 import CustomMedicationFields from "@/components/modals/CustomMedicationFields";
 import ShotMedicationPicker from "@/components/modals/ShotMedicationPicker";
-import { getIntervalDays, getMedicationConfig, validateDosePair } from "@/lib/medicationConfig";
+import { getIntervalDays, getMedicationConfig, isOralMedication, validateDosePair } from "@/lib/medicationConfig";
 import { regimenFromShot, saveShotWithMedication } from "@/lib/shotMedication";
 import { pickerMedications } from "@/lib/medicationLink";
 import { useAppState } from "@/lib/AppState";
 import { MEDICATIONS, DRUG_CLASS, isInvestigational, getDoseMax, getMolecularClass, isCompoundedGeneric } from "@/lib/medicationData";
 import { getShotDeviceOptions, getDeliveryMethodLabel, RETIRED_DELIVERY_METHODS } from "@/lib/deliveryMethods";
-import { getCapabilityProfile, getCapabilityWarning, getMolecularClassLabel } from "@/lib/capabilityProfile";
+import { getCapabilityProfile, getCapabilityWarning } from "@/lib/capabilityProfile";
 import { detectDuplicateActiveIngredient } from "@/lib/drugSafety";
 import { convertDose, doseUnitLabel } from "@/lib/units";
 import { parseShotDate, formatShotDate, calendarDaysBetween } from "@/lib/dateUtils";
 import {
   INJECTABLE_ROUTES, ROUTE_CHOICES, getRouteChoices, getDefaultRoute,
-  getDefaultDeviceType, activeRegimensFor, getDoseDefault, getSmartShotDefaults,
+  activeRegimensFor, getDoseDefault, getSmartShotDefaults,
 } from "@/lib/shotDefaults";
 import { addDaysToKey } from "@/lib/repeatSchedule";
 import ShotRouteDeviceFields from "@/components/modals/ShotRouteDeviceFields";
@@ -27,8 +27,16 @@ import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import OptionChips from "@/components/OptionChips";
 import DateInput from "@/components/DateInput";
-import TimeInput from "@/components/TimeInput";
+import EntryDeleteLink from "@/components/home/EntryDeleteLink";
 import ClearFieldButton from "@/components/ClearFieldButton";
+import SheetField from "@/components/modals/shot/SheetField";
+import SheetPickerRow from "@/components/modals/shot/SheetPickerRow";
+import SheetSelect from "@/components/modals/shot/SheetSelect";
+import ShotDateTimeFields from "@/components/modals/shot/ShotDateTimeFields";
+import {
+  SHEET_CHIP, SHEET_CHIP_OFF, SHEET_CHIP_ON, SHEET_DATE_FIELD, SHEET_DIVIDER, SHEET_FIELD,
+  SHEET_HINT, SHEET_LABEL, SHEET_LABEL_TEXT, SHEET_TEXTAREA, siteLabel,
+} from "@/components/modals/shot/sheetUi";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
 import { sound } from "@/lib/sounds";
@@ -84,6 +92,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // The "Possible duplicate" card and the modal's own scroll container.
   const dupCardRef = useRef(null);
   const scrollRef = useRef(null);
+  // The optional fields, so opening their section can bring them into view.
+  const detailsRef = useRef(null);
 
   const defaultMed = profile?.default_medication || "Ozempic®";
   const now = new Date();
@@ -113,9 +123,6 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  // Route and Device type as the app pre-filled them, so the "Add details
-  // (optional)" label can show a short summary once either is changed.
-  const [defaults, setDefaults] = useState({ route: "", device: "" });
   const [duplicatePrompt, setDuplicatePrompt] = useState(null);
   // Bumped every time the warning shows, so its highlight replays each time.
   const [dupNonce, setDupNonce] = useState(0);
@@ -169,17 +176,18 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // Compounded / generic products take a free-text concentration.
   const isCompounded = isCompoundedGeneric(medication);
   const isInjectable = !isCustomProduct && INJECTABLE_ROUTES.includes(activeRoute);
+  // The action is named for the product in hand: a dose is taken, a shot is given.
+  const isOral = isOralMedication(medication, activeRoute);
   const siteOptions = activeRoute === "intramuscular" ? imSites : activeRoute === "intradermal" ? idSites : scSites;
   const isReconstituted = activeRoute === "reconstituted_vial" || caps?.supports_reconstitution;
 
-  // Route and Device type sit inside "Add details (optional)" and are always
-  // offered — the main form keeps only what is logged every time. Route is
-  // pre-filled from the medication (a pen is subcutaneous, Rybelsus is oral) and
-  // stays changeable; Device type starts empty. A product with no catalogue
-  // routes (an "Other / custom" entry) gets the generic route choices.
+  // Route and Device type sit inside "More details" and are always offered — the
+  // main form keeps only what is logged every time. Route is pre-filled from the
+  // medication (a pen is subcutaneous, Rybelsus is oral) and stays changeable;
+  // Device type starts empty. A product with no catalogue routes (an
+  // "Other / custom" entry) gets the generic route choices.
   const routeChoices = getRouteChoices(medication);
   const routeOptions = routeChoices.length ? routeChoices : ROUTE_CHOICES;
-  const routeLabel = routeOptions.find((r) => r.value === activeRoute)?.label || activeRoute;
   // A device already on a record stays selectable even if it is no longer
   // offered, so an old log is never silently rewritten.
   const deviceOptions = getShotDeviceOptions(medication, activeRoute);
@@ -190,15 +198,10 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
         retired: RETIRED_DELIVERY_METHODS.includes(deviceType),
       }]
     : deviceOptions;
-  // What is set inside the optional section, shown beside its label.
-  const detailSummary = [
-    activeRoute !== defaults.route ? routeLabel : "",
-    deviceType && deviceType !== defaults.device
-      ? (deviceChoices.find((d) => d.value === deviceType)?.label || deviceType)
-      : "",
-  ].filter(Boolean);
-
   const recommendedSite = getRecommendedSite();
+  // A new log opens on the site the rotation suggests, and the row says so.
+  const displayedSite = site || recommendedSite;
+  const siteIsSuggested = !editingShot && !!recommendedSite && displayedSite === recommendedSite;
   const scheduleFor = (med) => repeatSchedules.find((s) => s.status === "active" && s.medication === med) || null;
 
   // Silently link the log to the user's active regimen for this medication.
@@ -238,7 +241,6 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     confirmedDupRef.current = false;
     dirtyRef.current = false;
     setConfirmDiscard(false);
-    setConfirmDelete(false);
     setMedicationId("");
     setCustomName("");
     setCustomChosen(false);
@@ -270,7 +272,6 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       const editRoute = editingShot.route || getDefaultRoute(editMedication);
       setRoute(editRoute);
       setDeviceType(editingShot.device_type || "");
-      setDefaults({ route: getDefaultRoute(editMedication), device: getDefaultDeviceType(editMedication, editRoute) });
       setNotes(editingShot.notes || "");
       setPain(editingShot.pain ?? null);
       setInfusionDuration(editingShot.infusion_duration != null ? String(editingShot.infusion_duration) : "");
@@ -308,7 +309,6 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       setSite(smart.site);
       setRoute(smart.route);
       setDeviceType(smart.deviceType);
-      setDefaults({ route: smart.route, device: smart.deviceType });
       if (initialValues) {
         setMedication(initialValues.medication || smart.medication);
         setMedicationId(initialValues.medication_id || smart.medicationId);
@@ -317,7 +317,6 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
         setConcentration(initialValues.concentration || "");
         setRoute(initialValues.route || smart.route);
         setDeviceType(initialValues.device_type || smart.deviceType);
-        setDefaults({ route: initialValues.route || smart.route, device: initialValues.device_type || smart.deviceType });
         setNotes(initialValues.notes || "");
         setDate(initialValues.date || toInputDate(n));
         setTime(initialValues.time || toInputTime(n));
@@ -365,7 +364,6 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // lock, focus trap, Escape and the hardware back button).
   const dirtyRef = useRef(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const markEdited = () => { dirtyRef.current = true; };
   const requestClose = () => {
     if (!saved && dirtyRef.current) { setConfirmDiscard(true); return; }
@@ -397,7 +395,6 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setDose(nextDose === "" ? "" : String(nextDose));
     setDoseUnit(unit || picked.unit || "mg");
     setRoute(nextRoute);
-    setDefaults({ route: nextRoute, device: getDefaultDeviceType(name, nextRoute) });
     if (RETIRED_DELIVERY_METHODS.includes(deviceType)) setDeviceType("");
     else if (isCompoundedGeneric(name) && !INJECTABLE_ROUTES.includes(nextRoute)) setDeviceType("");
     setRepeatOn(!!scheduleFor(name));
@@ -485,7 +482,11 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const shotMedication = isCustomProduct ? (customName.trim() || medication) : medication;
   const doseNumber = parseFloat(dose);
   const doseReady = isAboveZero(dose) && (isCustomProduct || validateDosePair(medication, doseNumber).valid);
-  const canSave = !saving && !!shotMedication && doseReady && !!date && !!time && (!editingShot || dirtyRef.current);
+  // An injection also needs a site: the rotation's suggestion counts, so a new
+  // log is ready as it opens, and the button dims only when the site is emptied.
+  const siteReady = !isInjectable || !!(site || recommendedSite);
+  const canSave = !saving && !!shotMedication && doseReady && !!date && !!time
+    && siteReady && (!editingShot || dirtyRef.current);
 
   const handleSave = async () => {
     // Saving puts the keyboard away.
@@ -640,14 +641,25 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     onClose();
   };
 
-  const InputField = ({ label, children }) => (
-    <div>
-      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">{label}</label>
-      {children}
-    </div>
-  );
+  // What the sheet calls what it is logging, in the product's own words.
+  const title = editingShot ? (isOral ? "Edit dose" : "Edit shot") : (isOral ? "Log dose" : "Log shot");
+  const saveLabel = editingShot ? (isOral ? "Update dose" : "Update shot") : (isOral ? "Save dose" : "Save shot");
 
-  const inputClass = "w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300";
+  // Opening "More details" brings the fields it has just added into view: the
+  // sheet's own scroller is moved, so the page behind the sheet never moves.
+  const toggleDetails = () => {
+    const next = !showDetails;
+    if (next) sound.open(); else sound.close();
+    setShowDetails(next);
+    if (!next) return;
+    requestAnimationFrame(() => {
+      const node = detailsRef.current;
+      const scroller = scrollRef.current;
+      if (!node || !scroller) return;
+      const offset = node.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      scroller.scrollTo({ top: Math.max(0, scroller.scrollTop + offset - 16), behavior: "smooth" });
+    });
+  };
 
   return (
     <>
@@ -665,13 +677,12 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
           className="relative flex flex-col w-full sm:max-w-[520px] max-h-[92dvh] overflow-hidden sheet-lock bg-white dark:bg-[#0f1117] rounded-t-3xl sm:rounded-3xl animate-in slide-in-from-bottom sm:mx-4 dark:shadow-[0_-8px_40px_rgba(0,0,0,0.5)] outline-none"
         >
           <div className="shrink-0 bg-white dark:bg-[#0f1117]">
-            <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
-            <div className="flex items-center justify-between gap-2 px-5 pb-4">
-              <h2 id="add-shot-title" className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0] min-w-0 break-words">{editingShot ? "Edit Shot Log" : "Add Shot Log"}</h2>
-              <div className="flex items-center gap-1 shrink-0">
-                {editingShot && !saved && <button onClick={() => setConfirmDelete(true)} data-skip-dirty aria-label="Delete this shot" className="w-11 h-11 flex items-center justify-center rounded-full"><Trash2 size={20} className="text-red-400" /></button>}
-                <button onClick={requestClose} data-skip-dirty aria-label="Close" className="w-11 h-11 flex items-center justify-center rounded-full"><X size={22} className="text-gray-400" /></button>
-              </div>
+            <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-white/20" /></div>
+            <div className="flex items-center justify-between gap-3 px-5 pb-4 pt-1">
+              <h2 id="add-shot-title" className="min-w-0 truncate text-[20px] font-semibold leading-tight text-gray-900 dark:text-[#E8E9F0]">{title}</h2>
+              <button onClick={requestClose} data-skip-dirty aria-label="Close" className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center">
+                <X size={22} className="text-gray-400" />
+              </button>
             </div>
           </div>
 
@@ -709,75 +720,66 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
             />
           ) : (
             <>
-              {error && <p className="mx-5 mb-3 text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-xl px-3 py-2">{error}</p>}
+              {error && <p className="mx-5 mb-6 rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-500 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
               {capabilityWarning && (
-                <div className="mx-5 mb-3 text-sm text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-500/10 rounded-xl px-3 py-2 border border-orange-200 dark:border-orange-500/20">
+                <div className="mx-5 mb-6 rounded-xl border border-orange-200 bg-orange-50 px-3.5 py-2.5 text-sm text-orange-700 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300">
                   <p className="font-semibold text-xs">⚠ {isInvestigational(medication) ? "Not an approved medicine" : "Capability notice"}</p>
                   <p className="mt-1 text-xs">{capabilityWarning}</p>
                 </div>
               )}
 
-              <div className="px-5 pb-4 space-y-3">
-                {/* Medication — prominent only when more than one is in play */}
-                <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Medication</label>
-                  <div className="relative">
-                    {showMedSelector ? (
-                      <button onClick={() => setShowMedDropdown(!showMedDropdown)} data-skip-dirty
-                        aria-expanded={showMedDropdown}
-                        className={`${inputClass} flex items-center justify-between gap-2 text-left min-w-0`}>
-                        <div className="min-w-0">
-                          <span className={`text-base block break-words ${medLabel ? "" : "text-gray-400 dark:text-gray-500"}`}>
-                            {medLabel || "Choose a medication"}
-                          </span>
-                          <span className="text-xs text-gray-400 dark:text-gray-500">
-                            {medLabel ? getMolecularClassLabel(medication) : "Tap to search or browse"}
-                          </span>
-                        </div>
-                        <ChevronDown size={18} className="text-gray-400 flex-shrink-0" />
-                      </button>
-                    ) : (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <span className="text-lg font-semibold text-gray-900 dark:text-[#E8E9F0] block break-words [overflow-wrap:anywhere]">{medLabel}</span>
-                          <span className="text-xs text-gray-400 dark:text-gray-500 block break-words">{getMolecularClassLabel(medication)}</span>
-                        </div>
-                        <button onClick={() => setShowMedDropdown(!showMedDropdown)} data-skip-dirty aria-expanded={showMedDropdown} className="flex items-center gap-1 text-sm font-semibold text-indigo-600 dark:text-indigo-400 flex-shrink-0 min-h-[44px] px-2">
-                          Change <ChevronDown size={14} />
-                        </button>
-                      </div>
-                    )}
-                    {/* The list opens in the form's own flow, so it scrolls inside
-                        its own capped height and never covers the dose chips. */}
-                    {showMedDropdown && (
-                      <ShotMedicationPicker
-                        medications={medications}
-                        current={medication}
-                        isCustom={isCustomProduct}
-                        onChoose={selectMedication}
-                        onChooseCustom={chooseCustom}
-                      />
-                    )}
+              <div className="px-5 pb-6 space-y-6">
+                {/* Medication: one row. With a single medication in hand the row
+                    is plain text; with a choice to make the whole row opens the
+                    picker. */}
+                <SheetField label="Medication">
+                  {/* The row itself changes nothing, so a tap on it does not mark
+                      the log as edited. */}
+                  <div data-skip-dirty>
+                    <SheetPickerRow
+                      value={medLabel}
+                      tappable={showMedSelector}
+                      onClick={() => setShowMedDropdown((v) => !v)}
+                      ariaExpanded={showMedDropdown}
+                      ariaLabel="Medication"
+                    />
                   </div>
-                  {/* Two active regimens for the same medication — one question */}
+                  {/* The list opens in the form's own flow, so it scrolls inside
+                      its own capped height and never covers the dose chips. */}
+                  {showMedDropdown && (
+                    <ShotMedicationPicker
+                      medications={medications}
+                      current={medication}
+                      isCustom={isCustomProduct}
+                      onChoose={selectMedication}
+                      onChooseCustom={chooseCustom}
+                    />
+                  )}
+                  {/* Two active regimens for the same medication: one question */}
                   {needsRegimenChoice && (
-                    <div className="mt-2">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Which regimen is this dose part of?</p>
+                    <div className="mt-6">
+                      <p className={SHEET_LABEL}>Which regimen is this dose part of?</p>
                       <div className="flex flex-wrap gap-2">
                         {regimensForMed.map((m) => (
-                          <button key={m.id} onClick={() => setMedicationId(m.id)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium border ${medicationId === m.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-white/[0.05] text-gray-600 dark:text-gray-300 border-gray-200 dark:border-white/[0.1]"}`}>
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => setMedicationId(m.id)}
+                            aria-pressed={medicationId === m.id}
+                            className={`${SHEET_CHIP} ${medicationId === m.id ? SHEET_CHIP_ON : SHEET_CHIP_OFF}`}
+                          >
                             {m.prescribed_dose ? `${m.prescribed_dose} ${m.dose_unit || "mg"}` : m.medication_name}
-                            {m.indication ? ` — ${m.indication}` : ""}
+                            {m.indication ? ` · ${m.indication}` : ""}
                           </button>
                         ))}
                       </div>
                     </div>
                   )}
-                </div>
+                </SheetField>
 
-                {/* Dose — the strengths the label lists for the chosen product.
-                    An "Others" entry instead asks for the drug name and dose. */}
+                {/* Dose: the strengths the label lists for the chosen product, as
+                    neutral pills carrying the dose's own colour in a small dot.
+                    An "Others" entry asks for the drug name and dose instead. */}
                 <div>
                   {/* Nothing chosen yet: the picker above is the way in, and no
                       dose is offered until a medication is chosen. */}
@@ -795,96 +797,116 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                       onDoseChange={setDose}
                       unit={doseUnit}
                       onUnitChange={setDoseUnit}
-                      inputClass={inputClass}
                     />
                   ) : (
                     <>
-                  <DoseChips
-                    key={medication}
-                    medication={medication}
-                    options={doseChips}
-                    value={doseNum}
-                    unit={doseUnit}
-                    onSelect={(v) => setDose(String(v))}
-                    onAddCustom={addCustomDose}
-                  />
-                  {doseChanged && (
-                    <p className="text-[13px] font-medium text-amber-600 dark:text-amber-400 mt-1.5 leading-snug">
-                      Dose changed from {previousShot.dose} {doseUnitLabel(previousShot.dose_unit || "mg")} to {dose} {doseUnitLabel(doseUnit)}.
-                    </p>
-                  )}
-                  {ownMed?.prescribed_dose != null && doseNum > 0
-                    && Number(ownMed.prescribed_dose) !== doseNum && (
-                    <p className="text-[13px] text-gray-500 dark:text-[#9A9DAE] mt-1.5 leading-snug">
-                      Different from your prescribed dose ({ownMed.prescribed_dose} {doseUnitLabel(ownMed.dose_unit || "mg")}).
-                    </p>
-                  )}
-                  {aboveMax && (
-                    <p className="text-xs font-medium text-red-600 dark:text-red-400 mt-2">
-                      Above the typical maximum of {maxDoseMg} mg. Please confirm with your prescriber.
-                    </p>
-                  )}
-                  {ingredientDup.duplicate && (
-                    <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
-                      You also logged {ingredientDup.existingBrand} ({ingredientDup.generic}) on {ingredientDup.lastDoseDate}. Two forms of the same active ingredient can duplicate your dose.
-                    </p>
-                  )}
+                      <DoseChips
+                        key={medication}
+                        medication={medication}
+                        options={doseChips}
+                        value={doseNum}
+                        unit={doseUnit}
+                        onSelect={(v) => setDose(String(v))}
+                        onAddCustom={addCustomDose}
+                        variant="neutral"
+                      />
+                      {doseChanged && (
+                        <p className="mt-2 text-[13px] font-medium leading-snug text-amber-600 dark:text-amber-400">
+                          Dose changed from {previousShot.dose} {doseUnitLabel(previousShot.dose_unit || "mg")} to {dose} {doseUnitLabel(doseUnit)}.
+                        </p>
+                      )}
+                      {ownMed?.prescribed_dose != null && doseNum > 0
+                        && Number(ownMed.prescribed_dose) !== doseNum && (
+                        <p className="mt-2 text-[13px] leading-snug text-gray-500 dark:text-[#9A9DAE]">
+                          Different from your prescribed dose ({ownMed.prescribed_dose} {doseUnitLabel(ownMed.dose_unit || "mg")}).
+                        </p>
+                      )}
+                      {aboveMax && (
+                        <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">
+                          Above the typical maximum of {maxDoseMg} mg. Please confirm with your prescriber.
+                        </p>
+                      )}
+                      {ingredientDup.duplicate && (
+                        <p className="mt-2 text-xs text-orange-600 dark:text-orange-400">
+                          You also logged {ingredientDup.existingBrand} ({ingredientDup.generic}) on {ingredientDup.lastDoseDate}. Two forms of the same active ingredient can duplicate your dose.
+                        </p>
+                      )}
                     </>
                   )}
                 </div>
 
-                {/* Injection site — one row, recommended site already selected */}
+                {/* Injection site: one row, with the rotation's suggestion
+                    already chosen. */}
                 {isInjectable && (
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Injection site</label>
+                  <SheetField label="Injection site">
                     <div className="relative">
-                      <button onClick={() => setShowSiteDropdown(!showSiteDropdown)} data-skip-dirty
-                        className={`${inputClass} flex items-center justify-between gap-2 text-left min-w-0`}>
-                        <span className="flex items-center gap-2 min-w-0">
-                          <Star size={16} className="text-orange-400 flex-shrink-0" />
-                          <span className="text-base font-semibold truncate">{site || recommendedSite}</span>
-                        </span>
-                        <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 flex-shrink-0">Change</span>
-                      </button>
+                      <div data-skip-dirty>
+                        <SheetPickerRow
+                          value={siteLabel(displayedSite)}
+                          tappable
+                          onClick={() => setShowSiteDropdown((v) => !v)}
+                          ariaExpanded={showSiteDropdown}
+                          ariaLabel="Injection site"
+                          tag={siteIsSuggested ? (
+                            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">
+                              Suggested
+                            </span>
+                          ) : null}
+                        />
+                      </div>
                       {showSiteDropdown && (
-                        <div className="absolute z-10 mt-1 w-full bg-white dark:bg-[#1e2130] border border-gray-200 dark:border-white/[0.08] rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                        <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white shadow-lg dark:border-white/[0.08] dark:bg-[#1e2130]">
                           {siteOptions.map((s) => (
-                            <button key={s} onClick={() => { sound.tap(); setSite(s); setShowSiteDropdown(false); }}
-                              className={`w-full px-4 py-3 text-left text-sm dark:text-[#E8E9F0] ${site === s ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-medium" : "hover:bg-gray-50 dark:hover:bg-white/[0.05]"}`}>{s}</button>
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => { sound.tap(); setSite(s); setShowSiteDropdown(false); }}
+                              aria-pressed={site === s}
+                              className={`w-full min-h-[52px] px-4 py-3 text-left text-sm dark:text-[#E8E9F0] ${site === s ? "bg-indigo-50 font-medium text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300" : "hover:bg-gray-50 dark:hover:bg-white/[0.05]"}`}
+                            >
+                              {siteLabel(s)}
+                            </button>
                           ))}
                         </div>
                       )}
                     </div>
-                  </div>
+                  </SheetField>
                 )}
 
-                {/* Date & Time — the app's shared date and time fields (see
-                    src/components/DateInput.jsx), which carry the width reset a
-                    native control needs, so the row stays inside the same px-5
-                    gutter as the sections above it. */}
-                <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Date & time</label>
-                  <div className="flex w-full gap-3">
-                    <DateInput value={date} onChange={setDate} ariaLabel="Shot date" className="flex-1 basis-0" />
-                    <TimeInput value={time} onChange={setTime} ariaLabel="Shot time" className="flex-1 basis-0" />
-                  </div>
-                </div>
+                {/* The shot's date and time, side by side and equal width, each
+                    with its own mark on the left and the width reset a native
+                    control needs (see src/lib/dateTimeField.js), so neither runs
+                    past the same px-5 gutter as the fields above it. */}
+                <ShotDateTimeFields
+                  date={date}
+                  time={time}
+                  onDateChange={setDate}
+                  onTimeChange={setTime}
+                />
 
-                {/* Optional details, collapsed by default */}
-                <div className="border-t border-gray-100 dark:border-white/[0.08] pt-3">
-                  <button onClick={() => { if (showDetails) sound.close(); else sound.open(); setShowDetails(!showDetails); }} data-skip-dirty className="w-full flex items-center justify-between gap-2 py-1">
-                    <span className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Add details (optional)
-                      {detailSummary.length > 0 && (
-                        <span className="text-[11px] font-medium text-indigo-500 dark:text-indigo-400">· {detailSummary.join(" · ")}</span>
-                      )}
-                      {repeatOn && <span className="text-[11px] font-medium text-indigo-500 dark:text-indigo-400">· repeat active</span>}
-                    </span>
-                    <ChevronDown size={18} className={`text-gray-400 transition-transform ${showDetails ? "rotate-180" : ""}`} />
+                {/* Everything optional lives behind one row, closed by default.
+                    Opening it scrolls the fields it adds into view. */}
+                <div className={`${SHEET_DIVIDER} pt-2`}>
+                  <button
+                    type="button"
+                    onClick={toggleDetails}
+                    data-skip-dirty
+                    aria-expanded={showDetails}
+                    className="flex w-full items-center justify-between gap-2 py-3"
+                  >
+                    <span className={SHEET_LABEL_TEXT}>More details</span>
+                    <ChevronDown
+                      size={18}
+                      aria-hidden="true"
+                      className={`text-gray-400 transition-transform ${showDetails ? "rotate-180" : ""}`}
+                    />
                   </button>
 
                   {showDetails && (
-                    <div className="mt-4 space-y-4">
+                    <div
+                      ref={detailsRef}
+                      className="mt-3 space-y-6 animate-in fade-in slide-in-from-top-1"
+                    >
                       {/* Route and Device type — optional. Route arrives
                           pre-filled from the medication, Device type is empty. */}
                       <ShotRouteDeviceFields
@@ -894,27 +916,30 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                         deviceType={deviceType}
                         deviceOptions={deviceChoices}
                         onDeviceChange={setDeviceType}
-                        inputClass={inputClass}
                       />
 
-                      {/* Concentration — compounded / generic products only */}
+                      {/* Concentration: compounded / generic products only */}
                       {isCompounded && (
-                        <InputField label="Concentration (optional)">
-                          <input type="text" value={concentration} onChange={(e) => setConcentration(e.target.value)}
-                            placeholder="e.g. 2.5 mg/mL" className={inputClass} />
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Compounded strengths vary by pharmacy — enter what your vial says.</p>
-                        </InputField>
+                        <SheetField label="Concentration">
+                          <input
+                            type="text" value={concentration} onChange={(e) => setConcentration(e.target.value)}
+                            placeholder="e.g. 2.5 mg/mL" className={SHEET_FIELD}
+                          />
+                          <p className={`${SHEET_HINT} mt-2`}>
+                            Compounded strengths vary by pharmacy. Enter what your vial says.
+                          </p>
+                        </SheetField>
                       )}
 
                       {/* Route-specific fields */}
                       {activeRoute === "intravenous_infusion" && (
                         <>
-                          <InputField label="Infusion duration (minutes)">
-                            <input type="number" min="0" step="1" value={infusionDuration} onChange={(e) => setInfusionDuration(e.target.value)} className={inputClass} />
-                          </InputField>
-                          <InputField label="Clinic / location">
-                            <input type="text" value={clinicLocation} onChange={(e) => setClinicLocation(e.target.value)} className={inputClass} />
-                          </InputField>
+                          <SheetField label="Infusion duration (minutes)">
+                            <input type="number" min="0" step="1" value={infusionDuration} onChange={(e) => setInfusionDuration(e.target.value)} className={SHEET_FIELD} />
+                          </SheetField>
+                          <SheetField label="Clinic or location">
+                            <input type="text" value={clinicLocation} onChange={(e) => setClinicLocation(e.target.value)} className={SHEET_FIELD} />
+                          </SheetField>
                           <label className="flex items-center gap-3 cursor-pointer">
                             <input type="checkbox" checked={premedication} onChange={(e) => setPremedication(e.target.checked)} className="w-5 h-5 accent-indigo-600" />
                             <span className="text-sm text-gray-700 dark:text-gray-300">Premedication administered</span>
@@ -924,15 +949,20 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
 
                       {activeRoute === "nasal" && (
                         <>
-                          <InputField label="Spray count">
-                            <input type="number" min="0" step="1" value={sprayCount} onChange={(e) => setSprayCount(e.target.value)} className={inputClass} />
-                          </InputField>
-                          <InputField label="Nostril">
-                            <select value={nostril} onChange={(e) => setNostril(e.target.value)} className={inputClass}>
-                              <option value="">—</option>
-                              <option value="both">Both</option><option value="left">Left</option><option value="right">Right</option>
-                            </select>
-                          </InputField>
+                          <SheetField label="Spray count">
+                            <input type="number" min="0" step="1" value={sprayCount} onChange={(e) => setSprayCount(e.target.value)} className={SHEET_FIELD} />
+                          </SheetField>
+                          <SheetSelect
+                            id="shot-nostril"
+                            label="Nostril"
+                            value={nostril}
+                            onChange={setNostril}
+                            options={[
+                              { value: "both", label: "Both" },
+                              { value: "left", label: "Left" },
+                              { value: "right", label: "Right" },
+                            ]}
+                          />
                           <label className="flex items-center gap-3 cursor-pointer">
                             <input type="checkbox" checked={priming} onChange={(e) => setPriming(e.target.checked)} className="w-5 h-5 accent-indigo-600" />
                             <span className="text-sm text-gray-700 dark:text-gray-300">Device primed before use</span>
@@ -950,67 +980,68 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                           ]}
                           value={takenWithFood}
                           onChange={setTakenWithFood}
-                          chipClass="flex-1 min-w-0 py-2.5 rounded-xl text-sm font-medium border text-center inline-flex items-center justify-center gap-1.5"
-                          selectedClass="bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30"
-                          unselectedClass="bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.1]"
+                          labelClass={SHEET_LABEL_TEXT}
+                          chipClass="inline-flex min-h-[52px] flex-1 min-w-0 items-center justify-center gap-1.5 rounded-full px-3 text-center text-[15px]"
+                          selectedClass={SHEET_CHIP_ON}
+                          unselectedClass={SHEET_CHIP_OFF}
                           wrapClass="flex gap-2"
                         />
                       )}
 
                       {activeRoute === "transdermal" && (
                         <>
-                          <InputField label="Patch site">
-                            <input type="text" value={patchSite} onChange={(e) => setPatchSite(e.target.value)} placeholder="e.g. Abdomen, upper arm" className={inputClass} />
-                          </InputField>
-                          <InputField label="Application date">
-                            <DateInput value={applicationDate} onChange={setApplicationDate} ariaLabel="Application date" />
-                          </InputField>
+                          <SheetField label="Patch site">
+                            <input type="text" value={patchSite} onChange={(e) => setPatchSite(e.target.value)} placeholder="e.g. Abdomen, upper arm" className={SHEET_FIELD} />
+                          </SheetField>
+                          <SheetField label="Application date">
+                            <DateInput value={applicationDate} onChange={setApplicationDate} ariaLabel="Application date" fieldClass={SHEET_DATE_FIELD} />
+                          </SheetField>
                         </>
                       )}
 
                       {(activeRoute === "topical_cream" || activeRoute === "topical_serum" || activeRoute === "topical_gel") && (
                         <>
-                          <InputField label="Body area">
-                            <input type="text" value={bodyArea} onChange={(e) => setBodyArea(e.target.value)} placeholder="e.g. Face, left cheek" className={inputClass} />
-                          </InputField>
-                          <InputField label="Application notes">
-                            <textarea value={applicationNotes} onChange={(e) => setApplicationNotes(e.target.value)} rows={2} className={inputClass} />
-                          </InputField>
+                          <SheetField label="Body area">
+                            <input type="text" value={bodyArea} onChange={(e) => setBodyArea(e.target.value)} placeholder="e.g. Face, left cheek" className={SHEET_FIELD} />
+                          </SheetField>
+                          <SheetField label="Application notes">
+                            <textarea value={applicationNotes} onChange={(e) => setApplicationNotes(e.target.value)} className={SHEET_TEXTAREA} />
+                          </SheetField>
                         </>
                       )}
 
                       {activeRoute === "implant" && (
                         <>
-                          <InputField label="Clinic / location">
-                            <input type="text" value={clinicLocation} onChange={(e) => setClinicLocation(e.target.value)} className={inputClass} />
-                          </InputField>
-                          <InputField label="Insertion date">
-                            <DateInput value={insertionDate} onChange={setInsertionDate} ariaLabel="Insertion date" />
-                          </InputField>
+                          <SheetField label="Clinic or location">
+                            <input type="text" value={clinicLocation} onChange={(e) => setClinicLocation(e.target.value)} className={SHEET_FIELD} />
+                          </SheetField>
+                          <SheetField label="Insertion date">
+                            <DateInput value={insertionDate} onChange={setInsertionDate} ariaLabel="Insertion date" fieldClass={SHEET_DATE_FIELD} />
+                          </SheetField>
                         </>
                       )}
 
                       {activeRoute === "pump_infusion" && (
                         <>
-                          <InputField label="Pump rate">
-                            <input type="number" min="0" step="0.1" value={pumpRate} onChange={(e) => setPumpRate(e.target.value)} className={inputClass} />
-                          </InputField>
-                          <InputField label="Site change date">
-                            <DateInput value={siteChangeDate} onChange={setSiteChangeDate} ariaLabel="Site change date" />
-                          </InputField>
+                          <SheetField label="Pump rate">
+                            <input type="number" min="0" step="0.1" value={pumpRate} onChange={(e) => setPumpRate(e.target.value)} className={SHEET_FIELD} />
+                          </SheetField>
+                          <SheetField label="Site change date">
+                            <DateInput value={siteChangeDate} onChange={setSiteChangeDate} ariaLabel="Site change date" fieldClass={SHEET_DATE_FIELD} />
+                          </SheetField>
                         </>
                       )}
 
                       {/* Reconstitution fields */}
                       {isReconstituted && (
                         <>
-                          <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Reconstitution</div>
-                          <InputField label="Reconstitution date">
-                            <DateInput value={reconstitutionDate} onChange={setReconstitutionDate} ariaLabel="Reconstitution date" />
-                          </InputField>
-                          <InputField label="In-use expiry date">
-                            <DateInput value={inUseExpiry} onChange={setInUseExpiry} ariaLabel="In-use expiry date" />
-                          </InputField>
+                          <p className={SHEET_LABEL_TEXT}>Reconstitution</p>
+                          <SheetField label="Reconstitution date">
+                            <DateInput value={reconstitutionDate} onChange={setReconstitutionDate} ariaLabel="Reconstitution date" fieldClass={SHEET_DATE_FIELD} />
+                          </SheetField>
+                          <SheetField label="In-use expiry date">
+                            <DateInput value={inUseExpiry} onChange={setInUseExpiry} ariaLabel="In-use expiry date" fieldClass={SHEET_DATE_FIELD} />
+                          </SheetField>
                         </>
                       )}
 
@@ -1038,38 +1069,61 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                         />
                       )}
 
-                      {/* Pain Level — optional, and empty until it is moved */}
+                      {/* Pain level: optional, and empty until it is moved */}
                       <div>
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            Pain Level: <span className="text-indigo-600">{pain == null ? "Not set" : `${pain}/10`}</span>
-                          </label>
-                          <ClearFieldButton show={pain != null} onClear={() => setPain(null)} />
+                        <div className="flex items-baseline justify-between gap-2 mb-2">
+                          <label htmlFor="shot-pain" className={SHEET_LABEL_TEXT}>Pain level</label>
+                          <span className="flex items-center gap-1">
+                            <span className={pain == null
+                              ? SHEET_HINT
+                              : "text-sm font-medium text-indigo-600 dark:text-indigo-400"}>
+                              {pain == null ? "Not set" : `${pain} of 10`}
+                            </span>
+                            <ClearFieldButton show={pain != null} onClear={() => setPain(null)} />
+                          </span>
                         </div>
-                        <div className="px-1">
-                          <input
-                            type="range" min="0" max="10"
-                            value={pain ?? 0}
-                            onChange={(e) => setPain(Number(e.target.value))}
-                            className="pain-slider w-full"
-                            style={{ "--pain-fill": `${Math.round(((pain ?? 0) / 10) * 100)}%` }}
-                            aria-label="Pain level"
-                            aria-valuetext={pain == null ? "Not set" : `${pain} out of 10`}
-                          />
-                          <div className="flex justify-between text-xs text-gray-400 mt-1"><span>0 – No Pain</span><span>10 – Severe</span></div>
+                        <input
+                          id="shot-pain"
+                          type="range" min="0" max="10"
+                          value={pain ?? 0}
+                          onChange={(e) => setPain(Number(e.target.value))}
+                          className="pain-slider w-full"
+                          style={{ "--pain-fill": `${Math.round(((pain ?? 0) / 10) * 100)}%` }}
+                          aria-label="Pain level"
+                          aria-valuetext={pain == null ? "Not set" : `${pain} out of 10`}
+                        />
+                        <div className="mt-1 flex justify-between">
+                          <span className={SHEET_HINT}>No pain</span>
+                          <span className={SHEET_HINT}>Severe</span>
                         </div>
                       </div>
 
                       {/* Notes */}
-                      <div>
-                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Notes (optional)</label>
-                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
-                          placeholder={isCompounded ? "e.g. pharmacy name, how you felt" : "Add any notes or side effects experienced"}
-                          className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base resize-none h-24 outline-none focus:border-indigo-300" />
-                      </div>
+                      <SheetField label="Notes">
+                        <textarea
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          placeholder="Add a note"
+                          className={SHEET_TEXTAREA}
+                        />
+                      </SheetField>
                     </div>
                   )}
                 </div>
+
+                {/* The way out of the log, at the foot of the form and behind a
+                    question, so removing an entry is never a stray tap. */}
+                {editingShot && !saved && (
+                  <div data-skip-dirty className="pt-2">
+                    <EntryDeleteLink
+                      label="Delete this shot"
+                      title="Delete this shot?"
+                      message="The dose, site, time and notes for this log are removed from your history."
+                      confirmLabel="Delete shot"
+                      onDelete={handleDelete}
+                    />
+                  </div>
+                )}
               </div>
 
               {duplicatePrompt && (
@@ -1104,18 +1158,21 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
           </div>
 
           <div
-            className="shrink-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]"
+            className="shrink-0 border-t border-gray-100 bg-white px-5 pt-4 dark:border-white/[0.08] dark:bg-[#0f1117]"
             style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}
           >
             {saved ? (
-              <button onClick={onClose}
-                className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2">
+              <button onClick={onClose} className="btn-pill btn-primary w-full">
                 Done
               </button>
             ) : (
-              <button onClick={handleSave} disabled={!canSave} aria-disabled={!canSave || undefined}
-                className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2">
-                <Save size={16} /> {saving ? "Saving…" : editingShot ? "Update Shot" : "Save Shot"}
+              <button
+                onClick={handleSave}
+                disabled={!canSave}
+                aria-disabled={!canSave || undefined}
+                className="btn-pill btn-primary w-full"
+              >
+                {saving ? "Saving…" : saveLabel}
               </button>
             )}
           </div>
@@ -1132,17 +1189,6 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
         cancelLabel="Keep editing"
         onConfirm={() => { setConfirmDiscard(false); dirtyRef.current = false; onClose(); }}
         onCancel={() => setConfirmDiscard(false)}
-      />
-
-      <ConfirmDialog
-        open={confirmDelete}
-        tone="destructive"
-        title="Delete this shot?"
-        message="The dose, site, time and notes for this log are removed from your history."
-        confirmLabel="Delete shot"
-        cancelLabel="Keep shot"
-        onConfirm={handleDelete}
-        onCancel={() => setConfirmDelete(false)}
       />
 
       <SideEffectsModal open={reporting} onClose={() => setReporting(false)} dayKey={date} />

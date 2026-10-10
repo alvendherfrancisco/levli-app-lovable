@@ -1,17 +1,14 @@
 import React from "react";
-import { sound } from "@/lib/sounds";
-
-const LABEL_CLASS = "text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block";
+import SheetSelect from "@/components/modals/shot/SheetSelect";
 
 /**
  * The optional Route and Device type fields on a shot log. Both live inside the
- * collapsible "Add details (optional)" section, so the four things logged every
- * time stay uncluttered. Route arrives pre-filled from the chosen medication and
- * stays changeable; Device type starts empty ("—").
+ * collapsible "More details" section, so the four things logged every time stay
+ * uncluttered. Route arrives pre-filled from the chosen medication and stays
+ * changeable; Device type shows "Select" until one is chosen.
  *
- * Both are native selects on the same rounded, dark-aware input style as the
- * rest of the form, and are width-constrained so they never spill out of the
- * sheet's padding on a small phone.
+ * Both are drawn as the sheet's own field: the same height, the same pill, one
+ * down chevron, and wide enough never to spill past the sheet's padding.
  */
 export default function ShotRouteDeviceFields({
   route,
@@ -20,43 +17,24 @@ export default function ShotRouteDeviceFields({
   deviceType,
   deviceOptions,
   onDeviceChange,
-  inputClass,
 }) {
-  const selectClass = `${inputClass} min-w-0 max-w-full`;
-
   return (
-    <div className="space-y-4">
-      <div>
-        <label htmlFor="shot-route" className={LABEL_CLASS}>Route (optional)</label>
-        <select
-          id="shot-route"
-          value={route}
-          onChange={(e) => { sound.tap(); onRouteChange(e.target.value); }}
-          className={selectClass}
-        >
-          {/* A dropdown clears by choosing the empty option, which is the one
-              path a tap on the selected value cannot express. */}
-          <option value="">—</option>
-          {routeOptions.map((r) => (
-            <option key={r.value} value={r.value}>{r.label}</option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor="shot-device" className={LABEL_CLASS}>Device type (optional)</label>
-        <select
-          id="shot-device"
-          value={deviceType}
-          onChange={(e) => { sound.tap(); onDeviceChange(e.target.value); }}
-          className={selectClass}
-        >
-          <option value="">—</option>
-          {deviceOptions.map((d) => (
-            <option key={d.value} value={d.value} disabled={!!d.retired}>{d.label}</option>
-          ))}
-        </select>
-      </div>
+    <div className="space-y-6">
+      <SheetSelect
+        id="shot-route"
+        label="Route"
+        value={route}
+        onChange={onRouteChange}
+        options={routeOptions}
+      />
+      <SheetSelect
+        id="shot-device"
+        label="Device type"
+        value={deviceType}
+        onChange={onDeviceChange}
+        // A device already on a record stays listed, and stays shut out.
+        options={deviceOptions.map((d) => ({ ...d, disabled: !!d.retired }))}
+      />
     </div>
   );
 }
