@@ -10,17 +10,17 @@ import { sound } from "@/lib/sounds";
 const UNITS = ["mg", "mcg", "units", "IU", "mL"];
 
 const chipClass = (selected) =>
-  `inline-flex min-h-[44px] min-w-[56px] items-center justify-center gap-1 rounded-xl border-2 px-3 text-sm font-semibold ${
+  `inline-flex min-h-[44px] min-w-[56px] items-center justify-center gap-1 rounded-xl border px-3 text-sm font-semibold ${
     selected
       ? "bg-indigo-600 border-indigo-600 text-white"
-      : "bg-white dark:bg-white/[0.05] border-gray-200 dark:border-white/[0.12] text-gray-900 dark:text-[#E8E9F0]"
+      : "bg-white dark:bg-white/[0.05] border-cardline text-gray-900 dark:text-[#E8E9F0]"
   }`;
 
 const otherChipClass = (active) =>
-  `inline-flex min-h-[44px] items-center gap-1 rounded-xl border-2 border-dashed px-3 text-sm font-semibold ${
+  `inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-dashed px-3 text-sm font-semibold ${
     active
       ? "border-indigo-400 text-indigo-600 dark:text-indigo-300"
-      : "border-gray-300 dark:border-white/[0.18] text-gray-600 dark:text-gray-300"
+      : "border-cardline text-gray-600 dark:text-gray-300"
   }`;
 
 const hintClass = "text-xs text-gray-500 dark:text-[#9A9DAE] mt-2 leading-snug";

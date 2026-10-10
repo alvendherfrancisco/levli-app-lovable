@@ -11,10 +11,10 @@ import { sound } from "@/lib/sounds";
  */
 
 const chipClass = (selected) =>
-  `inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border-2 px-3 py-2 ${
+  `inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 py-2 ${
     selected
       ? "bg-indigo-600 border-indigo-600 text-white"
-      : "bg-white dark:bg-white/[0.05] border-gray-200 dark:border-white/[0.12] text-gray-900 dark:text-[#E8E9F0]"
+      : "bg-white dark:bg-white/[0.05] border-cardline text-gray-900 dark:text-[#E8E9F0]"
   }`;
 
 const subClass = (selected) =>

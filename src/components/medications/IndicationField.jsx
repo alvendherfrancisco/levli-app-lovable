@@ -4,7 +4,7 @@ import OptionChips from "@/components/OptionChips";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
 const bigChoice =
-  "inline-flex items-center justify-center gap-1.5 min-h-[60px] rounded-2xl border-2 px-3 text-base font-semibold";
+  "inline-flex items-center justify-center gap-1.5 min-h-[60px] rounded-2xl border px-3 text-base font-semibold";
 
 /**
  * Why the medication was prescribed — plain choices, with room to type your own.
@@ -53,7 +53,7 @@ export default function IndicationField({ value, onChange, other, onOtherChange,
               autoComplete="off"
               onChange={(e) => onOtherChange(e.target.value)}
               placeholder="e.g. Fatty liver disease"
-              className="w-full min-h-[60px] rounded-2xl border-2 border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-4 py-3 text-base outline-none focus:border-indigo-400"
+              className="w-full min-h-[60px] rounded-2xl border border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-4 py-3 text-base outline-none focus:border-indigo-400"
             />
           </div>
         )}

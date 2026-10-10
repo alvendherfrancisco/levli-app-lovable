@@ -43,6 +43,9 @@ module.exports = {
   		border: 'hsl(var(--border))',
   		input: 'hsl(var(--input))',
   		ring: 'hsl(var(--ring))',
+  		// The one hairline every card, tile, input, chip, sheet and modal is
+  		// drawn with, defined for both modes in src/index.css.
+  		cardline: 'rgb(var(--card-border))',
   		// The sign-in screens' own tokens (Login and Create account), defined for
   		// light and dark in src/index.css. Values can carry their own alpha, so a
   		// hairline is a low-opacity white in dark mode.
@@ -96,6 +99,15 @@ module.exports = {
   			border: 'hsl(var(--sidebar-border))',
   			ring: 'hsl(var(--sidebar-ring))'
   		}
+  		},
+  		// The card's hairline width, the width a chosen card may draw, and the
+  		// soft shadow behind it — all from the same tokens in src/index.css.
+  		borderWidth: {
+  			hairline: 'var(--card-border-w)',
+  			chosen: 'var(--card-border-selected)'
+  		},
+  		boxShadow: {
+  			card: 'var(--card-shadow)'
   		},
   		fontFamily: {
   			heading: ['var(--font-heading)'] ,

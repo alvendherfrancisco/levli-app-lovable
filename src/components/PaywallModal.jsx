@@ -102,8 +102,8 @@ export default function PaywallModal({ open, onClose }) {
         <div className="space-y-3 mb-6">
           {PLANS.map((p) => (
             <button key={p.id} onClick={() => setSelected(p.id)}
-              className={`w-full text-left rounded-2xl p-4 border-2 transition-colors ${
-                selected === p.id ? "border-indigo-600 bg-indigo-50" : "border-gray-200 bg-white"
+              className={`w-full text-left rounded-2xl p-4 border transition-colors ${
+                selected === p.id ? "border-indigo-600 bg-indigo-50" : "border-cardline bg-white"
               }`}>
               <div className="flex items-center justify-between">
                 <span className="font-bold text-gray-900 text-lg">{p.name}</span>

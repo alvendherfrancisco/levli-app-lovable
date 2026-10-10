@@ -29,9 +29,9 @@ const inputClass = "w-full min-h-[52px] rounded-xl border border-gray-200 dark:b
 const FOOTER_NOTE = "This app is a tracker, not medical advice.";
 
 /** The status chips inside "More details". */
-const STATUS_CHIP_CLASS = "inline-flex items-center gap-1.5 min-h-[44px] rounded-xl border-2 px-3 text-sm font-semibold";
+const STATUS_CHIP_CLASS = "inline-flex items-center gap-1.5 min-h-[44px] rounded-xl border px-3 text-sm font-semibold";
 const STATUS_SELECTED_CLASS = "bg-indigo-600 border-indigo-600 text-white";
-const STATUS_UNSELECTED_CLASS = "bg-white dark:bg-white/[0.05] border-gray-200 dark:border-white/[0.12] text-gray-900 dark:text-[#E8E9F0]";
+const STATUS_UNSELECTED_CLASS = "bg-white dark:bg-white/[0.05] border-cardline text-gray-900 dark:text-[#E8E9F0]";
 
 /**
  * Add / Edit Medication — one screen. The four things logged most often (which

@@ -109,7 +109,7 @@ export default function History() {
               <button key={day} onClick={() => !isFuture && setSelectedDay(day)} disabled={isFuture}
                 className={`py-1.5 rounded-lg text-sm font-medium relative flex flex-col items-center ${
                   isFuture ? "text-gray-300 dark:text-gray-700 cursor-not-allowed" :
-                  isSelected ? "border-2 border-indigo-500 text-indigo-600 dark:bg-indigo-500/10" : isToday ? "text-indigo-600" : "text-gray-700 dark:text-gray-300"
+                  isSelected ? "border-[1.5px] border-indigo-500 text-indigo-600 dark:bg-indigo-500/10" : isToday ? "text-indigo-600" : "text-gray-700 dark:text-gray-300"
                 }`}>
                   {day}
                   {dayShot && <div className="w-2 h-2 rounded-full mt-0.5" style={{ background: dotColor, boxShadow: `0 0 6px 2px ${dotColor}80` }} />}

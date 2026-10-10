@@ -573,6 +573,16 @@ export function plainBrandName(name) {
 }
 
 /** true when this product allows any dose (compounded / custom / unknown). */
+/**
+ * true when the product is taken by mouth (tablet or capsule) rather than
+ * injected. The stored record's own route wins when it has one, so a product
+ * the person set up themselves is described by what they chose.
+ */
+export function isOralMedication(name, route) {
+  const r = route || getMedicationConfig(name)?.route || "";
+  return r === "oral_tablet" || r === "oral_capsule";
+}
+
 export function allowsAnyDose(name) {
   const entry = getMedicationConfig(name);
   if (!entry) return true;

@@ -8,8 +8,8 @@ export default function ProgressPhotoCard({ photo, dateLabel, weightLabel, tag, 
       {tag === "same-day" && (
         <p className="text-xs text-gray-400 dark:text-[#9A9DAE] mb-1">Same day</p>
       )}
-      <div className={`relative w-full aspect-square rounded-xl overflow-hidden border-2 ${
-        tag === "latest" ? "border-indigo-500" : "border-gray-100 dark:border-white/[0.08]"
+      <div className={`relative w-full aspect-square rounded-xl overflow-hidden border ${
+        tag === "latest" ? "border-[1.5px] border-indigo-500" : "border-cardline"
       }`}>
         <SafeImage src={photo.url} alt={`Progress ${photo.day_key}`} className="w-full h-full object-cover" />
         {tag === "latest" && (

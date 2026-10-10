@@ -8,7 +8,7 @@ import { isSet, isBlockedClear, nextSingle } from "@/lib/optionGroup";
 // the device's light/dark setting. The chosen chip is the app's indigo in both
 // modes, with white on it.
 const LABEL_CLASS = "text-sm font-semibold text-auth-text";
-const CHIP_CLASS = "inline-flex items-center gap-1.5 min-h-[44px] rounded-xl border-2 px-3 text-sm font-semibold transition-colors";
+const CHIP_CLASS = "inline-flex items-center gap-1.5 min-h-[44px] rounded-xl border px-3 text-sm font-semibold transition-colors";
 const SELECTED_CLASS = "bg-indigo-600 border-indigo-600 text-white";
 const UNSELECTED_CLASS = "bg-auth-card border-auth-border text-auth-text";
 

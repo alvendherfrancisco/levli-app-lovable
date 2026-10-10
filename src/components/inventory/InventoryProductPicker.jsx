@@ -41,7 +41,7 @@ export default function InventoryProductPicker({ medications = [], selected, onP
         onChange={onPick}
         required
         soundOnSelect
-        chipClass="inline-flex items-center gap-1.5 min-h-[44px] max-w-full rounded-xl border-2 px-3 text-sm font-semibold transition-colors"
+        chipClass="inline-flex items-center gap-1.5 min-h-[44px] max-w-full rounded-xl border px-3 text-sm font-semibold transition-colors"
         helper={names.length === 0 ? "No medications saved yet — tap Other and type the name from your prescription." : undefined}
       />
 
