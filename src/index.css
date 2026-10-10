@@ -1048,3 +1048,13 @@ button[class~="rounded-full"][class~="text-sm"] {
   padding-left: var(--btn-pad-x-sm);
   padding-right: var(--btn-pad-x-sm);
 }
+
+/* ── The Home date strip's day tile: the one filled action that is not a pill ─
+   The day in hand on Home is a soft rectangle — a tile with gently rounded
+   corners, not a pill — so its weekday, date and month read as a small card.
+   This is the single exemption from the pill layer above: every other filled
+   action in the app keeps the pill. Written as `button.date-chip` so it wins
+   over that layer on specificity, whatever order the two land in. */
+button.date-chip {
+  border-radius: 22px;
+}
