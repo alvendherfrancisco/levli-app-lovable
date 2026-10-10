@@ -86,24 +86,31 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
     const first = el && el.children[0];
     const second = el && el.children[1];
     if (!first || !second) return;
-    metricsRef.current = { tileW: first.offsetWidth, step: second.offsetLeft - first.offsetLeft };
+    metricsRef.current = {
+      tileW: first.offsetWidth,
+      step: second.offsetLeft - first.offsetLeft,
+      // The room the row keeps for the glow's own sake: the tiles start that far
+      // inside the row, so every position is read from there and the day in hand
+      // still comes to rest in the middle of the strip.
+      pad: parseFloat(window.getComputedStyle(el).paddingLeft) || 0,
+    };
   };
 
   /** The day sitting in the middle slot at a given scroll position. */
   const indexAt = (scrollLeft) => {
     const el = scrollerRef.current;
-    const { tileW, step } = metricsRef.current;
+    const { tileW, step, pad } = metricsRef.current;
     if (!el || !step) return EACH_SIDE;
-    const raw = (scrollLeft + (el.clientWidth - tileW) / 2) / step;
+    const raw = (scrollLeft + (el.clientWidth - tileW) / 2 - pad) / step;
     return Math.max(0, Math.min(days.length - 1, Math.round(raw)));
   };
 
   /** The scroll position that puts a day in the middle slot. */
   const leftFor = (index) => {
     const el = scrollerRef.current;
-    const { tileW, step } = metricsRef.current;
+    const { tileW, step, pad } = metricsRef.current;
     if (!el || !step) return null;
-    return index * step - Math.max(0, (el.clientWidth - tileW) / 2);
+    return index * step - Math.max(0, (el.clientWidth - tileW) / 2 - pad);
   };
 
   const bringToCenter = (index, behavior = "auto") => {
@@ -174,14 +181,16 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
   return (
     // 12px side margin, to line the first and last tile up with the cards
     // below; 24px below the strip, so the day in hand sits clear of the card
-    // that follows.
-    <div className="relative px-3 pt-3 pb-6">
+    // that follows. The row keeps room for the chosen day's glow inside itself
+    // (see .date-strip in index.css), and the shell clips it only at the screen's
+    // own edge — never inside the strip.
+    <div className="date-strip-shell relative px-3 pt-3 pb-6">
       <div
         ref={scrollerRef}
         onScroll={handleScroll}
         // A finger on the row always takes it over.
         onPointerDown={() => { tapTravelRef.current = 0; }}
-        className="flex gap-1.5 overflow-x-auto overscroll-x-contain no-scrollbar snap-x snap-mandatory"
+        className="date-strip flex gap-1.5 overflow-x-auto overscroll-x-contain no-scrollbar snap-x snap-mandatory"
       >
         {days.map((d, index) => {
           const key = toDayKey(d);
@@ -201,7 +210,7 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
               style={{ width: "calc((100% - 24px) / 5)" }}
               className={`date-chip relative flex shrink-0 snap-center min-w-0 min-h-[90px] py-[14px] flex-col items-center justify-center gap-1.5 transition-colors ${
                 chosen
-                  ? "text-white bg-indigo-600 dark:bg-indigo-500/80 shadow-lg dark:[box-shadow:0_0_18px_4px_rgba(99,102,241,0.35)]"
+                  ? "text-white bg-indigo-600 dark:bg-indigo-500/80 [box-shadow:0_6px_20px_rgba(15,23,42,0.14)] dark:[box-shadow:0_8px_28px_rgba(99,102,241,0.28)]"
                   : "text-gray-400 dark:text-[#9A9DAE]"
               }`}
             >

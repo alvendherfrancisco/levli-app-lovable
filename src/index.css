@@ -1114,3 +1114,27 @@ button[class~="bg-indigo-500"][aria-disabled="true"] {
 button.date-chip {
   border-radius: 22px;
 }
+
+/* ── The Home date strip: room for the chosen day's glow ────────────────────
+   The chosen day wears a soft glow, and the row it sits in scrolls sideways —
+   which clips everything above and below it as well, cutting the glow off in a
+   hard rectangle at the row's own edges. The row therefore carries the room the
+   glow needs: the padding sits inside the scroller, where the shadow fades out
+   well before the edge it is clipped at, and the negative margins of exactly the
+   same size put the row straight back, so the tiles keep their width, their
+   place, and the strip's own spacing is untouched.
+
+   The shell clips the row sideways only (never vertically), so left and right the
+   glow simply runs to the edge of the screen instead of stopping at a line inside
+   the strip. */
+.date-strip-shell {
+  overflow-x: clip;
+}
+
+.date-strip {
+  --strip-pad-x: 1rem;      /* 16px either side — the glow's room left and right */
+  --strip-pad-top: 1.75rem; /* 28px above */
+  --strip-pad-bottom: 2rem; /* 32px below, where the glow hangs heavier */
+  padding: var(--strip-pad-top) var(--strip-pad-x) var(--strip-pad-bottom);
+  margin: calc(-1 * var(--strip-pad-top)) calc(-1 * var(--strip-pad-x)) calc(-1 * var(--strip-pad-bottom));
+}
