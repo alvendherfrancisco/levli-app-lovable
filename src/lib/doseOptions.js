@@ -14,6 +14,7 @@ import {
   allowsAnyDose,
   getDoseValues,
   getDoseUnit,
+  getMedicationConfig,
   isVerifiedMedication,
   validateDosePair,
 } from "@/lib/medicationConfig";
@@ -31,8 +32,18 @@ export const DOSE_LISTS = (() => {
   return map;
 })();
 
-/** The configured strengths for a medication (empty when it has none). */
-export function getDoseList(medication) {
+/**
+ * The configured strengths for a medication (empty when it has none).
+ *
+ * A form may carry its own list: one product sold as a pen and as a tablet has a
+ * different set of strengths for each, so the chips follow the form in hand. A
+ * form with no list of its own (the pen form) uses the product's own list.
+ */
+export function getDoseList(medication, form) {
+  const carried = form
+    ? getMedicationConfig(medication)?.forms?.find((f) => f.id === form)?.doses
+    : null;
+  if (carried?.length) return carried.map((d) => Number(d.value)).sort((a, b) => a - b);
   return [...getDoseValues(medication)];
 }
 
@@ -54,8 +65,8 @@ export function getCustomDoses(customDoses = [], medication) {
 }
 
 /** Every chip offered: the label strengths plus the user's own valid doses. */
-export function getDoseChips(medication, customDoses = []) {
-  return [...new Set([...getDoseList(medication), ...getCustomDoses(customDoses, medication)])]
+export function getDoseChips(medication, customDoses = [], form) {
+  return [...new Set([...getDoseList(medication, form), ...getCustomDoses(customDoses, medication)])]
     .sort((a, b) => a - b);
 }
 
@@ -70,13 +81,13 @@ export function medicationCustomDoses(medication) {
  * saved on the medication itself, and any dose saved earlier on the profile for
  * the same product (so chips logged before this existed are not lost).
  */
-export function chipsForMedication(medication, legacyCustomDoses = []) {
+export function chipsForMedication(medication, legacyCustomDoses = [], form) {
   const name = medication?.medication_name || "";
   const saved = [
     ...legacyCustomDoses,
     ...medicationCustomDoses(medication).map((dose) => ({ medication: name, dose })),
   ];
-  return getDoseChips(name, saved);
+  return getDoseChips(name, saved, form);
 }
 
 /** true when the picker should accept a typed dose instead of only chips. */

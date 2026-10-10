@@ -5,14 +5,15 @@ import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
 import DoseBadge from "@/components/DoseBadge";
 import { todayKey } from "@/lib/dateUtils";
+import { logWords } from "@/lib/medicationForm";
 import {
   shotDateFromKey, inputTimeToShotTime, shotTimeToInput, describeRepeat, getNextOccurrence,
 } from "@/lib/repeatSchedule";
 
 /**
- * Shot-day card for repeat schedules: one tap confirms the dose exactly as
- * set up, with Edit / Skip for anything different. Nothing is logged until
- * the user taps Confirm.
+ * Repeat-day card: one tap confirms the dose exactly as it was set up, with
+ * Edit / Skip for anything different. Nothing is logged until the user taps
+ * Confirm.
  */
 export default function RepeatDoseCard({ onEdit }) {
   const { pendingRepeatDoses, repeatSchedules, confirmRepeatDose, skipRepeatDose } = useAppState();
@@ -63,6 +64,8 @@ export default function RepeatDoseCard({ onEdit }) {
       {pending.map(({ schedule, dayKey, daysLate }) => {
         const isToday = dayKey === today;
         const busy = busyKey === schedule.id + dayKey;
+        // A repeat for a tablet is a dose day; for an injection, a shot day.
+        const words = logWords(schedule.medication, { route: schedule.route });
         return (
           <div
             key={schedule.id + dayKey}
@@ -74,7 +77,7 @@ export default function RepeatDoseCard({ onEdit }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-indigo-900 dark:text-indigo-200">
-                  {isToday ? "Shot day, ready when you are" : `${daysLate} day${daysLate === 1 ? "" : "s"} late`}
+                  {isToday ? `${words.One} day, ready when you are` : `${daysLate} day${daysLate === 1 ? "" : "s"} late`}
                 </p>
                 <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                   <DoseBadge medication={schedule.medication} dose={schedule.dose} unit={schedule.dose_unit || "mg"} />

@@ -62,6 +62,8 @@ export function medicationPickerGroups({ medications = [], current = "", query =
   const currentRecord = medications.find((m) => m.medication_name === current) || null;
   const mine = pickerMedications(medications, currentRecord)
     .map(storeRow)
+    // The medication already in hand comes first, so the list opens on it.
+    .sort((a, b) => (a.name === current ? -1 : b.name === current ? 1 : 0))
     .filter((row) => matches(row, query));
   // A product the user already has is never offered twice. It is matched on the
   // name and on the product it resolves to, so a regimen saved under an older

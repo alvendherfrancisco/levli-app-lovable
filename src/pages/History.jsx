@@ -9,6 +9,8 @@ import AddShotModal from "@/components/modals/AddShotModal";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import { useAppState } from "@/lib/AppState";
 import { parseShotDate, toDayKey, fromDayKey } from "@/lib/dateUtils";
+import { logWords } from "@/lib/medicationForm";
+import { isActiveMedication } from "@/lib/medicationLink";
 import useDoseColors from "@/hooks/useDoseColors";
 
 const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -21,9 +23,17 @@ export default function History() {
   const [showShot, setShowShot] = useState(false);
   const [showSideEffects, setShowSideEffects] = useState(false);
   const [editingShot, setEditingShot] = useState(null);
-  const { shots, getSideEffects, adverseEventsByDay } = useAppState();
+  const { shots, medications, getSideEffects, adverseEventsByDay } = useAppState();
   // Calendar dots carry the dose's own colour, in the theme in use.
   const { color: doseColor } = useDoseColors();
+  // This screen speaks of doses for a product taken by mouth and of shots for an
+  // injected one, following the medication in hand (src/lib/medicationForm.js).
+  const focusMed = medications.find(isActiveMedication) || null;
+  const words = logWords(focusMed?.medication_name || shots[0]?.medication, {
+    route: focusMed?.route || shots[0]?.route || "",
+    shots,
+  });
+  const addLabel = words.one === "dose" ? "Log dose" : "Add shot";
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfWeek = new Date(year, month, 1).getDay();
@@ -135,7 +145,7 @@ export default function History() {
         {selectedDay && selectedShots.length === 0 && (
           <div className="px-4 mb-4">
             <div className="bg-white dark:bg-gray-900 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-800 text-gray-400 dark:text-[#9A9DAE] text-sm">
-              No shots logged for {monthNames[month]} {selectedDay}
+              No {words.many} logged for {monthNames[month]} {selectedDay}
             </div>
           </div>
         )}
@@ -173,7 +183,7 @@ export default function History() {
         )}
       </div>
 
-      <Fab onClick={openNew} label="Add Shot" />
+      <Fab onClick={openNew} label={addLabel} />
 
       <AddShotModal open={showShot} onClose={() => { setShowShot(false); setEditingShot(null); }} editingShot={editingShot} />
       {selectedDayKey && (

@@ -130,6 +130,23 @@ export const MEDICATION_CONFIG = [
     name: "Ozempic",
     genericName: "semaglutide",
     route: "subcutaneous",
+    // Sold as a weekly pen and as a once-daily tablet, and the two carry
+    // different strengths, so the log sheet asks which one is being taken. The
+    // pen strengths are `allowedDoses` below; the tablet's own list is on the
+    // tablet form.
+    forms: [
+      { id: "injection", label: "Injection", route: "subcutaneous" },
+      {
+        id: "pill",
+        label: "Pill",
+        route: "oral_tablet",
+        doses: [
+          { value: 1.5, unit: "mg" },
+          { value: 4, unit: "mg" },
+          { value: 9, unit: "mg" },
+        ],
+      },
+    ],
     dosingIntervalDays: 7,
     allowedDoses: [
       // Four strengths, four label colours, read from the manufacturer pen
@@ -159,7 +176,8 @@ export const MEDICATION_CONFIG = [
     source: "https://www.novo-pi.com/ozempic.pdf",
     lastReviewed: "2026-10-05",
     verified: true,
-    verifiedNote: "",
+    verifiedNote:
+      "The tablet form carries the oral semaglutide strengths (1.5, 4 and 9 mg). They are listed without a colour: the strength is printed on the tablet's carton, not on a colour-coded pen.",
     exposureEligible: true,
   },
   {
@@ -172,7 +190,13 @@ export const MEDICATION_CONFIG = [
     // which one is being taken instead of assuming the pen.
     forms: [
       { id: "injection", label: "Injection", route: "subcutaneous" },
-      { id: "pill", label: "Pill", route: "oral_tablet" },
+      // The tablet's one strength, from the label note on this entry below.
+      {
+        id: "pill",
+        label: "Pill",
+        route: "oral_tablet",
+        doses: [{ value: 25, unit: "mg", role: "standard" }],
+      },
     ],
     dosingIntervalDays: 7,
     allowedDoses: [
@@ -205,7 +229,7 @@ export const MEDICATION_CONFIG = [
     lastReviewed: "2026-10-05",
     verified: true,
     verifiedNote:
-      "Wegovy is also sold as an oral tablet (oral semaglutide 25 mg once daily). That form is not in this config, so it cannot be logged as Wegovy® here. The label states the missed-dose rule as a condition on the next dose rather than a plain day count; the 4-day window is derived from it and the card shows the label's own wording.",
+      "Wegovy is also sold as an oral tablet (oral semaglutide 25 mg once daily): its one strength sits on the tablet form, with no pen colour because the tablet has none. The label states the missed-dose rule as a condition on the next dose rather than a plain day count; the 4-day window is derived from it and the card shows the label's own wording.",
     exposureEligible: true,
   },
   {
@@ -484,6 +508,13 @@ export const MEDICATION_CONFIG = [
     name: "Semaglutide",
     genericName: "semaglutide",
     route: "subcutaneous",
+    // Compounded products come as a vial for injection and, from some
+    // pharmacies, as a capsule or tablet, so the form is asked for. Neither form
+    // carries a strength list: the amount is the prescriber's own.
+    forms: [
+      { id: "injection", label: "Injection", route: "subcutaneous" },
+      { id: "pill", label: "Pill", route: "oral_tablet" },
+    ],
     dosingIntervalDays: 7,
     allowedDoses: [],
     allowsAnyDose: true,
@@ -678,6 +709,22 @@ export function getDoseValues(name) {
   return getAllowedDoses(name).map((d) => d.value);
 }
 
+/**
+ * Every strength the label lists for a product, across all of its forms: the
+ * pen's list and, for a product also sold as a tablet, the tablet's. A strength
+ * is only ever accepted against this — never against one form alone — so a
+ * tablet strength is a real strength of the product rather than a typo.
+ */
+export function getAllLabelStrengths(name) {
+  const entry = getMedicationConfig(name);
+  if (!entry) return [];
+  const values = [
+    ...entry.allowedDoses,
+    ...(entry.forms || []).flatMap((form) => form.doses || []),
+  ].map((d) => Number(d.value));
+  return [...new Set(values)].sort((a, b) => a - b);
+}
+
 /** The unit for this medication's doses (falls back to mg). */
 export function getDoseUnit(name) {
   return getAllowedDoses(name)[0]?.unit || "mg";
@@ -715,7 +762,7 @@ export function validateDosePair(name, dose) {
       severity: entry.verified ? "none" : "warn",
     };
   }
-  const listed = entry.allowedDoses.some((d) => Math.abs(d.value - value) < 1e-9);
+  const listed = getAllLabelStrengths(name).some((v) => Math.abs(v - value) < 1e-9);
   if (listed) return { valid: true, unverified: false, message: "", severity: "none" };
   return {
     valid: false,

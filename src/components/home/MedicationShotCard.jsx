@@ -2,8 +2,9 @@ import React from "react";
 import { Syringe } from "lucide-react";
 import { parseShotDate, toDayKey, todayKey, calendarDaysBetween } from "@/lib/dateUtils";
 import {
-  getMissedDoseWindowDays, getMissedDoseLabelQuote, getMedicationLabelSource, isOralMedication,
+  getMissedDoseWindowDays, getMissedDoseLabelQuote, getMedicationLabelSource,
 } from "@/lib/medicationConfig";
+import { logWords } from "@/lib/medicationForm";
 import { evaluateDoseSchedule, MISSED_STATE } from "@/lib/missedDose";
 import { shotDateFromKey } from "@/lib/repeatSchedule";
 import DoseBadge from "@/components/DoseBadge";
@@ -22,7 +23,7 @@ export default function MedicationShotCard({ summary, contact, contactHref, stop
   // for matching, sorting and exports.
   const brand = name;
   // A product taken by mouth has doses, never shots.
-  const oral = isOralMedication(name, medication.route);
+  const words = logWords(name, { route: medication.route || lastShot?.route });
   const windowDays = getMissedDoseWindowDays(name);
   const evaluation = evaluateDoseSchedule({ lastShot, intervalDays, windowDays });
 
@@ -39,11 +40,11 @@ export default function MedicationShotCard({ summary, contact, contactHref, stop
   if (!lastShot && !dueKey) {
     return (
       <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 card-line mx-4 mb-4">
-        <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-2">Next Shot · {brand}</p>
+        <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-2">Next {words.One} · {brand}</p>
         <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-3 flex items-start gap-2">
           <Syringe size={18} className="text-indigo-500 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-indigo-700 dark:text-indigo-300">
-            No {oral ? "doses" : "shots"} recorded yet for {brand}.
+            No {words.many} recorded yet for {brand}.
           </p>
         </div>
       </div>
@@ -87,7 +88,7 @@ export default function MedicationShotCard({ summary, contact, contactHref, stop
     <>
       <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 card-line mx-4 mb-4">
         {/* A date already gone is never labelled as the upcoming shot. */}
-        <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-1">{isLate ? "Scheduled dose" : "Next Shot"} · {brand}</p>
+        <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-1">{isLate ? `Scheduled ${words.one}` : `Next ${words.One}`} · {brand}</p>
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0]">{dueKey ? shotDateFromKey(dueKey) : "—"}</h3>
@@ -103,7 +104,7 @@ export default function MedicationShotCard({ summary, contact, contactHref, stop
                 </div>
               )}
               <div>
-                <p className="text-xs text-gray-400 dark:text-[#9A9DAE]">Total shots</p>
+                <p className="text-xs text-gray-400 dark:text-[#9A9DAE]">Total {words.many}</p>
                 <p className="text-sm font-semibold text-gray-700 dark:text-[#E8E9F0]">{totalShots}</p>
               </div>
             </div>

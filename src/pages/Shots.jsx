@@ -11,6 +11,8 @@ import { useAppState } from "@/lib/AppState";
 import { addDaysToShotDate, daysAgoLabel, daysUntilShotDate, formatDayKeyShort } from "@/lib/dateUtils";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import { effectiveDaysBetween } from "@/lib/medicationConfig";
+import { logWords } from "@/lib/medicationForm";
+import { isActiveMedication } from "@/lib/medicationLink";
 import { calcAdherence } from "@/lib/adherence";
 
 export default function Shots() {
@@ -32,6 +34,14 @@ export default function Shots() {
   // inside the window, which ends on the day the medication was marked stopped.
   const lastMed = last?.medication;
   const lastRegimen = medications.find((m) => m.medication_name === lastMed) || null;
+  // The screen speaks of doses for a product taken by mouth and of shots for an
+  // injected one, following the medication in hand (src/lib/medicationForm.js).
+  const focusMed = medications.find(isActiveMedication) || lastRegimen;
+  const words = logWords(focusMed?.medication_name || lastMed, {
+    route: focusMed?.route || last?.route || "",
+    shots,
+  });
+  const addLabel = words.one === "dose" ? "Log dose" : "Add shot";
   const adherence = lastMed
     ? calcAdherence(shots, lastMed, 90, {
         startDate: lastRegimen?.start_date || "",
@@ -52,7 +62,7 @@ export default function Shots() {
   return (
     <PageContainer bottomInset="fab">
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Shots</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{words.Many}</h1>
         <div className="flex items-center gap-3">
           <button onClick={() => navigate("/report")}><FileText size={22} className="text-gray-500" /></button>
           <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600" /></Link>
@@ -67,7 +77,7 @@ export default function Shots() {
               <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center flex-shrink-0">
                 <Syringe size={20} strokeWidth={2} className="text-indigo-600 dark:text-indigo-400" />
               </div>
-              <span className="text-xs text-gray-400 dark:text-gray-500">Total Shots</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">Total {words.many}</span>
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{shots.length}</p>
           </div>
@@ -83,14 +93,14 @@ export default function Shots() {
                 <DoseBadge medication={last.medication} dose={last.dose} unit={last.dose_unit || "mg"} className="text-base px-2 py-0.5" />
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{daysAgoLabel(last.date)}</p>
               </>
-            ) : <p className="text-sm text-gray-400 dark:text-gray-500">No shots yet</p>}
+            ) : <p className="text-sm text-gray-400 dark:text-gray-500">No {words.many} yet</p>}
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-1.5 mb-1">
               <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center flex-shrink-0">
                 <CalendarCheck size={20} strokeWidth={2} className="text-teal-600 dark:text-teal-400" />
               </div>
-              <span className="text-xs text-gray-400 dark:text-gray-500">{nextOverdue ? "Dose was due" : "Next Shot"}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">{nextOverdue ? `${words.One} was due` : `Next ${words.One}`}</span>
             </div>
             {nextDate ? (
               <>
@@ -123,7 +133,7 @@ export default function Shots() {
           ) : shots.length === 0 ? (
             <div className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center text-gray-400 dark:text-[#9A9DAE] border border-gray-100 dark:border-gray-800">
               <Syringe size={32} className="mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No shots logged yet. Tap Add Shot to get started.</p>
+              <p className="text-sm">No {words.many} logged yet. Tap {addLabel} to get started.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -138,8 +148,8 @@ export default function Shots() {
                     <Crown size={18} className="text-indigo-600" />
                   </div>
                   <div className="text-left">
-                    <p className="font-semibold text-gray-900 dark:text-white text-sm">{hiddenCount} more shots in your history</p>
-                    <p className="text-xs text-gray-400">Unlock with Levli Premium to view your complete shot history.</p>
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm">{hiddenCount} more {words.many} in your history</p>
+                    <p className="text-xs text-gray-400">Unlock with Levli Premium to view your complete {words.one} history.</p>
                   </div>
                 </button>
               )}
@@ -150,7 +160,7 @@ export default function Shots() {
 
       <AppFooterDisclaimer />
 
-      <Fab onClick={openNew} label="Add Shot" />
+      <Fab onClick={openNew} label={addLabel} />
 
       <AddShotModal open={showShot} onClose={() => { setShowShot(false); setEditingShot(null); }} editingShot={editingShot} />
     </PageContainer>

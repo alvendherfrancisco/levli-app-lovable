@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { PauseCircle } from "lucide-react";
 import { plainBrandName } from "@/lib/medicationConfig";
+import { logWords } from "@/lib/medicationForm";
 
 /**
  * A medication that is not running: paused, stopped or archived. It carries no
@@ -10,6 +11,8 @@ import { plainBrandName } from "@/lib/medicationConfig";
  */
 export default function MedicationStatusNote({ medication, totalShots = 0 }) {
   const brand = plainBrandName(medication.medication_name);
+  // A tablet's logs are doses, an injection's are shots.
+  const words = logWords(medication.medication_name, { route: medication.route });
   const status = medication.status;
   const heading = status === "paused" ? "Medication paused"
     : status === "archived" ? "Medication archived"
@@ -19,7 +22,7 @@ export default function MedicationStatusNote({ medication, totalShots = 0 }) {
   if (status === "paused") {
     line = `You paused ${brand}. Its schedule is on hold.`;
   } else if (status === "archived") {
-    line = `${brand} is archived, so it is off your schedule. Its ${totalShots} shot log${totalShots === 1 ? "" : "s"} are kept.`;
+    line = `${brand} is archived, so it is off your schedule. Its ${totalShots} ${words.one} log${totalShots === 1 ? "" : "s"} are kept.`;
   } else {
     line = `You marked ${brand} as stopped${medication.discontinued_date ? ` on ${medication.discontinued_date}` : ""}. Its schedule is paused.`;
   }

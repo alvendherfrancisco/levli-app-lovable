@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Syringe } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
-import { plainBrandName, isOralMedication } from "@/lib/medicationConfig";
+import { plainBrandName } from "@/lib/medicationConfig";
+import { logWords } from "@/lib/medicationForm";
 import { medicationSummaries, isActiveMedication } from "@/lib/medicationLink";
 import MedicationShotCard from "@/components/home/MedicationShotCard";
 import MedicationStatusNote from "@/components/home/MedicationStatusNote";
@@ -45,15 +46,15 @@ export default function NextShotCard({ onLogPastShot }) {
     // mouth — "shot" only ever means an injection.
     const known = running[0]?.medication || halted[0]?.medication || medications[0] || null;
     const name = known?.medication_name || profile?.default_medication || "";
-    const oral = isOralMedication(name, known?.route);
+    const words = logWords(name, { route: known?.route });
 
     return (
       <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 card-line mx-4 mb-4">
-        <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-2">Next Shot</p>
+        <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-2">Next {words.One}</p>
         <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-3 flex items-start gap-2">
           <Syringe size={18} className="text-indigo-500 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-indigo-700 dark:text-indigo-300">
-            No {oral ? "doses" : "shots"} recorded yet{name ? ` for ${name}` : ""}.
+            No {words.many} recorded yet{name ? ` for ${name}` : ""}.
           </p>
         </div>
       </div>

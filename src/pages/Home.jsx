@@ -12,7 +12,7 @@ import AddShotModal from "@/components/modals/AddShotModal";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import { useAppState } from "@/lib/AppState";
 import { toDayKey, todayKey } from "@/lib/dateUtils";
-import { isOralMedication } from "@/lib/medicationConfig";
+import { logsAsDose } from "@/lib/medicationForm";
 import { isActiveMedication } from "@/lib/medicationLink";
 import LockedFeatureCard from "@/components/LockedFeatureCard";
 import UnitCheckPrompt from "@/components/home/UnitCheckPrompt";
@@ -27,16 +27,17 @@ export default function Home() {
   const [shotPreset, setShotPreset] = useState(null);
   const [showSideEffects, setShowSideEffects] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const { getSideEffects, adverseEventsByDay, medications, profile } = useAppState();
+  const { getSideEffects, adverseEventsByDay, medications, profile, shots } = useAppState();
   const { isPremium } = useSubscription();
   const dk = toDayKey(selectedDate);
   // The action, named for the product in hand: a dose is taken, a shot is given.
-  // The medication's own route is read first and the account's default settles it
-  // — the same reading the Next Shot card uses below.
+  // The medication's form decides it (see src/lib/medicationForm.js), and the
+  // account's default settles it when nothing is saved yet — the same reading the
+  // Next shot card uses below.
   const currentMedication = medications.find(isActiveMedication) || medications[0] || null;
-  const actionLabel = isOralMedication(
+  const actionLabel = logsAsDose(
     currentMedication?.medication_name || profile?.default_medication,
-    currentMedication?.route
+    { route: currentMedication?.route, shots }
   ) ? "Log dose" : "Add shot";
   // Nothing is logged ahead of today, so the button belongs to today and to the
   // days already past.

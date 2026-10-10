@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, ChevronDown, Check, AlertTriangle } from "lucide-react";
 import CustomMedicationFields from "@/components/modals/CustomMedicationFields";
-import ShotMedicationPicker from "@/components/modals/ShotMedicationPicker";
+import MedicationPickerSheet from "@/components/modals/MedicationPickerSheet";
 import {
-  getIntervalDays, getMedicationConfig, isFreeDoseMedication, isOralMedication,
-  medicationForms, validateDosePair,
+  CUSTOM_MEDICATION_NAME,
+  getIntervalDays, getMedicationConfig, isFreeDoseMedication, validateDosePair,
 } from "@/lib/medicationConfig";
+import {
+  FORM_INJECTION, FORM_PILL, ORAL_ROUTES,
+  formForRoute, formLabel, formRoute, medicationFormChoice,
+} from "@/lib/medicationForm";
 import { regimenFromShot, saveShotWithMedication } from "@/lib/shotMedication";
-import { pickerMedications } from "@/lib/medicationLink";
 import { useAppState } from "@/lib/AppState";
 import { DRUG_CLASS, isInvestigational, getDoseMax, getMolecularClass, isCompoundedGeneric } from "@/lib/medicationData";
 import { getShotDeviceOptions, getDeliveryMethodLabel, RETIRED_DELIVERY_METHODS } from "@/lib/deliveryMethods";
@@ -20,26 +23,21 @@ import {
   activeRegimensFor, getDoseDefault, getSmartShotDefaults,
 } from "@/lib/shotDefaults";
 import { addDaysToKey } from "@/lib/repeatSchedule";
-import ShotRouteDeviceFields from "@/components/modals/ShotRouteDeviceFields";
-import RepeatOptionsField from "@/components/modals/RepeatOptionsField";
 import DoseChips from "@/components/modals/DoseChips";
 import { chipsForMedication, withCustomDose } from "@/lib/doseOptions";
 import { isAboveZero } from "@/lib/formValidity";
 import ShotSuccessPanel from "@/components/modals/ShotSuccessPanel";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import OptionChips from "@/components/OptionChips";
-import DateInput from "@/components/DateInput";
 import SaveDeleteFooter from "@/components/SaveDeleteFooter";
-import ClearFieldButton from "@/components/ClearFieldButton";
 import SheetField from "@/components/modals/shot/SheetField";
 import SheetPickerRow from "@/components/modals/shot/SheetPickerRow";
-import SheetSelect from "@/components/modals/shot/SheetSelect";
 import SheetDoseField from "@/components/modals/shot/SheetDoseField";
 import ShotDateTimeFields from "@/components/modals/shot/ShotDateTimeFields";
+import ShotDetailsSection from "@/components/modals/shot/ShotDetailsSection";
 import {
-  SHEET_CHIP, SHEET_CHIP_OFF, SHEET_CHIP_ON, SHEET_DATE_FIELD, SHEET_DIVIDER, SHEET_FIELD,
-  SHEET_HINT, SHEET_LABEL, SHEET_LABEL_TEXT, SHEET_TEXTAREA, siteLabel,
+  SHEET_CHIP, SHEET_CHIP_OFF, SHEET_CHIP_ON, SHEET_DIVIDER,
+  SHEET_HINT, SHEET_LABEL, SHEET_LABEL_TEXT, siteLabel,
 } from "@/components/modals/shot/sheetUi";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
@@ -112,6 +110,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const [customName, setCustomName] = useState("");
   const [customGeneric, setCustomGeneric] = useState("");
   const [medicationId, setMedicationId] = useState("");
+  // The form being logged: an injection, a pill, or the user's own route. Empty
+  // until the product in hand settles it (see src/lib/medicationForm.js).
+  const [form, setForm] = useState("");
   const [dose, setDose] = useState("2.50");
   const [doseUnit, setDoseUnit] = useState("mg");
   const [concentration, setConcentration] = useState("");
@@ -169,25 +170,32 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // A catalogue product — or one of the user's own records — is logged from its
   // label strengths; only an explicit "Other / custom" entry is typed free-hand.
   const isCustomProduct = customChosen;
-  // The picker offers the user's own active medications — plus this log's own
-  // medication, so an old entry stays editable after it was paused.
-  const pickerMeds = pickerMedications(medications, { medication_name: medication });
   // Only once-weekly products can use the weekly repeat; a daily product cannot.
   const isWeeklyMedication = getIntervalDays(medication) === 7;
   const caps = getCapabilityProfile(medication);
   const capabilityWarning = getCapabilityWarning(medication);
-  const activeRoute = route || getDefaultRoute(medication);
+  // How this product is logged, from the one shared table in
+  // src/lib/medicationForm.js: a product sold in more than one form offers the
+  // choice here, one sold in a single form sets it silently, and a product the
+  // app knows nothing about leaves it to the route on its own record.
+  const formChoice = medicationFormChoice(
+    isCustomProduct ? CUSTOM_MEDICATION_NAME : medication,
+    { custom: isCustomProduct, shots },
+  );
+  const offeredForms = formChoice.options;
+  const activeForm = form || formChoice.default;
+  const activeRoute = route || formRoute(activeForm) || getDefaultRoute(medication);
   // Compounded / generic products take a free-text concentration.
   const isCompounded = isCompoundedGeneric(medication);
   // A product with no strengths to choose from (a compounded or research
   // product) is logged by typing the dose with its unit, never from a chip.
   const freeDose = !isCustomProduct && isFreeDoseMedication(medication);
-  // A product sold in more than one form (a pen and a tablet) offers the choice
-  // here, because it decides which fields follow and the words on the button.
-  const formChoices = isCustomProduct ? [] : medicationForms(medication);
-  const isInjectable = !isCustomProduct && INJECTABLE_ROUTES.includes(activeRoute);
-  // The action is named for the product in hand: a dose is taken, a shot is given.
-  const isOral = isOralMedication(medication, activeRoute);
+  // An injection places a site; a tablet places none.
+  const isInjectable = INJECTABLE_ROUTES.includes(activeRoute);
+  // The action is named for the form in hand: a dose is taken, a shot is given.
+  const isShot = activeForm ? activeForm === FORM_INJECTION : INJECTABLE_ROUTES.includes(activeRoute);
+  // A tablet has no injection to place, so its route and device are not asked for.
+  const tabletForm = activeForm ? activeForm === FORM_PILL : ORAL_ROUTES.includes(activeRoute);
   const siteOptions = activeRoute === "intramuscular" ? imSites : activeRoute === "intradermal" ? idSites : scSites;
   const isReconstituted = activeRoute === "reconstituted_vial" || caps?.supports_reconstitution;
 
@@ -202,10 +210,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // always shows the form that is actually being logged.
   const routeOptions = (() => {
     const base = routeChoices.length ? routeChoices : ROUTE_CHOICES;
-    const extra = formChoices
-      .filter((form) => !base.some((o) => o.value === form.route))
-      .map((form) => ({ value: form.route, label: form.label }));
-    return [...base, ...extra];
+    const formR = formRoute(activeForm);
+    if (!formR || base.some((o) => o.value === formR)) return base;
+    return [...base, { value: formR, label: formLabel(activeForm) }];
   })();
   // A device already on a record stays selectable even if it is no longer
   // offered, so an old log is never silently rewritten.
@@ -228,12 +235,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // Only ask when two active regimens exist for the SAME medication.
   const needsRegimenChoice = regimensForMed.length > 1;
 
-  // The full selector is shown when there is a choice to make — more than one of
-  // the user's own medications, or nothing chosen yet. With a single medication
-  // it shows that one with a "Change" link.
-  const showMedSelector = pickerMeds.length > 1 || !medication;
   // What the medication field shows: the chosen product, the typed custom name,
-  // or a plain prompt before anything is chosen.
+  // or a plain prompt before anything is chosen. The row always opens the picker,
+  // whether the user has one medication saved or none.
   const medLabel = isCustomProduct ? (customName.trim() || "Others") : medication;
 
   // ── Gentle, non-blocking safety readouts ──────────────────────────────────
@@ -249,9 +253,12 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     (previousShot.dose_unit || "mg") === doseUnit &&
     Number(previousShot.dose) !== doseNum
   );
+  // The chips follow the medication and the form in hand: a pen strength is never
+  // offered as a tablet's dose.
   const doseChips = chipsForMedication(
     ownMed || { medication_name: medication },
     profile?.custom_doses || [],
+    activeForm || undefined,
   );
   const ingredientDup = editingShot ? { duplicate: false } : detectDuplicateActiveIngredient(medication, shots);
 
@@ -292,6 +299,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       const editMedication = editingShot.medication || defaultMed;
       const editRoute = editingShot.route || getDefaultRoute(editMedication);
       setRoute(editRoute);
+      // The form the entry was logged as, read back from its own route.
+      setForm(formForRoute(editRoute) || "");
       setDeviceType(editingShot.device_type || "");
       setNotes(editingShot.notes || "");
       setPain(editingShot.pain ?? null);
@@ -329,6 +338,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       setDoseUnit(smart.doseUnit);
       setSite(smart.site);
       setRoute(smart.route);
+      setForm(smart.form || "");
       setDeviceType(smart.deviceType);
       if (initialValues) {
         setMedication(initialValues.medication || smart.medication);
@@ -337,6 +347,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
         setDoseUnit(initialValues.dose_unit || smart.doseUnit);
         setConcentration(initialValues.concentration || "");
         setRoute(initialValues.route || smart.route);
+        setForm(formForRoute(initialValues.route || smart.route) || smart.form || "");
         setDeviceType(initialValues.device_type || smart.deviceType);
         setNotes(initialValues.notes || "");
         setDate(initialValues.date || toInputDate(n));
@@ -405,19 +416,27 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     // The medication is required: tapping the one already chosen keeps it as it
     // is (and only closes the list) rather than resetting the dose.
     if (name === medication) { setShowMedDropdown(false); return; }
+    // How the new product is logged decides its route and which strengths are
+    // offered. The date, the time and the notes already typed are left as they
+    // are — only the dose follows the product, and it is cleared when it is not
+    // one of the new product's own strengths.
+    const nextForm = medicationFormChoice(name, { shots }).default;
+    const nextRoute = formRoute(nextForm) || picked.route || getDefaultRoute(name);
     const { dose: nextDose, unit } = getDoseDefault({
       medication: name, medications, shots, legacyCustomDoses: profile?.custom_doses || [],
+      form: nextForm || undefined,
     });
-    const nextRoute = picked.route || getDefaultRoute(name);
     setMedication(name);
     setCustomName(name);
     setCustomChosen(false);
     setMedicationId(picked.id || "");
+    setForm(nextForm);
     setDose(nextDose === "" ? "" : String(nextDose));
     setDoseUnit(unit || picked.unit || "mg");
     setRoute(nextRoute);
     if (RETIRED_DELIVERY_METHODS.includes(deviceType)) setDeviceType("");
-    else if (isCompoundedGeneric(name) && !INJECTABLE_ROUTES.includes(nextRoute)) setDeviceType("");
+    else if (!INJECTABLE_ROUTES.includes(nextRoute)) setDeviceType("");
+    else if (isCompoundedGeneric(name)) setDeviceType("");
     setRepeatOn(!!scheduleFor(name));
     setShowMedDropdown(false);
   };
@@ -431,9 +450,32 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setMedication(name);
     setCustomName(name);
     setMedicationId("");
+    // Nothing is known about a product the user names, so the Form choice is
+    // shown and starts on an injection — the form it is most often given in.
+    setForm(FORM_INJECTION);
+    setRoute(formRoute(FORM_INJECTION));
+    setDeviceType("");
     setDose("");
     setDoseUnit("mg");
     setShowMedDropdown(false);
+  };
+
+  // Choosing a form re-applies that form's own route and strengths: the dose is
+  // cleared when it is not one of the new form's chips, so a pen strength can
+  // never be saved as a tablet's dose. The date, the time and the notes already
+  // typed are kept exactly as they are.
+  const chooseForm = (next) => {
+    if (next === activeForm) return;
+    sound.tap();
+    setForm(next);
+    setRoute(formRoute(next) || "");
+    if (next !== FORM_INJECTION) setDeviceType("");
+    const chips = chipsForMedication(
+      ownMed || { medication_name: medication },
+      profile?.custom_doses || [],
+      next,
+    );
+    if (!chips.includes(parseFloat(dose))) setDose("");
   };
 
   // Creates, updates, or ends the weekly repeat for the dose being logged.
@@ -523,7 +565,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     }
     if (!finalMedication) {
       sound.warning();
-      setError("Choose the medication you injected.");
+      setError("Choose the medication first.");
       return;
     }
     if (isNaN(doseNum) || doseNum <= 0) {
@@ -660,13 +702,18 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     if (!editingShot) return;
     const removed = editingShot;
     await deleteShot(removed.id);
-    toast.deleted("Shot deleted", { actionLabel: "Undo", actionTtlMs: 5000, onAction: () => restoreShot(removed) });
+    toast.deleted(isShot ? "Shot deleted" : "Dose deleted", {
+      actionLabel: "Undo", actionTtlMs: 5000, onAction: () => restoreShot(removed),
+    });
     onClose();
   };
 
-  // What the sheet calls what it is logging, in the product's own words.
-  const title = editingShot ? (isOral ? "Edit dose" : "Edit shot") : (isOral ? "Log dose" : "Log shot");
-  const saveLabel = editingShot ? (isOral ? "Update dose" : "Update shot") : (isOral ? "Save dose" : "Save shot");
+  // What the sheet calls what it is logging, in the form's own words: a dose is
+  // taken, a shot is given.
+  const word = isShot ? "shot" : "dose";
+  const Word = isShot ? "Shot" : "Dose";
+  const title = editingShot ? `Edit ${word}` : `Log ${word}`;
+  const saveLabel = editingShot ? `Update ${word}` : `Save ${word}`;
 
   // Opening "More details" brings the fields it has just added into view: the
   // sheet's own scroller is moved, so the page behind the sheet never moves.
@@ -737,7 +784,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
 
           {saved ? (
             <ShotSuccessPanel
-              title={editingShot ? "Shot updated" : "Shot logged"}
+              title={editingShot ? `${Word} updated` : `${Word} logged`}
               detail={`${dose} ${doseUnitLabel(doseUnit)} · ${medication}`}
               onReportSideEffect={() => setReporting(true)}
             />
@@ -752,32 +799,30 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
               )}
 
               <div className="px-5 pb-6 space-y-6">
-                {/* Medication: one row. With a single medication in hand the row
-                    is plain text; with a choice to make the whole row opens the
-                    picker. */}
+                {/* Medication: one row, always tappable — however many products
+                    the user has saved — with the chevron that says so. */}
                 <SheetField label="Medication">
                   {/* The row itself changes nothing, so a tap on it does not mark
                       the log as edited. */}
                   <div data-skip-dirty>
                     <SheetPickerRow
                       value={medLabel}
-                      tappable={showMedSelector}
-                      onClick={() => setShowMedDropdown((v) => !v)}
+                      tappable
+                      onClick={() => setShowMedDropdown(true)}
                       ariaExpanded={showMedDropdown}
-                      ariaLabel="Medication"
+                      ariaLabel="Choose medication"
                     />
                   </div>
-                  {/* The list opens in the form's own flow, so it scrolls inside
-                      its own capped height and never covers the dose chips. */}
-                  {showMedDropdown && (
-                    <ShotMedicationPicker
-                      medications={medications}
-                      current={medication}
-                      isCustom={isCustomProduct}
-                      onChoose={selectMedication}
-                      onChooseCustom={chooseCustom}
-                    />
-                  )}
+                  {/* Choosing one opens a sheet of its own, over this one. */}
+                  <MedicationPickerSheet
+                    open={showMedDropdown}
+                    onClose={() => setShowMedDropdown(false)}
+                    medications={medications}
+                    current={medication}
+                    isCustom={isCustomProduct}
+                    onChoose={selectMedication}
+                    onChooseCustom={chooseCustom}
+                  />
                   {/* A compounded or research product carries the one note that
                       belongs with its name, in the sheet's own small grey. */}
                   {freeDose && (
@@ -808,20 +853,22 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                   )}
                 </SheetField>
 
-                {/* A product sold in two forms: which one is being logged. */}
-                {formChoices.length > 1 && (
+                {/* A product sold in two forms — or one the user named, about
+                    which nothing is known: which form is being logged. A product
+                    sold in a single form sets it silently and asks nothing. */}
+                {offeredForms.length > 0 && (
                   <SheetField label="Form">
                     <div className="flex flex-wrap gap-2">
-                      {formChoices.map((form) => (
+                      {offeredForms.map((f) => (
                         <button
-                          key={form.id}
+                          key={f}
                           type="button"
-                          onClick={() => { sound.tap(); setRoute(form.route); }}
-                          aria-pressed={activeRoute === form.route}
-                          className={`${SHEET_CHIP} ${activeRoute === form.route ? SHEET_CHIP_ON : SHEET_CHIP_OFF}`}
+                          onClick={() => chooseForm(f)}
+                          aria-pressed={activeForm === f}
+                          className={`${SHEET_CHIP} ${activeForm === f ? SHEET_CHIP_ON : SHEET_CHIP_OFF}`}
                         >
-                          {activeRoute === form.route && <Check size={15} strokeWidth={3} aria-hidden="true" />}
-                          {form.label}
+                          {activeForm === f && <Check size={15} strokeWidth={3} aria-hidden="true" />}
+                          {formLabel(f)}
                         </button>
                       ))}
                     </div>
@@ -838,7 +885,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                       dose is offered until a medication is chosen. */}
                   {!medication && !isCustomProduct ? (
                     <p className="text-sm text-gray-500 dark:text-[#9A9DAE]">
-                      Choose the medication you injected to log its dose.
+                      {isShot
+                        ? "Choose the medication you injected to log your shot."
+                        : "Choose the medication to log your dose."}
                     </p>
                   ) : isCustomProduct ? (
                     <CustomMedicationFields
@@ -862,6 +911,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                             onChange={setDose}
                             unit={doseUnit}
                             onUnitChange={setDoseUnit}
+                            units={["mcg", "mg"]}
                           />
                         </SheetField>
                       ) : (
@@ -969,211 +1019,70 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                   </button>
 
                   {showDetails && (
-                    <div
-                      ref={detailsRef}
-                      className="mt-3 space-y-6 animate-in fade-in slide-in-from-top-1"
-                    >
-                      {/* Route and Device type — optional. Route arrives
-                          pre-filled from the medication, Device type is empty. */}
-                      <ShotRouteDeviceFields
-                        route={activeRoute}
-                        routeOptions={routeOptions}
-                        onRouteChange={setRoute}
-                        deviceType={deviceType}
-                        deviceOptions={deviceChoices}
-                        onDeviceChange={setDeviceType}
-                      />
-
-                      {/* Concentration: compounded / generic products only */}
-                      {isCompounded && (
-                        <SheetField label="Concentration">
-                          <input
-                            type="text" value={concentration} onChange={(e) => setConcentration(e.target.value)}
-                            placeholder="e.g. 2.5 mg/mL" className={SHEET_FIELD}
-                          />
-                          <p className={`${SHEET_HINT} mt-2`}>
-                            Compounded strengths vary by pharmacy. Enter what your vial says.
-                          </p>
-                        </SheetField>
-                      )}
-
-                      {/* Route-specific fields */}
-                      {activeRoute === "intravenous_infusion" && (
-                        <>
-                          <SheetField label="Infusion duration (minutes)">
-                            <input type="number" min="0" step="1" value={infusionDuration} onChange={(e) => setInfusionDuration(e.target.value)} className={SHEET_FIELD} />
-                          </SheetField>
-                          <SheetField label="Clinic or location">
-                            <input type="text" value={clinicLocation} onChange={(e) => setClinicLocation(e.target.value)} className={SHEET_FIELD} />
-                          </SheetField>
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" checked={premedication} onChange={(e) => setPremedication(e.target.checked)} className="w-5 h-5 accent-indigo-600" />
-                            <span className="text-sm text-gray-700 dark:text-gray-300">Premedication administered</span>
-                          </label>
-                        </>
-                      )}
-
-                      {activeRoute === "nasal" && (
-                        <>
-                          <SheetField label="Spray count">
-                            <input type="number" min="0" step="1" value={sprayCount} onChange={(e) => setSprayCount(e.target.value)} className={SHEET_FIELD} />
-                          </SheetField>
-                          <SheetSelect
-                            id="shot-nostril"
-                            label="Nostril"
-                            value={nostril}
-                            onChange={setNostril}
-                            options={[
-                              { value: "both", label: "Both" },
-                              { value: "left", label: "Left" },
-                              { value: "right", label: "Right" },
-                            ]}
-                          />
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" checked={priming} onChange={(e) => setPriming(e.target.checked)} className="w-5 h-5 accent-indigo-600" />
-                            <span className="text-sm text-gray-700 dark:text-gray-300">Device primed before use</span>
-                          </label>
-                        </>
-                      )}
-
-                      {(activeRoute === "oral_tablet" || activeRoute === "oral_capsule") && (
-                        <OptionChips
-                          label="Taken with food?"
-                          options={[
-                            { value: true, label: "Yes" },
-                            { value: false, label: "No" },
-                            { value: null, label: "Not recorded" },
-                          ]}
-                          value={takenWithFood}
-                          onChange={setTakenWithFood}
-                          labelClass={SHEET_LABEL_TEXT}
-                          chipClass="inline-flex min-h-[52px] flex-1 min-w-0 items-center justify-center gap-1.5 rounded-full px-3 text-center text-[15px]"
-                          selectedClass={SHEET_CHIP_ON}
-                          unselectedClass={SHEET_CHIP_OFF}
-                          wrapClass="flex gap-2"
-                        />
-                      )}
-
-                      {activeRoute === "transdermal" && (
-                        <>
-                          <SheetField label="Patch site">
-                            <input type="text" value={patchSite} onChange={(e) => setPatchSite(e.target.value)} placeholder="e.g. Abdomen, upper arm" className={SHEET_FIELD} />
-                          </SheetField>
-                          <SheetField label="Application date">
-                            <DateInput value={applicationDate} onChange={setApplicationDate} ariaLabel="Application date" fieldClass={SHEET_DATE_FIELD} />
-                          </SheetField>
-                        </>
-                      )}
-
-                      {(activeRoute === "topical_cream" || activeRoute === "topical_serum" || activeRoute === "topical_gel") && (
-                        <>
-                          <SheetField label="Body area">
-                            <input type="text" value={bodyArea} onChange={(e) => setBodyArea(e.target.value)} placeholder="e.g. Face, left cheek" className={SHEET_FIELD} />
-                          </SheetField>
-                          <SheetField label="Application notes">
-                            <textarea value={applicationNotes} onChange={(e) => setApplicationNotes(e.target.value)} className={SHEET_TEXTAREA} />
-                          </SheetField>
-                        </>
-                      )}
-
-                      {activeRoute === "implant" && (
-                        <>
-                          <SheetField label="Clinic or location">
-                            <input type="text" value={clinicLocation} onChange={(e) => setClinicLocation(e.target.value)} className={SHEET_FIELD} />
-                          </SheetField>
-                          <SheetField label="Insertion date">
-                            <DateInput value={insertionDate} onChange={setInsertionDate} ariaLabel="Insertion date" fieldClass={SHEET_DATE_FIELD} />
-                          </SheetField>
-                        </>
-                      )}
-
-                      {activeRoute === "pump_infusion" && (
-                        <>
-                          <SheetField label="Pump rate">
-                            <input type="number" min="0" step="0.1" value={pumpRate} onChange={(e) => setPumpRate(e.target.value)} className={SHEET_FIELD} />
-                          </SheetField>
-                          <SheetField label="Site change date">
-                            <DateInput value={siteChangeDate} onChange={setSiteChangeDate} ariaLabel="Site change date" fieldClass={SHEET_DATE_FIELD} />
-                          </SheetField>
-                        </>
-                      )}
-
-                      {/* Reconstitution fields */}
-                      {isReconstituted && (
-                        <>
-                          <p className={SHEET_LABEL_TEXT}>Reconstitution</p>
-                          <SheetField label="Reconstitution date">
-                            <DateInput value={reconstitutionDate} onChange={setReconstitutionDate} ariaLabel="Reconstitution date" fieldClass={SHEET_DATE_FIELD} />
-                          </SheetField>
-                          <SheetField label="In-use expiry date">
-                            <DateInput value={inUseExpiry} onChange={setInUseExpiry} ariaLabel="In-use expiry date" fieldClass={SHEET_DATE_FIELD} />
-                          </SheetField>
-                        </>
-                      )}
-
-                      {/* Repeat this dose — weekly repeat schedule. A daily product
-                          has no weekly repeat, so the option is not offered. */}
-                      {!editingShot && !isWeeklyMedication && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500">
-                          Repeats run on a weekly cycle, so they are not offered for a daily medication. Log each daily dose from the dose card.
-                        </p>
-                      )}
-                      {!editingShot && isWeeklyMedication && (
-                        <RepeatOptionsField
-                          enabled={repeatOn}
-                          onToggle={setRepeatOn}
-                          mode={repeatMode}
-                          onModeChange={setRepeatMode}
-                          weeks={repeatWeeks}
-                          onWeeksChange={setRepeatWeeks}
-                          schedule={scheduleFor(medication)}
-                          dayKey={date}
-                          time={time}
-                          medication={medication}
-                          dose={dose}
-                          doseUnit={doseUnit}
-                        />
-                      )}
-
-                      {/* Pain level: optional, and empty until it is moved */}
-                      <div>
-                        <div className="flex items-baseline justify-between gap-2 mb-2">
-                          <label htmlFor="shot-pain" className={SHEET_LABEL_TEXT}>Pain level</label>
-                          <span className="flex items-center gap-1">
-                            <span className={pain == null
-                              ? SHEET_HINT
-                              : "text-sm font-medium text-indigo-600 dark:text-indigo-400"}>
-                              {pain == null ? "Not set" : `${pain} of 10`}
-                            </span>
-                            <ClearFieldButton show={pain != null} onClear={() => setPain(null)} />
-                          </span>
-                        </div>
-                        <input
-                          id="shot-pain"
-                          type="range" min="0" max="10"
-                          value={pain ?? 0}
-                          onChange={(e) => setPain(Number(e.target.value))}
-                          className="pain-slider w-full"
-                          style={{ "--pain-fill": `${Math.round(((pain ?? 0) / 10) * 100)}%` }}
-                          aria-label="Pain level"
-                          aria-valuetext={pain == null ? "Not set" : `${pain} out of 10`}
-                        />
-                        <div className="mt-1 flex justify-between">
-                          <span className={SHEET_HINT}>No pain</span>
-                          <span className={SHEET_HINT}>Severe</span>
-                        </div>
-                      </div>
-
-                      {/* Notes */}
-                      <SheetField label="Notes">
-                        <textarea
-                          value={notes}
-                          onChange={(e) => setNotes(e.target.value)}
-                          placeholder="Add a note"
-                          className={SHEET_TEXTAREA}
-                        />
-                      </SheetField>
-                    </div>
+                    <ShotDetailsSection
+                      innerRef={detailsRef}
+                      tabletForm={tabletForm}
+                      activeRoute={activeRoute}
+                      routeOptions={routeOptions}
+                      onRouteChange={setRoute}
+                      deviceType={deviceType}
+                      deviceOptions={deviceChoices}
+                      onDeviceChange={setDeviceType}
+                      isCompounded={isCompounded}
+                      concentration={concentration}
+                      setConcentration={setConcentration}
+                      infusionDuration={infusionDuration}
+                      setInfusionDuration={setInfusionDuration}
+                      clinicLocation={clinicLocation}
+                      setClinicLocation={setClinicLocation}
+                      premedication={premedication}
+                      setPremedication={setPremedication}
+                      sprayCount={sprayCount}
+                      setSprayCount={setSprayCount}
+                      nostril={nostril}
+                      setNostril={setNostril}
+                      priming={priming}
+                      setPriming={setPriming}
+                      takenWithFood={takenWithFood}
+                      setTakenWithFood={setTakenWithFood}
+                      patchSite={patchSite}
+                      setPatchSite={setPatchSite}
+                      applicationDate={applicationDate}
+                      setApplicationDate={setApplicationDate}
+                      bodyArea={bodyArea}
+                      setBodyArea={setBodyArea}
+                      applicationNotes={applicationNotes}
+                      setApplicationNotes={setApplicationNotes}
+                      insertionDate={insertionDate}
+                      setInsertionDate={setInsertionDate}
+                      pumpRate={pumpRate}
+                      setPumpRate={setPumpRate}
+                      siteChangeDate={siteChangeDate}
+                      setSiteChangeDate={setSiteChangeDate}
+                      reconstitutionDate={reconstitutionDate}
+                      setReconstitutionDate={setReconstitutionDate}
+                      inUseExpiry={inUseExpiry}
+                      setInUseExpiry={setInUseExpiry}
+                      isReconstituted={isReconstituted}
+                      editingShot={editingShot}
+                      isWeeklyMedication={isWeeklyMedication}
+                      repeatOn={repeatOn}
+                      setRepeatOn={setRepeatOn}
+                      repeatMode={repeatMode}
+                      setRepeatMode={setRepeatMode}
+                      repeatWeeks={repeatWeeks}
+                      setRepeatWeeks={setRepeatWeeks}
+                      schedule={scheduleFor(medication)}
+                      date={date}
+                      time={time}
+                      medication={medication}
+                      dose={dose}
+                      doseUnit={doseUnit}
+                      pain={pain}
+                      setPain={setPain}
+                      notes={notes}
+                      setNotes={setNotes}
+                    />
                   )}
                 </div>
               </div>
@@ -1189,7 +1098,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                     className="mx-5 mb-3 scroll-mb-[100px] rounded-xl border border-orange-200 dark:border-orange-500/20 bg-orange-50 dark:bg-orange-500/10 px-3 py-2 text-sm text-orange-700 dark:text-orange-300 animate-duplicate-glow outline-none"
                   >
                     <p className="font-semibold">Possible duplicate</p>
-                    <p className="mt-1">Your last {duplicatePrompt.medication} shot was {duplicatePrompt.label} ago. Is this a duplicate?</p>
+                    <p className="mt-1">Your last {duplicatePrompt.medication} {word} was {duplicatePrompt.label} ago. Is this a duplicate?</p>
                     <div className="flex gap-2 mt-2">
                       <button onClick={() => { confirmedDupRef.current = true; handleSave(); }} className="btn-pill btn-pill-sm bg-orange-600 text-white">Save anyway</button>
                       <button onClick={() => setDuplicatePrompt(null)} className="btn-pill btn-pill-sm btn-secondary">Cancel</button>
@@ -1225,8 +1134,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                 saveBusy={saving}
                 // Only an entry that is already saved has something to remove.
                 onDelete={editingShot ? handleDelete : undefined}
-                deleteTitle="Delete this shot?"
-                deleteAriaLabel="Delete shot"
+                deleteTitle={`Delete this ${word}?`}
+                deleteAriaLabel={`Delete ${word}`}
               />
             )}
           </div>
@@ -1235,7 +1144,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
 
       <ConfirmDialog
         open={confirmDiscard}
-        title="Discard this shot?"
+        title={`Discard this ${word}?`}
         message="This log has unsaved changes. Closing it now will lose them."
         tone="warning"
         icon={AlertTriangle}

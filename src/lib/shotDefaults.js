@@ -5,10 +5,13 @@
 import { getMedicationRoutes, isCompoundedGeneric } from "@/lib/medicationData";
 import { ROUTE_LABELS } from "@/lib/medicationCatalogue";
 import { chipsForMedication } from "@/lib/doseOptions";
+import { INJECTION_ROUTES, formRoute, medicationFormChoice } from "@/lib/medicationForm";
 import { evaluateDoseSchedule } from "@/lib/missedDose";
 import { parseShotDate, toDayKey } from "@/lib/dateUtils";
 
-export const INJECTABLE_ROUTES = ["subcutaneous", "intramuscular", "intradermal"];
+// The routes that count as an injection. The form module owns the list, so the
+// sheet's fields, its wording and its defaults all read one answer.
+export const INJECTABLE_ROUTES = INJECTION_ROUTES;
 
 // Strength lists and dose chips live in the one central config:
 // src/lib/doseOptions.js
@@ -84,13 +87,16 @@ export function activeRegimensFor(medications = [], medication) {
  * chip, otherwise nothing at all. A dose is never invented and never silently
  * adjusted — the chips are the only values offered.
  */
-export function getDoseDefault({ medication, medications = [], shots = [], legacyCustomDoses = [] }) {
+export function getDoseDefault({ medication, medications = [], shots = [], legacyCustomDoses = [], form }) {
   const regimen = activeRegimensFor(medications, medication)[0];
   const lastShot = shots.find((s) => s.medication === medication);
   const unit = regimen?.dose_unit || lastShot?.dose_unit || "mg";
+  // The chips follow the form in hand: a pen strength is never offered as a
+  // tablet's dose.
   const chips = chipsForMedication(
     { medication_name: medication, custom_doses: regimen?.custom_doses },
     legacyCustomDoses,
+    form,
   );
   const prescribed = regimen?.prescribed_dose != null && Number(regimen.prescribed_dose) > 0
     ? Number(regimen.prescribed_dose) : null;
@@ -142,10 +148,14 @@ export function getSmartShotDefaults({ medications = [], shots = [], profile, re
     || shots[0]?.medication
     || "";
   const regimens = activeRegimensFor(medications, medication);
+  // How the product is logged: a product sold as a pen and as a tablet opens on
+  // the form last used for it, and the strengths offered are that form's own.
+  const form = medicationFormChoice(medication, { shots }).default;
   const { dose, unit } = getDoseDefault({
     medication, medications, shots, legacyCustomDoses: profile?.custom_doses || [],
+    form: form || undefined,
   });
-  const route = regimens[0]?.route || getDefaultRoute(medication);
+  const route = formRoute(form) || regimens[0]?.route || getDefaultRoute(medication);
 
   let deviceType = "";
   if (isCompoundedGeneric(medication) && INJECTABLE_ROUTES.includes(route)) {
@@ -159,6 +169,7 @@ export function getSmartShotDefaults({ medications = [], shots = [], profile, re
     dose,
     doseUnit: unit,
     route,
+    form,
     deviceType,
     medicationId: regimens[0]?.id || "",
     site: recommendedSite,
