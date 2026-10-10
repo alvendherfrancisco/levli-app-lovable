@@ -88,8 +88,8 @@ export default function AddNutritionModal({ open, onClose, dayKey }) {
                 <input type="text" inputMode="decimal" value={values[f.key]} placeholder="0"
                   onChange={(e) => handleChange(f.key, e.target.value)}
                   onFocus={(e) => e.target.select()}
-                  className="flex-1 outline-none text-base bg-transparent dark:text-[#E8E9F0]" />
-                <span className="text-gray-400 text-sm ml-2">{f.unit}</span>
+                  className="flex-1 min-w-0 outline-none text-base bg-transparent dark:text-[#E8E9F0]" />
+                <span className="flex-shrink-0 whitespace-nowrap text-gray-400 text-sm ml-2">{f.unit}</span>
               </div>
               {errors[f.key] && <p className="text-xs text-red-500 mt-0.5">Please enter a valid number.</p>}
             </div>

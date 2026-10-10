@@ -14,6 +14,11 @@ function numericOnly(value) {
   return v;
 }
 
+// The Cancel every Update sheet uses — the app's secondary pill: a light gray
+// fill, a thin hairline and normal text, never red. Shared by the Exercise and
+// Weight sheets so both footers carry the same two buttons at the same size.
+const CANCEL_BTN = "btn-pill btn-pill-sm bg-gray-100 dark:bg-white/[0.07] text-gray-500 dark:text-[#9A9DAE] border border-gray-200 dark:border-white/[0.08]";
+
 // ── Shared dark-mode dialog shell ───────────────────────────────────────────
 function ModalShell({ onClose, children, bottom = false }) {
   return (
@@ -25,7 +30,7 @@ function ModalShell({ onClose, children, bottom = false }) {
 }
 
 // ── Exercise ─────────────────────────────────────────────────────────────────
-function ExerciseModal({ open, onClose, value, onSave, onDelete }) {
+function ExerciseModal({ open, onClose, value, onSave }) {
   const [val, setVal] = useState("");
   const [error, setError] = useState("");
   useEffect(() => { if (open) { setVal(value && value !== "0" ? String(value) : ""); setError(""); } }, [open, value]);
@@ -53,18 +58,18 @@ function ExerciseModal({ open, onClose, value, onSave, onDelete }) {
             onChange={(e) => { setVal(numericOnly(e.target.value).split(".")[0]); setError(""); }}
             onFocus={(e) => e.target.select()}
             placeholder="0"
-            className="flex-1 outline-none text-lg font-medium bg-transparent text-gray-900 dark:text-[#E8E9F0] placeholder-gray-300 dark:placeholder-[#9A9DAE]"
+            className="flex-1 min-w-0 outline-none text-lg font-medium bg-transparent text-gray-900 dark:text-[#E8E9F0] placeholder-gray-300 dark:placeholder-[#9A9DAE]"
             autoFocus
           />
-          <span className="text-gray-400 dark:text-[#9A9DAE] text-sm ml-2">minutes</span>
+          <span className="flex-shrink-0 whitespace-nowrap text-gray-400 dark:text-[#9A9DAE] text-sm ml-2">minutes</span>
         </div>
         {error && <p className="text-xs text-red-500 mb-4">{error}</p>}
         {!error && <div className="mb-5" />}
         <div className="flex items-center justify-end gap-4">
           <button
-            onClick={() => { onDelete(); onClose(); }}
-            className="btn-pill btn-pill-sm btn-danger">
-            Delete
+            onClick={onClose}
+            className={CANCEL_BTN}>
+            Cancel
           </button>
           <button
             onClick={handleSave}
@@ -218,17 +223,17 @@ function GenericMetricModal({ open, onClose, label, unit, value, placeholder, on
             onChange={(e) => { setVal(numericOnly(e.target.value)); setError(""); }}
             onFocus={(e) => e.target.select()}
             placeholder={placeholder || "0.0"}
-            className="flex-1 outline-none text-lg font-medium bg-transparent text-gray-900 dark:text-[#E8E9F0] placeholder-gray-300 dark:placeholder-[#9A9DAE]"
+            className="flex-1 min-w-0 outline-none text-lg font-medium bg-transparent text-gray-900 dark:text-[#E8E9F0] placeholder-gray-300 dark:placeholder-[#9A9DAE]"
             autoFocus
           />
-          <span className="text-gray-400 dark:text-[#9A9DAE] text-sm ml-2">{unit}</span>
+          <span className="flex-shrink-0 whitespace-nowrap text-gray-400 dark:text-[#9A9DAE] text-sm ml-2">{unit}</span>
         </div>
         {error && <p className="text-xs text-red-500 mb-4">{error}</p>}
         {!error && <div className="mb-5" />}
         <div className="flex items-center justify-end gap-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-500 dark:text-[#9A9DAE] bg-gray-100 dark:bg-white/[0.07]">
+            className={CANCEL_BTN}>
             Cancel
           </button>
           <button
@@ -245,7 +250,7 @@ function GenericMetricModal({ open, onClose, label, unit, value, placeholder, on
 
 export default function AddMetricModal({ open, onClose, label, unit, value, dayKey, placeholder, onSave, onDelete, validate }) {
   if (label === "Exercise") {
-    return <ExerciseModal open={open} onClose={onClose} value={value} onSave={onSave} onDelete={onDelete || (() => onSave("0"))} />;
+    return <ExerciseModal open={open} onClose={onClose} value={value} onSave={onSave} />;
   }
   if (label === "Progress") {
     return <ProgressModal open={open} onClose={onClose} value={value} dayKey={dayKey} onSave={onSave} onDelete={onDelete || (() => onSave("–"))} />;

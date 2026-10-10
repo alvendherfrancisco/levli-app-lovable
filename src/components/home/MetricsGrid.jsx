@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import MetricCard from "@/components/home/MetricCard";
+import EntryDeleteLink from "@/components/home/EntryDeleteLink";
 import IonIcon from "@/components/IonIcon";
 import { WeightFilledIcon } from "@/components/FilledIcons";
 import { useAppState } from "@/lib/AppState";
@@ -142,6 +143,17 @@ export default function MetricsGrid({ dayKey }) {
             <MetricCard key={m.label} {...m} highlighted={flash === m.label} />
           ))}
         </div>
+        {/* An entry can still be removed now the Update sheets carry no delete
+            action of their own: a text link under the day's entries that asks
+            before anything goes. */}
+        {Number(exercise) > 0 && (
+          <EntryDeleteLink
+            label="Delete exercise entry"
+            title="Delete this exercise entry?"
+            message="The entry is removed from this day. You can log it again at any time."
+            onDelete={async () => { await saveExercise(dk, "0"); toast.deleted("Exercise entry deleted"); }}
+          />
+        )}
       </div>
       <AddNutritionModal open={showNutrition} onClose={() => setShowNutrition(false)} dayKey={dk} />
       {metricModal && (
