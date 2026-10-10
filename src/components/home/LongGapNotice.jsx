@@ -20,14 +20,14 @@ export default function LongGapNotice({
       <div className="mt-3 space-y-2">
         <button
           onClick={onLogPastShot}
-          className="w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm flex items-center justify-center gap-2"
+          className="btn-pill btn-primary w-full"
         >
           <CalendarPlus size={16} /> Log a past shot
         </button>
         <button
           onClick={onStop}
           disabled={stopping}
-          className="w-full py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+          className="btn-pill btn-secondary w-full"
         >
           <PauseCircle size={16} /> {stopping ? "Saving…" : "I stopped this medication"}
         </button>

@@ -12,7 +12,7 @@ export default function ReportEmptyState({ rangeLabel, onAllTime }) {
       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
         There are no doses, weight entries or side effects in this date range. Try a wider range to include your earlier entries.
       </p>
-      <button onClick={onAllTime} className="mt-5 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm">
+      <button onClick={onAllTime} className="btn-pill btn-pill-sm btn-primary mt-5">
         Use all time
       </button>
     </div>

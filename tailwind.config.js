@@ -7,7 +7,18 @@ module.exports = {
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
+  			sm: 'calc(var(--radius) - 4px)',
+  			// The button pill — half the height of any button (see the button
+  			// tokens in src/index.css and src/lib/buttonStyles.js).
+  			pill: 'var(--btn-radius)'
+  		},
+  		height: {
+  			btn: 'var(--btn-h)',
+  			'btn-sm': 'var(--btn-h-sm)'
+  		},
+  		minHeight: {
+  			btn: 'var(--btn-h)',
+  			'btn-sm': 'var(--btn-h-sm)'
   		},
   		colors: {
   			background: 'hsl(var(--background))',
@@ -46,6 +57,23 @@ module.exports = {
   		// The one hairline every card, tile, input, chip, sheet and modal is
   		// drawn with, defined for both modes in src/index.css.
   		cardline: 'rgb(var(--card-border))',
+  		// The button colours, from the button tokens in src/index.css: the
+  		// indigo fill, the hairline a secondary sits on, and the red a
+  		// destructive action uses — never indigo.
+  		btn: {
+  			DEFAULT: 'rgb(var(--btn-bg))',
+  			hover: 'rgb(var(--btn-bg-hover))',
+  			press: 'rgb(var(--btn-bg-press))',
+  			off: 'rgb(var(--btn-bg-off))',
+  			fg: 'rgb(var(--btn-fg))',
+  			line: 'rgb(var(--btn-2-line))',
+  			soft: 'rgb(var(--btn-2-bg))',
+  			'soft-fg': 'rgb(var(--btn-2-fg))',
+  			danger: 'rgb(var(--btn-danger-bg))',
+  			'danger-soft': 'rgb(var(--btn-danger-soft))',
+  			'danger-fg': 'rgb(var(--btn-danger-fg))',
+  			'danger-line': 'rgb(var(--btn-danger-line))'
+  		},
   		// The sign-in screens' own tokens (Login and Create account), defined for
   		// light and dark in src/index.css. Values can carry their own alpha, so a
   		// hairline is a low-opacity white in dark mode.
@@ -107,7 +135,9 @@ module.exports = {
   			chosen: 'var(--card-border-selected)'
   		},
   		boxShadow: {
-  			card: 'var(--card-shadow)'
+  			card: 'var(--card-shadow)',
+  			// The soft indigo shadow a primary button carries.
+  			btn: 'var(--btn-shadow)'
   		},
   		fontFamily: {
   			heading: ['var(--font-heading)'] ,

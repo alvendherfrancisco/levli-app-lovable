@@ -98,7 +98,7 @@ export default function ExposureHowItWorks({ open, onClose, medication, halfLife
         </div>
 
         <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
-          <button onClick={onClose} className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold">Got it</button>
+          <button onClick={onClose} className="w-full py-3.5 btn-pill btn-primary font-semibold">Got it</button>
         </div>
       </div>
     </div>

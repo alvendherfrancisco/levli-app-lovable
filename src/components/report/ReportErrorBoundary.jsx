@@ -17,13 +17,13 @@ function ReportErrorFallback() {
         <div className="mt-5 space-y-2">
           <button
             onClick={() => window.location.reload()}
-            className="w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold"
+            className="btn-pill btn-primary w-full"
           >
             Reload this page
           </button>
           <button
             onClick={() => navigate("/shots")}
-            className="w-full py-3 rounded-xl bg-white dark:bg-white/[0.06] text-indigo-600 dark:text-indigo-400 border border-gray-200 dark:border-white/10 font-semibold"
+            className="btn-pill btn-secondary w-full"
           >
             Back to Shots
           </button>

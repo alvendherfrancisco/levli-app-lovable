@@ -15,7 +15,7 @@ const ANIM_MS = 180;
 const TONES = {
   destructive: {
     badge: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400",
-    primary: "bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-500 text-white",
+    primary: "btn-danger-solid",
     Icon: Trash2,
   },
   warning: {
@@ -25,7 +25,7 @@ const TONES = {
   },
   neutral: {
     badge: "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400",
-    primary: "bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 text-white",
+    primary: "btn-primary",
     Icon: HelpCircle,
   },
 };
@@ -136,7 +136,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={handleConfirm}
             disabled={isBusy}
-            className={`w-full min-h-[48px] rounded-xl px-4 font-semibold text-base flex items-center justify-center gap-2 disabled:opacity-60 ${primary}`}
+            className={`btn-pill w-full ${primary}`}
           >
             {isBusy && <Loader2 size={18} className="animate-spin" aria-hidden="true" />}
             {confirmLabel}
@@ -148,7 +148,7 @@ export default function ConfirmDialog({
             onClick={onCancel}
             disabled={isBusy}
             autoFocus
-            className="w-full min-h-[48px] rounded-xl px-4 font-semibold text-base bg-white dark:bg-white/[0.06] text-gray-700 dark:text-[#E8E9F0] border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/[0.1] disabled:opacity-60"
+            className="btn-pill btn-secondary w-full"
           >
             {cancelLabel}
           </button>

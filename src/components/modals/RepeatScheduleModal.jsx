@@ -213,20 +213,20 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
         <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08] space-y-2" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
           <button
             onClick={handleSave} disabled={saving}
-            className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+            className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
           >
             <Save size={16} /> {saving ? "Saving…" : "Save changes"}
           </button>
           <div className="flex gap-2">
             <button
               onClick={togglePause}
-              className="flex-1 py-3 rounded-xl bg-gray-50 dark:bg-white/[0.06] text-gray-600 dark:text-[#9A9DAE] font-semibold text-sm flex items-center justify-center gap-2 border border-gray-100 dark:border-white/[0.08]"
+              className="btn-pill btn-secondary flex-1"
             >
               {active ? <Pause size={16} /> : <Play size={16} />} {active ? "Pause repeat" : "Resume repeat"}
             </button>
             <button
               onClick={() => setAskingCancel(true)}
-              className="flex-1 py-3 rounded-xl bg-gray-50 dark:bg-white/[0.06] text-red-500 font-semibold text-sm flex items-center justify-center gap-2 border border-gray-100 dark:border-white/[0.08]"
+              className="btn-pill btn-danger flex-1"
             >
               <Trash2 size={16} /> Cancel repeat
             </button>

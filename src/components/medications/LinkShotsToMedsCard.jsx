@@ -67,11 +67,11 @@ export default function LinkShotsToMedsCard() {
       )}
       <div className="flex gap-2 mt-3">
         <button onClick={confirm} disabled={saving}
-          className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm disabled:opacity-60">
+          className="flex-1 py-2.5 btn-pill btn-primary font-semibold text-sm disabled:opacity-60">
           {saving ? "Adding…" : "Add to Meds"}
         </button>
         <button onClick={() => setDismissed(true)} disabled={saving}
-          className="px-4 py-2.5 bg-gray-100 dark:bg-white/[0.07] text-gray-600 dark:text-gray-300 rounded-xl font-semibold text-sm">
+          className="btn-pill btn-pill-sm btn-secondary">
           Not now
         </button>
       </div>

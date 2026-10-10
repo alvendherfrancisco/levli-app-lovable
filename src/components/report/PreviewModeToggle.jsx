@@ -26,7 +26,7 @@ export default function PreviewModeToggle({ mode, onChange }) {
             type="button"
             onClick={() => onChange(id)}
             aria-pressed={active}
-            className={`flex-1 min-w-0 min-h-[40px] px-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+            className={`flex-1 min-w-0 min-h-[40px] px-3 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors ${
               active
                 ? "bg-white dark:bg-white/[0.14] text-indigo-600 dark:text-indigo-300 shadow-sm"
                 : "text-gray-500 dark:text-gray-400"

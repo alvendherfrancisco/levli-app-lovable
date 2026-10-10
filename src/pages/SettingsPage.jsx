@@ -227,7 +227,7 @@ export default function SettingsPage() {
         <div className="px-4 mb-4">
           <button
             onClick={handleLogout}
-            className={`w-full min-h-[48px] flex items-center justify-center gap-2 py-3.5 ${CARD} text-red-600 dark:text-red-400 font-semibold`}
+            className="btn-pill btn-danger w-full"
           >
             <LogOut size={ICON_SIZE_ROW} aria-hidden="true" /> Log Out
           </button>

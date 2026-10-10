@@ -20,7 +20,7 @@ export default function UpsellBanner() {
         </p>
         <button
           onClick={openPaywall}
-          className="bg-white text-indigo-700 rounded-full px-6 py-2 text-sm font-semibold shadow-sm hover:bg-indigo-50 transition-colors"
+          className="btn-pill btn-pill-sm bg-white text-indigo-700 hover:bg-indigo-50"
         >
           Learn more
         </button>

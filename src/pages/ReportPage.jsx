@@ -140,7 +140,7 @@ export default function ReportPage() {
           </div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Report export is a premium feature</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-sm">Upgrade to Levli Premium to generate and share a PDF summary for your doctor.</p>
-          <button onClick={openPaywall} className="mt-6 px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold">Unlock with Levli Premium</button>
+          <button onClick={openPaywall} className="btn-pill btn-primary mt-6">Unlock with Levli Premium</button>
         </div>
       </div>
     );
@@ -206,7 +206,7 @@ export default function ReportPage() {
           <button
             onClick={handleExport}
             disabled={busy || !report.hasAnyData}
-            className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+            className="btn-pill btn-primary w-full"
           >
             {busy ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
             {busy ? "Generating PDF…" : "Download / Share PDF"}
@@ -214,7 +214,7 @@ export default function ReportPage() {
           {report.hasAnyData && (
             <button
               onClick={() => setShowPreview((v) => !v)}
-              className="w-full py-3 rounded-xl font-semibold text-sm bg-white dark:bg-white/[0.06] text-indigo-600 dark:text-indigo-400 border border-gray-200 dark:border-white/10 flex items-center justify-center gap-2"
+              className="btn-pill btn-secondary w-full"
             >
               {showPreview ? <><EyeOff size={16} /> Hide preview</> : <><Eye size={16} /> Preview report</>}
             </button>

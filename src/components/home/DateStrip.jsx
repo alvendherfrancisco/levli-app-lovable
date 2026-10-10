@@ -56,7 +56,9 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
   return (
-    <div ref={stripRef} className="overflow-x-auto no-scrollbar py-3">
+    // 24px below the strip, so the selected day's pill and its glow sit clear of
+    // the card that follows instead of crowding it.
+    <div ref={stripRef} className="overflow-x-auto no-scrollbar pt-3 pb-6">
       <div className="flex items-center gap-1.5 sm:gap-3 px-3 w-max mx-auto">
         {days.map((d) => {
           const isSelected = d.getDate() === selected.getDate() && d.getMonth() === selected.getMonth() && d.getFullYear() === selected.getFullYear();
@@ -67,7 +69,7 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
               key={d.getTime()}
               ref={isToday ? todayRef : null}
               onClick={() => { sound.tap(); onSelectDate && onSelectDate(d); }}
-              className={`flex flex-col items-center gap-0.5 px-2 sm:px-3 py-2 rounded-2xl w-16 flex-shrink-0 transition-all ${
+              className={`flex flex-col items-center gap-0.5 px-2 sm:px-3 py-2 rounded-full w-16 flex-shrink-0 transition-all ${
                 isSelected
                   ? "bg-indigo-600 dark:bg-indigo-500/80 text-white shadow-lg dark:[box-shadow:0_0_18px_4px_rgba(99,102,241,0.35)]"
                   : "text-gray-400 dark:text-[#9A9DAE]"

@@ -90,7 +90,7 @@ export default function InventoryPage() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 text-center">
             <Package size={36} className="mx-auto mb-3 text-gray-300 dark:text-white/20" />
             <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-4">No inventory tracked yet.</p>
-            <button onClick={openNew} className="px-5 py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center gap-2 mx-auto">
+            <button onClick={openNew} className="btn-pill btn-primary mx-auto">
               <Plus size={18} /> Add Product
             </button>
           </div>
@@ -170,7 +170,7 @@ export default function InventoryPage() {
             </label>
             <textarea value={storageNote} onChange={(e) => setStorageNote(e.target.value)} rows={3} placeholder="Notes (optional)"
               className="w-full border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-4 py-3 text-base outline-none focus:border-indigo-300 mb-4" />
-            <button onClick={saveStorageLog} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold">Save Log</button>
+            <button onClick={saveStorageLog} className="btn-pill btn-primary w-full">Save Log</button>
           </div>
         </div>
       )}

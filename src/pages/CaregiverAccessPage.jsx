@@ -69,7 +69,7 @@ export default function CaregiverAccessPage() {
               </select>
             </div>
             <button onClick={handleGrant} disabled={saving}
-              className="w-full min-h-[44px] py-2.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
+              className="btn-pill btn-primary w-full">
               <UserPlus size={16} /> {saving ? "Granting…" : "Grant Access"}
             </button>
           </div>

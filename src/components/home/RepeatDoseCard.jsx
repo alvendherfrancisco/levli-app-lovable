@@ -91,7 +91,7 @@ export default function RepeatDoseCard({ onEdit }) {
             <button
               onClick={() => handleConfirm(schedule, dayKey)}
               disabled={busy}
-              className="mt-3 w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.99] transition-transform"
+              className="btn-pill btn-primary mt-3 active:scale-[0.99]"
             >
               {busy ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} strokeWidth={3} />}
               {busy ? "Logging…" : "Confirm dose"}
@@ -100,13 +100,13 @@ export default function RepeatDoseCard({ onEdit }) {
             <div className="flex gap-2 mt-2">
               <button
                 onClick={() => onEdit?.(buildPreset(schedule, dayKey))}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white dark:bg-white/[0.06] border border-indigo-200 dark:border-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-sm font-semibold"
+                className="btn-pill btn-pill-sm btn-secondary flex-1"
               >
                 <Pencil size={14} /> Edit details
               </button>
               <button
                 onClick={() => handleSkip(schedule, dayKey)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white dark:bg-white/[0.06] border border-gray-200 dark:border-white/[0.1] text-gray-500 dark:text-[#9A9DAE] text-sm font-semibold"
+                className="btn-pill btn-pill-sm btn-secondary flex-1"
               >
                 <SkipForward size={14} /> Skip
               </button>

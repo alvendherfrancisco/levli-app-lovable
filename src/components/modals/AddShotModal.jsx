@@ -747,7 +747,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                       <div className="flex flex-wrap gap-2">
                         {regimensForMed.map((m) => (
                           <button key={m.id} onClick={() => setMedicationId(m.id)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${medicationId === m.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-white/[0.05] text-gray-600 dark:text-gray-300 border-gray-200 dark:border-white/[0.1]"}`}>
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium border ${medicationId === m.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-white/[0.05] text-gray-600 dark:text-gray-300 border-gray-200 dark:border-white/[0.1]"}`}>
                             {m.prescribed_dose ? `${m.prescribed_dose} ${m.dose_unit || "mg"}` : m.medication_name}
                             {m.indication ? ` — ${m.indication}` : ""}
                           </button>
@@ -1070,8 +1070,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                     <p className="font-semibold">Possible duplicate</p>
                     <p className="mt-1">Your last {duplicatePrompt.medication} shot was {duplicatePrompt.label} ago. Is this a duplicate?</p>
                     <div className="flex gap-2 mt-2">
-                      <button onClick={() => { confirmedDupRef.current = true; handleSave(); }} className="px-3 py-1.5 rounded-lg bg-orange-600 text-white text-xs font-semibold">Save anyway</button>
-                      <button onClick={() => setDuplicatePrompt(null)} className="px-3 py-1.5 rounded-lg bg-white dark:bg-white/10 text-gray-600 dark:text-gray-300 text-xs font-semibold border border-gray-200 dark:border-white/10">Cancel</button>
+                      <button onClick={() => { confirmedDupRef.current = true; handleSave(); }} className="btn-pill btn-pill-sm bg-orange-600 text-white">Save anyway</button>
+                      <button onClick={() => setDuplicatePrompt(null)} className="btn-pill btn-pill-sm btn-secondary">Cancel</button>
                     </div>
                   </div>
                   {/* Trailing space, so the card can be centred clear of the
@@ -1094,12 +1094,12 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
           >
             {saved ? (
               <button onClick={onClose}
-                className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
+                className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2">
                 Done
               </button>
             ) : (
               <button onClick={handleSave} disabled={saving}
-                className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
+                className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
                 <Save size={16} /> {saving ? "Saving…" : editingShot ? "Update Shot" : "Save Shot"}
               </button>
             )}

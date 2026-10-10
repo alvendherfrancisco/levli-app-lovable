@@ -125,7 +125,7 @@ export default function Journal() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Journal Entries</h3>
                 <p className="text-sm text-gray-400 mb-4">Record your thoughts, symptoms, and medication experiences.</p>
-                <button onClick={openNew} className="px-5 py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center gap-2 mx-auto">
+                <button onClick={openNew} className="btn-pill btn-primary mx-auto">
                   <Plus size={18} /> Add Journal Entry
                 </button>
               </div>

@@ -61,12 +61,12 @@ function ExerciseModal({ open, onClose, value, onSave, onDelete }) {
         <div className="flex items-center justify-end gap-4">
           <button
             onClick={() => { onDelete(); onClose(); }}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-transparent dark:border-red-500/20">
+            className="btn-pill btn-pill-sm btn-danger">
             Delete
           </button>
           <button
             onClick={handleSave}
-            className="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white">
+            className="btn-pill btn-pill-sm btn-primary">
             Save
           </button>
         </div>
@@ -140,11 +140,11 @@ function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
           </div>
           <div className="flex gap-3 mt-4">
             <button disabled={uploading} onClick={() => setShowCamera(true)}
-              className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
+              className="flex-1 py-3 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
               <Camera size={18} /> Camera
             </button>
             <button disabled={uploading} onClick={() => galleryRef.current?.click()}
-              className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
+              className="flex-1 py-3 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
               <Image size={18} /> Gallery
             </button>
             <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
@@ -163,18 +163,18 @@ function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
         {hasExisting ? (
           <div className="sticky bottom-0 flex gap-3 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
             <button onClick={() => { onDelete(); onClose(); }}
-              className="flex-1 py-3 bg-red-500/10 dark:bg-red-500/10 text-red-500 dark:text-red-400 border border-red-500/20 rounded-xl font-semibold flex items-center justify-center gap-2">
+              className="btn-pill btn-danger flex-1">
               <Trash2 size={18} /> Delete
             </button>
             <button disabled={uploading || !imgUrl || !photoDate} onClick={() => { onSave(imgUrl, photoDate); onClose(); }}
-              className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
+              className="flex-1 py-3 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
               <Save size={18} /> Update
             </button>
           </div>
         ) : (
           <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
             <button disabled={uploading || !imgUrl || !photoDate} onClick={() => { if (imgUrl) { onSave(imgUrl, photoDate); onClose(); } }}
-              className={`w-full py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 bg-indigo-600 text-white ${!imgUrl || uploading ? "opacity-60" : ""}`}>
+              className={`btn-pill btn-primary w-full ${!imgUrl || uploading ? "opacity-60" : ""}`}>
               <Save size={18} /> Save
             </button>
           </div>
@@ -235,7 +235,7 @@ function GenericMetricModal({ open, onClose, label, unit, value, onSave, validat
           </button>
           <button
             onClick={handleSave}
-            className="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white">
+            className="btn-pill btn-pill-sm btn-primary">
             Save
           </button>
         </div>

@@ -179,7 +179,7 @@ export default function Profile() {
     return (
       <button onClick={() => handleSave(fields)}
       disabled={saving[key]}
-      className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all min-w-[60px] flex items-center justify-center ${
+      className={`btn-pill btn-pill-sm min-w-[60px] transition-all flex items-center justify-center ${
       saved[key] ? "bg-teal-500 text-white" : "bg-indigo-600 text-white"} disabled:opacity-60`
       }>
         {saving[key] ? <Loader2 size={14} className="animate-spin" /> : saved[key] ? <Check size={16} /> : "Save"}
@@ -258,7 +258,7 @@ export default function Profile() {
               </>
             }
             <button onClick={saveHeight} disabled={savingHeight}
-              className="px-4 py-2.5 rounded-xl font-semibold text-sm bg-indigo-600 text-white min-w-[60px] flex items-center justify-center disabled:opacity-60">
+              className="btn-pill btn-pill-sm btn-primary min-w-[60px]">
               {savingHeight ? <Loader2 size={14} className="animate-spin" /> : heightSaved ? <Check size={16} /> : "Save"}
             </button>
           </div>
@@ -274,7 +274,7 @@ export default function Profile() {
               <span className="text-gray-400 text-sm ml-1">{weightUnitLabel(weightUnit)}</span>
             </div>
             <button onClick={saveGoal} disabled={savingGoal}
-              className="px-4 py-2.5 rounded-xl font-semibold text-sm bg-indigo-600 text-white min-w-[60px] flex items-center justify-center disabled:opacity-60">
+              className="btn-pill btn-pill-sm btn-primary min-w-[60px]">
               {savingGoal ? <Loader2 size={14} className="animate-spin" /> : goalSaved ? <Check size={16} /> : "Save"}
             </button>
           </div>

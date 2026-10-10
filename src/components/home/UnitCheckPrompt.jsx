@@ -76,14 +76,14 @@ export default function UnitCheckPrompt() {
               <button
                 onClick={() => run(async () => { const n = await convertAssumedKg(); setConverted(n); return n; }, (n) => `${n} entries updated`)}
                 disabled={busy}
-                className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+                className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 <Check size={16} /> Yes, they are kilograms
               </button>
               <button
                 onClick={keepWeightsAsLogged}
                 disabled={busy}
-                className="w-full py-3 rounded-xl font-semibold border border-gray-200 dark:border-white/10 text-gray-700 dark:text-[#E8E9F0] disabled:opacity-60"
+                className="btn-pill btn-secondary w-full"
               >
                 No, they are pounds
               </button>

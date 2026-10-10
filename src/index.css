@@ -889,3 +889,162 @@ html { background-color: var(--launch-bg); }
 .dark .dark\:divide-white\/\[0\.07\]:is(.dark *) > :not([hidden]) ~ :not([hidden]) {
   border-color: rgb(var(--card-border));
 }
+
+/* ── Buttons: one pill, one set of colours, everywhere ──────────────────────
+   Every button in the app is drawn from the tokens below: a full-radius pill
+   (half the button's own height), one indigo fill, white semibold text and a
+   soft indigo shadow for a primary action; a thin hairline pill with dark text
+   for a secondary one; red, never indigo, for anything destructive.
+
+   The tokens reach the app two ways:
+
+   · `.btn-pill` with a colour class (`.btn-primary`, `.btn-secondary`,
+     `.btn-danger`, `.btn-danger-solid`, `.btn-link`) — what src/lib/buttonStyles.js
+     hands to new code, so a button written later is the same button.
+   · The pill layer at the end, which gives the same radius to every filled
+     action already written in the app — a segment in a toggle, a chip, a plus
+     button — so no square or slightly rounded action is left anywhere.
+
+   Sizes: `--btn-h` (54px) is the one main action on a screen or a sheet;
+   `--btn-h-sm` (38px) is a small action, a chip or a filter. Radius, heights,
+   sizes and every colour come from here, so nothing is set per button. */
+:root {
+  --btn-radius: 999px;          /* a pill: half the height of any button */
+  --btn-h: 3.375rem;            /* 54px — the primary action */
+  --btn-h-sm: 2.375rem;         /* 38px — a small action, a chip */
+  --btn-pad-x: 1.5rem;          /* 24px of breathing room each side */
+  --btn-pad-x-sm: 0.875rem;
+  --btn-font: 1rem;
+  --btn-font-sm: 0.875rem;
+  --btn-weight: 600;
+  --btn-bg: 79 70 229;          /* indigo-600 */
+  --btn-bg-hover: 67 56 202;    /* indigo-700 */
+  --btn-bg-press: 55 48 163;    /* indigo-800 — pressed */
+  --btn-bg-off: 165 180 252;    /* indigo-300 — a disabled pill stays indigo */
+  --btn-fg: 255 255 255;
+  --btn-shadow: 0 10px 22px -12px rgb(79 70 229 / 0.75);
+  --btn-2-bg: 255 255 255;      /* secondary */
+  --btn-2-fg: 31 41 55;
+  --btn-2-line: 232 234 240;
+  --btn-danger-bg: 220 38 38;   /* red-600 — a solid destructive action */
+  --btn-danger-bg-hover: 185 28 28;
+  --btn-danger-soft: 254 242 242;  /* red-50 — the soft destructive fill */
+  --btn-danger-fg: 220 38 38;
+  --btn-danger-line: 254 202 202;
+}
+
+.dark {
+  --btn-bg-off: 99 102 241 / 0.45; /* a faded indigo on the dark surface */
+  --btn-shadow: 0 10px 22px -12px rgb(0 0 0 / 0.6);
+  --btn-2-bg: 255 255 255 / 0.06;
+  --btn-2-fg: 232 233 240;
+  --btn-2-line: 255 255 255 / 0.1;
+  --btn-danger-soft: 239 68 68 / 0.12;
+  --btn-danger-fg: 248 113 113;
+  --btn-danger-line: 239 68 68 / 0.35;
+}
+
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: var(--btn-h);
+  padding: 0 var(--btn-pad-x);
+  border-radius: var(--btn-radius);
+  font-size: var(--btn-font);
+  font-weight: var(--btn-weight);
+  line-height: 1.25;
+  /* A long label wraps rather than pushing the pill past the screen's own
+     margins — at a large text size too. The pill radius is its own height, so a
+     two-line pill is still a pill. */
+  text-align: center;
+  transition: background-color 0.18s ease, color 0.18s ease,
+    border-color 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+.btn-pill-sm {
+  min-height: var(--btn-h-sm);
+  padding: 0 var(--btn-pad-x-sm);
+  font-size: var(--btn-font-sm);
+}
+/* A round icon button — a plus, a stepper, a close. */
+.btn-pill-icon {
+  min-width: var(--btn-h-sm);
+  padding: 0;
+}
+
+.btn-primary {
+  background-color: rgb(var(--btn-bg));
+  color: rgb(var(--btn-fg));
+  border: 0;
+  box-shadow: var(--btn-shadow);
+}
+.btn-primary:hover { background-color: rgb(var(--btn-bg-hover)); }
+.btn-primary:active { background-color: rgb(var(--btn-bg-press)); }
+.btn-primary:disabled,
+.btn-primary[aria-disabled="true"] {
+  background-color: rgb(var(--btn-bg-off));
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: rgb(var(--btn-2-bg));
+  color: rgb(var(--btn-2-fg));
+  border: 1px solid rgb(var(--btn-2-line));
+  box-shadow: none;
+}
+.btn-secondary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn-danger {
+  background-color: rgb(var(--btn-danger-soft));
+  color: rgb(var(--btn-danger-fg));
+  border: 1px solid rgb(var(--btn-danger-line));
+  box-shadow: none;
+}
+.btn-danger-solid {
+  background-color: rgb(var(--btn-danger-bg));
+  color: #ffffff;
+  border: 0;
+  box-shadow: none;
+}
+.btn-danger-solid:hover { background-color: rgb(var(--btn-danger-bg-hover)); }
+.btn-danger:disabled,
+.btn-danger-solid:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* A text button: indigo words, no box at all. */
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgb(var(--btn-bg));
+  font-weight: var(--btn-weight);
+}
+.btn-chip { gap: 0.375rem; }
+
+/* The pill layer: every action already filled in the app — a segment in a
+   toggle, a chip, a plus button — takes the same radius, wherever it is
+   written. Only real buttons and links, and only filled ones: an icon tile, a
+   badge or a card-shaped row is a div (or carries no fill) and is left alone. */
+button[class~="bg-indigo-600"], a[class~="bg-indigo-600"], label[class~="bg-indigo-600"],
+button[class~="bg-indigo-500"], a[class~="bg-indigo-500"],
+button[class~="bg-red-600"], a[class~="bg-red-600"],
+button[class~="bg-red-700"], button[class~="bg-red-500"], button[class~="bg-red-800"] {
+  border-radius: var(--btn-radius);
+}
+
+/* The small chips — a filter, a range, a "Today" — take the small pill height
+   too, so a row of them is the same shape and the same size everywhere. Only a
+   chip is matched: a round icon button carries no text size, and a card-shaped
+   row carries no `rounded-full`. */
+button[class~="rounded-full"][class~="text-xs"],
+button[class~="rounded-full"][class~="text-sm"] {
+  min-height: var(--btn-h-sm);
+  padding-left: var(--btn-pad-x-sm);
+  padding-right: var(--btn-pad-x-sm);
+}

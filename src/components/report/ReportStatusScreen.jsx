@@ -15,7 +15,7 @@ export default function ReportStatusScreen({ failed, onRetry }) {
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
               Your data is safe. This is usually a slow connection.
             </p>
-            <button onClick={onRetry} className="mt-5 w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold">
+            <button onClick={onRetry} className="btn-pill btn-primary mt-5 w-full">
               Retry
             </button>
           </>

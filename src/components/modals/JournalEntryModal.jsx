@@ -105,7 +105,7 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
                 return (
                   <button key={c.key} onClick={() => setCategory(c.key)}
                     style={active ? { background: c.bg, borderColor: c.color, color: c.color } : {}}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium border transition-colors ${
                       active ? "" : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.08]"
                     }`}>
                     {React.cloneElement(c.icon, { style: active ? { color: c.color } : undefined, size: 14 })}
@@ -124,7 +124,7 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
                 const active = mood.label === m.label;
                 return (
                   <button key={m.label} onClick={() => setMood(m)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium border transition-colors ${
                       active
                         ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30"
                         : "bg-white dark:bg-white/[0.05] text-gray-400 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.08]"
@@ -143,7 +143,7 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
               <div className="flex gap-2">
                 {SEVERITY_LEVELS.map((s) => (
                   <button key={s.value} onClick={() => setSeverity(s.value)}
-                    className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                    className={`flex-1 py-2 rounded-full text-sm font-medium border transition-colors ${
                       severity === s.value
                         ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30"
                         : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.08]"
@@ -180,7 +180,7 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
 
         <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
           <button onClick={handleSave} disabled={!text.trim()}
-            className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+            className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
             <Save size={16} /> {initialEntry ? "Update Entry" : "Save Entry"}
           </button>
         </div>

@@ -79,13 +79,13 @@ export default function RepeatScheduleCard({ schedule, onEdit }) {
         </button>
         <button
           onClick={togglePause}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.06] text-gray-600 dark:text-[#9A9DAE] text-sm font-semibold border border-gray-100 dark:border-white/[0.08]"
+          className="btn-pill btn-pill-sm btn-secondary flex-1"
         >
           {active ? <Pause size={14} /> : <Play size={14} />} {active ? "Pause" : "Resume"}
         </button>
         <button
           onClick={() => setAskingCancel(true)}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.06] text-red-500 text-sm font-semibold border border-gray-100 dark:border-white/[0.08]"
+          className="btn-pill btn-pill-sm btn-danger flex-1"
         >
           <X size={14} /> Cancel
         </button>

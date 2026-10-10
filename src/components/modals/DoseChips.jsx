@@ -121,7 +121,7 @@ export default function DoseChips({ medication, options = [], value, unit = DOSE
             <span className="text-sm text-gray-400 dark:text-gray-500 flex-shrink-0">{unit}</span>
             <button
               type="button" onClick={handleAdd} disabled={!canSave}
-              className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold disabled:opacity-50 flex-shrink-0 whitespace-nowrap"
+              className="px-3 py-2 btn-pill btn-pill-sm btn-primary text-xs font-semibold disabled:opacity-50 flex-shrink-0 whitespace-nowrap"
             >
               {saving ? "Saving…" : "Add custom dosage"}
             </button>

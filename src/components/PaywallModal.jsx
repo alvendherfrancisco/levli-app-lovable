@@ -150,7 +150,7 @@ export default function PaywallModal({ open, onClose }) {
       {/* Continue button pinned bottom */}
       <div className="absolute bottom-0 left-0 right-0 px-5 pb-8 pt-4 bg-gradient-to-t from-white to-transparent">
         <button onClick={handleCheckout} disabled={busy}
-          className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg disabled:opacity-60">
+          className="w-full py-4 btn-pill btn-primary font-bold text-lg disabled:opacity-60">
           {busy ? "Please wait…" : "Continue"}
         </button>
       </div>
@@ -162,7 +162,7 @@ export default function PaywallModal({ open, onClose }) {
             <h3 className="text-lg font-bold text-gray-900">No Subscription Found</h3>
             <p className="text-sm text-gray-500 mt-2">We couldn't find an active subscription for your account.</p>
             <button onClick={() => setShowNoSub(false)}
-              className="mt-5 w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold">
+              className="mt-5 w-full py-3 btn-pill btn-primary font-semibold">
               Okay
             </button>
           </div>

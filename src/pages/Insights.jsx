@@ -307,7 +307,7 @@ export default function Insights() {
           <div className="flex items-center gap-1 mb-3 flex-wrap">
             {Object.keys(WEIGHT_RANGES).map((r) => (
               <button key={r} onClick={() => setWeightRange(r)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   weightRange === r
                     ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600"
                     : "text-gray-400 dark:text-gray-500"
@@ -384,7 +384,7 @@ export default function Insights() {
               <p className="text-sm text-gray-500 dark:text-[#9A9DAE] text-center">
                 {weightHistory.length === 0 ? "No weight entries yet." : "Only one weight entry in this range."}
               </p>
-              <Link to="/" className="px-4 py-2.5 min-h-[44px] flex items-center bg-indigo-600 text-white rounded-xl font-semibold text-sm">
+              <Link to="/" className="btn-pill btn-pill-sm btn-primary">
                 Log your weight
               </Link>
             </div>
@@ -432,7 +432,7 @@ export default function Insights() {
                 <p className="text-indigo-500 font-medium text-sm">No progress pictures yet. Tap to add your first photo!</p>
               </button>
               <button onClick={openAddPhoto}
-                className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors text-sm">
+                className="btn-pill btn-primary w-full text-sm">
                 <Plus size={ICON_SIZE_ROW} /> Add Picture
               </button>
             </div>
@@ -461,7 +461,7 @@ export default function Insights() {
               )}
               <div className="flex gap-3">
                 <button onClick={openAddPhoto}
-                  className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors text-sm">
+                  className="btn-pill btn-primary flex-1 text-sm">
                   <Plus size={16} /> Add Photo
                 </button>
                 {photosAsc.length >= 2 && (
@@ -497,7 +497,7 @@ export default function Insights() {
           <div className="flex items-center gap-2 mb-4 flex-wrap">
             {Object.keys(MED_RANGES).map((r) => (
               <button key={r} onClick={() => setMedRange(r)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   medRange === r ? "bg-indigo-600 text-white" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                 }`}>{r}</button>
             ))}
@@ -608,7 +608,7 @@ export default function Insights() {
           <div className="flex items-center gap-2 mb-4 flex-wrap">
             {Object.keys(MED_RANGES).map((r) => (
               <button key={r} onClick={() => setSiteRange(r)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   siteRange === r ? "bg-indigo-600 text-white" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                 }`}>{r}</button>
             ))}
@@ -622,11 +622,11 @@ export default function Insights() {
                     No shots in the last {siteRangeDays} days.
                   </p>
                   {siteRange !== "90 Days" ? (
-                    <button onClick={() => setSiteRange("90 Days")} className="px-4 py-2.5 min-h-[44px] bg-indigo-600 text-white rounded-xl font-semibold text-sm">
+                    <button onClick={() => setSiteRange("90 Days")} className="btn-pill btn-pill-sm btn-primary">
                       Try 90 days
                     </button>
                   ) : (
-                    <Link to="/shots" className="px-4 py-2.5 min-h-[44px] flex items-center bg-indigo-600 text-white rounded-xl font-semibold text-sm">
+                    <Link to="/shots" className="btn-pill btn-pill-sm btn-primary">
                       Log a shot
                     </Link>
                   )}

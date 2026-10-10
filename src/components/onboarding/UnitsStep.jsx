@@ -22,7 +22,7 @@ export default function UnitsStep({ units, setUnits }) {
                   <button
                     key={opt.value}
                     onClick={() => setUnits((prev) => ({ ...prev, [group.key]: opt.value }))}
-                    className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
+                    className={`px-4 py-3 rounded-full border text-sm font-medium transition-all ${
                       isSelected
                         ? "border-teal-500 bg-teal-500/10 text-teal-400"
                         : "border-gray-700 bg-gray-900 text-white"

@@ -52,7 +52,7 @@ export default function RepeatOptionsField({
                   key={o.v}
                   type="button"
                   onClick={() => onModeChange(o.v)}
-                  className={`flex-1 min-w-0 py-2.5 rounded-xl text-sm font-medium border transition-all active:scale-[0.98] ${mode === o.v
+                  className={`flex-1 min-w-0 py-2.5 rounded-full text-sm font-medium border transition-all active:scale-[0.98] ${mode === o.v
                     ? "bg-indigo-600 text-white border-indigo-600"
                     : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.1]"}`}
                 >
@@ -69,7 +69,7 @@ export default function RepeatOptionsField({
                   key={p}
                   type="button"
                   onClick={() => onWeeksChange(String(p))}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${weeksNum === p
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium border ${weeksNum === p
                     ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30"
                     : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.1]"}`}
                 >

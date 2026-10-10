@@ -92,7 +92,7 @@ export default function MyMedications() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 text-center">
             <Pill size={36} className="mx-auto mb-3 text-gray-300 dark:text-white/20" />
             <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-4">No medications saved yet. Add your prescribed regimen to link your shot logs.</p>
-            <button onClick={openNew} className="px-5 py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center gap-2 mx-auto">
+            <button onClick={openNew} className="btn-pill btn-primary mx-auto">
               <Plus size={18} /> Add Medication
             </button>
           </div>

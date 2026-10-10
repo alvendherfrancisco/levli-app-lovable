@@ -99,7 +99,7 @@ export default function AddNutritionModal({ open, onClose, dayKey }) {
           <button onClick={() => setValues({ ...EMPTY })} className="flex-1 py-3.5 bg-gray-100 dark:bg-white/[0.07] text-gray-600 dark:text-[#9A9DAE] rounded-xl font-semibold flex items-center justify-center gap-2">
             <RotateCcw size={16} /> Reset
           </button>
-          <button onClick={handleSave} className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
+          <button onClick={handleSave} className="flex-1 py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2">
             <Save size={16} /> Save
           </button>
         </div>

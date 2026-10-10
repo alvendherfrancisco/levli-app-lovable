@@ -3,7 +3,7 @@ import { CORE_IDS, RANGE_OPTIONS } from "@/lib/reportOptions";
 import SectionChecklist from "@/components/report/SectionChecklist";
 
 const chip = (active) =>
-  `px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+  `px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
     active
       ? "bg-indigo-600 text-white"
       : "bg-white dark:bg-white/[0.06] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10"

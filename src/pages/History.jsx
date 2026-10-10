@@ -107,7 +107,7 @@ export default function History() {
               const isFuture = isCurrentMonth && day > today.getDate();
               return (
               <button key={day} onClick={() => !isFuture && setSelectedDay(day)} disabled={isFuture}
-                className={`py-1.5 rounded-lg text-sm font-medium relative flex flex-col items-center ${
+                className={`py-1.5 rounded-full text-sm font-medium relative flex flex-col items-center ${
                   isFuture ? "text-gray-300 dark:text-gray-700 cursor-not-allowed" :
                   isSelected ? "border-[1.5px] border-indigo-500 text-indigo-600 dark:bg-indigo-500/10" : isToday ? "text-indigo-600" : "text-gray-700 dark:text-gray-300"
                 }`}>
