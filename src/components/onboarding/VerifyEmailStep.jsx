@@ -4,26 +4,29 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { sound } from "@/lib/sounds";
 import { VERIFICATION_CODE_LENGTH } from "@/lib/accountValidation";
 import {
-  ERROR_TEXT, HEADING, HEAD_BLOCK, ICON_CIRCLE_LG, SUBTITLE,
+  ACCENT_TEXT, ERROR_TEXT, HEADING, HEAD_BLOCK, ICON_CIRCLE_LG, NOTICE_OK, SUBTITLE,
 } from "@/lib/uiStyles";
 
 const RESEND_COOLDOWN = 30; // seconds, so a code is never asked for twice at once
 
-// One code box: 56px tall, up to 48px wide, a 12px corner, white with a
-// hairline grey border. Six of them share the row with equal gaps and stay
-// centred, so they never crowd the screen's margin on a narrow phone.
+// One code box: 56px tall, up to 48px wide, a 12px corner, the card's own
+// surface with a hairline border — the same in both modes, since every value
+// here is a token. Six of them share the row with equal gaps and stay centred,
+// so they never crowd the screen's margin on a narrow phone.
 const BOX =
-  "h-14 w-full max-w-[48px] flex-1 rounded-xl border bg-white text-[22px] font-normal text-gray-900 shadow-none first:rounded-l-xl last:rounded-r-xl";
-const BOX_IDLE = "border-gray-200";
-// Focused: the same hairline border, turned indigo, with a soft indigo glow.
-const BOX_ON = "border-indigo-500 shadow-[0_0_0_4px_rgba(79,70,229,0.12)]";
+  "h-14 w-full max-w-[48px] flex-1 rounded-xl border bg-auth-card text-[22px] font-normal text-auth-text shadow-none first:rounded-l-xl last:rounded-r-xl";
+const BOX_IDLE = "border-auth-border";
+// Focused: the same hairline border, turned the theme's focus indigo, with the
+// soft ring drawn from that same colour (deep on a light screen, light indigo on
+// a dark one).
+const BOX_ON = "border-auth-focus auth-focus-ring";
 // Refused: the same hairline border, softened to red.
-const BOX_ERROR = "border-red-300 shadow-[0_0_0_4px_rgba(239,68,68,0.10)]";
+const BOX_ERROR = "border-red-300 shadow-[0_0_0_4px_rgba(239,68,68,0.10)] dark:border-red-400/70";
 
-// The two ways on from here, under the boxes: one size, indigo, medium weight,
-// and no underline at all — not even the hover one, which on a phone flashes
-// for a moment after every tap.
-const LINK_PLAIN = "font-medium text-indigo-600";
+// The two ways on from here, under the boxes: one size, the indigo accent,
+// medium weight, and no underline at all — not even the hover one, which on a
+// phone flashes for a moment after every tap.
+const LINK_PLAIN = `font-medium ${ACCENT_TEXT}`;
 
 /**
  * The verification half of the email path.
@@ -61,7 +64,7 @@ export default function VerifyEmailStep({
     <div className="flex flex-col items-center">
       <div className="mb-4 flex justify-center">
         <span className={ICON_CIRCLE_LG}>
-          <MailCheck size={32} strokeWidth={1.5} className="text-indigo-600" aria-hidden="true" />
+          <MailCheck size={32} strokeWidth={1.5} className={ACCENT_TEXT} aria-hidden="true" />
         </span>
       </div>
 
@@ -69,13 +72,11 @@ export default function VerifyEmailStep({
         <h1 className={HEADING}>Check your email</h1>
         <p className={SUBTITLE}>We sent a 6-digit code to</p>
         {/* The address on a line of its own, so it never wraps mid-word. */}
-        <p className="break-all text-[15px] font-medium text-gray-900">{email}</p>
+        <p className="break-all text-[15px] font-medium text-auth-text">{email}</p>
       </div>
 
       {notice && (
-        <p className="mb-4 w-full rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-center text-[13px] leading-snug text-teal-700">
-          {notice}
-        </p>
+        <p className={`mb-4 ${NOTICE_OK}`}>{notice}</p>
       )}
 
       <InputOTP
@@ -107,10 +108,10 @@ export default function VerifyEmailStep({
       {/* Directly under the boxes, centred, part of the same group: ask for
           another code, or go back and use a different address. */}
       <div className="mt-6 flex w-full flex-col items-center gap-4">
-        <p className="text-center text-[15px] text-gray-500">
+        <p className="text-center text-[15px] text-auth-muted">
           Didn't get it?{" "}
           {cooldown > 0 ? (
-            <span className="font-medium text-indigo-400">Resend in {cooldown}s</span>
+            <span className="font-medium text-auth-faint">Resend in {cooldown}s</span>
           ) : (
             <button type="button" onClick={askForAnother} className={LINK_PLAIN}>
               Resend email

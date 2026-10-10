@@ -70,14 +70,13 @@ export default function RegisterForm({
             onChange={setPassword}
             autoComplete="new-password"
             enterKeyHint="go"
-            themed
           />
           {/* The same live hint, and the same gap under the field, as the
               onboarding account screen. */}
-          <PasswordStrengthMeter password={password} themed />
+          <PasswordStrengthMeter password={password} />
         </div>
 
-        <SocialAuthButtons onProvider={onProvider} disabled={loading} themed />
+        <SocialAuthButtons onProvider={onProvider} disabled={loading} />
       </div>
 
       {/* Create account — the same pill as the sign-in screen's Log in and the

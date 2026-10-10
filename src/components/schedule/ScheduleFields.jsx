@@ -61,7 +61,7 @@ export default function ScheduleFields({
       )}
 
       {error && (
-        <p className={`${ERROR_TEXT} dark:text-red-400`} role="alert">
+        <p className={ERROR_TEXT} role="alert">
           {error}
         </p>
       )}

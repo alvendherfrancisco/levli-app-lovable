@@ -10,7 +10,10 @@ function Scene({ blobStyle, children, className = "" }) {
   return (
     <div className={`relative w-full max-w-[280px] mx-auto aspect-[7/5] ${className}`}>
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-44 h-44 rounded-full blur-3xl opacity-50" style={blobStyle} />
+        {/* The wash behind the artwork. It is the same in both modes; the class
+            holds it back on a dark page so it blends into the background rather
+            than lighting up a halo (see src/index.css). */}
+        <div className="onb-art-glow w-44 h-44 rounded-full blur-3xl" style={blobStyle} />
       </div>
       <svg viewBox="0 0 280 200" className="relative w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
         {children}

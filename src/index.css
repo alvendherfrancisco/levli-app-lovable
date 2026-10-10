@@ -91,12 +91,13 @@
   }
 }
 
-/* ── The sign-in screens' own theme ─────────────────────────────────────────
-   Login and the standalone Create account screen follow the device's own
+/* ── The flow's own theme: the account screens and every onboarding screen ───
+   Login, the standalone Create account screen and every onboarding step (see
+   src/lib/authStyles.js and src/lib/uiStyles.js) follow the device's own
    light/dark setting, so nothing on them is drawn in a fixed colour: every value
    below is defined for both modes, and the classes that use them are the same in
-   both (see src/lib/authStyles.js). Light is the look these screens have always
-   had.
+   both. One set of tokens, so every screen switches together. Light is the look
+   these screens have always had.
 
    Dark is a near-black navy surface with a soft indigo glow reaching down from
    the top — the light gradient's counterpart, drawn by .auth-screen below — on
@@ -125,6 +126,21 @@
   --auth-notice-text: 146 64 14;
   --auth-apple: 0 0 0;
   --auth-apple-fg: 255 255 255;
+  /* The rest of the flow's own values: the panel a step scrolls inside and the
+     soft edge it leaves through, the surface a control takes while hovered, the
+     hairline between two rows, the neutral border an empty circle carries, the
+     soft indigo surface (an icon circle, a chosen chip, a chosen row) with the
+     hairline a chosen one is drawn with, and the confirmation notice. */
+  --auth-panel: 255 255 255 / 0.7;
+  --auth-fade: 255 255 255 / 0.95;
+  --auth-surface: 249 250 251;
+  --auth-divider: 243 244 246;
+  --auth-border-strong: 209 213 219;
+  --auth-tint: 238 242 255;
+  --auth-tint-border: 99 102 241;
+  --auth-ok-bg: 240 253 250;
+  --auth-ok-border: 153 246 228;
+  --auth-ok-text: 15 118 110;
 }
 
 .dark {
@@ -147,6 +163,16 @@
   --auth-notice-text: 253 230 138;
   --auth-apple: 255 255 255;
   --auth-apple-fg: 10 10 12;
+  --auth-panel: 26 29 42 / 0.9;
+  --auth-fade: 26 29 42 / 0.95;
+  --auth-surface: 33 37 53;
+  --auth-divider: 255 255 255 / 0.08;
+  --auth-border-strong: 255 255 255 / 0.24;
+  --auth-tint: 99 102 241 / 0.16;
+  --auth-tint-border: 139 141 245 / 0.6;
+  --auth-ok-bg: 20 184 166 / 0.14;
+  --auth-ok-border: 20 184 166 / 0.35;
+  --auth-ok-text: 153 246 228;
 }
 
 /* The sign-in screens' page. In light mode the token's base colour is all there
@@ -161,6 +187,19 @@
 .dark .auth-screen {
   background-image: radial-gradient(125% 75% at 50% -10%, rgb(var(--auth-glow)) 0%, transparent 62%);
 }
+
+/* The soft ring a focused field or code box is drawn with: the theme's own focus
+   colour, so it is a deep indigo on a light surface and a light indigo on a dark
+   one, and never a hard outline. */
+.auth-focus-ring {
+  box-shadow: 0 0 0 4px rgb(var(--auth-focus) / 0.18);
+}
+
+/* The glow behind each onboarding illustration. The artwork is the same in both
+   modes; on the dark page the wash is held well back, so it blends into the
+   background instead of lighting up a halo behind the picture. */
+.onb-art-glow { opacity: 0.5; }
+.dark .onb-art-glow { opacity: 0.16; }
 
 /* Safe area padding for bottom tab bar */
 .pb-safe {

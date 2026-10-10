@@ -32,8 +32,9 @@ import { Check, ClipboardList, Settings2, ShieldCheck } from "lucide-react";
 import { useEmailVerification } from "@/hooks/useEmailVerification";
 import { sound } from "@/lib/sounds";
 import {
-  CARD, CARD_GAP, CHECK_CIRCLE, CHECK_CIRCLE_OFF, CHECK_CIRCLE_ON,
-  HEADING, HEAD_BLOCK, HELP_ON_SCREEN, ICON_CIRCLE, LINK_UNDERLINE, LIST_VALUE, SUBTITLE,
+  ACCENT_TEXT, CARD, CARD_GAP, CHECK_CIRCLE, CHECK_CIRCLE_OFF, CHECK_CIRCLE_ON,
+  HEADING, HEAD_BLOCK, HELP_ON_SCREEN, ICON_CIRCLE, LINK_UNDERLINE, LIST_TEXT,
+  LIST_VALUE, SUBTITLE,
 } from "@/lib/uiStyles";
 
 const TOTAL_STEPS = 8;
@@ -356,7 +357,7 @@ export default function Onboarding() {
           // The session decides whether this screen is needed at all, so the
           // screen waits for it: no flash of a form that is about to be skipped.
           <div className="flex items-center justify-center py-8">
-            <div className="w-6 h-6 border-2 border-gray-200 border-t-indigo-600 rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-auth-track border-t-indigo-600 rounded-full animate-spin" />
           </div>
         ) : user ? (
           // A session means this step is already answered, and the effect above
@@ -470,10 +471,10 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
           {PRIVACY_POINTS.map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-start gap-3">
               <span className={ICON_CIRCLE}>
-                <Icon size={20} strokeWidth={1.5} className="text-indigo-600" aria-hidden="true" />
+                <Icon size={20} strokeWidth={1.5} className={ACCENT_TEXT} aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <p className="text-[16px] font-medium text-gray-900">{label}</p>
+                <p className={LIST_TEXT}>{label}</p>
                 <p className={LIST_VALUE}>{value}</p>
               </div>
             </div>
@@ -495,7 +496,7 @@ function PrivacyStep({ gdprConsented, setGdprConsented, birthdate, setBirthdate,
         >
           {gdprConsented && <Check size={13} strokeWidth={2.5} />}
         </span>
-        <span className="text-[15px] leading-snug text-gray-500">
+        <span className="text-[15px] leading-snug text-auth-muted">
           I agree to the processing of my health data.{" "}
           <Link to="/privacy" className={LINK_UNDERLINE}>Privacy Policy</Link>
         </span>

@@ -1,21 +1,18 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// The sign-in screens' own theme — Login and the standalone Create account
-// screen.
+// The flow's own theme: the sign-in screens (Login, Create account) and every
+// onboarding screen.
 //
-// These two screens follow the device's own light/dark setting, so their colours
-// are the --auth-* tokens in src/index.css (mapped to classes in
-// tailwind.config.js) rather than the light-only onboarding tokens in
-// uiStyles.js. Every class below is the same in both modes: only the token's
-// value changes, so nothing here is ever drawn in a fixed white, grey or indigo.
+// All of them follow the device's light/dark setting, so their colours are the
+// --auth-* tokens in src/index.css (mapped to classes in tailwind.config.js).
+// Every class below is the same in both modes: only the token's value changes,
+// so nothing anywhere in the flow is ever drawn in a fixed white, grey or black
+// — and because the onboarding screens draw their cards, fields, chips and text
+// through these same definitions (see src/lib/uiStyles.js), every screen
+// switches together from this one place.
 //
 // The one thing that is not a token is the primary pill: it is the app's own
 // indigo with white text in both modes (and its faded indigo while disabled), so
 // it comes from uiStyles.js like every other screen's.
-//
-// The controls these screens share with onboarding — the password field, the
-// strength hint, the two provider buttons — take a `themed` flag, so the
-// onboarding screens that use them stay exactly as light as they have always
-// been.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── The page ─────────────────────────────────────────────────────────────────
@@ -46,6 +43,11 @@ export const AUTH_BODY = "text-[15px] text-auth-muted";
 export const AUTH_HELP = "text-[12.5px] leading-relaxed text-auth-muted";
 export const AUTH_LABEL = "text-sm font-medium text-auth-text mb-2 block";
 export const AUTH_LABEL_TEXT = "text-sm font-medium text-auth-text";
+
+// ── Rows ─────────────────────────────────────────────────────────────────────
+// The hairline between two rows inside a card: present but quiet, and never a
+// heavier line in dark mode than in light.
+export const AUTH_DIVIDE = "divide-y divide-auth-divider";
 
 // ── Links ────────────────────────────────────────────────────────────────────
 // The lighter indigo, which stays readable on a dark surface. The small one is

@@ -7,7 +7,7 @@ import {
   InjectionIcon, PillIcon, NeutralIcon,
 } from "@/components/onboarding/MedicationIcons";
 import { sound } from "@/lib/sounds";
-import { CHIP, CHIP_IDLE, CHIP_ON, CHIP_WRAP, HEADING, HEAD_BLOCK, SUBTITLE } from "@/lib/uiStyles";
+import { ACCENT_TEXT, CHIP, CHIP_IDLE, CHIP_ON, CHIP_WRAP, HEADING, HEAD_BLOCK, SUBTITLE } from "@/lib/uiStyles";
 
 /**
  * The medications onboarding offers, in the order they are shown. Each carries
@@ -40,8 +40,10 @@ const OTHER_MED = MED_OPTIONS.find((o) => o.label === "Other");
  * One medication chip: its route icon, then the name, and a small check when it
  * is chosen. Every chip is the same height, and the icon is the same height and
  * the same distance from the name on all of them, so the names line up. Pill
- * rounded, white with a hairline grey border; the chosen one turns light indigo
- * with an indigo hairline. The icon keeps its own gradient in both states.
+ * rounded, the card's own surface with a hairline border; the chosen one turns
+ * the app's soft indigo with an indigo hairline. The icon keeps its own gradient
+ * in both states, and every colour here comes from the tokens, so the chips
+ * follow the device's light/dark setting like the rest of the flow.
  */
 function MedChip({ label, Icon, selected, onSelect, wrap = false }) {
   return (
@@ -53,7 +55,7 @@ function MedChip({ label, Icon, selected, onSelect, wrap = false }) {
     >
       {Icon && <Icon height={28} />}
       {label}
-      {selected && <Check size={14} className="flex-shrink-0 text-indigo-600" strokeWidth={2.5} />}
+      {selected && <Check size={14} className={`flex-shrink-0 ${ACCENT_TEXT}`} strokeWidth={2.5} />}
     </button>
   );
 }
@@ -79,7 +81,7 @@ export default function MedicationStep({ selectedMed, onSelect }) {
       </div>
 
       {/* The chips sit straight on the screen's background, centred, with the
-          same gap across as between the rows. Each chip keeps its own white
+          same gap across as between the rows. Each chip keeps its own surface
           fill and hairline border, so it stays visible without a card behind
           it. */}
       <div

@@ -5,7 +5,10 @@ import { sound } from "@/lib/sounds";
 import { NOTICE, PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON } from "@/lib/uiStyles";
 
 /**
- * Onboarding shell — warm, light-themed layout matching the Levli marketing site.
+ * Onboarding shell — warm layout matching the Levli marketing site on a light
+ * device, and its dark counterpart when the device is dark: every surface here
+ * comes from the flow's own theme tokens (see src/lib/authStyles.js), so this
+ * shell and the steps inside it switch together with the rest of the flow.
  * Segmented progress bar, ghost back button, pill CTA, slide+fade step transitions.
  *
  * Readability first: every step is drawn at its natural size, and the step area
@@ -98,14 +101,18 @@ export default function OnboardingScreen({
   return (
     <div
       ref={shellRef}
-      className="onb-shell fixed inset-0 bg-[#FAFAFA] flex items-stretch sm:items-center justify-center sm:p-6 overflow-hidden"
+      className="auth-screen onb-shell fixed inset-0 bg-auth-page flex items-stretch sm:items-center justify-center sm:p-6 overflow-hidden"
     >
-      <AmbientBackground />
-      <div className="w-full max-w-lg mx-auto flex flex-col h-full sm:h-[88vh] sm:max-h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:shadow-xl bg-white/70 backdrop-blur-md overflow-hidden relative z-10 border border-gray-100/80">
+      {/* The wash behind the step: on a light device the three soft blobs, on a
+          dark one the page's own indigo glow (drawn by .auth-screen), with the
+          teal and orange blobs dropped so the dark page is the one colour it
+          means to be. */}
+      <AmbientBackground themed />
+      <div className="w-full max-w-lg mx-auto flex flex-col h-full sm:h-[88vh] sm:max-h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:shadow-xl bg-auth-panel backdrop-blur-md overflow-hidden relative z-10 border border-auth-divider">
         {/* Header — back + segmented progress */}
         <div
           className={`flex flex-shrink-0 items-center border-b px-5 pt-5 pb-1.5 transition-colors sm:px-6 sm:pt-6 ${
-            scrolled ? "border-gray-200" : "border-transparent"
+            scrolled ? "border-auth-border" : "border-transparent"
           } ${isFirstStep ? "" : "gap-3"}`}
         >
           {/* The back button keeps its 2rem slot on the first step, where there
@@ -115,10 +122,10 @@ export default function OnboardingScreen({
             {!isFirstStep && (
               <button
                 onClick={() => { sound.tap(); onBack(); }}
-                className="w-8 h-8 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all"
+                className="w-8 h-8 rounded-full border border-auth-border bg-auth-card flex items-center justify-center hover:bg-auth-surface active:scale-95 transition-all"
                 aria-label="Back"
               >
-                <ChevronLeft size={17} className="text-gray-600" />
+                <ChevronLeft size={17} className="text-auth-muted" />
               </button>
             )}
           </div>
@@ -131,7 +138,7 @@ export default function OnboardingScreen({
               <div
                 key={i}
                 className={`h-1.5 flex-1 rounded-full transition-colors duration-500 ${
-                  i <= step ? "bg-indigo-600" : "bg-gray-200"
+                  i <= step ? "bg-indigo-600" : "bg-auth-track"
                 }`}
               />
             ))}
@@ -161,7 +168,7 @@ export default function OnboardingScreen({
               in a hard line. */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-white/95 to-transparent"
+            className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-auth-fade to-transparent"
           />
         </div>
 

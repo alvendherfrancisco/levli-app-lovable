@@ -2,7 +2,7 @@ import React from "react";
 import { Check } from "lucide-react";
 import { sound } from "@/lib/sounds";
 import {
-  CHECK_CIRCLE, CHECK_CIRCLE_OFF, CHECK_CIRCLE_ON, ICON_CIRCLE, LIST_TEXT,
+  ACCENT_TEXT, CHECK_CIRCLE, CHECK_CIRCLE_OFF, CHECK_CIRCLE_ON, ICON_CIRCLE, LIST_TEXT,
 } from "@/lib/uiStyles";
 
 /**
@@ -28,8 +28,8 @@ import {
 export default function OptionCard({ icon: Icon, label, selected, onToggle }) {
   return (
     <label
-      className={`flex min-h-[56px] w-full cursor-pointer items-center gap-3 bg-white py-2 transition-colors focus-within:bg-gray-50 dark:focus-within:bg-white/[0.06] ${
-        selected ? "bg-indigo-50/70 dark:bg-indigo-500/10" : "dark:bg-transparent"
+      className={`flex min-h-[56px] w-full cursor-pointer items-center gap-3 py-2 transition-colors focus-within:bg-auth-surface ${
+        selected ? "bg-auth-tint" : "bg-auth-card"
       }`}
     >
       <input
@@ -40,7 +40,7 @@ export default function OptionCard({ icon: Icon, label, selected, onToggle }) {
       />
 
       <span className={ICON_CIRCLE}>
-        <Icon size={20} strokeWidth={1.5} className="text-indigo-600" aria-hidden="true" />
+        <Icon size={20} strokeWidth={1.5} className={ACCENT_TEXT} aria-hidden="true" />
       </span>
 
       <span className={`min-w-0 flex-1 ${LIST_TEXT}`}>

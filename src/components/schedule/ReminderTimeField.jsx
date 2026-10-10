@@ -28,15 +28,12 @@ function formatTime(value) {
 function TimeField({ id, value, onChange, label }) {
   return (
     <div className="relative">
-      <Clock className={`${FIELD_MARK} dark:text-[#9A9DAE]`} aria-hidden="true" />
-      <span
-        aria-hidden="true"
-        className={`${FIELD} flex items-center pr-9 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0]`}
-      >
+      <Clock className={FIELD_MARK} aria-hidden="true" />
+      <span aria-hidden="true" className={`${FIELD} flex items-center pr-9`}>
         {formatTime(value)}
       </span>
       <ChevronDown
-        className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-[#9A9DAE]"
+        className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-auth-faint"
         aria-hidden="true"
       />
       <input
@@ -45,7 +42,7 @@ function TimeField({ id, value, onChange, label }) {
         value={value || ""}
         onChange={(e) => onChange(e.target.value)}
         aria-label={label}
-        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0 dark:[color-scheme:dark]"
       />
     </div>
   );
@@ -78,13 +75,13 @@ export default function ReminderTimeField({ value, onChange, optional = false })
           >
             {on && <Check size={13} strokeWidth={2.5} />}
           </span>
-          <span className={`${LABEL_TEXT} leading-snug dark:text-gray-300`}>
+          <span className={`${LABEL_TEXT} leading-snug`}>
             Remind me at a time I choose
           </span>
         </label>
         {on && (
           <div className="mt-3">
-            <label htmlFor="reminder-time" className={`${LABEL_TEXT} mb-2 block dark:text-gray-300`}>
+            <label htmlFor="reminder-time" className={`${LABEL_TEXT} mb-2 block`}>
               Reminder time
             </label>
             <TimeField id="reminder-time" value={value} onChange={onChange} label="Reminder time" />
@@ -96,11 +93,11 @@ export default function ReminderTimeField({ value, onChange, optional = false })
 
   return (
     <div>
-      <label htmlFor="reminder-time" className={`${LABEL_TEXT} mb-2 block dark:text-gray-300`}>
+      <label htmlFor="reminder-time" className={`${LABEL_TEXT} mb-2 block`}>
         Reminder time
       </label>
       <TimeField id="reminder-time" value={value} onChange={onChange} label="Reminder time" />
-      {!value && <p className={`${HELP_IN_CARD} mt-2 dark:text-[#9A9DAE]`}>No time set, so no reminder.</p>}
+      {!value && <p className={`${HELP_IN_CARD} mt-2`}>No time set, so no reminder.</p>}
     </div>
   );
 }

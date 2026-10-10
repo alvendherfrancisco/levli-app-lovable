@@ -3,10 +3,14 @@ import { Check } from "lucide-react";
 import { sound } from "@/lib/sounds";
 import { isSet, isBlockedClear, nextSingle } from "@/lib/optionGroup";
 
-const LABEL_CLASS = "text-sm font-semibold text-gray-700 dark:text-gray-300";
+// The label, the chips and the helper line come from the flow's own tokens (see
+// src/lib/authStyles.js), so every form that draws a group of chips switches with
+// the device's light/dark setting. The chosen chip is the app's indigo in both
+// modes, with white on it.
+const LABEL_CLASS = "text-sm font-semibold text-auth-text";
 const CHIP_CLASS = "inline-flex items-center gap-1.5 min-h-[44px] rounded-xl border-2 px-3 text-sm font-semibold transition-colors";
 const SELECTED_CLASS = "bg-indigo-600 border-indigo-600 text-white";
-const UNSELECTED_CLASS = "bg-white dark:bg-white/[0.05] border-gray-200 dark:border-white/[0.12] text-gray-900 dark:text-[#E8E9F0]";
+const UNSELECTED_CLASS = "bg-auth-card border-auth-border text-auth-text";
 
 /**
  * One selectable option group, shared by every form in the app.
@@ -66,7 +70,7 @@ export default function OptionChips({
             <button
               type="button"
               onClick={clear}
-              className="min-h-[44px] inline-flex items-center px-2 -mr-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 active:opacity-70"
+              className="min-h-[44px] inline-flex items-center px-2 -mr-2 text-xs font-semibold text-auth-link active:opacity-70"
             >
               {clearLabel}
             </button>
@@ -96,9 +100,9 @@ export default function OptionChips({
         })}
       </div>
 
-      {helper && <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-2 leading-snug">{helper}</p>}
+      {helper && <p className="text-xs text-auth-muted mt-2 leading-snug">{helper}</p>}
       {canClear && showClearHint && (
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Tap again to clear</p>
+        <p className="text-xs text-auth-faint mt-1.5">Tap again to clear</p>
       )}
       {blocked && blockedMessage && (
         <p className="text-xs text-orange-600 dark:text-orange-400 mt-1.5">{blockedMessage}</p>

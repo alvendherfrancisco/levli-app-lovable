@@ -19,13 +19,13 @@ import { sound } from "@/lib/sounds";
  * screen-reader label. Each keeps its own brand's ground: Google's mark on the
  * card's surface, Apple's on the inverse of it.
  *
- * `themed` is for the sign-in screens, which follow the device's light/dark
- * setting (see src/lib/authStyles.js): the divider and both buttons then take
- * their colours from the tokens instead of a fixed white. Google keeps its own
- * brand mark either way; Apple's circle turns white with a black mark on a dark
- * surface. The onboarding screens leave it off and are drawn exactly as before.
+ * Every colour here is the flow's own token (see src/lib/authStyles.js), so both
+ * marks, the hairline and the word follow the device's light/dark setting on
+ * every screen that draws them — the two account cards and onboarding's account
+ * step are the same row. Google keeps its own brand mark either way; Apple's
+ * circle turns white with a black mark on a dark surface.
  */
-export default function SocialAuthButtons({ onProvider, disabled = false, themed = false }) {
+export default function SocialAuthButtons({ onProvider, disabled = false }) {
   const circle =
     "flex h-14 w-14 items-center justify-center rounded-full transition-all active:scale-95 disabled:opacity-60";
 
@@ -36,10 +36,10 @@ export default function SocialAuthButtons({ onProvider, disabled = false, themed
           own surface. */}
       <div className="relative my-5">
         <div className="absolute inset-0 flex items-center">
-          <div className={themed ? AUTH_DIVIDER_LINE : "w-full border-t border-gray-200"} />
+          <div className={AUTH_DIVIDER_LINE} />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className={themed ? AUTH_DIVIDER_TEXT : "bg-white px-3 text-gray-400"}>or</span>
+          <span className={AUTH_DIVIDER_TEXT}>or</span>
         </div>
       </div>
 
@@ -49,7 +49,7 @@ export default function SocialAuthButtons({ onProvider, disabled = false, themed
           disabled={disabled}
           aria-label="Continue with Google"
           onClick={() => { sound.tap(); onProvider("google"); }}
-          className={`${circle} ${themed ? AUTH_PROVIDER_BTN : "border border-gray-200 bg-white hover:border-gray-300"}`}
+          className={`${circle} ${AUTH_PROVIDER_BTN}`}
         >
           <GoogleIcon className="h-6 w-6" />
         </button>
@@ -59,7 +59,7 @@ export default function SocialAuthButtons({ onProvider, disabled = false, themed
           disabled={disabled}
           aria-label="Continue with Apple"
           onClick={() => { sound.tap(); onProvider("apple"); }}
-          className={`${circle} ${themed ? AUTH_APPLE_BTN : "bg-black text-white hover:bg-gray-900"}`}
+          className={`${circle} ${AUTH_APPLE_BTN}`}
         >
           <AppleIcon className="h-6 w-6" />
         </button>

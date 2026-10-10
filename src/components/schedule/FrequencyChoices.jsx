@@ -38,13 +38,13 @@ export default function FrequencyChoices({ medication, value, onChange, layout =
         <div
           role="group"
           aria-label="How often"
-          className="flex h-12 items-center justify-between gap-3 rounded-full border border-indigo-500 bg-indigo-50 px-4 dark:border-indigo-500/40 dark:bg-indigo-500/10"
+          className="flex h-12 items-center justify-between gap-3 rounded-full border border-auth-tint-border bg-auth-tint px-4"
         >
-          <span className={`flex items-center gap-2 ${LIST_TEXT} text-indigo-700 dark:text-indigo-300`}>
+          <span className={`flex items-center gap-2 ${LIST_TEXT} text-auth-link`}>
             <Check size={14} strokeWidth={2.5} aria-hidden="true" />
             {options[0].label}
           </span>
-          <span className="flex-shrink-0 text-xs font-medium text-indigo-500 dark:text-indigo-300">
+          <span className="flex-shrink-0 text-xs font-medium text-auth-link">
             From the label
           </span>
         </div>

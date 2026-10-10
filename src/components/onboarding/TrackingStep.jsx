@@ -5,7 +5,7 @@ import { TrackingIllustration } from "@/components/onboarding/OnboardingIllustra
 import { TRACKING_MODULES } from "@/lib/trackingModules";
 import { sound } from "@/lib/sounds";
 import {
-  CARD, CARD_GAP, HEADING, HEAD_BLOCK, LABEL, SUBTITLE,
+  CARD, CARD_GAP, DIVIDE_ROWS, HEADING, HEAD_BLOCK, LABEL, SUBTITLE,
 } from "@/lib/uiStyles";
 
 // The gap between this screen's two cards is the screen's own side margin, so
@@ -56,7 +56,7 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
         aria-label="What would you like to keep an eye on?"
         className={`${CARD} ${CARD_GAP_MARGIN} overflow-hidden`}
       >
-        <div className="divide-y divide-gray-100 dark:divide-white/[0.08]">
+        <div className={DIVIDE_ROWS}>
           {TRACKING_MODULES.map((opt) => (
             <OptionCard
               key={opt.key}
@@ -74,16 +74,16 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
           app's standard surface. */}
       <div className={`${CARD} ${CARD_GAP}`}>
         <p className={LABEL}>Measurement preferences</p>
-        <div className="divide-y divide-gray-100 dark:divide-white/[0.08]">
+        <div className={DIVIDE_ROWS}>
           {UNIT_GROUPS.map((group) => (
             <div key={group.key} className="flex items-center justify-between gap-3 py-2">
-              <span className="text-[16px] text-gray-900 dark:text-[#E8E9F0]">{group.label}</span>
+              <span className="text-[16px] text-auth-text">{group.label}</span>
               {/* One pill, split in two: the same width and height on every row,
                   so the three sit in a neat column. */}
               <div
                 role="group"
                 aria-label={group.label}
-                className="flex h-10 w-[112px] flex-shrink-0 rounded-full bg-gray-100 p-0.5 dark:bg-white/[0.08]"
+                className="flex h-10 w-[112px] flex-shrink-0 rounded-full bg-auth-track p-0.5"
               >
                 {group.options.map((opt) => {
                   const on = units[group.key] === opt.value;
@@ -94,7 +94,7 @@ export default function TrackingStep({ tracking, setTracking, units, setUnits })
                       aria-pressed={on}
                       onClick={() => { sound.tap(); setUnits((prev) => ({ ...prev, [group.key]: opt.value })); }}
                       className={`flex-1 rounded-full text-[14px] font-medium transition-colors ${
-                        on ? "bg-indigo-600 text-white" : "text-gray-600 hover:text-gray-900"
+                        on ? "bg-indigo-600 text-white" : "text-auth-muted hover:text-auth-text"
                       }`}
                     >
                       {opt.label}

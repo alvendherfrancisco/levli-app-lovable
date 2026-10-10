@@ -64,7 +64,20 @@ module.exports = {
   			'notice-border': 'rgb(var(--auth-notice-border))',
   			'notice-text': 'rgb(var(--auth-notice-text))',
   			apple: 'rgb(var(--auth-apple))',
-  			'apple-fg': 'rgb(var(--auth-apple-fg))'
+  			'apple-fg': 'rgb(var(--auth-apple-fg))',
+  			// The panel a step scrolls inside, the soft edge it leaves through, the
+  			// surface a control takes while hovered, the row hairline, the neutral
+  			// border, the soft indigo surface and its hairline, and the notice.
+  			panel: 'rgb(var(--auth-panel))',
+  			fade: 'rgb(var(--auth-fade))',
+  			surface: 'rgb(var(--auth-surface))',
+  			divider: 'rgb(var(--auth-divider))',
+  			'border-strong': 'rgb(var(--auth-border-strong))',
+  			tint: 'rgb(var(--auth-tint))',
+  			'tint-border': 'rgb(var(--auth-tint-border))',
+  			ok: 'rgb(var(--auth-ok-bg))',
+  			'ok-border': 'rgb(var(--auth-ok-border))',
+  			'ok-text': 'rgb(var(--auth-ok-text))'
   		},
   		chart: {
   			'1': 'hsl(var(--chart-1))',

@@ -6,6 +6,7 @@ import AccountEmailForm from "@/components/onboarding/AccountEmailForm";
 import GoogleIcon from "@/components/GoogleIcon";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import { formBlocker, isEmailTakenError } from "@/lib/accountValidation";
+import { AUTH_PROVIDER_BTN } from "@/lib/authStyles";
 import { sound } from "@/lib/sounds";
 import {
   HEADING, HEAD_BLOCK, HELP_ON_SCREEN, LINK, LINK_UNDERLINE, NOTICE, SUBTITLE,
@@ -87,7 +88,7 @@ export default function SignUpStep({
 
       {taken ? (
         <div className="flex w-full flex-col items-center">
-          <p className="mb-2 text-center text-[16px] font-medium text-gray-900">
+          <p className="mb-2 text-center text-[16px] font-medium text-auth-text">
             This email is already registered.
           </p>
           <p className={`${SUBTITLE} mb-4`}>
@@ -97,7 +98,7 @@ export default function SignUpStep({
             type="button"
             aria-label="Continue with Google"
             onClick={() => { sound.tap(); onProvider("google"); }}
-            className="flex min-h-[56px] w-full items-center justify-center gap-3 rounded-full border border-gray-200 bg-white px-5 text-[16px] font-medium text-gray-900 transition-all hover:border-gray-300 active:scale-[0.98]"
+            className={`flex min-h-[56px] w-full items-center justify-center gap-3 rounded-full px-5 text-[16px] font-medium text-auth-text transition-all active:scale-[0.98] ${AUTH_PROVIDER_BTN}`}
           >
             <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
               <GoogleIcon className="h-6 w-6" />
@@ -110,7 +111,7 @@ export default function SignUpStep({
           <button
             type="button"
             onClick={() => { sound.tap(); setTaken(false); setError(""); }}
-            className="mt-3 text-[13px] text-gray-400 hover:text-gray-600"
+            className="mt-3 text-[13px] text-auth-faint hover:text-auth-muted"
           >
             Use a different email
           </button>
@@ -138,7 +139,7 @@ export default function SignUpStep({
             <Link to="/privacy" className={LINK_UNDERLINE}>Privacy Policy</Link>.
           </p>
 
-          <p className="mt-6 text-center text-[15px] text-gray-500">
+          <p className="mt-6 text-center text-[15px] text-auth-muted">
             Already have an account?{" "}
             <Link to="/login" className={LINK}>Log in</Link>
           </p>

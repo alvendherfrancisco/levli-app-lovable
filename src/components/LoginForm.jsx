@@ -95,7 +95,7 @@ export default function LoginForm({
           </div>
         </div>
 
-        <SocialAuthButtons onProvider={onProvider} disabled={loading} themed />
+        <SocialAuthButtons onProvider={onProvider} disabled={loading} />
       </div>
 
       {/* Log in — the same pill as the shell's Next and the account step's

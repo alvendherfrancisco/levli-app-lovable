@@ -38,7 +38,7 @@ export default function InjectionDays({ count, value = [], onChange }) {
 
   return (
     <div>
-      <p className={`${LABEL} dark:text-gray-300`}>
+      <p className={LABEL}>
         {twoDays ? "Injection days" : "Injection day"}
       </p>
       <div className="flex justify-between gap-1" role="group" aria-label={twoDays ? "Injection days" : "Injection day"}>
@@ -68,7 +68,7 @@ export default function InjectionDays({ count, value = [], onChange }) {
       )}
 
       {twoDays && chosen.length === 2 && daysAreClose(chosen[0], chosen[1]) && (
-        <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[12.5px] leading-snug text-amber-800">
+        <p className="mt-2 rounded-xl border border-auth-notice-border bg-auth-notice px-3 py-2 text-[12.5px] leading-snug text-auth-notice-text">
           Those two days sit next to each other. Check the plan your prescriber gave you.
         </p>
       )}

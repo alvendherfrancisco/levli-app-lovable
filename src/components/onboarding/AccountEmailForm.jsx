@@ -8,7 +8,7 @@ import {
 // The field, label, card, notice and button styles, shared with the sign-in
 // card so the account screens can never drift apart.
 import {
-  CARD, ERROR_TEXT, FIELD, FIELD_MARK, HELP_IN_CARD, LABEL, NOTICE,
+  CARD, ERROR_TEXT, FIELD, FIELD_EYE, FIELD_MARK, HELP_IN_CARD, LABEL, NOTICE,
   PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON,
 } from "@/lib/uiStyles";
 import { sound } from "@/lib/sounds";
@@ -124,7 +124,7 @@ export default function AccountEmailForm({
               type="button"
               onClick={() => { sound.tap(); setShowPassword((s) => !s); }}
               aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 hover:text-gray-600"
+              className={FIELD_EYE}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
