@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { X, Save, ChevronDown } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import useModal from "@/hooks/useModal";
+import useDiscardConfirm from "@/hooks/useDiscardConfirm";
 import { toast } from "@/lib/toast";
 import { sound } from "@/lib/sounds";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -80,7 +81,9 @@ export default function InventoryModal({ open, onClose, editing }) {
     setSaving(false);
   }, [open, editing]);
 
-  const sheetRef = useModal({ open, onDismiss: onClose });
+  // Closing with something typed in asks first, in the app's own dialog.
+  const { requestClose, dialog } = useDiscardConfirm({ dirty: () => isDirty(), onClose });
+  const sheetRef = useModal({ open, onDismiss: requestClose });
 
   if (!open) return null;
 
@@ -110,6 +113,42 @@ export default function InventoryModal({ open, onClose, editing }) {
       .some((key) => String(form[key] ?? "") !== String(start[key] ?? ""));
   };
 
+  /**
+   * Everything the save needs: a product, the expiry date the box carries, and
+   * how many there are. Run live to gate the Save button and again by the save
+   * itself, so a dimmed button and a refused save can never disagree.
+   */
+  const problems = () => {
+    const found = {};
+    const name = String(form.productName || "").trim();
+    const quantity = String(form.quantity || "").trim();
+
+    if (!name) {
+      found.product = form.productIsOther
+        ? "Type the product name from the box or pen."
+        : "Tap your product, or choose Other and type it.";
+    }
+    if (!form.expiryDate) found.expiry = "Add the expiry date printed on the box or pen.";
+    if (!/^\d+$/.test(quantity) || Number(quantity) < 1) found.quantity = "Enter how many you have as a whole number.";
+    if (form.openedDate) {
+      if (form.expiryDate && form.expiryDate < form.openedDate) found.expiry = "The expiry date can't be before the opened date.";
+      if (view.inUseExpiry && view.inUseExpiry < form.openedDate) found.inUseExpiry = "The in-use expiry can't be before the opened date.";
+    }
+    return found;
+  };
+
+  // Nothing to save until the three answers are there: a product, the expiry
+  // date the box carries, and how many there are — and, on an edit, until
+  // something has actually changed from the saved product. The date-ordering
+  // checks belong to the save itself, which flags them inline and opens the
+  // details section, so pressing the button is always how a mistake is found.
+  const canSave = !saving
+    && !!String(form.productName || "").trim()
+    && !!form.expiryDate
+    && /^\d+$/.test(String(form.quantity || "").trim())
+    && Number(form.quantity) >= 1
+    && (!editing || isDirty());
+
   // Switching product resets the unit and the suggested dates to the new
   // product's own defaults, and clears the count entered for the old one.
   const applyProduct = (next) => {
@@ -132,25 +171,14 @@ export default function InventoryModal({ open, onClose, editing }) {
   };
 
   const handleSave = async () => {
-    const problems = {};
     const name = String(form.productName || "").trim();
     const quantity = String(form.quantity || "").trim();
+    const found = problems();
 
-    if (!name) {
-      problems.product = form.productIsOther
-        ? "Type the product name from the box or pen."
-        : "Tap your product, or choose Other and type it.";
-    }
-    if (!form.expiryDate) problems.expiry = "Add the expiry date printed on the box or pen.";
-    if (!/^\d+$/.test(quantity) || Number(quantity) < 1) problems.quantity = "Enter how many you have as a whole number.";
-    if (form.openedDate) {
-      if (form.expiryDate && form.expiryDate < form.openedDate) problems.expiry = "The expiry date can't be before the opened date.";
-      if (view.inUseExpiry && view.inUseExpiry < form.openedDate) problems.inUseExpiry = "The in-use expiry can't be before the opened date.";
-    }
-    if (Object.keys(problems).length) {
+    if (Object.keys(found).length) {
       sound.warning();
-      setErrors(problems);
-      if (problems.inUseExpiry) setDetailsOpen(true);
+      setErrors(found);
+      if (found.inUseExpiry) setDetailsOpen(true);
       return;
     }
 
@@ -190,7 +218,7 @@ export default function InventoryModal({ open, onClose, editing }) {
   return (
     <>
       <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
-        <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={onClose} aria-hidden="true" />
+        <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={requestClose} aria-hidden="true" />
         <div
           ref={sheetRef}
           role="dialog"
@@ -203,7 +231,7 @@ export default function InventoryModal({ open, onClose, editing }) {
             <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
             <div className="flex items-center justify-between px-5 pb-4">
               <h2 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0]">{editing ? "Edit Product" : "Add Product"}</h2>
-              <button onClick={onClose} aria-label="Close"><X size={22} className="text-gray-400" /></button>
+              <button onClick={requestClose} aria-label="Close"><X size={22} className="text-gray-400" /></button>
             </div>
           </div>
 
@@ -268,13 +296,15 @@ export default function InventoryModal({ open, onClose, editing }) {
           </div>
 
           <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
-            <button onClick={handleSave} disabled={saving}
-              className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
+            <button onClick={handleSave} disabled={!canSave} aria-disabled={!canSave || undefined}
+              className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2">
               <Save size={16} /> {saving ? "Saving…" : editing ? "Update" : "Save"}
             </button>
           </div>
         </div>
       </div>
+
+      {dialog}
 
       {/* Switching product asks first, in the app's own dialog. */}
       <ConfirmDialog

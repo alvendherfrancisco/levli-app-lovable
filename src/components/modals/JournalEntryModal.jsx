@@ -7,6 +7,8 @@ import UrgentHelpCard from "@/components/sideEffects/UrgentHelpCard";
 import { JOURNAL_CATEGORIES, MOOD_SCALE, moodFor } from "@/lib/journalMeta";
 import { SEVERITY_LEVELS } from "@/lib/sideEffectSymptoms";
 import useModal from "@/hooks/useModal";
+import useDiscardConfirm from "@/hooks/useDiscardConfirm";
+import { hasChanged } from "@/lib/formValidity";
 import { toast } from "@/lib/toast";
 
 function nowFormatted() {
@@ -47,14 +49,25 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
     setUrgentOpen(false);
   }, [open, initialEntry]);
 
-  const sheetRef = useModal({ open, onDismiss: onClose });
+  // What was saved, so an edit with nothing changed has nothing to save: the
+  // words have to be there, and something has to differ from the entry.
+  const savedEntry = {
+    text: initialEntry?.text || "",
+    mood: initialEntry ? moodFor(initialEntry.mood).label : MOOD_SCALE[2].label,
+    category: initialEntry?.category || "General",
+  };
+  const edited = hasChanged({ text: text.trim(), mood: mood.label, category }, savedEntry);
+  const canSave = !!text.trim() && edited;
+
+  const { requestClose, dialog } = useDiscardConfirm({ dirty: () => edited, onClose });
+  const sheetRef = useModal({ open, onDismiss: requestClose });
 
   if (!open) return null;
 
   const recentMed = getRecentMedication(shots, null);
 
   const handleSave = async () => {
-    if (!text.trim()) return;
+    if (!canSave) return;
     try {
       const { date, time } = initialEntry ? { date: initialEntry.date, time: initialEntry.time } : nowFormatted();
       await onSave({
@@ -72,8 +85,9 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
   };
 
   return (
+    <>
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={requestClose} aria-hidden="true" />
       <div
         ref={sheetRef}
         role="dialog"
@@ -90,7 +104,7 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
             <h2 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0]">{initialEntry ? "Edit Entry" : "New Journal Entry"}</h2>
             <div className="flex items-center gap-3">
               {onDelete && <button onClick={onDelete}><Trash2 size={20} className="text-gray-400" /></button>}
-              <button onClick={onClose}><X size={22} className="text-gray-400" /></button>
+              <button onClick={requestClose}><X size={22} className="text-gray-400" /></button>
             </div>
           </div>
         </div>
@@ -179,12 +193,14 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
         )}
 
         <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
-          <button onClick={handleSave} disabled={!text.trim()}
-            className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+          <button onClick={handleSave} disabled={!canSave} aria-disabled={!canSave || undefined}
+            className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2">
             <Save size={16} /> {initialEntry ? "Update Entry" : "Save Entry"}
           </button>
         </div>
       </div>
     </div>
+    {dialog}
+    </>
   );
 }

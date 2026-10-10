@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { X, Save, Pause, Play, Trash2, CalendarX } from "lucide-react";
 import { toast } from "@/lib/toast";
 import useModal from "@/hooks/useModal";
+import useDiscardConfirm from "@/hooks/useDiscardConfirm";
 import { useAppState } from "@/lib/AppState";
+import { hasChanged, isAboveZero } from "@/lib/formValidity";
 import DoseChips from "@/components/modals/DoseChips";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import OptionChips from "@/components/OptionChips";
@@ -28,19 +30,39 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [askingCancel, setAskingCancel] = useState(false);
+  // The schedule as it was loaded, so an untouched sheet has nothing to save.
+  const [savedFields, setSavedFields] = useState({});
 
   useEffect(() => {
     if (!open || !schedule) return;
+    const loadedMode = schedule.repeat_mode || "weeks";
+    const loadedWeeks = schedule.repeat_weeks ? String(schedule.repeat_weeks) : "12";
     setDose(schedule.dose != null ? String(schedule.dose) : "");
     setUnit(schedule.dose_unit || "mg");
     setTime(schedule.time || "08:00");
-    setMode(schedule.repeat_mode || "weeks");
-    setWeeks(schedule.repeat_weeks ? String(schedule.repeat_weeks) : "12");
+    setMode(loadedMode);
+    setWeeks(loadedWeeks);
     setStartDate(schedule.start_date || "");
     setNotes(schedule.notes || "");
+    setSavedFields({
+      dose: schedule.dose != null ? String(schedule.dose) : "",
+      unit: schedule.dose_unit || "mg",
+      time: schedule.time || "08:00",
+      mode: loadedMode,
+      weeks: loadedMode === "weeks" ? loadedWeeks : "",
+      startDate: schedule.start_date || "",
+      notes: schedule.notes || "",
+    });
   }, [open, schedule]);
 
-  const sheetRef = useModal({ open: open && !!schedule, onDismiss: onClose });
+  // A dose is required — empty and zero are not a dose — and nothing is saved
+  // until something has actually changed from what the repeat was running on.
+  const currentFields = { dose, unit, time, mode, weeks: mode === "weeks" ? weeks : "", startDate, notes };
+  const edited = hasChanged(currentFields, savedFields);
+  const canSave = isAboveZero(dose) && edited;
+
+  const { requestClose, dialog } = useDiscardConfirm({ dirty: () => edited, onClose });
+  const sheetRef = useModal({ open: open && !!schedule, onDismiss: requestClose });
 
   if (!open || !schedule) return null;
 
@@ -100,7 +122,7 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
   return (
     <>
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={requestClose} aria-hidden="true" />
       <div
         ref={sheetRef}
         role="dialog"
@@ -116,7 +138,7 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
               <h2 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0]">Repeat schedule</h2>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{schedule.medication}</p>
             </div>
-            <button onClick={onClose}><X size={22} className="text-gray-400" /></button>
+            <button onClick={requestClose}><X size={22} className="text-gray-400" /></button>
           </div>
         </div>
 
@@ -210,8 +232,8 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
 
         <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08] space-y-2" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
           <button
-            onClick={handleSave} disabled={saving}
-            className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+            onClick={handleSave} disabled={!canSave} aria-disabled={!canSave || undefined}
+            className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2"
           >
             <Save size={16} /> {saving ? "Saving…" : "Save changes"}
           </button>
@@ -232,6 +254,8 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
         </div>
       </div>
     </div>
+
+    {dialog}
 
     {/* Its own dialog sits outside the sheet, so it dims the sheet as well. */}
     <ConfirmDialog

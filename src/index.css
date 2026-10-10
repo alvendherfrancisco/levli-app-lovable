@@ -922,6 +922,9 @@ html { background-color: var(--launch-bg); }
   --btn-bg-press: 55 48 163;    /* indigo-800 — pressed */
   --btn-bg-off: 165 180 252;    /* indigo-300 — a disabled pill stays indigo */
   --btn-fg: 255 255 255;
+  /* The label on a dimmed pill: the same white, held back so the whole button
+     reads as faded and still legible at a glance. Only used while disabled. */
+  --btn-fg-off: 255 255 255 / 0.62;
   --btn-shadow: 0 10px 22px -12px rgb(79 70 229 / 0.75);
   --btn-2-bg: 255 255 255;      /* secondary */
   --btn-2-fg: 31 41 55;
@@ -935,6 +938,7 @@ html { background-color: var(--launch-bg); }
 
 .dark {
   --btn-bg-off: 99 102 241 / 0.45; /* a faded indigo on the dark surface */
+  --btn-fg-off: 255 255 255 / 0.6;
   --btn-shadow: 0 10px 22px -12px rgb(0 0 0 / 0.6);
   --btn-2-bg: 255 255 255 / 0.06;
   --btn-2-fg: 232 233 240;
@@ -981,11 +985,20 @@ html { background-color: var(--launch-bg); }
 }
 .btn-primary:hover { background-color: rgb(var(--btn-bg-hover)); }
 .btn-primary:active { background-color: rgb(var(--btn-bg-press)); }
+/* A pill with nothing to save yet: the same shape and size, a faded indigo
+   fill, a held-back label, no shadow, and no reaction to a press. The dimmed
+   state is set in code (both `disabled` and `aria-disabled`), so a tap does
+   nothing and a screen reader announces it as dimmed. */
 .btn-primary:disabled,
 .btn-primary[aria-disabled="true"] {
   background-color: rgb(var(--btn-bg-off));
+  color: rgb(var(--btn-fg-off));
   box-shadow: none;
   cursor: not-allowed;
+}
+.btn-primary:disabled:active,
+.btn-primary[aria-disabled="true"]:active {
+  background-color: rgb(var(--btn-bg-off));
 }
 
 .btn-secondary {
@@ -1047,6 +1060,19 @@ button[class~="rounded-full"][class~="text-sm"] {
   min-height: var(--btn-h-sm);
   padding-left: var(--btn-pad-x-sm);
   padding-right: var(--btn-pad-x-sm);
+}
+
+/* An action filled indigo without the .btn-primary class takes the same
+   dimmed state, so "nothing to save yet" is one look across every form
+   rather than something each button draws for itself. */
+button[class~="bg-indigo-600"]:disabled,
+a[class~="bg-indigo-600"]:disabled,
+button[class~="bg-indigo-500"]:disabled,
+button[class~="bg-indigo-600"][aria-disabled="true"],
+button[class~="bg-indigo-500"][aria-disabled="true"] {
+  background-color: rgb(var(--btn-bg-off));
+  color: rgb(var(--btn-fg-off));
+  box-shadow: none;
 }
 
 /* ── The Home date strip's day tile: the one filled action that is not a pill ─

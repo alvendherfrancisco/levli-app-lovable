@@ -21,6 +21,7 @@ import ShotRouteDeviceFields from "@/components/modals/ShotRouteDeviceFields";
 import RepeatOptionsField from "@/components/modals/RepeatOptionsField";
 import DoseChips from "@/components/modals/DoseChips";
 import { chipsForMedication, withCustomDose } from "@/lib/doseOptions";
+import { isAboveZero } from "@/lib/formValidity";
 import ShotSuccessPanel from "@/components/modals/ShotSuccessPanel";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -474,6 +475,17 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     else await setProfile({ ...profile, custom_doses: withCustomDose(profile?.custom_doses || [], medication, value) });
     setDose(String(value));
   };
+
+  // What the footer's Save needs before it may act: a medication (the name typed
+  // for a custom product counts), a real dose that its label lists, a date and a
+  // time. While editing an existing log, something has to have actually changed
+  // from it. A brand-new log is a different case: the medication and dose it
+  // opens with are the record being logged, so they are ready to save as they
+  // are — that one-tap log is the point of this sheet.
+  const shotMedication = isCustomProduct ? (customName.trim() || medication) : medication;
+  const doseNumber = parseFloat(dose);
+  const doseReady = isAboveZero(dose) && (isCustomProduct || validateDosePair(medication, doseNumber).valid);
+  const canSave = !saving && !!shotMedication && doseReady && !!date && !!time && (!editingShot || dirtyRef.current);
 
   const handleSave = async () => {
     // Saving puts the keyboard away.
@@ -1101,8 +1113,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                 Done
               </button>
             ) : (
-              <button onClick={handleSave} disabled={saving}
-                className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
+              <button onClick={handleSave} disabled={!canSave} aria-disabled={!canSave || undefined}
+                className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2">
                 <Save size={16} /> {saving ? "Saving…" : editingShot ? "Update Shot" : "Save Shot"}
               </button>
             )}

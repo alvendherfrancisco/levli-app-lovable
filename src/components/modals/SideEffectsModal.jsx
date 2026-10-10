@@ -10,6 +10,8 @@ import DateInput from "@/components/DateInput";
 import SideEffectChecklist from "@/components/sideEffects/SideEffectChecklist";
 import UrgentHelpCard from "@/components/sideEffects/UrgentHelpCard";
 import useModal from "@/hooks/useModal";
+import useDiscardConfirm from "@/hooks/useDiscardConfirm";
+import { hasChanged } from "@/lib/formValidity";
 import { toast } from "@/lib/toast";
 import { sound } from "@/lib/sounds";
 
@@ -47,7 +49,15 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
     setSevereLogged(false);
   }, [open, dayKey]);
 
-  const sheetRef = useModal({ open, onDismiss: onClose });
+  // Anything the person has put in and not yet saved. A symptom is what the
+  // save needs, so the button stays dimmed until at least one is ticked.
+  const edited = hasChanged(
+    { symptoms: selected.join(","), severity, date, note: note.trim() },
+    { symptoms: "", severity: "", date: dayKey || todayKey(), note: "" },
+  );
+
+  const { requestClose, dialog } = useDiscardConfirm({ dirty: () => edited, onClose });
+  const sheetRef = useModal({ open, onDismiss: requestClose });
 
   if (!open) return null;
 
@@ -113,8 +123,9 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
   const flagText = [...selectedLabels, severity].join(" ");
 
   return (
+    <>
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={requestClose} aria-hidden="true" />
       <div
         ref={sheetRef}
         role="dialog"
@@ -127,7 +138,7 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
           <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
           <div className="flex items-center justify-between px-5 pb-4">
             <h2 className="text-xl font-bold dark:text-[#E8E9F0]">Side Effects</h2>
-            <button onClick={onClose}><X size={22} className="text-gray-400" /></button>
+            <button onClick={requestClose}><X size={22} className="text-gray-400" /></button>
           </div>
         </div>
 
@@ -240,12 +251,14 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
         </div>
 
         <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
-          <button onClick={handleAdd} disabled={!selected.length || saving}
-            className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+          <button onClick={handleAdd} disabled={!selected.length || saving} aria-disabled={(!selected.length || saving) || undefined}
+            className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2">
             <Save size={16} /> {saving ? "Saving…" : "Save"}
           </button>
         </div>
       </div>
     </div>
+    {dialog}
+    </>
   );
 }

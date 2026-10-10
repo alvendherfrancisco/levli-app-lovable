@@ -3,6 +3,8 @@ import { X, Save, ChevronDown } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import DateInput from "@/components/DateInput";
 import useModal from "@/hooks/useModal";
+import useDiscardConfirm from "@/hooks/useDiscardConfirm";
+import { hasChanged } from "@/lib/formValidity";
 import { toast } from "@/lib/toast";
 import {
   findMedicationOption, isLabelStrength, statusOptionsFor, validateRegimenForm,
@@ -66,6 +68,8 @@ export default function MedicationModal({ open, onClose, editing }) {
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  // The form as the record was loaded, so an untouched edit has nothing to save.
+  const [savedFields, setSavedFields] = useState({});
 
   /** The dose last saved for this medication, if the user has one. */
   const lastSavedDose = (name) => {
@@ -108,16 +112,71 @@ export default function MedicationModal({ open, onClose, editing }) {
       // A regimen that already carries details opens with them visible.
       setShowDetails(!!(editing.indication || editing.planned_end_date || editing.titration_stage
         || editing.prescriber_name || editing.prescriber_contact || editing.notes));
+      // The same values, kept as the record was loaded, for "has anything
+      // changed?" — an edit with nothing changed has nothing to save.
+      setSavedFields({
+        selectedName: option ? option.value : "",
+        isCustom: !option,
+        customName: option ? "" : stored,
+        dose: editing.prescribed_dose != null ? String(editing.prescribed_dose) : "",
+        unit: editing.dose_unit || option?.unit || "mg",
+        schedule: scheduleStateFromRecord(editing, option ? option.value : stored, todayInput()),
+        startDate: editing.start_date || todayInput(),
+        plannedEndDate: editing.planned_end_date || "",
+        doseStep: editing.titration_stage || "",
+        indication: ["Type 2 diabetes", "Weight management", "Heart health"].includes(storedIndication)
+          ? storedIndication : storedIndication ? "Other" : "",
+        indicationOther: ["Type 2 diabetes", "Weight management", "Heart health"].includes(storedIndication)
+          ? "" : storedIndication,
+        prescriberName: editing.prescriber_name || "",
+        prescriberContact: editing.prescriber_contact || "",
+        status: editing.status || "active",
+        notes: editing.notes || "",
+      });
     } else {
       setSelectedName(""); setIsCustom(false); setCustomName(""); setCustomGeneric("");
       setDose(""); setUnit("mg"); setSchedule(emptySchedule("", todayInput()));
       setIndication(""); setIndicationOther("");
       setStartDate(todayInput()); setPlannedEndDate(""); setDoseStep("");
       setPrescriberName(""); setPrescriberContact(""); setStatus("active"); setNotes("");
+      setSavedFields({
+        selectedName: "", isCustom: false, customName: "", dose: "", unit: "mg",
+        schedule: emptySchedule("", todayInput()), startDate: todayInput(),
+        plannedEndDate: "", doseStep: "", indication: "", indicationOther: "",
+        prescriberName: "", prescriberContact: "", status: "active", notes: "",
+      });
     }
   }, [open, editing]);
 
-  const sheetRef = useModal({ open, onDismiss: onClose });
+  /**
+   * The first thing missing or wrong in the regimen form, or null. Run live to
+   * gate the Save button and again by the save itself, so a dimmed button and a
+   * refused save can never disagree.
+   */
+  const regimenProblem = () => validateRegimenForm({
+    selectedName, isCustom, customName, dose, doseConfirmed,
+    isStandardDose: !isCustom && isLabelStrength(selectedName, String(dose ?? "").trim()),
+    startDate, plannedEndDate,
+  });
+
+  // Everything the form holds, against what the record was loaded with.
+  const currentFields = {
+    selectedName, isCustom, customName, dose, unit, schedule, startDate,
+    plannedEndDate, doseStep, indication, indicationOther,
+    prescriberName, prescriberContact, status, notes,
+  };
+  const edited = hasChanged(currentFields, savedFields);
+  // A missing answer — or a dose that still has to be confirmed against the
+  // prescription — is "nothing to save yet", so the button stays dimmed. A date
+  // that needs checking is not treated that way: it is answered and visible, and
+  // the save path still flags it inline and opens More details, so the button is
+  // never dimmed with no way to find out why.
+  const problem = regimenProblem();
+  const missingAnswer = !!problem && (problem.field === "name" || problem.field === "dose");
+  const canSave = !saving && !missingAnswer && (!editing || edited);
+
+  const { requestClose, dialog } = useDiscardConfirm({ dirty: () => (!editing || edited), onClose });
+  const sheetRef = useModal({ open, onDismiss: requestClose });
   if (!open) return null;
 
   const option = isCustom ? null : findMedicationOption(selectedName);
@@ -169,14 +228,9 @@ export default function MedicationModal({ open, onClose, editing }) {
   const handleSave = async () => {
     const finalName = isCustom ? customName.trim() : selectedName;
     const picked = findMedicationOption(finalName);
-    const doseText = String(dose ?? "").trim();
-    const doseNum = Number(doseText);
-    const standard = !isCustom && isLabelStrength(finalName, doseText);
+    const doseNum = Number(String(dose ?? "").trim());
 
-    const problem = validateRegimenForm({
-      selectedName, isCustom, customName, dose, doseConfirmed, isStandardDose: standard,
-      startDate, plannedEndDate,
-    });
+    const problem = regimenProblem();
     if (problem) {
       sound.warning();
       setErrors({ [problem.field]: problem.message });
@@ -230,8 +284,9 @@ export default function MedicationModal({ open, onClose, editing }) {
   };
 
   return (
+    <>
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={requestClose} aria-hidden="true" />
       <div
         ref={sheetRef}
         role="dialog"
@@ -244,7 +299,7 @@ export default function MedicationModal({ open, onClose, editing }) {
           <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
           <div className="flex items-center justify-between px-5 pb-4">
             <h2 className="text-lg font-bold text-gray-900 dark:text-[#E8E9F0]">{editing ? "Edit Medication" : "Add Medication"}</h2>
-            <button onClick={onClose} aria-label="Close" className="w-11 h-11 flex items-center justify-center rounded-full">
+            <button onClick={requestClose} aria-label="Close" className="w-11 h-11 flex items-center justify-center rounded-full">
               <X size={22} className="text-gray-400" />
             </button>
           </div>
@@ -456,13 +511,15 @@ export default function MedicationModal({ open, onClose, editing }) {
         </div>
 
         <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
-          <button onClick={handleSave} disabled={saving}
-            className="w-full min-h-[56px] btn-pill btn-primary font-semibold text-base flex items-center justify-center gap-2 disabled:opacity-60">
+          <button onClick={handleSave} disabled={!canSave} aria-disabled={!canSave || undefined}
+            className="w-full min-h-[56px] btn-pill btn-primary font-semibold text-base flex items-center justify-center gap-2">
             <Save size={18} /> {saving ? "Saving…" : editing ? "Update" : "Save"}
           </button>
           <p className="text-xs text-gray-500 dark:text-[#9A9DAE] text-center mt-2.5 leading-snug">{FOOTER_NOTE}</p>
         </div>
       </div>
     </div>
+    {dialog}
+    </>
   );
 }
