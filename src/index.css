@@ -998,6 +998,23 @@ html { background-color: var(--launch-bg); }
    every other primary button has given up. */
 button.btn-fab { box-shadow: var(--btn-shadow); }
 
+/* Home's own action: the same pill, a step smaller and flat like every other
+   in-app button, sitting clear of the tab bar rather than touching it. Its height
+   is the FAB token (48px), and its offset is measured from the tab bar and the
+   home-indicator inset, so the gap above the bar is the same on every device. The
+   label stays on one line at any text size: it never wraps and never clips. */
+button.btn-fab-home {
+  min-height: var(--fab-h);
+  bottom: calc(var(--tabbar-h) + 1.25rem + env(safe-area-inset-bottom, 0px));
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: none;
+}
+@media (min-width: 1024px) {
+  /* No tab bar at this width: the button keeps the usual 2rem from the bottom. */
+  button.btn-fab-home { bottom: 2rem; }
+}
+
 /* A pill with nothing to save yet: the same shape and size, a faded indigo
    fill, a held-back label, no shadow, and no reaction to a press. The dimmed
    state is set in code (both `disabled` and `aria-disabled`), so a tap does
