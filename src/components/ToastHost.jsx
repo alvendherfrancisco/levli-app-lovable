@@ -2,13 +2,33 @@ import React, { useEffect, useRef, useState } from "react";
 import { AlertCircle, AlertTriangle, Check, Trash2, X } from "lucide-react";
 import { dismissToast, subscribeToast } from "@/lib/toast";
 
-// Each type brings its own icon, tint and accent, so what the card means never
-// rests on colour alone.
+// Each type brings its own icon and accent, so what the card means never rests
+// on colour alone. The accent is the same green / amber / red in both modes; the
+// surface, the hairline and the text come from the app's own tokens below, so
+// the card reads correctly in light and dark — and follows a change of setting
+// while it is on screen, because every one of these is a class, not a value
+// read once in JavaScript.
 const TYPES = {
-  success: { Icon: Check, circle: "bg-green-500/20 text-green-400", border: "border-green-500/30", bar: "bg-green-400/70" },
-  deleted: { Icon: Trash2, circle: "bg-white/10 text-gray-300", border: "border-white/15", bar: "bg-white/40" },
-  warning: { Icon: AlertTriangle, circle: "bg-amber-500/20 text-amber-400", border: "border-amber-500/30", bar: "bg-amber-400/70" },
-  error: { Icon: AlertCircle, circle: "bg-red-500/20 text-red-400", border: "border-red-500/30", bar: "bg-red-400/70" },
+  success: {
+    Icon: Check,
+    circle: "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400",
+    bar: "bg-green-500 dark:bg-green-400",
+  },
+  deleted: {
+    Icon: Trash2,
+    circle: "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300",
+    bar: "bg-gray-400 dark:bg-gray-500",
+  },
+  warning: {
+    Icon: AlertTriangle,
+    circle: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
+    bar: "bg-amber-500 dark:bg-amber-400",
+  },
+  error: {
+    Icon: AlertCircle,
+    circle: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400",
+    bar: "bg-red-500 dark:bg-red-400",
+  },
 };
 
 const EXIT_MS = 200;
@@ -18,6 +38,11 @@ const SWIPE_UP_PX = 40;
  * The app's only toast: one at a time, docked just under the status bar. It
  * slides in from the top, runs its own timer (held while a finger is on it) and
  * can be flicked up or closed with the X.
+ *
+ * The card is drawn from the app's own card surface — a white card in light, the
+ * app's dark surface in dark, with the shared hairline and soft shadow (see
+ * .card-line in index.css) — so a save, a failure, a warning or a deletion reads
+ * the same as every other card around it, in whichever mode the app is in.
  */
 export default function ToastHost() {
   const [shown, setShown] = useState(null);
@@ -175,19 +200,19 @@ export default function ToastHost() {
             transform: dragging ? `translateY(${dragY}px)` : undefined,
             "--toast-from": `translateY(${dragY}px)`,
           }}
-          className={`pointer-events-auto relative mx-auto flex w-full max-w-[440px] items-center gap-3 overflow-hidden rounded-2xl border bg-[#171923]/95 px-3 py-2 shadow-[0_12px_32px_rgba(0,0,0,0.45)] backdrop-blur ${type.border} ${
+          className={`pointer-events-auto card-line relative mx-auto flex w-full max-w-[440px] items-center gap-3 overflow-hidden rounded-2xl bg-white px-3 py-2 dark:bg-[#16181f] ${
             closing ? "toast-leave" : entered ? "" : "toast-enter"
           }`}
         >
           <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${type.circle}`}>
             <Icon size={16} strokeWidth={2.5} aria-hidden="true" />
           </span>
-          <p className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{shown.message}</p>
+          <p className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-900 dark:text-[#E8E9F0]">{shown.message}</p>
           {action && (
             <button
               type="button"
               onClick={() => { const act = action.onAction; dismiss(); act(); }}
-              className="h-11 shrink-0 rounded-xl px-3 text-sm font-semibold text-indigo-300 active:opacity-70"
+              className="h-11 shrink-0 rounded-xl px-3 text-sm font-semibold text-indigo-600 dark:text-indigo-400 active:opacity-70"
             >
               {action.actionLabel}
             </button>
@@ -196,7 +221,7 @@ export default function ToastHost() {
             type="button"
             onClick={dismiss}
             aria-label="Dismiss"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white/70 active:opacity-70"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-400 dark:text-[#9A9DAE] active:opacity-70"
           >
             <X size={16} strokeWidth={2.5} aria-hidden="true" />
           </button>

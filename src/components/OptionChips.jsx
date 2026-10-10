@@ -18,8 +18,9 @@ const UNSELECTED_CLASS = "bg-auth-card border-auth-border text-auth-text";
  * The rule is the same everywhere (see src/lib/optionGroup.js): tapping a
  * selected option again clears it, unless the field is required — then the tap
  * does nothing and only another option changes the value. An optional group
- * holding a value offers Clear beside its label and a muted "Tap again to
- * clear" reminder under the chips.
+ * holding a value offers Clear beside its label (a group where the hint below
+ * the chips already says the same thing passes `showClear={false}`) and a muted
+ * "Tap again to clear" reminder under the chips.
  *
  * Chip size, colour and wrapping come from the caller as class strings, so each
  * form keeps exactly the look it had. Only the shared extras are added: the
@@ -29,7 +30,7 @@ export default function OptionChips({
   label, labelClass = LABEL_CLASS,
   options = [], value, onChange,
   required = false,
-  clearLabel = "Clear", showClearHint = true,
+  clearLabel = "Clear", showClear = true, showClearHint = true,
   helper, blockedMessage,
   chipClass = CHIP_CLASS, selectedClass = SELECTED_CLASS, unselectedClass = UNSELECTED_CLASS,
   wrapClass = "flex flex-wrap gap-2",
@@ -66,7 +67,7 @@ export default function OptionChips({
       {label && (
         <div className="flex items-center justify-between gap-2 mb-2">
           <span className={labelClass}>{label}</span>
-          {canClear && (
+          {canClear && showClear && (
             <button
               type="button"
               onClick={clear}

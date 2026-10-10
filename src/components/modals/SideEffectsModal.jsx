@@ -161,6 +161,7 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
           {/* Severity — optional: tapping the chosen one again clears it. */}
           <OptionChips
             label="Severity"
+            showClear={false}
             options={SEVERITY_LEVELS.map((s) => ({ value: s.value, label: s.label }))}
             value={severity}
             onChange={setSeverity}
