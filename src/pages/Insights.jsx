@@ -24,7 +24,6 @@ import { useSubscription } from "@/lib/SubscriptionContext";
 import PageContainer from "@/components/PageContainer";
 import AppFooterDisclaimer from "@/components/AppFooterDisclaimer";
 import { ICON_SIZE_ROW } from "@/lib/iconConstants";
-import { trackingEnabled } from "@/lib/trackingModules";
 
 const CLASS_COLORS = { Semaglutide: "#14B8A6", Tirzepatide: "#6366F1", Liraglutide: "#F59E0B" };
 
@@ -297,9 +296,7 @@ export default function Insights() {
       </div>
 
       <div className="max-w-3xl mx-auto pt-4">
-        {/* Weight Change Panel — a panel per chosen module: weight, progress
-            pictures and site rotation only appear when they were picked. */}
-        {trackingEnabled(profile, "weight") && (
+        {/* Weight Change Panel */}
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-5 h-5 flex items-center justify-center flex-shrink-0"><TrendingDown size={ICON_SIZE_ROW} className="text-indigo-600" /></div>
@@ -396,10 +393,8 @@ export default function Insights() {
             {weightSummary ? `${weightSummary} · ` : ""}Solid line: daily entries · Dashed: 7-day rolling average · Days with no entry are left blank
           </p>
         </div>
-        )}
 
         {/* Progress Pictures Panel */}
-        {trackingEnabled(profile, "weight") && (
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(99,102,241,0.13)" }}>
@@ -482,7 +477,6 @@ export default function Insights() {
             value={photoModal?.mode === "edit" ? photoModal.url : "–"} dayKey={photoModal?.dayKey}
             onSave={handleSavePhotoModal} onDelete={photoModal?.mode === "edit" ? handleDeletePhotoModal : undefined} />
         </div>
-        )}
 
         {/* Medication Exposure Panel */}
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
@@ -604,7 +598,6 @@ export default function Insights() {
         />
 
         {/* Injection Site Rotation Panel */}
-        {trackingEnabled(profile, "sites") && (
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-5 h-5 flex items-center justify-center flex-shrink-0"><MapPin size={ICON_SIZE_ROW} className="text-indigo-600" /></div>
@@ -654,10 +647,9 @@ export default function Insights() {
           </div>
           <p className="text-xs text-gray-400 dark:text-[#9A9DAE] text-center mt-2">Rotate sites to support absorption and reduce irritation.</p>
         </div>
-        )}
 
         <WellbeingPanel />
-        {trackingEnabled(profile, "symptoms") && <SideEffectsPanel />}
+        <SideEffectsPanel />
 
         <UpsellBanner />
         <AppFooterDisclaimer />

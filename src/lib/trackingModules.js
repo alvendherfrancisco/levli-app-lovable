@@ -8,10 +8,10 @@ import { Activity, Apple, Dumbbell, Heart, Scale, Syringe } from "lucide-react";
  * inside nutrition and mood inside the journal, so neither gets a module of its
  * own — one module, one choice.
  *
- * Nothing is on by default: the list a person chose is what the app reads, and
- * an empty choice is a real answer (nothing is shown until they add it back in
- * Settings). These definitions live here rather than on the onboarding screen
- * so the choices and the Settings rows can never drift apart.
+ * Every module is always on. Home, Insights and the daily grid draw all of them
+ * unconditionally, so nothing in the app is shown or hidden by what was picked
+ * here: the list is now only what the onboarding step offers, and it lives in
+ * this one place so that screen's wording can never drift.
  */
 export const TRACKING_MODULES = [
   { key: "symptoms", label: "Side effects", desc: "Note how you feel after a dose", Icon: Activity },
@@ -21,22 +21,3 @@ export const TRACKING_MODULES = [
   { key: "sites", label: "Injection sites and pain", desc: "Rotate with confidence", Icon: Syringe },
   { key: "journal", label: "Journal and mood", desc: "Keep a private diary of how you feel", Icon: Heart },
 ];
-
-/** The modules this profile chose, or null when the question was never asked. */
-export function chosenTrackingModules(profile) {
-  return Array.isArray(profile?.tracking_modules) ? profile.tracking_modules : null;
-}
-
-/**
- * Whether one module is switched on for this profile.
- *
- * A profile that has never answered (an account that finished onboarding before
- * the question existed, or one that never got that far) keeps every module: an
- * unasked question is not a "no". Once the answer is stored — including an empty
- * one — it is the only thing that decides.
- */
-export function trackingEnabled(profile, key) {
-  const chosen = chosenTrackingModules(profile);
-  if (chosen === null) return true;
-  return chosen.includes(key);
-}
