@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import { MedicationIllustration } from "@/components/onboarding/OnboardingIllustrations";
 import {
-  CUSTOM_MEDICATION_NAME, LISTED_MEDICATIONS, medicationFormTag,
+  CUSTOM_MEDICATION_NAME, getMedicationConfig, medicationFormTag,
 } from "@/lib/medicationConfig";
 import {
   InjectionIcon, PillIcon, NeutralIcon,
@@ -12,21 +12,39 @@ import { sound } from "@/lib/sounds";
 import { ACCENT_TEXT, CHIP, CHIP_IDLE, CHIP_ON, HEADING, HEAD_BLOCK, SUBTITLE } from "@/lib/uiStyles";
 
 /**
- * The medications onboarding offers: the app's one shared product list, in the
- * same A to Z order every other screen uses, with "Others" always last.
+ * The products this step offers, in the order it sets them: the injectable
+ * brands first, then the oral ones, then the two generic / compounded entries,
+ * with "Others" last. Onboarding asks for the one medication a person is mainly
+ * on; anything else is added afterwards from Home or Medications.
+ *
+ * `value` is what choosing a chip stores — the catalogue's own product name, so
+ * every other screen resolves the product, its strengths and its interval from
+ * it. `label` is only how the chip reads on screen.
  *
  * Each chip's icon says how the product is taken — the pen for the injectables,
  * the capsule for the oral products, and a plain plus for "Others", which
  * implies no route. Every chip carries one icon only.
  */
-export const MED_OPTIONS = [
-  ...LISTED_MEDICATIONS.map((entry) => ({
-    label: entry.brandName,
-    generic: entry.genericName || "",
-    icon: medicationFormTag(entry.brandName) === "Pill" ? PillIcon : InjectionIcon,
-  })),
-  { label: CUSTOM_MEDICATION_NAME, generic: null, icon: NeutralIcon },
+const ONBOARDING_MEDICATIONS = [
+  { value: "Mounjaro®", label: "Mounjaro®" },
+  { value: "Wegovy®", label: "Wegovy®" },
+  { value: "Ozempic®", label: "Ozempic®" },
+  { value: "Zepbound®", label: "Zepbound®" },
+  { value: "Saxenda®", label: "Saxenda®" },
+  { value: "Rybelsus®", label: "Rybelsus®" },
+  { value: "Foundayo®", label: "Foundayo®" },
+  { value: "Semaglutide", label: "Semaglutide (generic / compounded)" },
+  { value: "Tirzepatide", label: "Tirzepatide (generic / compounded)" },
+  { value: CUSTOM_MEDICATION_NAME, label: CUSTOM_MEDICATION_NAME },
 ];
+
+export const MED_OPTIONS = ONBOARDING_MEDICATIONS.map((m) => ({
+  ...m,
+  generic: getMedicationConfig(m.value)?.genericName || "",
+  icon: m.value === CUSTOM_MEDICATION_NAME
+    ? NeutralIcon
+    : medicationFormTag(m.value) === "Pill" ? PillIcon : InjectionIcon,
+}));
 
 /**
  * One medication chip: its route icon, then the name, and a small check when it
@@ -37,11 +55,12 @@ export const MED_OPTIONS = [
  * in both states, and every colour here comes from the tokens, so the chips
  * follow the device's light/dark setting like the rest of the flow.
  */
-function MedChip({ label, Icon, selected, onSelect }) {
+function MedChip({ option, selected, onSelect }) {
+  const { label, icon: Icon, value } = option;
   return (
     <button
       type="button"
-      onClick={() => { sound.tap(); onSelect(label); }}
+      onClick={() => { sound.tap(); onSelect(value); }}
       aria-pressed={selected}
       className={`${CHIP} max-w-full ${selected ? CHIP_ON : CHIP_IDLE}`}
     >
@@ -83,10 +102,9 @@ export default function MedicationStep({ selectedMed, onSelect }) {
       >
         {MED_OPTIONS.map((opt) => (
           <MedChip
-            key={opt.label}
-            label={opt.label}
-            Icon={opt.icon}
-            selected={selectedMed === opt.label}
+            key={opt.value}
+            option={opt}
+            selected={selectedMed === opt.value}
             onSelect={onSelect}
           />
         ))}

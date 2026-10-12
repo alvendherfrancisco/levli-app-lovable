@@ -253,7 +253,7 @@ export default function Onboarding() {
     const chosen = selectedMeds[0] || "";
     const realMed = chosen && chosen !== CUSTOM_MEDICATION_NAME ? chosen : "";
     let defaultMed = realMed || "Ozempic®";
-    if (!realMed && MED_OPTIONS.some((o) => o.label === chosen && String(o.generic).toLowerCase() === "tirzepatide")) {
+    if (!realMed && MED_OPTIONS.some((o) => o.value === chosen && String(o.generic).toLowerCase() === "tirzepatide")) {
       defaultMed = "Zepbound®";
     }
 
