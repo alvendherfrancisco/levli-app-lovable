@@ -3,6 +3,7 @@ import { useAppState } from "@/lib/AppState";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import PaywallModal from "@/components/PaywallModal";
+import { isCompedEmail } from "@/lib/compAccounts";
 
 const SubscriptionContext = createContext(null);
 
@@ -11,7 +12,12 @@ export function SubscriptionProvider({ children }) {
   const { user } = useAuth();
   const [paywallOpen, setPaywallOpen] = useState(false);
 
-  const isPremium = (() => {
+  // The complimentary accounts (see src/lib/compAccounts.js) always have full
+  // premium access: the check is made on the email address itself, so it holds
+  // without a payment, a subscription, or a loaded profile.
+  const comped = isCompedEmail(user?.email);
+
+  const isPremium = comped || (() => {
     if (!profile) return false;
     if (profile.plan_type === "lifetime" && profile.subscription_status === "active") return true;
     if (profile.subscription_status === "active" || profile.subscription_status === "trialing") return true;
@@ -48,8 +54,8 @@ export function SubscriptionProvider({ children }) {
         isPremium,
         openPaywall,
         closePaywall,
-        planType: profile?.plan_type || "free",
-        subscriptionStatus: profile?.subscription_status,
+        planType: comped ? "lifetime" : (profile?.plan_type || "free"),
+        subscriptionStatus: comped ? "active" : profile?.subscription_status,
       }}
     >
       {children}
