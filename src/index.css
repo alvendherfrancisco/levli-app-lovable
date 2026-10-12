@@ -1161,6 +1161,33 @@ button.date-chip {
   margin: calc(-1 * var(--strip-pad-top)) calc(-1 * var(--strip-pad-x)) calc(-1 * var(--strip-pad-bottom));
 }
 
+/* ── The brand page's App Store screenshot cards ───────────────────────────
+   Each card is composed at its true size (430 × 932 — a sixth of Apple's
+   1290 × 2796) and shown here at a fraction of it, so the grid reads as a row of
+   thumbnails while the artwork inside stays exactly the size it exports at. The
+   scale is a variable, so a breakpoint only has to change one number. */
+.shot-preview {
+  --shot-scale: 0.36;
+  position: relative;
+  width: calc(430px * var(--shot-scale));
+  height: calc(932px * var(--shot-scale));
+}
+.shot-preview__inner {
+  transform: scale(var(--shot-scale));
+  transform-origin: top left;
+}
+@media (min-width: 640px) { .shot-preview { --shot-scale: 0.42; } }
+@media (min-width: 1024px) { .shot-preview { --shot-scale: 0.44; } }
+
+/* The card being drawn for download: the same composition at full size, held
+   off-screen so it neither shows nor takes part in the page's layout. */
+.shot-export {
+  position: fixed;
+  top: 0;
+  left: -20000px;
+  pointer-events: none;
+}
+
 /* ── The bottom tab bar's tabs ─────────────────────────────────────────────
    A tab shows its state with its icon and its label alone: there is no indicator
    line above the current tab, and no box behind a pressed or hovered one. A tap

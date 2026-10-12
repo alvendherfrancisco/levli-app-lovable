@@ -47,6 +47,9 @@ import AppLayout from '@/components/AppLayout';
 // their own keeps all of that off the app's first screen.
 const Insights = lazy(() => import('@/pages/Insights'));
 const ReportPage = lazy(() => import('@/pages/ReportPage'));
+// The team's brand and store assets page. It carries the image-drawing library
+// the screenshot downloads use, so it is loaded only when it is opened.
+const BrandAssetsPage = lazy(() => import('@/pages/BrandAssetsPage'));
 
 function HomeOrOnboarding() {
   const { onboardingCompleted } = useAppState();
@@ -105,6 +108,9 @@ const AuthenticatedApp = () => {
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/medical-disclaimer" element={<MedicalDisclaimerPage />} />
       <Route path="/about-sources" element={<AboutSourcesPage />} />
+      {/* The brand and store assets page is public: anyone on the team can open
+          the link and download what the submission needs. */}
+      <Route path="/brand-assets" element={<Suspense fallback={<RouteLoading />}><BrandAssetsPage /></Suspense>} />
       <Route element={<ProtectedRoute unauthenticatedElement={<EntryRedirect />} />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomeOrOnboarding />} />
