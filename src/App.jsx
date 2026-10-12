@@ -38,6 +38,7 @@ import InventoryPage from '@/pages/InventoryPage';
 import BackupRestorePage from '@/pages/BackupRestorePage';
 import CaregiverAccessPage from '@/pages/CaregiverAccessPage';
 import HelpFeedbackPage from '@/pages/HelpFeedbackPage';
+import StoreAssetsPage from '@/pages/StoreAssetsPage';
 
 // Layout
 import AppLayout from '@/components/AppLayout';
@@ -123,6 +124,8 @@ const AuthenticatedApp = () => {
         <Route path="/backup-restore" element={<BackupRestorePage />} />
         <Route path="/caregiver-access" element={<CaregiverAccessPage />} />
         <Route path="/help-feedback" element={<HelpFeedbackPage />} />
+        {/* The App Store release pack, for the team building the submission. */}
+        <Route path="/store-assets" element={<StoreAssetsPage />} />
         {/* The old developer push test screen is gone; send its link to Settings. */}
         <Route path="/push-test" element={<Navigate to="/settings" replace />} />
         <Route path="/report" element={<ReportErrorBoundary><Suspense fallback={<RouteLoading />}><ReportPage /></Suspense></ReportErrorBoundary>} />
