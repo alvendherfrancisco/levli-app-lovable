@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from "r
 import { useAppState } from "@/lib/AppState";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
+import { hasCompedAccess } from "@/lib/compedAccess";
 import PaywallModal from "@/components/PaywallModal";
 
 const SubscriptionContext = createContext(null);
@@ -11,7 +12,12 @@ export function SubscriptionProvider({ children }) {
   const { user } = useAuth();
   const [paywallOpen, setPaywallOpen] = useState(false);
 
-  const isPremium = (() => {
+  // Accounts with complimentary full access (see src/lib/compedAccess.js) are
+  // unlocked on their own email alone, so they need no profile and no
+  // subscription to reach every premium feature.
+  const isComped = hasCompedAccess(user?.email);
+
+  const isPremium = isComped || (() => {
     if (!profile) return false;
     if (profile.plan_type === "lifetime" && profile.subscription_status === "active") return true;
     if (profile.subscription_status === "active" || profile.subscription_status === "trialing") return true;
@@ -46,6 +52,7 @@ export function SubscriptionProvider({ children }) {
     <SubscriptionContext.Provider
       value={{
         isPremium,
+        isComped,
         openPaywall,
         closePaywall,
         planType: profile?.plan_type || "free",
@@ -63,6 +70,7 @@ export function useSubscription() {
   if (!ctx) {
     return {
       isPremium: false,
+      isComped: false,
       openPaywall: () => {},
       closePaywall: () => {},
       planType: "free",
