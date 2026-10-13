@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Settings, FileText, Syringe, Clock, CalendarCheck, ClipboardCheck, Loader2, Crown } from "lucide-react";
+import { Settings, FileText, Syringe, Loader2, Crown } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import AppFooterDisclaimer from "@/components/AppFooterDisclaimer";
 import Fab from "@/components/Fab";
 import ShotCard from "@/components/shots/ShotCard";
-import DoseBadge from "@/components/DoseBadge";
+import ShotSummaryCards from "@/components/shots/ShotSummaryCards";
 import AddShotModal from "@/components/modals/AddShotModal";
 import { useAppState } from "@/lib/AppState";
-import { addDaysToShotDate, daysAgoLabel, daysUntilShotDate, formatDayKeyShort } from "@/lib/dateUtils";
+import { addDaysToShotDate, daysUntilShotDate, formatDayKeyShort } from "@/lib/dateUtils";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import { effectiveDaysBetween } from "@/lib/medicationConfig";
 import { logWords } from "@/lib/medicationForm";
@@ -70,59 +70,16 @@ export default function Shots() {
       </div>
 
       <div className="max-w-3xl mx-auto pt-4">
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-4 mb-5">
-          <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center flex-shrink-0">
-                <Syringe size={20} strokeWidth={2} className="text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <span className="text-xs text-gray-400 dark:text-gray-500">Total {words.many}</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{shots.length}</p>
-          </div>
-          <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center flex-shrink-0">
-                <Clock size={20} strokeWidth={2} className="text-amber-500 dark:text-amber-400" />
-              </div>
-              <span className="text-xs text-gray-400 dark:text-gray-500">Last Dose</span>
-            </div>
-            {last ? (
-              <>
-                <DoseBadge medication={last.medication} dose={last.dose} unit={last.dose_unit || "mg"} className="text-base px-2 py-0.5" />
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{daysAgoLabel(last.date)}</p>
-              </>
-            ) : <p className="text-sm text-gray-400 dark:text-gray-500">No {words.many} yet</p>}
-          </div>
-          <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center flex-shrink-0">
-                <CalendarCheck size={20} strokeWidth={2} className="text-teal-600 dark:text-teal-400" />
-              </div>
-              <span className="text-xs text-gray-400 dark:text-gray-500">{nextOverdue ? `${words.One} was due` : `Next ${words.One}`}</span>
-            </div>
-            {nextDate ? (
-              <>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{nextDate}</p>
-                {nextOverdue && <p className="text-xs text-gray-400 dark:text-gray-500">{Math.abs(nextDaysLeft)} days ago</p>}
-              </>
-            ) : <p className="text-sm text-gray-400 dark:text-gray-500">—</p>}
-          </div>
-          {adherence.adherencePct != null && (
-            <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-800">
-              <div className="flex items-center gap-1.5 mb-1">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center flex-shrink-0">
-                  <ClipboardCheck size={20} strokeWidth={2} className="text-indigo-600 dark:text-indigo-400" />
-                </div>
-                <span className="text-xs text-gray-400 dark:text-gray-500">Adherence</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{adherence.adherencePct}%</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">{adherence.logged} of {adherence.scheduled} doses</p>
-              {adherenceRange && <p className="text-[11px] text-gray-400 dark:text-gray-500">{adherenceRange}</p>}
-            </div>
-          )}
-        </div>
+        <ShotSummaryCards
+          totalShots={shots.length}
+          last={last}
+          nextDate={nextDate}
+          nextDaysLeft={nextDaysLeft}
+          nextOverdue={nextOverdue}
+          adherence={adherence}
+          adherenceRange={adherenceRange}
+          words={words}
+        />
 
         <div className="px-4 pb-4">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">History</h2>
@@ -133,7 +90,7 @@ export default function Shots() {
           ) : shots.length === 0 ? (
             <div className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center text-gray-400 dark:text-[#9A9DAE] border border-gray-100 dark:border-gray-800">
               <Syringe size={32} className="mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No {words.many} logged yet. Tap {addLabel} to get started.</p>
+              <p className="text-sm">No {words.many} logged yet.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -160,7 +117,7 @@ export default function Shots() {
 
       <AppFooterDisclaimer />
 
-      <Fab onClick={openNew} label={addLabel} />
+      <Fab onClick={openNew} label={addLabel} icon={null} />
 
       <AddShotModal open={showShot} onClose={() => { setShowShot(false); setEditingShot(null); }} editingShot={editingShot} />
     </PageContainer>
