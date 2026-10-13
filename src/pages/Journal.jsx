@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Settings, Plus, BookOpen, Clock, Heart } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import AppFooterDisclaimer from "@/components/AppFooterDisclaimer";
+import Fab from "@/components/Fab";
 import JournalEntryModal from "@/components/modals/JournalEntryModal";
 import { useAppState } from "@/lib/AppState";
 import { JOURNAL_CATEGORIES, categoryMeta, normaliseCategory, sortJournalNewestFirst } from "@/lib/journalMeta";
@@ -79,7 +80,7 @@ export default function Journal() {
   const linkedCount = (entryId) => adverseEvents.filter((e) => e.journal_entry_id === entryId).length;
 
   return (
-    <PageContainer bottomInset="default">
+    <PageContainer bottomInset="fab">
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Journal</h1>
         <div className="flex items-center gap-3">
@@ -116,17 +117,12 @@ export default function Journal() {
       <div className="max-w-3xl mx-auto">
         {filtered.length === 0 ? (
           <div className="px-4">
-            <div className="relative overflow-hidden bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 text-center">
-              <div>
-                <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 bg-indigo-100 dark:bg-indigo-500/15">
-                  <BookOpen size={36} className="text-indigo-500 dark:text-indigo-400" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Journal Entries</h3>
-                <p className="text-sm text-gray-400 mb-4">Record your thoughts, symptoms, and medication experiences.</p>
-                <button onClick={openNew} className="btn-pill btn-primary mx-auto">
-                  <Plus size={18} /> Add Journal Entry
-                </button>
+            <div className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center text-gray-400 dark:text-[#9A9DAE] border border-gray-100 dark:border-gray-800">
+              <div className="w-14 h-14 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center mx-auto mb-3">
+                <BookOpen size={32} className="opacity-30" aria-hidden="true" />
               </div>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">No Journal Entries</h3>
+              <p className="text-sm">Record your thoughts, symptoms, and medication experiences.</p>
             </div>
           </div>
         ) : (
@@ -183,6 +179,8 @@ export default function Journal() {
         onDelete={editingEntry ? () => handleDelete(editingEntry.id) : null}
         initialEntry={editingEntry}
       />
+      <Fab onClick={openNew} label="Add Journal Entry" icon={null} />
+
       <AppFooterDisclaimer />
     </PageContainer>
   );

@@ -94,7 +94,9 @@ export default function Shots() {
             </div>
           ) : shots.length === 0 ? (
             <div className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center text-gray-400 dark:text-[#9A9DAE] border border-gray-100 dark:border-gray-800">
-              <Syringe size={32} className="mx-auto mb-2 opacity-30" />
+              <div className="w-14 h-14 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center mx-auto mb-3">
+                <Syringe size={32} className="opacity-30" aria-hidden="true" />
+              </div>
               <p className="text-sm">No {words.many} logged yet.</p>
             </div>
           ) : (
