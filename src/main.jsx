@@ -8,6 +8,7 @@ import '@/lib/iosLoadingOverlayBridge'
 import '@/lib/iosSession'
 import '@/lib/iosSystem'
 import '@/lib/appLifecycle'
+import '@/lib/notificationTaps'
 import '@/lib/pushPermission'
 
 // Registers the offline app-shell worker (caching only — it holds no push or

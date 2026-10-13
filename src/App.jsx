@@ -13,6 +13,7 @@ import { perfMark, useMountProbe } from '@/lib/perfProbe';
 import WrapperOnly from '@/components/ios/WrapperOnly';
 import IOSNavigationBridge from '@/components/ios/IOSNavigationBridge';
 import IOSLifecycleEvents from '@/components/ios/IOSLifecycleEvents';
+import ShotReminderSync from '@/components/ios/ShotReminderSync';
 
 import { AppStateProvider, useAppState } from '@/lib/AppState';
 import { SubscriptionProvider } from '@/lib/SubscriptionContext';
@@ -154,6 +155,7 @@ function App() {
                 cross-fades into whatever screen the app opens on. */}
             <IOSNavigationBridge />
             <IOSLifecycleEvents />
+            <ShotReminderSync />
             <WrapperOnly>
               <SplashGate>
                 <AuthenticatedApp />
