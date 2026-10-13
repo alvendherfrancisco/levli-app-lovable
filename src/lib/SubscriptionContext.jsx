@@ -40,27 +40,6 @@ export function SubscriptionProvider({ children }) {
     return false;
   })();
 
-  // After returning from a successful checkout, verify the payment directly
-  // with PayMongo (fallback in case the webhook hasn't processed yet) and
-  // refresh the profile. Waits until auth has loaded before running.
-  const checkoutHandled = useRef(false);
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("checkout") !== "success" || checkoutHandled.current) return;
-    if (!user?.id) return; // auth still loading — re-run when user is available
-    checkoutHandled.current = true;
-    params.delete("checkout");
-    const qs = params.toString();
-    window.history.replaceState({}, "", window.location.pathname + (qs ? "?" + qs : ""));
-    (async () => {
-      try { await base44.functions.invoke("verify-payment", { userId: user.id }); } catch (e) { /* non-fatal */ }
-      refreshProfile?.();
-      setTimeout(() => refreshProfile?.(), 2000);
-      setTimeout(() => refreshProfile?.(), 5000);
-      setTimeout(() => refreshProfile?.(), 9000);
-    })();
-  }, [user?.id]);
-
   const openPaywall = () => setPaywallOpen(true);
   const closePaywall = () => setPaywallOpen(false);
 

@@ -38,65 +38,18 @@ export default function PaywallModal({ open, onClose }) {
 
   if (!open) return null;
 
-  const handleCheckout = async () => {
-    if (inWrapper) {
-      // StoreKit trigger: posted verbatim, outside the wanillajs envelope.
-      window.webkit?.messageHandlers?.gameEvents?.postMessage({ notificationName: "paywall.subscriptions.show" });
-      sendIOSEvent("wanillajs.event.paywall.subscribeButtonTapped", { userId: user?.id ?? null });
-      return;
-    }
-    // In a framed preview the checkout page must open in its own tab, and the
-    // tab has to be opened in the click handler so the popup is not blocked.
-    const isFramed = window.self !== window.top;
-    const checkoutTab = isFramed ? window.open("", "_blank") : null;
-    if (isFramed && !checkoutTab) {
-      toast.error("Allow popups to continue to checkout.");
-      return;
-    }
-    if (checkoutTab) checkoutTab.opener = null;
-    setBusy(true);
-    try {
-      const res = await base44.functions.invoke("create-checkout-session", {
-        plan: selected,
-        userId: user?.id,
-        email: user?.email,
-        appOrigin: window.location.origin,
-      });
-      if (res.data?.url) {
-        if (checkoutTab) checkoutTab.location.replace(res.data.url);
-        else window.location.assign(res.data.url);
-      } else {
-        checkoutTab?.close();
-        toast.error("Could not start checkout. Please try again.");
-      }
-    } catch (e) {
-      console.error(e);
-      checkoutTab?.close();
-      toast.error("Checkout failed. Please try again.");
-    } finally {
-      setBusy(false);
-    }
+  const handleCheckout = () => {
+    // StoreKit trigger: posted verbatim, outside the wanillajs envelope.
+    window.webkit?.messageHandlers?.gameEvents?.postMessage({ notificationName: "paywall.subscriptions.show" });
+    sendIOSEvent("wanillajs.event.paywall.subscribeButtonTapped", { userId: user?.id ?? null });
   };
 
   const handleRestore = async () => {
     setBusy(true);
-    if (inWrapper) {
-      const s = await reconcileSubscription();
-      setBusy(false);
-      if (s.active) { toast.success("Premium restored!"); onClose(); } else setShowNoSub(true);
-      return;
-    }
     try {
-      const res = await base44.functions.invoke("verify-payment", { userId: user?.id });
-      if (res.data?.granted) {
-        toast.success("Premium restored!");
-        refreshProfile?.();
-        onClose();
-      } else {
-        setShowNoSub(true);
-      }
-    } catch (e) {
-      setShowNoSub(true);
+      const s = await reconcileSubscription();
+      refreshProfile?.();
+      if (s.active) { toast.success("Premium restored!"); onClose(); } else setShowNoSub(true);
     } finally {
       setBusy(false);
     }
@@ -153,7 +106,7 @@ export default function PaywallModal({ open, onClose }) {
 
         {/* Fine print */}
         <p className="text-[11px] text-gray-400 text-center mt-4 px-2">
-          No commitment, cancel anytime from your account settings. {inWrapper ? "Payment is charged to your Apple ID." : "Payment is charged to your account via Stripe."}
+          No commitment, cancel anytime from your account settings. Payment is charged to your Apple ID.
         </p>
 
         {/* Footer links */}
