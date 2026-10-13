@@ -3,6 +3,7 @@ import IonIcon from "@/components/IonIcon";
 import InsightCard from "@/components/insights/InsightCard";
 import SectionHeader from "@/components/insights/SectionHeader";
 import InsightEmptyState from "@/components/insights/InsightEmptyState";
+import { FOOTNOTE } from "@/components/insights/insightUi";
 import { useAppState } from "@/lib/AppState";
 import { todayKey, toDayKey, fromDayKey } from "@/lib/dateUtils";
 
@@ -53,12 +54,14 @@ export default function SideEffectsPanel() {
       />
 
       {summary.total === 0 ? (
-        <InsightEmptyState icon={<IonIcon name="warning" size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}>
-          No side effects logged in the last {WINDOW_DAYS} days.
-        </InsightEmptyState>
+        <InsightEmptyState
+          icon="warning"
+          title="No side effects logged"
+          description="Side effects you log in the Journal will show up here."
+        />
       ) : (
         <>
-          <p className="text-xs text-gray-400 dark:text-[#9A9DAE] mb-3">
+          <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mb-4">
             {summary.total} logged in the last {WINDOW_DAYS} days
             {summary.severeCount > 0 && <> · {summary.severeCount} logged as severe</>}
           </p>
@@ -70,7 +73,7 @@ export default function SideEffectsPanel() {
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-gray-400 dark:text-[#9A9DAE] mt-3">
+          <p className={`mt-4 ${FOOTNOTE}`}>
             Most recent {summary.latestDay}. Everything logged from Home, History or the Journal appears here.
           </p>
         </>

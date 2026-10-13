@@ -2,7 +2,9 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Settings, HelpCircle, ArrowRight, Maximize2, Minimize2, Crown } from "lucide-react";
 import IonIcon from "@/components/IonIcon";
-import { SyringeIcon, ClockIcon } from "@/components/CustomIcons";
+import { SyringeIcon } from "@/components/CustomIcons";
+import StatTile from "@/components/insights/StatTile";
+import { FOOTNOTE } from "@/components/insights/insightUi";
 import InsightCard from "@/components/insights/InsightCard";
 import SectionHeader from "@/components/insights/SectionHeader";
 import InsightEmptyState from "@/components/insights/InsightEmptyState";
@@ -18,7 +20,7 @@ import { sound } from "@/lib/sounds";
 import { isExposureEligible } from "@/lib/medicationConfig";
 import SideEffectsPanel from "@/components/insights/SideEffectsPanel";
 import WellbeingPanel from "@/components/insights/WellbeingPanel";
-import { PK_CALCULATION_VERSION, superposition, recentDoses, steadyStateAmount, exposureSummary } from "@/lib/pkCalculations";
+import { superposition, recentDoses, steadyStateAmount, exposureSummary } from "@/lib/pkCalculations";
 import ExposureHowItWorks from "@/components/insights/ExposureHowItWorks";
 import { toast } from "@/lib/toast";
 import UpsellBanner from "@/components/UpsellBanner";
@@ -181,6 +183,8 @@ export default function Insights() {
   const weightUnit = profile?.weight_unit || "lb";
   // Markers and the legend follow the theme, so they repaint with it.
   const { isDark } = useDoseColors();
+  // The charts' axis labels, kept legible on the light page and the dark one.
+  const tickFill = isDark ? "#B4B8C7" : "#767676";
 
   const medLevel = useMemo(() => buildMedLevelData(shots, MED_RANGES[medRange], isDark), [shots, medRange, isDark]);
   const weightData = useMemo(() => buildWeightData(weightHistory, WEIGHT_RANGES[weightRange]), [weightHistory, weightRange]);
@@ -283,20 +287,19 @@ export default function Insights() {
     : "";
 
   // Shots inside the injection-site range, used for its empty state.
-  const siteRangeDays = MED_RANGES[siteRange];
   const shotsInSiteRange = shots.filter((s) => {
     const sd = parseShotDate(s.date);
     if (!sd) return false;
     const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
     const daysSince = Math.round((startOfToday - sd) / 86400000);
-    return daysSince >= 0 && daysSince <= siteRangeDays;
+    return daysSince >= 0 && daysSince <= MED_RANGES[siteRange];
   }).length;
 
   return (
     <PageContainer bottomInset="banner" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Insights</h1>
-        <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
+        <Link to="/settings" aria-label="Settings" className="-mr-2 flex h-11 w-11 items-center justify-center"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
       </div>
 
       <div className="w-full max-w-3xl mx-auto pt-4">
@@ -309,51 +312,48 @@ export default function Insights() {
 
           <RangeTabs options={Object.keys(WEIGHT_RANGES)} value={weightRange} onChange={setWeightRange} />
 
-          {/* Summary chips */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-            <div className="bg-teal-50 dark:bg-teal-500/10 rounded-2xl p-2.5 text-center min-w-0 border border-transparent dark:border-teal-500/15">
-              <IonIcon name="trending-down" size={16} className="text-teal-500 dark:text-teal-400 mb-1" />
-              <p className="text-gray-500 dark:text-[#9A9DAE] text-[11px]">Weight Loss</p>
-              <p className="font-bold text-teal-600 dark:text-teal-400 text-sm">
-                {weightLoss != null ? `${weightLoss >= 0 ? "-" : "+"}${Math.abs(weightLoss).toFixed(1)} ${weightUnit}` : "—"}
-              </p>
-            </div>
-            <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl p-2.5 text-center min-w-0 border border-transparent dark:border-indigo-500/15">
-              <IonIcon name="flash" size={16} className="text-indigo-500 dark:text-indigo-400 mb-1" />
-              <p className="text-gray-500 dark:text-[#9A9DAE] text-[11px]">% Change</p>
-              <p className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">
-                {pctWeightChange != null ? `${pctWeightChange >= 0 ? "-" : "+"}${Math.abs(pctWeightChange)}%` : "—"}
-              </p>
-            </div>
-            <div className="bg-purple-50 dark:bg-purple-500/10 rounded-2xl p-2.5 text-center min-w-0 border border-transparent dark:border-purple-500/15">
-              <ClockIcon size={16} className="text-purple-500 dark:text-purple-400 mb-1" />
-              <p className="text-gray-500 dark:text-[#9A9DAE] text-[11px]">Rate/Week</p>
-              <p className="font-bold text-purple-600 dark:text-purple-400 text-sm">
-                {ratePerWeek != null ? `${ratePerWeek >= 0 ? "-" : "+"}${Math.abs(ratePerWeek).toFixed(1)} ${weightUnit}` : "—"}
-              </p>
-            </div>
-            <div className="bg-orange-50 dark:bg-orange-500/10 rounded-2xl p-2.5 text-center min-w-0 border border-transparent dark:border-orange-500/15">
-              <IonIcon name="speedometer" size={16} className="text-orange-500 dark:text-orange-400 mb-1" />
-              <p className="text-gray-500 dark:text-[#9A9DAE] text-[11px]">Current BMI</p>
-              <p className="font-bold text-orange-600 dark:text-orange-400 text-sm">
-                {bmi || (bmiNeedsCheck ? <span className="text-xs font-medium">Not shown — check units</span> : heightMissing ? <span className="text-xs font-medium">Add height in Profile</span> : "—")}
-              </p>
-            </div>
+          {/* Summary tiles: one row of four, each drawn identically */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+            <StatTile
+              tone="teal"
+              icon="arrow-down-circle"
+              label="Weight Loss"
+              value={weightLoss != null ? `${weightLoss >= 0 ? "-" : "+"}${Math.abs(weightLoss).toFixed(1)} ${weightUnit}` : "—"}
+            />
+            <StatTile
+              tone="indigo"
+              icon="flash"
+              label="% Change"
+              value={pctWeightChange != null ? `${pctWeightChange >= 0 ? "-" : "+"}${Math.abs(pctWeightChange)}%` : "—"}
+            />
+            <StatTile
+              tone="purple"
+              icon="time"
+              label="Rate/Week"
+              value={ratePerWeek != null ? `${ratePerWeek >= 0 ? "-" : "+"}${Math.abs(ratePerWeek).toFixed(1)} ${weightUnit}` : "—"}
+            />
+            <StatTile
+              tone="orange"
+              icon="speedometer"
+              label="Current BMI"
+              value={bmi || (bmiNeedsCheck ? <span className="text-xs font-medium">Not shown, check units</span> : heightMissing ? <span className="text-xs font-medium">Add height in Profile</span> : "—")}
+            />
           </div>
 
-          {bmiNeedsCheck && (
-            <div className="mb-3 rounded-xl border border-orange-200 dark:border-orange-500/20 bg-orange-50 dark:bg-orange-500/10 px-3 py-2">
-              <p className="text-[12px] text-orange-700 dark:text-orange-300">
-                The height and weight on file do not produce a plausible BMI, so no number is shown. Check your height and weight units in Profile.
-              </p>
-              <Link to="/profile" className="mt-1.5 inline-block text-xs font-semibold text-indigo-600 dark:text-indigo-400">Fix in Profile</Link>
-            </div>
-          )}
-
+          {/* The BMI note is the first thing under the tiles it belongs to. */}
           {bmi && (
-            <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">
+            <p className={`mb-4 ${FOOTNOTE}`}>
               BMI is a screening measure, not a diagnostic tool. It does not account for body composition.
             </p>
+          )}
+
+          {bmiNeedsCheck && (
+            <div className="mb-4 rounded-xl border border-orange-200 dark:border-orange-500/20 bg-orange-50 dark:bg-orange-500/10 px-4 py-3">
+              <p className="text-[12px] leading-relaxed text-orange-700 dark:text-orange-300">
+                The height and weight on file do not produce a plausible BMI, so no number is shown. Check your height and weight units in Profile.
+              </p>
+              <Link to="/profile" className="-ml-1 flex min-h-[44px] w-fit items-center px-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400">Fix in Profile</Link>
+            </div>
           )}
 
           {weightEntries.length >= 2 ? (
@@ -362,8 +362,8 @@ export default function Insights() {
                 <LineChart data={weightData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
                   {/* 4–6 readable ticks rather than a label per entry */}
-                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#767676" }} stroke="#767676" interval={Math.max(0, Math.floor(weightData.length / 5))} />
-                  <YAxis tick={{ fontSize: 12, fill: "#767676" }} stroke="#767676" domain={["auto", "auto"]} width={40} />
+                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: tickFill }} stroke={tickFill} interval={Math.max(0, Math.floor(weightData.length / 5))} />
+                  <YAxis tick={{ fontSize: 12, fill: tickFill }} stroke={tickFill} domain={["auto", "auto"]} width={40} />
                   <Tooltip
                     formatter={(v, name) => [`${v} ${weightUnit}`, name === "rollingAvg" ? "7-day avg" : "Weight"]}
                     contentStyle={{ background: "rgba(20,22,32,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#E8E9F0" }}
@@ -375,15 +375,16 @@ export default function Insights() {
             </div>
           ) : (
             <InsightEmptyState
-              icon={<IonIcon name="trending-down" size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}
+              icon="arrow-down-circle"
+              title="Not enough weight data"
+              description="Log at least two weights in this range to see your trend."
               action={<Link to="/" className="btn-pill btn-primary">Log your weight</Link>}
-            >
-              {weightHistory.length === 0 ? "No weight entries yet." : "Only one weight entry in this range."}
-            </InsightEmptyState>
+            />
           )}
-          <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-2">
-            {weightSummary ? `${weightSummary} · ` : ""}Solid line: daily entries · Dashed: 7-day rolling average · Days with no entry are left blank
-          </p>
+          {/* The chart's legend describes the chart, so it appears with it. */}
+          {weightEntries.length >= 2 && (
+            <p className={`mt-3 text-center ${FOOTNOTE}`}>Solid: daily entries · Dashed: 7-day average</p>
+          )}
         </InsightCard>
 
         {/* Progress Pictures Panel */}
@@ -394,36 +395,26 @@ export default function Insights() {
           />
 
           {photosAsc.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              <div className="rounded-2xl p-2.5 text-center" style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.15)" }}>
-                <IonIcon name="images" size={16} className="text-indigo-400 mb-1" />
-                <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Total Photos</p>
-                <p className="font-bold text-indigo-500 dark:text-indigo-400 text-sm">{photosAsc.length}</p>
-              </div>
-              <div className="rounded-2xl p-2.5 text-center" style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.15)" }}>
-                <ClockIcon size={16} className="text-teal-400 mb-1" />
-                <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Journey Days</p>
-                <p className="font-bold text-teal-500 dark:text-teal-400 text-sm">{journeyDays}</p>
-              </div>
-              <div className="rounded-2xl p-2.5 text-center" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.15)" }}>
-                <IonIcon name="camera" size={16} className="text-orange-400 mb-1" />
-                <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Latest</p>
-                <p className="font-bold text-orange-500 dark:text-orange-400 text-sm">{latestPhotoDate ? latestPhotoDate.month : "—"}</p>
-              </div>
+            <div className="grid grid-cols-3 gap-2.5 mb-4">
+              <StatTile tone="indigo" icon="images" label="Total Photos" value={photosAsc.length} />
+              <StatTile tone="teal" icon="time" label="Journey Days" value={journeyDays} />
+              <StatTile tone="orange" icon="camera" label="Latest" value={latestPhotoDate ? latestPhotoDate.month : "—"} />
             </div>
           )}
 
           {photosAsc.length === 0 ? (
-            <div className="space-y-3">
-              <InsightEmptyState icon={<IonIcon name="camera" size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}>
-                No progress pictures yet. Tap to add your first photo!
-              </InsightEmptyState>
+            <div className="space-y-4">
+              <InsightEmptyState
+                icon="camera"
+                title="No progress pictures"
+                description="Add a photo to track your visual progress over time."
+              />
               <button onClick={openAddPhoto} className="btn-pill btn-primary w-full">
                 Add Picture
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {viewAllPhotos ? (
                 <div className="flex gap-3 overflow-x-auto pb-1">
                   {photosAsc.map((p) => (
@@ -446,13 +437,12 @@ export default function Insights() {
                 </div>
               )}
               <div className="flex gap-3">
-                <button onClick={openAddPhoto}
-                  className="btn-pill btn-primary flex-1 text-sm">
+                <button onClick={openAddPhoto} className="btn-pill btn-primary flex-1">
                   Add Photo
                 </button>
                 {photosAsc.length >= 2 && (
                   <button onClick={() => setViewAllPhotos((v) => !v)}
-                    className="flex-1 py-3 bg-gray-100 dark:bg-white/[0.07] text-indigo-600 dark:text-indigo-400 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-white/[0.12] transition-colors text-sm">
+                    className="btn-pill btn-secondary flex-1">
                     {viewAllPhotos ? <><Minimize2 size={16} /> Collapse</> : <><Maximize2 size={16} /> View All</>}
                   </button>
                 )}
@@ -467,12 +457,12 @@ export default function Insights() {
         {/* Medication Exposure Panel */}
         <InsightCard>
           <SectionHeader
-            icon={<SyringeIcon size={18} className="text-indigo-600 dark:text-indigo-400" />}
-            title="Modelled Medication Exposure"
-            subtitle="Illustrative relative-exposure estimate (not a blood-level measurement)."
+            icon={<SyringeIcon size={20} className="text-indigo-600 dark:text-indigo-400" />}
+            title="Medication Exposure"
+            subtitle="Illustrative only, not a blood-level measurement."
             action={(
-              <button onClick={() => setShowHowItWorks(true)} aria-label="How this works" className="flex-shrink-0 p-1">
-                <HelpCircle size={18} className="text-indigo-400" />
+              <button onClick={() => setShowHowItWorks(true)} aria-label="How this works" className="-mr-2 flex h-11 w-11 flex-shrink-0 items-center justify-center">
+                <HelpCircle size={20} className="text-indigo-400" />
               </button>
             )}
           />
@@ -484,23 +474,24 @@ export default function Insights() {
           {shots.length > 0 ? (
             medLevel.empty ? (
               <InsightEmptyState
-                icon={<ClockIcon size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}
-                action={<button onClick={() => setShowHowItWorks(true)} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">How this works</button>}
-              >
-                No recent doses logged, so there's nothing to model.
-              </InsightEmptyState>
+                icon="time"
+                title="No exposure data yet"
+                description="Log a dose in this range to see your modelled exposure here."
+              />
             ) : medLevel.disabled ? (
-              <InsightEmptyState icon={<IonIcon name="information-circle" size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}>
-                Exposure estimation is not available for this medication. This appears for investigational or unsupported products.
-              </InsightEmptyState>
+              <InsightEmptyState
+                icon="information-circle"
+                title="Exposure unavailable"
+                description="This appears for investigational or unsupported products."
+              />
             ) : (
               <>
                 <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={medLevel.data}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
-                      <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#767676" }} stroke="#767676" interval={Math.floor(medLevel.data.length / 5)} />
-                      <YAxis tick={{ fontSize: 12, fill: "#767676" }} stroke="#767676" width={40} domain={[0, (dataMax) => Math.max(100, Math.ceil(dataMax))]} />
+                      <XAxis dataKey="day" tick={{ fontSize: 12, fill: tickFill }} stroke={tickFill} interval={Math.floor(medLevel.data.length / 5)} />
+                      <YAxis tick={{ fontSize: 12, fill: tickFill }} stroke={tickFill} width={40} domain={[0, (dataMax) => Math.max(100, Math.ceil(dataMax))]} />
                       <Tooltip formatter={(v, name) => [`${v}% of steady state`, name]} contentStyle={{ background: "rgba(20,22,32,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#E8E9F0" }} />
                       {medLevel.classes.map((cls) => (
                         <Area key={cls} type="monotone" dataKey={cls} stroke={CLASS_COLORS[cls] || "#6366F1"} fill={CLASS_COLORS[cls] || "#6366F1"} fillOpacity={0.08} strokeWidth={2} />
@@ -515,31 +506,29 @@ export default function Insights() {
                 <DoseLegend items={medLevel.doseLegend} />
                 {/* Steady state and the most recent dose, both from the logged doses */}
                 {medLevel.summary?.hasRecentDose && (
-                  <div className="grid grid-cols-2 gap-2 mt-3">
-                    <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl p-2.5 text-center border border-transparent dark:border-indigo-500/15">
-                      <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Steady state reached</p>
-                      <p className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">{medLevel.summary.steadyStatePercent}%</p>
-                      <p className="text-xs text-gray-500 dark:text-[#9A9DAE]">
-                        of {medLevel.primaryClass} at {medLevel.summary.referenceDose} {medLevel.doseUnit} every {medLevel.interval}d
-                      </p>
-                    </div>
-                    <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl p-2.5 text-center border border-transparent dark:border-indigo-500/15">
-                      <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Last dose</p>
-                      <p className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">
-                        {medLevel.summary.lastDoseDaysAgo === 0 ? "Today" : `${medLevel.summary.lastDoseDaysAgo}d ago`}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-[#9A9DAE]">
-                        {medLevel.summary.dosesInWindow} dose{medLevel.summary.dosesInWindow === 1 ? "" : "s"} inside the last 5 half-lives
-                      </p>
-                    </div>
+                  <div className="grid grid-cols-2 gap-2.5 mt-4">
+                    <StatTile
+                      tone="indigo"
+                      label="Steady state reached"
+                      value={`${medLevel.summary.steadyStatePercent}%`}
+                      note={`of ${medLevel.primaryClass} at ${medLevel.summary.referenceDose} ${medLevel.doseUnit} every ${medLevel.interval}d`}
+                    />
+                    <StatTile
+                      tone="indigo"
+                      label="Last dose"
+                      value={medLevel.summary.lastDoseDaysAgo === 0 ? "Today" : `${medLevel.summary.lastDoseDaysAgo}d ago`}
+                      note={`${medLevel.summary.dosesInWindow} dose${medLevel.summary.dosesInWindow === 1 ? "" : "s"} inside the last 5 half-lives`}
+                    />
                   </div>
                 )}
               </>
             )
           ) : (
-            <InsightEmptyState icon={<SyringeIcon size={28} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}>
-              Log your first shot to see relative exposure here.
-            </InsightEmptyState>
+            <InsightEmptyState
+              icon="analytics"
+              title="No exposure data yet"
+              description="Log your first shot to see your modelled exposure here."
+            />
             )}
             </div>
             {!isPremium && (
@@ -552,9 +541,14 @@ export default function Insights() {
               </button>
             )}
           </div>
-          <p className="text-xs text-gray-400 dark:text-[#9A9DAE] text-center mt-2">Time vs modelled exposure, as % of the steady-state level for your current dose</p>
-          <p className="text-[11px] text-gray-400 dark:text-[#9A9DAE] text-center mt-1 px-2">Illustrative estimate only — not a blood-level measurement. Do not use it to adjust your dose. Confirm any decisions with your prescriber.</p>
-          <button onClick={() => setShowHowItWorks(true)} className="w-full text-xs text-gray-500 dark:text-[#9A9DAE] text-center mt-1">How this works · model {PK_CALCULATION_VERSION}</button>
+          {/* One quiet footnote for the chart, and the link that explains it. */}
+          <p className={`mt-4 text-center ${FOOTNOTE}`}>Time vs modelled exposure, as % of your steady-state level. Not for adjusting your dose.</p>
+          <button
+            onClick={() => setShowHowItWorks(true)}
+            className="mx-auto mt-1 flex min-h-[44px] items-center justify-center px-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400"
+          >
+            How this works
+          </button>
           {!medLevel.disabled && medLevel.classes.length > 0 && (
             <div className="flex items-center justify-center gap-3 mt-2 flex-wrap">
               {medLevel.classes.map((cls) => (
@@ -588,19 +582,16 @@ export default function Insights() {
             <div className={isPremium ? "" : "blur-sm pointer-events-none select-none opacity-60"}>
               {shotsInSiteRange === 0 ? (
                 <InsightEmptyState
-                  icon={<IonIcon name="location" size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}
+                  icon="location"
+                  title="No shots in this range"
+                  description="Log shots to see which sites you've used."
+                  // A longer range is only offered while a shorter one is showing.
                   action={siteRange !== "90 Days" ? (
                     <button onClick={() => setSiteRange("90 Days")} className="btn-pill btn-primary">
-                      Try 90 days
+                      View last 90 days
                     </button>
-                  ) : (
-                    <Link to="/shots" className="btn-pill btn-primary">
-                      Log a shot
-                    </Link>
-                  )}
-                >
-                  No shots in the last {siteRangeDays} days.
-                </InsightEmptyState>
+                  ) : null}
+                />
               ) : (
                 <SiteRotationChart shots={shots} range={MED_RANGES[siteRange]} />
               )}
@@ -615,7 +606,7 @@ export default function Insights() {
               </button>
             )}
           </div>
-          <p className="text-xs text-gray-400 dark:text-[#9A9DAE] text-center mt-2">Rotate sites to support absorption and reduce irritation.</p>
+          <p className={`mt-4 text-center ${FOOTNOTE}`}>Rotate sites to support absorption and reduce irritation.</p>
         </InsightCard>
 
         <WellbeingPanel />

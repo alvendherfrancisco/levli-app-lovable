@@ -2,8 +2,8 @@ import React, { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { parseShotDate } from "@/lib/dateUtils";
 import useDoseColors from "@/hooks/useDoseColors";
-import IonIcon from "@/components/IonIcon";
 import InsightEmptyState from "@/components/insights/InsightEmptyState";
+import { FOOTNOTE } from "@/components/insights/insightUi";
 
 const SITE_COLORS = [
   "#6366F1", "#14B8A6", "#F59E0B", "#3B82F6", "#EC4899",
@@ -13,7 +13,9 @@ const SITE_COLORS = [
 export default function SiteRotationChart({ shots, range }) {
   const days = parseInt(range, 10);
   // Each chip's dot carries the dose's own colour, in the theme in use.
-  const { color: doseColor } = useDoseColors();
+  const { color: doseColor, isDark } = useDoseColors();
+  // The site labels down the side, kept legible on both surfaces.
+  const axisFill = isDark ? "#B4B8C7" : "#9CA3AF";
 
   const siteData = useMemo(() => {
     const now = new Date(); now.setHours(0, 0, 0, 0);
@@ -35,9 +37,11 @@ export default function SiteRotationChart({ shots, range }) {
 
   if (siteData.length === 0) {
     return (
-      <InsightEmptyState icon={<IonIcon name="location" size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}>
-        Log shots with an injection site to see your rotation here.
-      </InsightEmptyState>
+      <InsightEmptyState
+        icon="location"
+        title="No injection sites yet"
+        description="Log shots with an injection site to see your rotation here."
+      />
     );
   }
 
@@ -47,7 +51,7 @@ export default function SiteRotationChart({ shots, range }) {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={siteData} layout="vertical" margin={{ top: 4, right: 12, bottom: 4, left: 4 }}>
             <XAxis type="number" hide />
-            <YAxis type="category" dataKey="site" width={150} tick={{ fontSize: 10, fill: "#9CA3AF" }} stroke="#9CA3AF" />
+            <YAxis type="category" dataKey="site" width={150} tick={{ fontSize: 10, fill: axisFill }} stroke={axisFill} />
             <Tooltip
               formatter={(v) => [`${v} shots`, "Uses"]}
               contentStyle={{ background: "rgba(20,22,32,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#E8E9F0", padding: "8px 12px" }}
@@ -65,7 +69,7 @@ export default function SiteRotationChart({ shots, range }) {
       </div>
 
       <div className="mt-3">
-        <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">Recent rotation (newest first)</p>
+        <p className={`mb-2 ${FOOTNOTE}`}>Recent rotation (newest first)</p>
         <div className="flex flex-wrap gap-2">
           {rotation.map((s) => (
             <div key={s.id} className="flex items-center gap-1.5 bg-gray-50 dark:bg-white/[0.05] rounded-lg px-2 py-1">
