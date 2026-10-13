@@ -224,6 +224,17 @@
 .pb-safe-banner { padding-bottom: calc(var(--tabbar-h) + var(--fab-h) + 6rem + env(safe-area-inset-bottom, 0px)); }
 /* The FAB sits 8px above the tab bar, never over it and never over content. */
 .bottom-fab-safe { bottom: calc(var(--tabbar-h) + 0.5rem + env(safe-area-inset-bottom, 0px)); }
+/* A page whose last block — a footer, a note — belongs at the foot of the screen
+   rather than straight under the content above it. The page fills the room above
+   the tab bar's and the floating button's reserved space, using the same
+   arithmetic as .pb-safe-fab so the two always agree: on a short page the last
+   block sits at the bottom of the screen, and on a long one it is simply the end
+   of the content and scrolls as usual. */
+.page-fill-fab {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - (var(--tabbar-h) + var(--fab-h) + 3rem + env(safe-area-inset-bottom, 0px)));
+}
 .pb-modal-footer { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
 /* The sign-in screens: their own breathing room at the bottom of the page, plus
    the home indicator, so the last line is never sitting under it. */
@@ -234,6 +245,7 @@
   .pb-safe-content { padding-bottom: 2rem; }
   .pb-safe-fab, .pb-safe-banner { padding-bottom: calc(var(--fab-h) + 3rem); }
   .bottom-fab-safe { bottom: 2rem; }
+  .page-fill-fab { min-height: calc(100vh - (var(--fab-h) + 3rem)); }
 }
 
 /* ── Modal / bottom-sheet behaviour ───────────────────────────────────────── */

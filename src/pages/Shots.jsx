@@ -61,6 +61,11 @@ export default function Shots() {
 
   return (
     <PageContainer bottomInset="fab">
+      {/* The page fills the room above the tab bar and the button that floats
+          over it, so the disclaimer is the true foot of the page: at the bottom
+          of the screen while the history is short, and simply the end of the
+          content — scrolling with it — once the list is long. */}
+      <div className="page-fill-fab">
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{words.Many}</h1>
         <div className="flex items-center gap-3">
@@ -69,7 +74,7 @@ export default function Shots() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto pt-4">
+      <div className="w-full max-w-3xl mx-auto pt-4">
         <ShotSummaryCards
           totalShots={shots.length}
           last={last}
@@ -115,7 +120,11 @@ export default function Shots() {
         </div>
       </div>
 
-      <AppFooterDisclaimer />
+      <div className="mt-auto">
+        <AppFooterDisclaimer />
+      </div>
+
+      </div>
 
       <Fab onClick={openNew} label={addLabel} icon={null} />
 
