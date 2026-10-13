@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, Pause, Play, Trash2, CalendarX } from "lucide-react";
+import { X, Pause, Play, Trash2, CalendarX } from "lucide-react";
 import { toast } from "@/lib/toast";
 import useModal from "@/hooks/useModal";
 import useDiscardConfirm from "@/hooks/useDiscardConfirm";
@@ -235,7 +235,7 @@ export default function RepeatScheduleModal({ open, onClose, schedule }) {
             onClick={handleSave} disabled={!canSave} aria-disabled={!canSave || undefined}
             className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2"
           >
-            <Save size={16} /> {saving ? "Saving…" : "Save changes"}
+            {saving ? "Saving…" : "Save changes"}
           </button>
           <div className="flex gap-2">
             <button

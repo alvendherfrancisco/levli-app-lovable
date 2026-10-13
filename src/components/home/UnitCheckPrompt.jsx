@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { AlertTriangle, Check, Undo2, X } from "lucide-react";
+import { AlertTriangle, Undo2, X } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
@@ -78,7 +78,7 @@ export default function UnitCheckPrompt() {
                 disabled={busy}
                 className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
               >
-                <Check size={16} /> Yes, they are kilograms
+                Yes, they are kilograms
               </button>
               <button
                 onClick={keepWeightsAsLogged}

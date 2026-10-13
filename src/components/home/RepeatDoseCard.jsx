@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, Loader2, Repeat, Pencil, SkipForward, ChevronRight } from "lucide-react";
+import { Loader2, Repeat, Pencil, SkipForward, ChevronRight } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
 import DoseBadge from "@/components/DoseBadge";
@@ -96,7 +96,7 @@ export default function RepeatDoseCard({ onEdit }) {
               disabled={busy}
               className="btn-pill btn-primary mt-3 active:scale-[0.99]"
             >
-              {busy ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} strokeWidth={3} />}
+              {busy && <Loader2 size={18} className="animate-spin" />}
               {busy ? "Logging…" : "Confirm dose"}
             </button>
 

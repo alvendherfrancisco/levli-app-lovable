@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, RotateCcw, Save } from "lucide-react";
+import { X, RotateCcw } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { todayKey } from "@/lib/dateUtils";
 import useModal from "@/hooks/useModal";
@@ -144,7 +144,7 @@ export default function AddNutritionModal({ open, onClose, dayKey }) {
           </button>
           <button onClick={handleSave} disabled={!canSave} aria-disabled={!canSave || undefined}
             className="flex-1 py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2">
-            <Save size={16} /> Save
+            Save
           </button>
         </div>
       </div>

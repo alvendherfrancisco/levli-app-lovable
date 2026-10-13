@@ -91,7 +91,8 @@ export default function Shots() {
               <div className="w-14 h-14 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center mx-auto mb-3">
                 <Syringe size={32} className="opacity-30" aria-hidden="true" />
               </div>
-              <p className="text-sm">No {words.many} logged yet.</p>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">No {words.Many} Logged</h3>
+              <p className="text-sm">Log your first {words.one} to track your doses, injection sites, and how you feel over time.</p>
             </div>
           ) : (
             <div className="space-y-2">

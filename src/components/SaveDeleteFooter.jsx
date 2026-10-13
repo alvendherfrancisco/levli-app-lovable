@@ -18,7 +18,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
  * edit to the sheet behind it.
  */
 export default function SaveDeleteFooter({
-  saveLabel, onSave, saveDisabled = false, saveBusy = false, saveIcon = null,
+  saveLabel, onSave, saveDisabled = false, saveBusy = false,
   cancelLabel, onCancel, small = false,
   onDelete, deleteLabel = "Delete", deleteTitle, deleteMessage = "This can't be undone.",
   deleteAriaLabel,
@@ -72,7 +72,6 @@ export default function SaveDeleteFooter({
             aria-disabled={saveDisabled || undefined}
             className={`${pill} btn-primary w-full`}
           >
-            {saveIcon}
             {saveBusy ? "Saving…" : saveLabel}
           </button>
         </div>

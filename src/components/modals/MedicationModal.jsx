@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { X, Save, ChevronDown } from "lucide-react";
+import { X, ChevronDown } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import DateInput from "@/components/DateInput";
 import useModal from "@/hooks/useModal";
@@ -513,7 +513,7 @@ export default function MedicationModal({ open, onClose, editing }) {
         <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
           <button onClick={handleSave} disabled={!canSave} aria-disabled={!canSave || undefined}
             className="w-full min-h-[56px] btn-pill btn-primary font-semibold text-base flex items-center justify-center gap-2">
-            <Save size={18} /> {saving ? "Saving…" : editing ? "Update" : "Save"}
+            {saving ? "Saving…" : editing ? "Update" : "Save"}
           </button>
           <p className="text-xs text-gray-500 dark:text-[#9A9DAE] text-center mt-2.5 leading-snug">{FOOTER_NOTE}</p>
         </div>

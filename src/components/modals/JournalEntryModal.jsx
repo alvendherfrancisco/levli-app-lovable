@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Save } from "lucide-react";
+import { X } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { getRecentMedication } from "@/lib/medicationData";
 import RedFlagBanner from "@/components/RedFlagBanner";
@@ -195,7 +195,6 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
               and only on an entry that is already saved. It asks first. */}
           <SaveDeleteFooter
             saveLabel={initialEntry ? "Update Entry" : "Save Entry"}
-            saveIcon={<Save size={16} aria-hidden="true" />}
             onSave={handleSave}
             saveDisabled={!canSave}
             onDelete={onDelete || undefined}

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronDown, UserPlus, X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 import { useAppState } from "@/lib/AppState";
 import { sound } from "@/lib/sounds";
@@ -70,7 +70,7 @@ export default function CaregiverAccessPage() {
             </div>
             <button onClick={handleGrant} disabled={saving}
               className="btn-pill btn-primary w-full">
-              <UserPlus size={16} /> {saving ? "Granting…" : "Grant Access"}
+              {saving ? "Granting…" : "Grant Access"}
             </button>
           </div>
         </div>

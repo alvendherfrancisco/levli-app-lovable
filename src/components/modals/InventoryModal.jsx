@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { X, Save, ChevronDown } from "lucide-react";
+import { X, ChevronDown } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import useModal from "@/hooks/useModal";
 import useDiscardConfirm from "@/hooks/useDiscardConfirm";
@@ -298,7 +298,7 @@ export default function InventoryModal({ open, onClose, editing }) {
           <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
             <button onClick={handleSave} disabled={!canSave} aria-disabled={!canSave || undefined}
               className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2">
-              <Save size={16} /> {saving ? "Saving…" : editing ? "Update" : "Save"}
+              {saving ? "Saving…" : editing ? "Update" : "Save"}
             </button>
           </div>
         </div>

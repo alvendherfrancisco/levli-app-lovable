@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, Trash2, ExternalLink } from "lucide-react";
+import { X, Trash2, ExternalLink } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { todayKey } from "@/lib/dateUtils";
 import { getRecentMedication } from "@/lib/medicationData";
@@ -254,7 +254,7 @@ export default function SideEffectsModal({ open, onClose, dayKey }) {
         <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
           <button onClick={handleAdd} disabled={!selected.length || saving} aria-disabled={(!selected.length || saving) || undefined}
             className="w-full py-3.5 btn-pill btn-primary font-semibold flex items-center justify-center gap-2">
-            <Save size={16} /> {saving ? "Saving…" : "Save"}
+            {saving ? "Saving…" : "Save"}
           </button>
         </div>
       </div>

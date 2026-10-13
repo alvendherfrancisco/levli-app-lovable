@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { X, Camera, Image, Save, Loader2 } from "lucide-react";
+import { X, Camera, Image, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { todayKey } from "@/lib/dateUtils";
 import DateInput from "@/components/DateInput";
@@ -188,7 +188,6 @@ function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
           <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
             <SaveDeleteFooter
               saveLabel="Update"
-              saveIcon={<Save size={18} aria-hidden="true" />}
               onSave={() => { if (canSave) { onSave(imgUrl, photoDate); onClose(); } }}
               saveDisabled={!canSave}
               onDelete={async () => { onDelete(); onClose(); }}
@@ -200,7 +199,7 @@ function ProgressModal({ open, onClose, value, dayKey, onSave, onDelete }) {
           <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
             <button disabled={!canSave} aria-disabled={!canSave || undefined} onClick={() => { if (canSave) { onSave(imgUrl, photoDate); onClose(); } }}
               className="btn-pill btn-primary w-full">
-              <Save size={18} /> Save
+              Save
             </button>
           </div>
         )}
