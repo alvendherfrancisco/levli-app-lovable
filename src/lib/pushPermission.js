@@ -18,6 +18,13 @@ if (typeof window !== "undefined" && !window.__pushPermissionInstalled) {
     console.log("[push] permission", state);
     window.dispatchEvent(new CustomEvent("pushPermissionUpdated", { detail: state }));
   };
+  // apns-registration.md — success-only signal once Vapor stored the token.
+  window.setRemotePushDeviceRegistered = (payload = {}) => {
+    const p = typeof payload === "string" ? JSON.parse(payload) : payload;
+    window.__remotePushRegistered = !!p.registered;
+    console.log("[push] remote device registered", window.__remotePushRegistered);
+    window.dispatchEvent(new CustomEvent("remotePushDeviceRegistered", { detail: { registered: window.__remotePushRegistered } }));
+  };
 }
 
 // Pull for screens that mount after the launch broadcasts (§B).

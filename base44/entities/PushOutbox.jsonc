@@ -1,0 +1,91 @@
+{
+  "name": "PushOutbox",
+  "type": "object",
+  "properties": {
+    "recipient_user_id": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "social",
+        "monetisation",
+        "retention"
+      ]
+    },
+    "trigger_id": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "body": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "deep_link": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 500
+      }
+    },
+    "dedupe_key": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "enqueued_by": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "claimed",
+        "sent",
+        "failed",
+        "dead"
+      ],
+      "default": "pending"
+    },
+    "claim_token": {
+      "type": "string"
+    },
+    "attempts": {
+      "type": "integer",
+      "default": 0
+    },
+    "last_error": {
+      "type": "string"
+    },
+    "next_attempt_at": {
+      "type": "integer",
+      "description": "unix seconds"
+    },
+    "sent_at": {
+      "type": "integer",
+      "description": "unix seconds"
+    }
+  },
+  "required": [
+    "recipient_user_id",
+    "category",
+    "trigger_id",
+    "title",
+    "body",
+    "status",
+    "next_attempt_at"
+  ],
+  "rls": {
+    "create": false,
+    "read": false,
+    "update": false,
+    "delete": false
+  }
+}
