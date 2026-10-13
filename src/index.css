@@ -551,8 +551,10 @@ input[type="range"].pain-slider:active::-moz-range-thumb { transform: scale(1.1)
    both modes, so the handover between them never shows a seam. index.html
    carries the same two values in its first-paint rule, because that rule has to
    paint before this stylesheet exists. */
-:root { --launch-bg: #fdfcff; } /* near-white, what the light splash sits on */
-.dark { --launch-bg: #15171e; } /* hsl(228 18% 10%) — the app's own dark background */
+/* The same colour as the main content (bg-white / dark:bg-gray-950), so pulling
+   the page past its edge shows the app's own background, never a strip. */
+:root { --launch-bg: #ffffff; }
+.dark { --launch-bg: #030712; }
 
 html { background-color: var(--launch-bg); }
 

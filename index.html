@@ -10,7 +10,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon-180.png?v=2" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#fdfcff" />
+    <meta name="theme-color" content="#ffffff" />
     <!-- Launch theme, resolved before the first paint so the window background,
          the handover from the native launch screen and the animated splash all
          show one colour — no white flash, no mid-launch flip. The saved in-app
@@ -18,8 +18,8 @@
          same rule the app itself follows. Keep both values here in step with
          --launch-bg in src/index.css. -->
     <style>
-      html { background-color: #fdfcff; }
-      html.dark { background-color: #15171e; }
+      html { background-color: #ffffff; }
+      html.dark { background-color: #030712; }
     </style>
     <script>
       (function () {
@@ -44,7 +44,7 @@
         root.classList.toggle("dark", dark);
         root.style.colorScheme = dark ? "dark" : "light";
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute("content", dark ? "#15171e" : "#fdfcff");
+        if (meta) meta.setAttribute("content", dark ? "#030712" : "#ffffff");
       })();
     </script>
     <meta name="mobile-web-app-capable" content="yes" />
