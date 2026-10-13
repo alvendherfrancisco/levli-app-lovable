@@ -14,6 +14,7 @@ import WrapperOnly from '@/components/ios/WrapperOnly';
 import IOSNavigationBridge from '@/components/ios/IOSNavigationBridge';
 import IOSLifecycleEvents from '@/components/ios/IOSLifecycleEvents';
 import ShotReminderSync from '@/components/ios/ShotReminderSync';
+import AppReviewModal from '@/components/ios/AppReviewModal';
 
 import { AppStateProvider, useAppState } from '@/lib/AppState';
 import { SubscriptionProvider } from '@/lib/SubscriptionContext';
@@ -163,6 +164,7 @@ function App() {
             </WrapperOnly>
           </Router>
           <ToastHost />
+          <AppReviewModal />
           </SubscriptionProvider>
         </AppStateProvider>
       </QueryClientProvider>

@@ -42,6 +42,7 @@ import {
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
 import { sound } from "@/lib/sounds";
+import { onMajorActionCompleted } from "@/lib/appReview";
 
 // SC injection sites
 const scSites = [
@@ -681,6 +682,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       sound.success();
       setSaving(false);
       setSaved(true);
+      if (!editingShot) onMajorActionCompleted();
     } catch (err) {
       console.error("Error saving shot:", err);
       toast.error("Couldn't save. Please try again.", { actionLabel: "Retry", onAction: handleSave });
