@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import { hasCompedAccess } from "@/lib/compedAccess";
 import PaywallModal from "@/components/PaywallModal";
+import { getSubscriptionState, reconcileSubscription } from "@/lib/subscriptionHandler";
 
 const SubscriptionContext = createContext(null);
 
@@ -17,7 +18,22 @@ export function SubscriptionProvider({ children }) {
   // subscription to reach every premium feature.
   const isComped = hasCompedAccess(user?.email);
 
-  const isPremium = isComped || (() => {
+  // App Store entitlement from the iOS wrapper hint, reconciled with the database
+  // (src/lib/subscriptionHandler.js).
+  const [storeSub, setStoreSub] = useState(getSubscriptionState);
+  useEffect(() => {
+    const on = (e) => setStoreSub(e.detail);
+    window.addEventListener("subscription-status-hint", on);
+    window.addEventListener("subscriptionUpdated", on);
+    if (user?.id) reconcileSubscription();
+    return () => {
+      window.removeEventListener("subscription-status-hint", on);
+      window.removeEventListener("subscriptionUpdated", on);
+    };
+  }, [user?.id]);
+  useEffect(() => { if (storeSub.active) setPaywallOpen(false); }, [storeSub.active]);
+
+  const isPremium = isComped || storeSub.active === true || (() => {
     if (!profile) return false;
     if (profile.plan_type === "lifetime" && profile.subscription_status === "active") return true;
     if (profile.subscription_status === "active" || profile.subscription_status === "trialing") return true;

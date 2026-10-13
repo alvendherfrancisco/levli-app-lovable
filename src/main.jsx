@@ -11,6 +11,7 @@ import '@/lib/appLifecycle'
 import '@/lib/notificationTaps'
 import '@/lib/pushPermission'
 import '@/lib/appReview'
+import '@/lib/subscriptionHandler'
 
 // Registers the offline app-shell worker (caching only — it holds no push or
 // notification code). Published builds only, so the dev server is never cached.

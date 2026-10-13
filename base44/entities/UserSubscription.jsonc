@@ -1,0 +1,38 @@
+{
+  "name": "UserSubscription",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "product_id": {
+      "type": "string"
+    },
+    "purchase_date": {
+      "type": "integer",
+      "description": "unix seconds"
+    },
+    "expiration_date": {
+      "type": "integer",
+      "description": "unix seconds \u2014 the gating field"
+    },
+    "original_transaction_id": {
+      "type": "string"
+    },
+    "consumed_product_discount_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "expiration_date"
+  ],
+  "rls": {
+    "read": {
+      "data.user_id": "{{user.id}}"
+    },
+    "create": false,
+    "update": false,
+    "delete": false
+  }
+}

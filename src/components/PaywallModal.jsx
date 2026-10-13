@@ -5,6 +5,8 @@ import { useAuth } from "@/lib/AuthContext";
 import { useAppState } from "@/lib/AppState";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
+import { isRunningInIOSWrapper, sendIOSEvent } from "@/lib/iosBridge";
+import { reconcileSubscription } from "@/lib/subscriptionHandler";
 
 const PLANS = [
   { id: "monthly", name: "Monthly", desc: "Full access for just ₱125.00/month" },
@@ -27,11 +29,22 @@ export default function PaywallModal({ open, onClose }) {
   const [busy, setBusy] = useState(false);
   const [showNoSub, setShowNoSub] = useState(false);
 
-  const sheetRef = useModal({ open, onDismiss: onClose });
+  const inWrapper = isRunningInIOSWrapper();
+  const handleClose = () => {
+    if (inWrapper) sendIOSEvent("wanillajs.event.paywall.closeButtonTapped", { userId: user?.id ?? null });
+    onClose();
+  };
+  const sheetRef = useModal({ open, onDismiss: handleClose });
 
   if (!open) return null;
 
   const handleCheckout = async () => {
+    if (inWrapper) {
+      // StoreKit trigger: posted verbatim, outside the wanillajs envelope.
+      window.webkit?.messageHandlers?.gameEvents?.postMessage({ notificationName: "paywall.subscriptions.show" });
+      sendIOSEvent("wanillajs.event.paywall.subscribeButtonTapped", { userId: user?.id ?? null });
+      return;
+    }
     // In a framed preview the checkout page must open in its own tab, and the
     // tab has to be opened in the click handler so the popup is not blocked.
     const isFramed = window.self !== window.top;
@@ -67,6 +80,12 @@ export default function PaywallModal({ open, onClose }) {
 
   const handleRestore = async () => {
     setBusy(true);
+    if (inWrapper) {
+      const s = await reconcileSubscription();
+      setBusy(false);
+      if (s.active) { toast.success("Premium restored!"); onClose(); } else setShowNoSub(true);
+      return;
+    }
     try {
       const res = await base44.functions.invoke("verify-payment", { userId: user?.id });
       if (res.data?.granted) {
@@ -88,7 +107,7 @@ export default function PaywallModal({ open, onClose }) {
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-6 pb-2">
         <button onClick={handleRestore} className="text-sm text-gray-500 hover:text-indigo-600">Restore</button>
-        <button onClick={onClose} aria-label="Close"><X size={22} className="text-gray-400" /></button>
+        <button onClick={handleClose} aria-label="Close"><X size={22} className="text-gray-400" /></button>
       </div>
 
       {/* Scrollable content — scrollbar hidden */}
@@ -134,7 +153,7 @@ export default function PaywallModal({ open, onClose }) {
 
         {/* Fine print */}
         <p className="text-[11px] text-gray-400 text-center mt-4 px-2">
-          No commitment, cancel anytime from your account settings. Payment is charged to your account via Stripe.
+          No commitment, cancel anytime from your account settings. {inWrapper ? "Payment is charged to your Apple ID." : "Payment is charged to your account via Stripe."}
         </p>
 
         {/* Footer links */}
