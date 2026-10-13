@@ -10,6 +10,9 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import ReportErrorBoundary from '@/components/report/ReportErrorBoundary';
 import SplashGate from '@/components/splash/SplashGate';
 import { perfMark, useMountProbe } from '@/lib/perfProbe';
+import WrapperOnly from '@/components/ios/WrapperOnly';
+import IOSNavigationBridge from '@/components/ios/IOSNavigationBridge';
+import IOSLifecycleEvents from '@/components/ios/IOSLifecycleEvents';
 
 import { AppStateProvider, useAppState } from '@/lib/AppState';
 import { SubscriptionProvider } from '@/lib/SubscriptionContext';
@@ -149,9 +152,13 @@ function App() {
             <ScrollToTop />
             {/* The launch splash sits over the app while it starts up, then
                 cross-fades into whatever screen the app opens on. */}
-            <SplashGate>
-              <AuthenticatedApp />
-            </SplashGate>
+            <IOSNavigationBridge />
+            <IOSLifecycleEvents />
+            <WrapperOnly>
+              <SplashGate>
+                <AuthenticatedApp />
+              </SplashGate>
+            </WrapperOnly>
           </Router>
           <ToastHost />
           </SubscriptionProvider>
