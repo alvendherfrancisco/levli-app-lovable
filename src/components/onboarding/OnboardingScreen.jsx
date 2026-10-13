@@ -111,7 +111,7 @@ export default function OnboardingScreen({
       <div className="w-full max-w-lg mx-auto flex flex-col h-full sm:h-[88vh] sm:max-h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:shadow-xl bg-auth-panel backdrop-blur-md overflow-hidden relative z-10 border border-auth-divider">
         {/* Header — back + segmented progress */}
         <div
-          className={`flex flex-shrink-0 items-center border-b px-5 pt-5 pb-1.5 transition-colors sm:px-6 sm:pt-6 ${
+          className={`flex flex-shrink-0 items-center border-b px-5 pt-safe-5 pb-1.5 transition-colors sm:px-6 ${
             scrolled ? "border-auth-border" : "border-transparent"
           } ${isFirstStep ? "" : "gap-3"}`}
         >

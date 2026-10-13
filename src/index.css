@@ -203,6 +203,14 @@
 .onb-art-glow { opacity: 0.5; }
 .dark .onb-art-glow { opacity: 0.16; }
 
+/* Top safe area (status bar / Dynamic Island in the iOS wrapper). Every page's
+   sticky header (`sticky top-0 pt-6`) and the onboarding header add the inset
+   to their own top padding, so their content sits below the status bar while
+   their background still reaches the top edge. Resolves to 0 in a browser. */
+.sticky.top-0.pt-6 { padding-top: calc(1.5rem + env(safe-area-inset-top, 0px)); }
+.pt-safe-5 { padding-top: calc(1.25rem + env(safe-area-inset-top, 0px)); }
+@media (min-width: 640px) { .pt-safe-5 { padding-top: calc(1.5rem + env(safe-area-inset-top, 0px)); } }
+
 /* Safe area padding for bottom tab bar */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
