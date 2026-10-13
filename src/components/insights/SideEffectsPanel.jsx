@@ -1,8 +1,10 @@
 import React, { useMemo } from "react";
-import { AlertTriangle } from "lucide-react";
+import IonIcon from "@/components/IonIcon";
+import InsightCard from "@/components/insights/InsightCard";
+import SectionHeader from "@/components/insights/SectionHeader";
+import InsightEmptyState from "@/components/insights/InsightEmptyState";
 import { useAppState } from "@/lib/AppState";
 import { todayKey, toDayKey, fromDayKey } from "@/lib/dateUtils";
-import { ICON_SIZE_ROW } from "@/lib/iconConstants";
 
 const WINDOW_DAYS = 90;
 
@@ -44,17 +46,16 @@ export default function SideEffectsPanel() {
   }, [adverseEvents]);
 
   return (
-    <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-      <div className="flex items-center gap-2 mb-1">
-        <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-          <AlertTriangle size={ICON_SIZE_ROW} className="text-indigo-600 dark:text-indigo-400" />
-        </div>
-        <h3 className="font-bold text-gray-900 dark:text-white text-lg">Side Effects</h3>
-      </div>
-      <div className="border-b-2 border-indigo-500 w-12 mb-3" />
+    <InsightCard>
+      <SectionHeader
+        icon={<IonIcon name="warning" size={20} className="text-indigo-600 dark:text-indigo-400" />}
+        title="Side Effects"
+      />
 
       {summary.total === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-[#9A9DAE]">No side effects logged in the last {WINDOW_DAYS} days.</p>
+        <InsightEmptyState icon={<IonIcon name="warning" size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}>
+          No side effects logged in the last {WINDOW_DAYS} days.
+        </InsightEmptyState>
       ) : (
         <>
           <p className="text-xs text-gray-400 dark:text-[#9A9DAE] mb-3">
@@ -74,6 +75,6 @@ export default function SideEffectsPanel() {
           </p>
         </>
       )}
-    </div>
+    </InsightCard>
   );
 }

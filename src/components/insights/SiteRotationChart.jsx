@@ -2,6 +2,8 @@ import React, { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { parseShotDate } from "@/lib/dateUtils";
 import useDoseColors from "@/hooks/useDoseColors";
+import IonIcon from "@/components/IonIcon";
+import InsightEmptyState from "@/components/insights/InsightEmptyState";
 
 const SITE_COLORS = [
   "#6366F1", "#14B8A6", "#F59E0B", "#3B82F6", "#EC4899",
@@ -33,11 +35,9 @@ export default function SiteRotationChart({ shots, range }) {
 
   if (siteData.length === 0) {
     return (
-      <div className="h-48 flex items-center justify-center bg-gray-50 dark:bg-white/[0.03] rounded-xl">
-        <p className="text-sm text-gray-400 dark:text-[#9A9DAE] text-center px-4">
-          Log shots with an injection site to see your rotation here.
-        </p>
-      </div>
+      <InsightEmptyState icon={<IonIcon name="location" size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}>
+        Log shots with an injection site to see your rotation here.
+      </InsightEmptyState>
     );
   }
 

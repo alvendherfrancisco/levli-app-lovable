@@ -1,6 +1,12 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Settings, TrendingDown, Syringe, HelpCircle, Zap, Gauge, Camera, Image, Clock, Plus, ArrowRight, Maximize2, Minimize2, Crown, MapPin } from "lucide-react";
+import { Settings, HelpCircle, ArrowRight, Maximize2, Minimize2, Crown } from "lucide-react";
+import IonIcon from "@/components/IonIcon";
+import { SyringeIcon, ClockIcon } from "@/components/CustomIcons";
+import InsightCard from "@/components/insights/InsightCard";
+import SectionHeader from "@/components/insights/SectionHeader";
+import InsightEmptyState from "@/components/insights/InsightEmptyState";
+import RangeTabs from "@/components/insights/RangeTabs";
 import ProgressPhotoCard from "@/components/insights/ProgressPhotoCard";
 import AddMetricModal from "@/components/modals/AddMetricModal";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
@@ -22,7 +28,6 @@ import { getDoseColor, getDoseLegend } from "@/lib/doseColors";
 import useDoseColors from "@/hooks/useDoseColors";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import PageContainer from "@/components/PageContainer";
-import { ICON_SIZE_ROW } from "@/lib/iconConstants";
 
 const CLASS_COLORS = { Semaglutide: "#14B8A6", Tirzepatide: "#6366F1", Liraglutide: "#F59E0B" };
 
@@ -296,49 +301,39 @@ export default function Insights() {
 
       <div className="w-full max-w-3xl mx-auto pt-4">
         {/* Weight Change Panel */}
-        <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-5 h-5 flex items-center justify-center flex-shrink-0"><TrendingDown size={ICON_SIZE_ROW} className="text-indigo-600" /></div>
-            <h3 className="font-bold text-gray-900 dark:text-white text-lg">Weight Change</h3>
-          </div>
-          <div className="border-b-2 border-indigo-500 w-12 mb-3" />
+        <InsightCard className="overflow-hidden">
+          <SectionHeader
+            icon={<IonIcon name="trending-down" size={20} className="text-indigo-600 dark:text-indigo-400" />}
+            title="Weight Change"
+          />
 
-          <div className="flex items-center gap-1 mb-3 flex-wrap">
-            {Object.keys(WEIGHT_RANGES).map((r) => (
-              <button key={r} onClick={() => setWeightRange(r)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  weightRange === r
-                    ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600"
-                    : "text-gray-400 dark:text-gray-500"
-                }`}>{r}</button>
-            ))}
-          </div>
+          <RangeTabs options={Object.keys(WEIGHT_RANGES)} value={weightRange} onChange={setWeightRange} />
 
           {/* Summary chips */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-            <div className="bg-teal-50 dark:bg-teal-500/10 rounded-xl p-2.5 text-center min-w-0 border border-transparent dark:border-teal-500/15">
-              <TrendingDown size={14} className="text-teal-500 dark:text-teal-400 mx-auto mb-1" style={{filter:"drop-shadow(0 0 6px rgba(34,197,94,0.4))"}} />
+            <div className="bg-teal-50 dark:bg-teal-500/10 rounded-2xl p-2.5 text-center min-w-0 border border-transparent dark:border-teal-500/15">
+              <IonIcon name="trending-down" size={16} className="text-teal-500 dark:text-teal-400 mb-1" />
               <p className="text-gray-500 dark:text-[#9A9DAE] text-[11px]">Weight Loss</p>
               <p className="font-bold text-teal-600 dark:text-teal-400 text-sm">
                 {weightLoss != null ? `${weightLoss >= 0 ? "-" : "+"}${Math.abs(weightLoss).toFixed(1)} ${weightUnit}` : "—"}
               </p>
             </div>
-            <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-2.5 text-center min-w-0 border border-transparent dark:border-indigo-500/15">
-              <Zap size={14} className="text-indigo-500 dark:text-indigo-400 mx-auto mb-1" style={{filter:"drop-shadow(0 0 6px rgba(99,102,241,0.4))"}} />
+            <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl p-2.5 text-center min-w-0 border border-transparent dark:border-indigo-500/15">
+              <IonIcon name="flash" size={16} className="text-indigo-500 dark:text-indigo-400 mb-1" />
               <p className="text-gray-500 dark:text-[#9A9DAE] text-[11px]">% Change</p>
               <p className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">
                 {pctWeightChange != null ? `${pctWeightChange >= 0 ? "-" : "+"}${Math.abs(pctWeightChange)}%` : "—"}
               </p>
             </div>
-            <div className="bg-purple-50 dark:bg-purple-500/10 rounded-xl p-2.5 text-center min-w-0 border border-transparent dark:border-purple-500/15">
-              <Clock size={14} className="text-purple-500 dark:text-purple-400 mx-auto mb-1" />
+            <div className="bg-purple-50 dark:bg-purple-500/10 rounded-2xl p-2.5 text-center min-w-0 border border-transparent dark:border-purple-500/15">
+              <ClockIcon size={16} className="text-purple-500 dark:text-purple-400 mb-1" />
               <p className="text-gray-500 dark:text-[#9A9DAE] text-[11px]">Rate/Week</p>
               <p className="font-bold text-purple-600 dark:text-purple-400 text-sm">
                 {ratePerWeek != null ? `${ratePerWeek >= 0 ? "-" : "+"}${Math.abs(ratePerWeek).toFixed(1)} ${weightUnit}` : "—"}
               </p>
             </div>
-            <div className="bg-orange-50 dark:bg-orange-500/10 rounded-xl p-2.5 text-center min-w-0 border border-transparent dark:border-orange-500/15">
-              <Gauge size={14} className="text-orange-500 dark:text-orange-400 mx-auto mb-1" style={{filter:"drop-shadow(0 0 6px rgba(249,115,22,0.4))"}} />
+            <div className="bg-orange-50 dark:bg-orange-500/10 rounded-2xl p-2.5 text-center min-w-0 border border-transparent dark:border-orange-500/15">
+              <IonIcon name="speedometer" size={16} className="text-orange-500 dark:text-orange-400 mb-1" />
               <p className="text-gray-500 dark:text-[#9A9DAE] text-[11px]">Current BMI</p>
               <p className="font-bold text-orange-600 dark:text-orange-400 text-sm">
                 {bmi || (bmiNeedsCheck ? <span className="text-xs font-medium">Not shown — check units</span> : heightMissing ? <span className="text-xs font-medium">Add height in Profile</span> : "—")}
@@ -379,44 +374,39 @@ export default function Insights() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-48 flex flex-col items-center justify-center bg-gray-50 dark:bg-white/[0.03] rounded-xl gap-3 px-4">
-              <p className="text-sm text-gray-500 dark:text-[#9A9DAE] text-center">
-                {weightHistory.length === 0 ? "No weight entries yet." : "Only one weight entry in this range."}
-              </p>
-              <Link to="/" className="btn-pill btn-pill-sm btn-primary">
-                Log your weight
-              </Link>
-            </div>
+            <InsightEmptyState
+              icon={<IonIcon name="trending-down" size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}
+              action={<Link to="/" className="btn-pill btn-primary">Log your weight</Link>}
+            >
+              {weightHistory.length === 0 ? "No weight entries yet." : "Only one weight entry in this range."}
+            </InsightEmptyState>
           )}
           <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-2">
             {weightSummary ? `${weightSummary} · ` : ""}Solid line: daily entries · Dashed: 7-day rolling average · Days with no entry are left blank
           </p>
-        </div>
+        </InsightCard>
 
         {/* Progress Pictures Panel */}
-        <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(99,102,241,0.13)" }}>
-              <Camera size={16} className="text-indigo-500" />
-            </div>
-            <h3 className="font-bold text-gray-900 dark:text-white text-lg">Progress Pictures</h3>
-          </div>
-          <div className="border-b-2 border-indigo-500 w-12 mb-3" />
+        <InsightCard>
+          <SectionHeader
+            icon={<IonIcon name="camera" size={20} className="text-indigo-600 dark:text-indigo-400" />}
+            title="Progress Pictures"
+          />
 
           {photosAsc.length > 0 && (
             <div className="grid grid-cols-3 gap-2 mb-4">
-              <div className="rounded-xl p-2.5 text-center" style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.15)" }}>
-                <Image size={14} className="text-indigo-400 mx-auto mb-1" />
+              <div className="rounded-2xl p-2.5 text-center" style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.15)" }}>
+                <IonIcon name="images" size={16} className="text-indigo-400 mb-1" />
                 <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Total Photos</p>
                 <p className="font-bold text-indigo-500 dark:text-indigo-400 text-sm">{photosAsc.length}</p>
               </div>
-              <div className="rounded-xl p-2.5 text-center" style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.15)" }}>
-                <Clock size={14} className="text-teal-400 mx-auto mb-1" />
+              <div className="rounded-2xl p-2.5 text-center" style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.15)" }}>
+                <ClockIcon size={16} className="text-teal-400 mb-1" />
                 <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Journey Days</p>
                 <p className="font-bold text-teal-500 dark:text-teal-400 text-sm">{journeyDays}</p>
               </div>
-              <div className="rounded-xl p-2.5 text-center" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.15)" }}>
-                <Camera size={14} className="text-orange-400 mx-auto mb-1" />
+              <div className="rounded-2xl p-2.5 text-center" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.15)" }}>
+                <IonIcon name="camera" size={16} className="text-orange-400 mb-1" />
                 <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Latest</p>
                 <p className="font-bold text-orange-500 dark:text-orange-400 text-sm">{latestPhotoDate ? latestPhotoDate.month : "—"}</p>
               </div>
@@ -424,15 +414,12 @@ export default function Insights() {
           )}
 
           {photosAsc.length === 0 ? (
-            <div className="space-y-4">
-              <button onClick={openAddPhoto}
-                className="w-full flex items-center gap-3 rounded-xl p-4 text-left" style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)" }}>
-                <Camera size={22} className="text-indigo-500 flex-shrink-0" />
-                <p className="text-indigo-500 font-medium text-sm">No progress pictures yet. Tap to add your first photo!</p>
-              </button>
-              <button onClick={openAddPhoto}
-                className="btn-pill btn-primary w-full text-sm">
-                <Plus size={ICON_SIZE_ROW} /> Add Picture
+            <div className="space-y-3">
+              <InsightEmptyState icon={<IonIcon name="camera" size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}>
+                No progress pictures yet. Tap to add your first photo!
+              </InsightEmptyState>
+              <button onClick={openAddPhoto} className="btn-pill btn-primary w-full">
+                Add Picture
               </button>
             </div>
           ) : (
@@ -461,7 +448,7 @@ export default function Insights() {
               <div className="flex gap-3">
                 <button onClick={openAddPhoto}
                   className="btn-pill btn-primary flex-1 text-sm">
-                  <Plus size={16} /> Add Photo
+                  Add Photo
                 </button>
                 {photosAsc.length >= 2 && (
                   <button onClick={() => setViewAllPhotos((v) => !v)}
@@ -475,45 +462,37 @@ export default function Insights() {
           <AddMetricModal open={!!photoModal} onClose={() => setPhotoModal(null)} label="Progress" unit="pic"
             value={photoModal?.mode === "edit" ? photoModal.url : "–"} dayKey={photoModal?.dayKey}
             onSave={handleSavePhotoModal} onDelete={photoModal?.mode === "edit" ? handleDeletePhotoModal : undefined} />
-        </div>
+        </InsightCard>
 
         {/* Medication Exposure Panel */}
-        <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="flex items-start justify-between mb-1">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 flex items-center justify-center flex-shrink-0"><Syringe size={ICON_SIZE_ROW} className="text-indigo-600" /></div>
-              <div>
-                <h3 className="font-bold text-gray-900 dark:text-white text-lg">Modelled Medication Exposure</h3>
-                <p className="text-xs text-indigo-500">Illustrative relative-exposure estimate (not a blood-level measurement).</p>
-              </div>
-            </div>
-            <button onClick={() => setShowHowItWorks(true)} aria-label="How this works" className="flex-shrink-0">
-              <HelpCircle size={ICON_SIZE_ROW} className="text-indigo-400" />
-            </button>
-          </div>
-          <div className="border-b-2 border-indigo-500 w-12 mb-3" />
+        <InsightCard>
+          <SectionHeader
+            icon={<SyringeIcon size={18} className="text-indigo-600 dark:text-indigo-400" />}
+            title="Modelled Medication Exposure"
+            subtitle="Illustrative relative-exposure estimate (not a blood-level measurement)."
+            action={(
+              <button onClick={() => setShowHowItWorks(true)} aria-label="How this works" className="flex-shrink-0 p-1">
+                <HelpCircle size={18} className="text-indigo-400" />
+              </button>
+            )}
+          />
 
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            {Object.keys(MED_RANGES).map((r) => (
-              <button key={r} onClick={() => setMedRange(r)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  medRange === r ? "bg-indigo-600 text-white" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-                }`}>{r}</button>
-            ))}
-          </div>
+          <RangeTabs options={Object.keys(MED_RANGES)} value={medRange} onChange={setMedRange} />
 
           <div className="relative">
             <div className={isPremium ? "" : "blur-sm pointer-events-none select-none opacity-60"}>
           {shots.length > 0 ? (
             medLevel.empty ? (
-              <div className="h-48 flex flex-col items-center justify-center bg-gray-50 dark:bg-white/[0.03] rounded-xl px-4 gap-2">
-                <p className="text-sm text-gray-400 dark:text-[#9A9DAE] text-center">No recent doses logged, so there's nothing to model.</p>
-                <button onClick={() => setShowHowItWorks(true)} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">How this works</button>
-              </div>
+              <InsightEmptyState
+                icon={<ClockIcon size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}
+                action={<button onClick={() => setShowHowItWorks(true)} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">How this works</button>}
+              >
+                No recent doses logged, so there's nothing to model.
+              </InsightEmptyState>
             ) : medLevel.disabled ? (
-              <div className="h-48 flex items-center justify-center bg-gray-50 dark:bg-white/[0.03] rounded-xl px-4">
-                <p className="text-sm text-gray-400 dark:text-[#9A9DAE] text-center">Exposure estimation is not available for this medication. This appears for investigational or unsupported products.</p>
-              </div>
+              <InsightEmptyState icon={<IonIcon name="information-circle" size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}>
+                Exposure estimation is not available for this medication. This appears for investigational or unsupported products.
+              </InsightEmptyState>
             ) : (
               <>
                 <div className="h-48">
@@ -537,14 +516,14 @@ export default function Insights() {
                 {/* Steady state and the most recent dose, both from the logged doses */}
                 {medLevel.summary?.hasRecentDose && (
                   <div className="grid grid-cols-2 gap-2 mt-3">
-                    <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-2.5 text-center border border-transparent dark:border-indigo-500/15">
+                    <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl p-2.5 text-center border border-transparent dark:border-indigo-500/15">
                       <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Steady state reached</p>
                       <p className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">{medLevel.summary.steadyStatePercent}%</p>
                       <p className="text-xs text-gray-500 dark:text-[#9A9DAE]">
                         of {medLevel.primaryClass} at {medLevel.summary.referenceDose} {medLevel.doseUnit} every {medLevel.interval}d
                       </p>
                     </div>
-                    <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-2.5 text-center border border-transparent dark:border-indigo-500/15">
+                    <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl p-2.5 text-center border border-transparent dark:border-indigo-500/15">
                       <p className="text-[11px] text-gray-500 dark:text-[#9A9DAE]">Last dose</p>
                       <p className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">
                         {medLevel.summary.lastDoseDaysAgo === 0 ? "Today" : `${medLevel.summary.lastDoseDaysAgo}d ago`}
@@ -558,9 +537,9 @@ export default function Insights() {
               </>
             )
           ) : (
-            <div className="h-48 flex items-center justify-center bg-gray-50 dark:bg-white/[0.03] rounded-xl">
-              <p className="text-sm text-gray-400 dark:text-[#9A9DAE]">Log your first shot to see relative exposure here.</p>
-            </div>
+            <InsightEmptyState icon={<SyringeIcon size={28} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}>
+              Log your first shot to see relative exposure here.
+            </InsightEmptyState>
             )}
             </div>
             {!isPremium && (
@@ -586,7 +565,7 @@ export default function Insights() {
               ))}
             </div>
           )}
-        </div>
+        </InsightCard>
 
         <ExposureHowItWorks
           open={showHowItWorks}
@@ -597,39 +576,31 @@ export default function Insights() {
         />
 
         {/* Injection Site Rotation Panel */}
-        <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-5 h-5 flex items-center justify-center flex-shrink-0"><MapPin size={ICON_SIZE_ROW} className="text-indigo-600" /></div>
-            <h3 className="font-bold text-gray-900 dark:text-white text-lg">Injection Site Rotation</h3>
-          </div>
-          <div className="border-b-2 border-indigo-500 w-12 mb-3" />
+        <InsightCard>
+          <SectionHeader
+            icon={<IonIcon name="location" size={20} className="text-indigo-600 dark:text-indigo-400" />}
+            title="Injection Site Rotation"
+          />
 
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            {Object.keys(MED_RANGES).map((r) => (
-              <button key={r} onClick={() => setSiteRange(r)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  siteRange === r ? "bg-indigo-600 text-white" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-                }`}>{r}</button>
-            ))}
-          </div>
+          <RangeTabs options={Object.keys(MED_RANGES)} value={siteRange} onChange={setSiteRange} />
 
           <div className="relative">
             <div className={isPremium ? "" : "blur-sm pointer-events-none select-none opacity-60"}>
               {shotsInSiteRange === 0 ? (
-                <div className="h-40 flex flex-col items-center justify-center bg-gray-50 dark:bg-white/[0.03] rounded-xl gap-3 px-4">
-                  <p className="text-sm text-gray-500 dark:text-[#9A9DAE] text-center">
-                    No shots in the last {siteRangeDays} days.
-                  </p>
-                  {siteRange !== "90 Days" ? (
-                    <button onClick={() => setSiteRange("90 Days")} className="btn-pill btn-pill-sm btn-primary">
+                <InsightEmptyState
+                  icon={<IonIcon name="location" size={30} className="text-gray-400 dark:text-[#9A9DAE] opacity-40" />}
+                  action={siteRange !== "90 Days" ? (
+                    <button onClick={() => setSiteRange("90 Days")} className="btn-pill btn-primary">
                       Try 90 days
                     </button>
                   ) : (
-                    <Link to="/shots" className="btn-pill btn-pill-sm btn-primary">
+                    <Link to="/shots" className="btn-pill btn-primary">
                       Log a shot
                     </Link>
                   )}
-                </div>
+                >
+                  No shots in the last {siteRangeDays} days.
+                </InsightEmptyState>
               ) : (
                 <SiteRotationChart shots={shots} range={MED_RANGES[siteRange]} />
               )}
@@ -645,7 +616,7 @@ export default function Insights() {
             )}
           </div>
           <p className="text-xs text-gray-400 dark:text-[#9A9DAE] text-center mt-2">Rotate sites to support absorption and reduce irritation.</p>
-        </div>
+        </InsightCard>
 
         <WellbeingPanel />
         <SideEffectsPanel />
