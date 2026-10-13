@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Settings, Plus, Package, AlertTriangle, Trash2, ChevronRight, Thermometer } from "lucide-react";
+import { Settings, Package, AlertTriangle, Trash2, ChevronRight, Thermometer } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
+import EmptyStateCard from "@/components/EmptyStateCard";
 import { useAppState } from "@/lib/AppState";
 import InventoryModal from "@/components/modals/InventoryModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -72,28 +73,19 @@ export default function InventoryPage() {
   const productStorageLogs = (productId) => storageLogs.filter((s) => s.inventory_id === productId || s.product_name === (inventory.find((i) => i.id === productId)?.product_name));
 
   return (
-    <PageContainer bottomInset="fab">
+    <PageContainer bottomInset="fab" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Inventory</h1>
-        <div className="flex items-center gap-3">
-          <button onClick={openNew} aria-label="Add product"><Plus size={24} className="text-indigo-600" /></button>
-          <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
-        </div>
+        <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
       </div>
 
       <div className="max-w-3xl mx-auto pt-4 px-4">
-        <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-          Track product quantities, lot numbers, and expiry dates. Logging a shot for a tracked product decrements the remaining quantity.
-        </p>
-
         {itemsWithStatus.length === 0 ? (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 text-center">
-            <Package size={36} className="mx-auto mb-3 text-gray-300 dark:text-white/20" />
-            <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-4">No inventory tracked yet.</p>
-            <button onClick={openNew} className="btn-pill btn-primary mx-auto">
-              <Plus size={18} /> Add Product
-            </button>
-          </div>
+          <EmptyStateCard
+            icon={Package}
+            title="No Inventory Tracked"
+            description="Add a product to track quantities, lot numbers, and expiry dates. Logging a shot will update your remaining quantity."
+          />
         ) : (
           <div className="space-y-3">
             {itemsWithStatus.map((i) => (
@@ -143,7 +135,7 @@ export default function InventoryPage() {
         )}
       </div>
 
-      <Fab onClick={openNew} label="Add Product" />
+      <Fab onClick={openNew} label="Add Product" icon={null} />
 
       <ConfirmDialog
         open={!!removeTarget}

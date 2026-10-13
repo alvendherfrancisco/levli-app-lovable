@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Settings, Plus, Pill, Calendar, User, Activity, Trash2, ChevronRight, Archive } from "lucide-react";
+import { Settings, Pill, Calendar, User, Activity, Trash2, ChevronRight, Archive } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
+import EmptyStateCard from "@/components/EmptyStateCard";
 import { useAppState } from "@/lib/AppState";
 import MedicationModal from "@/components/modals/MedicationModal";
 import RepeatScheduleCard from "@/components/medications/RepeatScheduleCard";
@@ -56,21 +57,14 @@ export default function MyMedications() {
   };
 
   return (
-    <PageContainer bottomInset="fab">
+    <PageContainer bottomInset="fab" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Medications</h1>
-        <div className="flex items-center gap-3">
-          <button onClick={openNew} aria-label="Add medication"><Plus size={24} className="text-indigo-600" /></button>
-          <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
-        </div>
+        <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
       </div>
 
       <div className="max-w-3xl mx-auto pt-4 px-4">
         <LinkShotsToMedsCard />
-        <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-          Track your prescribed regimens. Titration stages show only what you or your prescriber entered — Levli never generates a schedule.
-        </p>
-
         {repeatSchedules.filter((s) => s.status !== "cancelled").length > 0 && (
           <div className="mb-5">
             <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-2 px-1">Repeat schedules</p>
@@ -89,13 +83,11 @@ export default function MyMedications() {
         )}
 
         {medications.length === 0 ? (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 text-center">
-            <Pill size={36} className="mx-auto mb-3 text-gray-300 dark:text-white/20" />
-            <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-4">No medications saved yet. Add your prescribed regimen to link your shot logs.</p>
-            <button onClick={openNew} className="btn-pill btn-primary mx-auto">
-              <Plus size={18} /> Add Medication
-            </button>
-          </div>
+          <EmptyStateCard
+            icon={Pill}
+            title="No Medications Saved"
+            description="Add your prescribed regimen to link your shot logs. Levli never generates a schedule for you."
+          />
         ) : (
           <div className="space-y-3">
             {medications.map((m) => (
@@ -135,7 +127,7 @@ export default function MyMedications() {
         )}
       </div>
 
-      <Fab onClick={openNew} label="Add Medication" />
+      <Fab onClick={openNew} label="Add Medication" icon={null} />
 
       <MedicationModal open={modalOpen} onClose={() => { setModalOpen(false); setEditing(null); }} editing={editing} />
       <RepeatScheduleModal

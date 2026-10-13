@@ -183,7 +183,7 @@ export default function History() {
         )}
       </div>
 
-      <Fab onClick={openNew} label={addLabel} />
+      <Fab onClick={openNew} label={addLabel} icon={null} />
 
       <AddShotModal open={showShot} onClose={() => { setShowShot(false); setEditingShot(null); }} editingShot={editingShot} />
       {selectedDayKey && (
