@@ -1,4 +1,6 @@
 {
+  "name": "User",
+  "type": "object",
   "properties": {
     "role": {
       "type": "string",
@@ -7,11 +9,17 @@
         "admin",
         "user"
       ]
+    },
+    "username": {
+      "type": "string",
+      "description": "Public display handle. Unique per app. Generated server-side by ensureProfile."
+    },
+    "username_lc": {
+      "type": "string",
+      "description": "Lower-cased copy of username for case-insensitive uniqueness checks."
     }
   },
   "required": [
     "role"
-  ],
-  "name": "User",
-  "type": "object"
+  ]
 }

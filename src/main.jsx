@@ -5,6 +5,8 @@ import '@/index.css'
 // iOS wrapper globals, installed before React mounts.
 import '@/lib/iosBridge'
 import '@/lib/iosLoadingOverlayBridge'
+import '@/lib/iosSession'
+import '@/lib/iosSystem'
 
 // Registers the offline app-shell worker (caching only — it holds no push or
 // notification code). Published builds only, so the dev server is never cached.

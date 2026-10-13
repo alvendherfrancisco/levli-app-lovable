@@ -1,3 +1,4 @@
+import { requestIOSLogout } from '@/lib/iosSession';
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
@@ -163,6 +164,8 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback((shouldRedirect = true, redirectUrl = '/login') => {
     // The cached profile on this device belongs to the account that is leaving.
     clearCachedProfile();
+    // Tell the iOS wrapper so it clears its native session too (sets the 3 s guard).
+    requestIOSLogout('user');
     sessionIdRef.current = null;
     authResolvedRef.current = true;
     setUser(null);
