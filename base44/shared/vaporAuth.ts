@@ -20,7 +20,11 @@ export function isAuthorized(req: Request) {
 async function appsApi(path: string, body: unknown) {
   const res = await fetch(`${API}/${secrets.get("BASE44_APP_ID")}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", api_key: secrets.get("APPLE_WEBHOOK_API_KEY") },
+    headers: {
+      "Content-Type": "application/json",
+      api_key: secrets.get("BASE44_WORKSPACE_API_KEY"),
+      "X-Active-Workspace-Id": secrets.get("BASE44_WORKSPACE_ID"),
+    },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(10000),
   });
