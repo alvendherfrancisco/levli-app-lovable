@@ -12,6 +12,7 @@ import { scheduleMatchesMedication } from "@/lib/medicationLink";
 import { readCachedProfile, writeCachedProfile, clearCachedProfile } from "@/lib/profileCache";
 import { resolveProfileRecords } from "@/lib/profileRecords";
 import { perfMark } from "@/lib/perfProbe";
+import useAuthEpoch from "@/hooks/useAuthEpoch";
 
 const AppStateContext = createContext(null);
 
@@ -47,6 +48,7 @@ const CACHED_PROFILE = readCachedProfile();
 
 export function AppStateProvider({ children }) {
   const { isAuthenticated } = useAuth();
+  const authEpoch = useAuthEpoch();
   const [shots, setShots] = useState([]);
   const [shotsLoading, setShotsLoading] = useState(true);
   const [dayMetrics, setDayMetrics] = useState({}); // key: day_key → record
@@ -192,7 +194,7 @@ export function AppStateProvider({ children }) {
       migrateUnits(profileRow, metricRows);
       await dataPromise;
     })();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authEpoch]);
 
   const loadShots = async () => {
     setShotsLoading(true);
