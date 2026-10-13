@@ -5,7 +5,7 @@ import PageContainer from "@/components/PageContainer";
 import AppFooterDisclaimer from "@/components/AppFooterDisclaimer";
 import Fab from "@/components/Fab";
 import DateStrip from "@/components/home/DateStrip";
-import ShotSummaryCards from "@/components/shots/ShotSummaryCards";
+import NextShotCard from "@/components/home/NextShotCard";
 import RepeatDoseCard from "@/components/home/RepeatDoseCard";
 import MetricsGrid from "@/components/home/MetricsGrid";
 import AddShotModal from "@/components/modals/AddShotModal";
@@ -58,9 +58,7 @@ export default function Home() {
       <div className="max-w-3xl mx-auto pt-4">
         <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
         <RepeatDoseCard onEdit={(preset) => { setShotPreset(preset); setShowShot(true); }} />
-        {/* The same summary row the Shots screen shows: total shots, last dose,
-            next shot. */}
-        <ShotSummaryCards />
+        <NextShotCard onLogPastShot={(preset) => { setShotPreset(preset); setShowShot(true); }} />
         <MetricsGrid dayKey={dk} />
 
         {/* Side Effects card */}
