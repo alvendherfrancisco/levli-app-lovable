@@ -12,11 +12,11 @@ import { getSoundPreference, setSoundPreference, sound } from "@/lib/sounds";
 import { buildFullExportCsv, downloadTextFile } from "@/lib/dataExport";
 import ScreenHeader from "@/components/ScreenHeader";
 import SettingsRow from "@/components/SettingsRow";
+import PushSettingsRow from "@/components/settings/PushSettingsRow";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { toast } from "@/lib/toast";
 
-// Where the placeholder Push Notifications switch keeps its position.
-const NOTIF_PREF_KEY = "levli_push_notifications_enabled";
+
 
 // Shared toggle — defined outside the component so React doesn't remount it
 // on every state change (which caused the two toggles to look inconsistent).
@@ -48,12 +48,6 @@ export default function SettingsPage() {
   const [deleteEmail, setDeleteEmail] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Push Notifications is a placeholder for now: the switch remembers its
-  // position on this device and nothing else happens when it moves. Push is
-  // being rebuilt from scratch.
-  const [notifEnabled, setNotifEnabled] = useState(
-    () => typeof localStorage !== "undefined" && localStorage.getItem(NOTIF_PREF_KEY) === "true"
-  );
   const [soundOn, setSoundOn] = useState(getSoundPreference());
 
   const handleDarkMode = async (val) => {
@@ -67,12 +61,6 @@ export default function SettingsPage() {
     if (val) sound.success();
   };
 
-  // Placeholder only: the switch keeps its position on this device. Nothing is
-  // requested, subscribed to, or sent.
-  const handleNotifications = (val) => {
-    setNotifEnabled(val);
-    try { localStorage.setItem(NOTIF_PREF_KEY, val ? "true" : "false"); } catch { /* private mode */ }
-  };
 
   // Every record the account holds, in one CSV. The PDF report (doses, side
   // effects and journal) is produced by the report screen.
@@ -131,16 +119,7 @@ export default function SettingsPage() {
               </div>
               <Toggle value={darkMode} onChange={handleDarkMode} />
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0"><Bell size={ICON_SIZE_ROW} className="text-gray-500 dark:text-gray-400" /></div>
-                <div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300 block">Push Notifications</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Get a gentle reminder on the morning of your scheduled shot.</span>
-                </div>
-              </div>
-              <Toggle value={notifEnabled} onChange={handleNotifications} />
-            </div>
+            <PushSettingsRow />
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-5 h-5 flex items-center justify-center flex-shrink-0"><Volume2 size={ICON_SIZE_ROW} className="text-gray-500 dark:text-gray-400" /></div>

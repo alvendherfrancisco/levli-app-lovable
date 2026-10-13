@@ -16,12 +16,4 @@ export const openExternalURL = (url, context) => {
   return false;
 };
 
-// push-permission-bridge.md §2 — status listener stub: record state only.
-const normalize = (s) => (s === "granted" ? "authorized" : s || "unknown");
-if (typeof window !== "undefined") {
-  window.__pushPermission = window.__pushPermission || { status: "unknown", source: "unknown", at: 0 };
-  window.setPushPermissionStatus = (payload = {}) => {
-    window.__pushPermission = { status: normalize(payload.status), source: payload.source || "unknown", at: Date.now() };
-    window.dispatchEvent(new CustomEvent("ios:push-permission", { detail: window.__pushPermission }));
-  };
-}
+// The push-permission listener now lives in src/lib/pushPermission.js (Phase 4A).

@@ -15,6 +15,7 @@ import { logsAsDose } from "@/lib/medicationForm";
 import { isActiveMedication } from "@/lib/medicationLink";
 import LockedFeatureCard from "@/components/LockedFeatureCard";
 import UnitCheckPrompt from "@/components/home/UnitCheckPrompt";
+import PushOptInBanner from "@/components/home/PushOptInBanner";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import { useMountProbe } from "@/lib/perfProbe";
 
@@ -58,6 +59,7 @@ export default function Home() {
         <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
         <RepeatDoseCard onEdit={(preset) => { setShotPreset(preset); setShowShot(true); }} />
         <NextShotCard onLogPastShot={(preset) => { setShotPreset(preset); setShowShot(true); }} />
+        <div className="mx-3 mb-4 empty:hidden"><PushOptInBanner /></div>
         <MetricsGrid dayKey={dk} />
 
         {/* Side Effects card */}
