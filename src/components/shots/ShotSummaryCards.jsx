@@ -1,5 +1,6 @@
 import React from "react";
-import { Syringe, Clock, CalendarCheck, ClipboardCheck } from "lucide-react";
+import { SyringeIcon, ClockIcon, CalendarCheckIcon } from "@/components/CustomIcons";
+import IonIcon from "@/components/IonIcon";
 import DoseBadge from "@/components/DoseBadge";
 import { daysAgoLabel } from "@/lib/dateUtils";
 
@@ -42,14 +43,14 @@ export default function ShotSummaryCards({
       key: "total",
       label: `Total ${words.many}`,
       tint: "bg-indigo-100 dark:bg-indigo-500/10",
-      icon: <Syringe size={15} strokeWidth={2} className="text-indigo-600 dark:text-indigo-400" />,
+      icon: <SyringeIcon size={16} className="text-indigo-600 dark:text-indigo-400" />,
       value: <p className={VALUE}>{totalShots}</p>,
     },
     {
       key: "last",
       label: "Last Dose",
       tint: "bg-amber-100 dark:bg-amber-500/10",
-      icon: <Clock size={15} strokeWidth={2} className="text-amber-500 dark:text-amber-400" />,
+      icon: <ClockIcon size={16} className="text-amber-500 dark:text-amber-400" />,
       value: last ? (
         <>
           <DoseBadge medication={last.medication} dose={last.dose} unit={last.dose_unit || "mg"} />
@@ -61,7 +62,7 @@ export default function ShotSummaryCards({
       key: "next",
       label: nextOverdue ? `${words.One} was due` : `Next ${words.One}`,
       tint: "bg-teal-100 dark:bg-teal-500/10",
-      icon: <CalendarCheck size={15} strokeWidth={2} className="text-teal-600 dark:text-teal-400" />,
+      icon: <CalendarCheckIcon size={16} className="text-teal-600 dark:text-teal-400" />,
       value: nextDate ? (
         <>
           <p className={VALUE}>{nextDate}</p>
@@ -73,7 +74,7 @@ export default function ShotSummaryCards({
       key: "adherence",
       label: "Adherence",
       tint: "bg-indigo-100 dark:bg-indigo-500/10",
-      icon: <ClipboardCheck size={15} strokeWidth={2} className="text-indigo-600 dark:text-indigo-400" />,
+      icon: <IonIcon name="clipboard" size={16} className="text-indigo-600 dark:text-indigo-400" />,
       value: (
         <>
           <p className={VALUE}>{adherence.adherencePct}%</p>

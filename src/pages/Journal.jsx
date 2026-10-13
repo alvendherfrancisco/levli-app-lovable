@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Settings, Plus, BookOpen, Clock, Heart } from "lucide-react";
+import { Settings, BookOpen, Clock, Heart } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import JournalEntryModal from "@/components/modals/JournalEntryModal";
@@ -83,7 +83,6 @@ export default function Journal() {
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Journal</h1>
         <div className="flex items-center gap-3">
-          <button onClick={openNew} aria-label="New journal entry" className="w-11 h-11 -m-2.5 flex items-center justify-center rounded-full"><Plus size={22} className="text-gray-600 dark:text-gray-400" aria-hidden="true" /></button>
           <Link to="/settings" aria-label="Settings" className="w-11 h-11 -m-2.5 flex items-center justify-center rounded-full"><Settings size={22} className="text-gray-600 dark:text-gray-400" aria-hidden="true" /></Link>
         </div>
       </div>
