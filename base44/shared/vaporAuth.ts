@@ -22,8 +22,7 @@ async function appsApi(path: string, body: unknown) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      api_key: secrets.get("BASE44_WORKSPACE_API_KEY"),
-      "X-Active-Workspace-Id": secrets.get("BASE44_WORKSPACE_ID"),
+      api_key: secrets.get("APPLE_WEBHOOK_API_KEY"),
     },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(10000),
