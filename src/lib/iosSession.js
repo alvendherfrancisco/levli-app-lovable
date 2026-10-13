@@ -112,12 +112,31 @@ if (typeof window !== "undefined") {
   window.setSupabaseSession = (a) => window.setBase44Session(a);
 
   window.forceLogoutFromIOS = (reason = "native", userInitiated = false) => {
-    if (nativeSignInInProgress()) return JSON.stringify({ accepted: false, reason: "signInInProgress" });
+    const deleted = reason === "accountDeleted";
+    if (!deleted && nativeSignInInProgress()) return JSON.stringify({ accepted: false, reason: "signInInProgress" });
     sessionStorage.setItem(LOGOUT_KEY, String(Date.now()));
+    if (deleted) {
+      // Account deletion: tear everything down synchronously, then leave.
+      ["iosAuthSessionEstablishedAt", "appleSignInRequestedAt", "googleSignInRequestedAt"].forEach((k) => sessionStorage.removeItem(k));
+      const userId = authStore.get?.()?.id ?? null;
+      authStore.set(null);
+      try {
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith("base44") || k.startsWith("levli:") || k === "token")
+          .forEach((k) => localStorage.removeItem(k));
+      } catch { /* ignore */ }
+      sendIOSEvent("wanillajs.event.auth.userDidSignOut", { userId, reason });
+      window.location.replace("/login");
+      try { base44.auth.logout("/login"); } catch { /* fire-and-forget */ }
+      return JSON.stringify({ accepted: true, reason, userInitiated });
+    }
     authStore.set(null);
     base44.auth.logout("/login");
     return JSON.stringify({ accepted: true, reason, userInitiated });
   };
+
+  // Called by the wrapper after Vapor finishes deleting the account.
+  window.showLoginScreen = () => window.forceLogoutFromIOS("accountDeleted");
 }
 
 // Web-initiated logout: tell iOS so it clears its native session too, and set
