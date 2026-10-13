@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { isRunningInIOSWrapper } from "@/lib/iosBridge";
 import { base44 } from "@/api/base44Client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Loader2 } from "lucide-react";
@@ -153,12 +154,14 @@ export default function Register() {
         <Link to="/privacy" className={AUTH_LINK_UNDERLINE}>Privacy Policy</Link>
       </p>
 
-      <p className={`mt-6 text-center ${AUTH_BODY}`}>
-        Already have an account?{" "}
-        <Link to="/login" className={AUTH_LINK}>
-          Log in
-        </Link>
-      </p>
+      {!isRunningInIOSWrapper() && (
+        <p className={`mt-6 text-center ${AUTH_BODY}`}>
+          Already have an account?{" "}
+          <Link to="/login" className={AUTH_LINK}>
+            Log in
+          </Link>
+        </p>
+      )}
     </AuthScreen>
   );
 }

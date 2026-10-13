@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { isRunningInIOSWrapper } from "@/lib/iosBridge";
 import { base44 } from "@/api/base44Client";
 import { SignUpIllustration } from "@/components/onboarding/OnboardingIllustrations";
 import AccountEmailForm from "@/components/onboarding/AccountEmailForm";
@@ -139,10 +140,12 @@ export default function SignUpStep({
             <Link to="/privacy" className={LINK_UNDERLINE}>Privacy Policy</Link>.
           </p>
 
-          <p className="mt-6 text-center text-[15px] text-auth-muted">
-            Already have an account?{" "}
-            <Link to="/login" className={LINK}>Log in</Link>
-          </p>
+          {!isRunningInIOSWrapper() && (
+            <p className="mt-6 text-center text-[15px] text-auth-muted">
+              Already have an account?{" "}
+              <Link to="/login" className={LINK}>Log in</Link>
+            </p>
+          )}
         </>
       )}
     </div>
