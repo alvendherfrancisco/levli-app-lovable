@@ -224,16 +224,19 @@
 .pb-safe-banner { padding-bottom: calc(var(--tabbar-h) + var(--fab-h) + 6rem + env(safe-area-inset-bottom, 0px)); }
 /* The FAB sits 8px above the tab bar, never over it and never over content. */
 .bottom-fab-safe { bottom: calc(var(--tabbar-h) + 0.5rem + env(safe-area-inset-bottom, 0px)); }
-/* A page whose last block — a footer, a note — belongs at the foot of the screen
-   rather than straight under the content above it. The page fills the room above
-   the tab bar's and the floating button's reserved space, using the same
-   arithmetic as .pb-safe-fab so the two always agree: on a short page the last
-   block sits at the bottom of the screen, and on a long one it is simply the end
-   of the content and scrolls as usual. */
+/* A page whose last block — the disclaimer — belongs at the foot of the content
+   rather than straight under the block above it. The page shell reserves the tab
+   bar's and the floating button's room as its own bottom padding and lays itself
+   out as a column; this wrapper takes exactly what is left, and the last block is
+   seated with `mt-auto` (both in src/components/PageContainer.jsx, so the two can
+   never disagree). On a short page the disclaimer therefore sits at the bottom of
+   the screen, clear of the button and the bar, and on a long one it is simply the
+   end of the content and scrolls as usual. The disclaimer is positioned in that
+   one place, so every page that shows it shows it identically. */
 .page-fill-fab {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - (var(--tabbar-h) + var(--fab-h) + 3rem + env(safe-area-inset-bottom, 0px)));
 }
 .pb-modal-footer { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
 /* The sign-in screens: their own breathing room at the bottom of the page, plus
@@ -245,7 +248,6 @@
   .pb-safe-content { padding-bottom: 2rem; }
   .pb-safe-fab, .pb-safe-banner { padding-bottom: calc(var(--fab-h) + 3rem); }
   .bottom-fab-safe { bottom: 2rem; }
-  .page-fill-fab { min-height: calc(100vh - (var(--fab-h) + 3rem)); }
 }
 
 /* ── Modal / bottom-sheet behaviour ───────────────────────────────────────── */
@@ -1012,12 +1014,14 @@ html { background-color: var(--launch-bg); }
    every other primary button has given up. */
 button.btn-fab { box-shadow: var(--btn-shadow); }
 
-/* Home's own action: the same pill, a step smaller and flat like every other
-   in-app button, sitting clear of the tab bar rather than touching it. Its height
-   is the FAB token (48px), and its offset is measured from the tab bar and the
-   home-indicator inset, so the gap above the bar is the same on every device. The
-   label stays on one line at any text size: it never wraps and never clips. */
-button.btn-fab-home {
+/* Every floating add button (drawn through src/components/Fab.jsx, which carries
+   this class wherever it appears): the same pill, a step smaller and flat like
+   every other in-app button, sitting clear of the tab bar rather than touching
+   it. Its height is the FAB token (48px), and its offset is measured from the tab
+   bar and the home-indicator inset, so the gap above the bar — and the button's
+   own height, fill and radius — are the same on every device and on every page.
+   The label stays on one line at any text size: it never wraps and never clips. */
+button.btn-fab-add {
   min-height: var(--fab-h);
   bottom: calc(var(--tabbar-h) + 1.25rem + env(safe-area-inset-bottom, 0px));
   font-weight: 500;
@@ -1026,7 +1030,7 @@ button.btn-fab-home {
 }
 @media (min-width: 1024px) {
   /* No tab bar at this width: the button keeps the usual 2rem from the bottom. */
-  button.btn-fab-home { bottom: 2rem; }
+  button.btn-fab-add { bottom: 2rem; }
 }
 
 /* A pill with nothing to save yet: the same shape and size, a faded indigo

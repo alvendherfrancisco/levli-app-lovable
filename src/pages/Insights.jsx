@@ -22,7 +22,6 @@ import { getDoseColor, getDoseLegend } from "@/lib/doseColors";
 import useDoseColors from "@/hooks/useDoseColors";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import PageContainer from "@/components/PageContainer";
-import AppFooterDisclaimer from "@/components/AppFooterDisclaimer";
 import { ICON_SIZE_ROW } from "@/lib/iconConstants";
 
 const CLASS_COLORS = { Semaglutide: "#14B8A6", Tirzepatide: "#6366F1", Liraglutide: "#F59E0B" };
@@ -289,13 +288,13 @@ export default function Insights() {
   }).length;
 
   return (
-    <PageContainer bottomInset="banner">
+    <PageContainer bottomInset="banner" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Insights</h1>
         <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
       </div>
 
-      <div className="max-w-3xl mx-auto pt-4">
+      <div className="w-full max-w-3xl mx-auto pt-4">
         {/* Weight Change Panel */}
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
           <div className="flex items-center gap-2 mb-1">
@@ -652,7 +651,6 @@ export default function Insights() {
         <SideEffectsPanel />
 
         <UpsellBanner />
-        <AppFooterDisclaimer />
       </div>
     </PageContainer>
   );

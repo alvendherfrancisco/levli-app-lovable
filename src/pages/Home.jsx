@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Settings, Syringe, Info, HelpCircle, Wind, ArrowRight } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
-import AppFooterDisclaimer from "@/components/AppFooterDisclaimer";
 import Fab from "@/components/Fab";
 import DateStrip from "@/components/home/DateStrip";
 import NextShotCard from "@/components/home/NextShotCard";
@@ -49,13 +48,13 @@ export default function Home() {
   const greeting = hour < 12 ? "Good Morning!" : hour < 18 ? "Good Afternoon!" : "Good Evening!";
 
   return (
-    <PageContainer bottomInset="fab">
+    <PageContainer bottomInset="fab" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-2">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{greeting}</h1>
         <Link to="/settings" aria-label="Settings"><Settings size={24} className="text-gray-600 dark:text-gray-400" /></Link>
       </div>
 
-      <div className="max-w-3xl mx-auto pt-4">
+      <div className="w-full max-w-3xl mx-auto pt-4">
         <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
         <RepeatDoseCard onEdit={(preset) => { setShotPreset(preset); setShowShot(true); }} />
         <NextShotCard onLogPastShot={(preset) => { setShotPreset(preset); setShowShot(true); }} />
@@ -126,8 +125,6 @@ export default function Home() {
             </LockedFeatureCard>
           )}
         </div>
-
-        <AppFooterDisclaimer />
       </div>
 
       {canLogForDay && (
@@ -135,7 +132,6 @@ export default function Home() {
           onClick={() => { setShotPreset(null); setShowShot(true); }}
           label={actionLabel}
           icon={null}
-          className="btn-fab-home"
         />
       )}
 

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Settings, FileText, Syringe, Loader2, Crown } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
-import AppFooterDisclaimer from "@/components/AppFooterDisclaimer";
 import Fab from "@/components/Fab";
 import ShotCard from "@/components/shots/ShotCard";
 import ShotSummaryCards from "@/components/shots/ShotSummaryCards";
@@ -60,12 +59,7 @@ export default function Shots() {
   const openNew = () => { setEditingShot(null); setShowShot(true); };
 
   return (
-    <PageContainer bottomInset="fab">
-      {/* The page fills the room above the tab bar and the button that floats
-          over it, so the disclaimer is the true foot of the page: at the bottom
-          of the screen while the history is short, and simply the end of the
-          content — scrolling with it — once the list is long. */}
-      <div className="page-fill-fab">
+    <PageContainer bottomInset="fab" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{words.Many}</h1>
         <div className="flex items-center gap-3">
@@ -120,12 +114,6 @@ export default function Shots() {
             </div>
           )}
         </div>
-      </div>
-
-      <div className="mt-auto">
-        <AppFooterDisclaimer />
-      </div>
-
       </div>
 
       <Fab onClick={openNew} label={addLabel} icon={null} />

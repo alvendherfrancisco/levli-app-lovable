@@ -2,7 +2,6 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Settings, Plus, BookOpen, Clock, Heart } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
-import AppFooterDisclaimer from "@/components/AppFooterDisclaimer";
 import Fab from "@/components/Fab";
 import JournalEntryModal from "@/components/modals/JournalEntryModal";
 import { useAppState } from "@/lib/AppState";
@@ -80,7 +79,7 @@ export default function Journal() {
   const linkedCount = (entryId) => adverseEvents.filter((e) => e.journal_entry_id === entryId).length;
 
   return (
-    <PageContainer bottomInset="fab">
+    <PageContainer bottomInset="fab" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Journal</h1>
         <div className="flex items-center gap-3">
@@ -90,7 +89,7 @@ export default function Journal() {
       </div>
 
       {/* Category filter chips — icon, colour and text label for each */}
-      <div className="max-w-3xl mx-auto pt-4 px-4 mb-3 flex flex-wrap gap-2">
+      <div className="w-full max-w-3xl mx-auto pt-4 px-4 mb-3 flex flex-wrap gap-2">
         <button onClick={() => setFilterCat("All")}
           className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
             filterCat === "All"
@@ -114,7 +113,7 @@ export default function Journal() {
         })}
       </div>
 
-      <div className="max-w-3xl mx-auto">
+      <div className="w-full max-w-3xl mx-auto">
         {filtered.length === 0 ? (
           <div className="px-4">
             <div className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center text-gray-400 dark:text-[#9A9DAE] border border-gray-100 dark:border-gray-800">
@@ -179,9 +178,7 @@ export default function Journal() {
         onDelete={editingEntry ? () => handleDelete(editingEntry.id) : null}
         initialEntry={editingEntry}
       />
-      <Fab onClick={openNew} label="Add Journal Entry" icon={null} />
-
-      <AppFooterDisclaimer />
+      <Fab onClick={openNew} label="Add entry" icon={null} />
     </PageContainer>
   );
 }
