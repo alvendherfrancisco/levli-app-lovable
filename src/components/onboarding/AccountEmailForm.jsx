@@ -34,6 +34,9 @@ import { sound } from "@/lib/sounds";
  * the same thing. What sits under the button (the legal line and the way to log
  * in instead) is the caller's.
  */
+import { isRunningInIOSWrapper } from "@/lib/iosBridge";
+import ProviderOnlyCard from "@/components/auth/ProviderOnlyCard";
+
 export default function AccountEmailForm({
   email, setEmail, password, setPassword,
   onSubmit, loading, error, onProvider,
@@ -60,6 +63,8 @@ export default function AccountEmailForm({
     const field = e.currentTarget;
     window.setTimeout(() => field.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
   };
+
+  if (isRunningInIOSWrapper()) return <ProviderOnlyCard error={error} onProvider={onProvider} loading={loading} />;
 
   const submit = (e) => {
     e.preventDefault();

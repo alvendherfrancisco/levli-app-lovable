@@ -9,6 +9,8 @@ import {
 } from "@/lib/authStyles";
 // The pill is the app's own indigo in both modes, so it stays the shared one.
 import { PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON } from "@/lib/uiStyles";
+import { isRunningInIOSWrapper } from "@/lib/iosBridge";
+import ProviderOnlyCard from "@/components/auth/ProviderOnlyCard";
 
 /**
  * The account card, and the button that creates the account.
@@ -31,6 +33,8 @@ export default function RegisterForm({
   onSubmit, loading, error, onProvider,
 }) {
   const ready = !formBlocker({ email, password });
+
+  if (isRunningInIOSWrapper()) return <ProviderOnlyCard error={error} onProvider={onProvider} loading={loading} />;
 
   return (
     <form onSubmit={onSubmit} className="w-full">

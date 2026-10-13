@@ -8,6 +8,8 @@ import {
 } from "@/lib/authStyles";
 // The pill is the app's own indigo in both modes, so it stays the shared one.
 import { PRIMARY_BTN, PRIMARY_BTN_OFF, PRIMARY_BTN_ON } from "@/lib/uiStyles";
+import { isRunningInIOSWrapper } from "@/lib/iosBridge";
+import ProviderOnlyCard from "@/components/auth/ProviderOnlyCard";
 
 /**
  * The sign-in card, and the button that signs in.
@@ -28,6 +30,8 @@ export default function LoginForm({
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const ready = !!email.trim() && !!password;
+
+  if (isRunningInIOSWrapper()) return <ProviderOnlyCard error={error} onProvider={onProvider} loading={loading} />;
 
   return (
     <form onSubmit={onSubmit} className="w-full">

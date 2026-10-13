@@ -25,7 +25,7 @@ import { sound } from "@/lib/sounds";
  * step are the same row. Google keeps its own brand mark either way; Apple's
  * circle turns white with a black mark on a dark surface.
  */
-export default function SocialAuthButtons({ onProvider, disabled = false }) {
+export default function SocialAuthButtons({ onProvider, disabled = false, hideDivider = false }) {
   const circle =
     "flex h-14 w-14 items-center justify-center rounded-full transition-all active:scale-95 disabled:opacity-60";
 
@@ -34,7 +34,7 @@ export default function SocialAuthButtons({ onProvider, disabled = false }) {
       {/* The divider, drawn the way the login screen draws it: a hairline the
           full width of the card, with the word sitting in a gap on the card's
           own surface. */}
-      <div className="relative my-5">
+      <div className={hideDivider ? "hidden" : "relative my-5"}>
         <div className="absolute inset-0 flex items-center">
           <div className={AUTH_DIVIDER_LINE} />
         </div>
