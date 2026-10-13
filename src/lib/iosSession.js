@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { appParams } from "@/lib/app-params";
 import { sendIOSEvent } from "@/lib/iosBridge";
 import { authStore } from "@/lib/authStore";
+import { nativeSignInInProgress } from "@/lib/iosNativeSignIn";
 
 const LOGOUT_KEY = "logoutRequestedAt";
 const LOGOUT_GUARD_MS = 3000;
@@ -111,6 +112,7 @@ if (typeof window !== "undefined") {
   window.setSupabaseSession = (a) => window.setBase44Session(a);
 
   window.forceLogoutFromIOS = (reason = "native", userInitiated = false) => {
+    if (nativeSignInInProgress()) return JSON.stringify({ accepted: false, reason: "signInInProgress" });
     sessionStorage.setItem(LOGOUT_KEY, String(Date.now()));
     authStore.set(null);
     base44.auth.logout("/login");

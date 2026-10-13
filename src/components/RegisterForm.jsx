@@ -34,7 +34,7 @@ export default function RegisterForm({
 }) {
   const ready = !formBlocker({ email, password });
 
-  if (isRunningInIOSWrapper()) return <ProviderOnlyCard error={error} onProvider={onProvider} loading={loading} />;
+  if (isRunningInIOSWrapper()) return <ProviderOnlyCard error={error} loading={loading} mode="signup" />;
 
   return (
     <form onSubmit={onSubmit} className="w-full">

@@ -31,7 +31,7 @@ export default function LoginForm({
   const [showPassword, setShowPassword] = useState(false);
   const ready = !!email.trim() && !!password;
 
-  if (isRunningInIOSWrapper()) return <ProviderOnlyCard error={error} onProvider={onProvider} loading={loading} />;
+  if (isRunningInIOSWrapper()) return <ProviderOnlyCard error={error} loading={loading} mode="signin" />;
 
   return (
     <form onSubmit={onSubmit} className="w-full">

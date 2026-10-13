@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { isRunningInIOSWrapper } from "@/lib/iosBridge";
 import { base44 } from "@/api/base44Client";
 import AuthScreen from "@/components/auth/AuthScreen";
 import LoginForm from "@/components/LoginForm";
@@ -67,12 +68,14 @@ export default function Login() {
         onProvider={handleProvider}
       />
 
-      <p className={`mt-6 text-center ${AUTH_BODY}`}>
-        Don't have an account?{" "}
-        <Link to="/register" className={AUTH_LINK}>
-          Create one
-        </Link>
-      </p>
+      {!isRunningInIOSWrapper() && (
+        <p className={`mt-6 text-center ${AUTH_BODY}`}>
+          Don't have an account?{" "}
+          <Link to="/register" className={AUTH_LINK}>
+            Create one
+          </Link>
+        </p>
+      )}
     </AuthScreen>
   );
 }

@@ -64,7 +64,7 @@ export default function AccountEmailForm({
     window.setTimeout(() => field.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
   };
 
-  if (isRunningInIOSWrapper()) return <ProviderOnlyCard error={error} onProvider={onProvider} loading={loading} />;
+  if (isRunningInIOSWrapper()) return <ProviderOnlyCard error={error} loading={loading} mode="signup" />;
 
   const submit = (e) => {
     e.preventDefault();
