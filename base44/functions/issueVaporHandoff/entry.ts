@@ -16,7 +16,7 @@ export default async function(req: Request): Promise<Response> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        wanillaAPIKey: secrets.get("APPLE_WEBHOOK_API_KEY") || "",
+        webappKey: secrets.get("APPLE_WEBHOOK_API_KEY") || "",
       },
       body: JSON.stringify({
         base44_user_id: user.id,
