@@ -15,6 +15,7 @@ import SettingsRow from "@/components/SettingsRow";
 import PushSettingsRow from "@/components/settings/PushSettingsRow";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { toast } from "@/lib/toast";
+import { sendIOSEvent, isRunningInIOSWrapper } from "@/lib/iosBridge";
 
 
 
@@ -159,7 +160,11 @@ export default function SettingsPage() {
               icon={<Trash2 size={ICON_SIZE_ROW} className="text-red-500" />}
               label="Delete my account and all data"
               hint="Permanent. Removes everything, including your account"
-              onPress={() => { setDeleteEmail(""); setDeleteOpen(true); }}
+              onPress={() => {
+                // In the iOS app the wrapper shows the native confirmation and deletes via Vapor.
+                if (isRunningInIOSWrapper()) return sendIOSEvent("wanillajs.event.settings.deleteAccountButtonTapped", { userId: user?.id });
+                setDeleteEmail(""); setDeleteOpen(true);
+              }}
               danger
             />
           </div>
