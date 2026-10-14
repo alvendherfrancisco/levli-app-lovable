@@ -12,6 +12,7 @@ import { base44 } from "@/api/base44Client";
 import { sendIOSEvent, isRunningInIOSWrapper } from "@/lib/iosBridge";
 import { authStore } from "@/lib/authStore";
 import { takeAuthProvider } from "@/lib/authProviderMark";
+import { requestIOSLogout } from "@/lib/iosSession";
 
 let inFlight = null;
 let deliveredFor = null; // Base44 user id the last code was delivered for
@@ -37,6 +38,9 @@ const issue = (reason) => {
         errorCode: body.errorCode || "internal_error",
         reason: body.reason || "Handoff failed",
       });
+      // Web and wrapper must agree: no Wanilla session means no Base44 session.
+      requestIOSLogout("vapor_handoff_failed");
+      base44.auth.logout("/login");
       return false;
     } finally {
       inFlight = null;
