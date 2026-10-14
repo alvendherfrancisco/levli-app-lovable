@@ -1,6 +1,3 @@
-import { sendIOSEvent } from "@/lib/iosBridge";
-import { markAuthProvider } from "@/lib/authProviderMark";
-
 // Native sign-in (guide §8.2.2): the wrapper runs Apple / Google natively and
 // injects the session via window.setBase44Session. The timestamp lets
 // forceLogoutFromIOS ignore a logout during the 2-minute sign-in window.
@@ -9,13 +6,6 @@ const EVENTS = {
   google: ["wanillajs.event.auth.googleSignInRequested", "googleSignInRequestedAt"],
 };
 const WINDOW_MS = 2 * 60 * 1000;
-
-export const requestNativeSignIn = (provider, mode) => {
-  const [event, key] = EVENTS[provider];
-  sessionStorage.setItem(key, String(Date.now()));
-  markAuthProvider(provider);
-  sendIOSEvent(event, { mode });
-};
 
 export const nativeSignInInProgress = () => {
   const last = Math.max(
