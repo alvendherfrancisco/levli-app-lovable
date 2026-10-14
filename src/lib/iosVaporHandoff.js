@@ -3,7 +3,7 @@
 // one-time code and passes it to the wrapper, which exchanges it with Wanilla.
 //
 // Web → iOS:
-//   wanillajs.event.auth.vaporHandoffReady  { handoff_code, expires_in, base44_user_id, reason }
+//   wanillajs.event.auth.vaporHandoffReady  { handoff_code, expires_in, base44_user_id, is_registration, reason }
 //   wanillajs.event.auth.vaporHandoffFailed { errorCode, reason }
 // iOS → Web:
 //   window.requestVaporHandoff(reason?) — ask for a fresh code (expired JWT,
@@ -25,6 +25,7 @@ const issue = (reason) => {
         handoff_code: data.handoff_code,
         expires_in: data.expires_in,
         base44_user_id: data.base44_user_id,
+        is_registration: data.is_registration === true,
         reason,
       });
       return true;

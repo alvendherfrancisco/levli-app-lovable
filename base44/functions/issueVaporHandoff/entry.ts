@@ -35,7 +35,11 @@ export default async function(req: Request): Promise<Response> {
       );
     }
 
-    return Response.json({ handoff_code: data.handoff_code, expires_in: data.expires_in, base44_user_id: user.id });
+    // A Base44 account created in the last 10 minutes counts as a registration.
+    const createdAt = Date.parse(user.created_date || "");
+    const is_registration = !Number.isNaN(createdAt) && Date.now() - createdAt < 10 * 60 * 1000;
+
+    return Response.json({ handoff_code: data.handoff_code, expires_in: data.expires_in, base44_user_id: user.id, is_registration });
   } catch (error) {
     console.error("issueVaporHandoff failed:", error.message);
     return Response.json({ error: true, errorCode: "internal_error", reason: error.message }, { status: 500 });
