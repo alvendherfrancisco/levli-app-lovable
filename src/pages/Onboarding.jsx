@@ -17,6 +17,7 @@ import TrackingStep from "@/components/onboarding/TrackingStep";
 import { useAppState } from "@/lib/AppState";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
+import { markAuthProvider } from "@/lib/authProviderMark";
 import {
   saveDraft, loadDraft, clearDraft, markProviderRedirect, takeProviderRedirect,
   firstNameFromUser,
@@ -240,6 +241,7 @@ export default function Onboarding() {
   const startProvider = (provider) => {
     persistOnboardingState({ step: 3, verified: false, awaitingVerification: false });
     markProviderRedirect();
+    markAuthProvider(provider);
     base44.auth.loginWithProvider(provider, "/onboarding");
   };
 

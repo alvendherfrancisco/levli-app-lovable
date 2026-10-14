@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { isRunningInIOSWrapper } from "@/lib/iosBridge";
 import { base44 } from "@/api/base44Client";
+import { markAuthProvider } from "@/lib/authProviderMark";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
@@ -80,6 +81,7 @@ export default function Register() {
   };
 
   const handleProvider = (provider) => {
+    markAuthProvider(provider);
     base44.auth.loginWithProvider(provider, "/");
   };
 

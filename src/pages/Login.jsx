@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { isRunningInIOSWrapper } from "@/lib/iosBridge";
 import { base44 } from "@/api/base44Client";
+import { markAuthProvider } from "@/lib/authProviderMark";
 import AuthScreen from "@/components/auth/AuthScreen";
 import LoginForm from "@/components/LoginForm";
 import { AUTH_BODY, AUTH_LINK } from "@/lib/authStyles";
@@ -52,6 +53,7 @@ export default function Login() {
   };
 
   const handleProvider = (provider) => {
+    markAuthProvider(provider);
     base44.auth.loginWithProvider(provider, getSafeRedirect());
   };
 
