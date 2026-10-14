@@ -162,7 +162,7 @@ export default function SettingsPage() {
               hint="Permanent. Removes everything, including your account"
               onPress={() => {
                 // In the iOS app the wrapper shows the native confirmation and deletes via Vapor.
-                if (isRunningInIOSWrapper()) return sendIOSEvent("wanillajs.event.settings.deleteAccountButtonTapped", { userId: user?.id });
+                if (isRunningInIOSWrapper()) return sendIOSEvent("wanillajs.event.settings.deleteAccountButtonTapped", { userId: user?.id, origin: "base44" });
                 setDeleteEmail(""); setDeleteOpen(true);
               }}
               danger
