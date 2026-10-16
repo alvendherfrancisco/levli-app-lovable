@@ -194,7 +194,7 @@ export default function MedicationModal({ open, onClose, editing }) {
   const ready = !!chosenName;
 
   // What the prescriber line under More details names: the prescriber saved in
-  // About you, which is the one place it is entered.
+  // Profile, which is the one place it is entered.
   const prescriberLabel = [profile?.prescriber_name, profile?.prescriber_contact]
     .map((v) => String(v || "").trim())
     .filter(Boolean)
@@ -392,7 +392,7 @@ export default function MedicationModal({ open, onClose, editing }) {
       start_date: startDate,
       planned_end_date: plannedEndDate || null,
       titration_stage: doseStep,
-      // The prescriber is read from About you — the one place it is entered.
+      // The prescriber is read from Profile — the one place it is entered.
       prescriber_name: profile?.prescriber_name || editing?.prescriber_name || "",
       prescriber_contact: profile?.prescriber_contact || editing?.prescriber_contact || "",
       // The interval a prescriber directed for this medication, when one is set.

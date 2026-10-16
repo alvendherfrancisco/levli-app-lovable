@@ -43,7 +43,7 @@ export default function ReportPage() {
   const [timedOut, setTimedOut] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
-  // The name starts from the first name saved in About you. Once the field has
+  // The name starts from the first name saved in Profile. Once the field has
   // been typed in, that is what is used — the prefilled value never overwrites it.
   useEffect(() => {
     if (nameChosenByUser.current) return;

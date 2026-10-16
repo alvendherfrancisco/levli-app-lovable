@@ -340,7 +340,7 @@ export function MiniProfileScreen() {
         </div>
       </Card>
 
-      {/* Prescriber — the other card on About you. Units moved to Settings, so
+      {/* Prescriber — the other card on Profile. Units moved to Settings, so
           the tour no longer shows them here. */}
       <Card className="p-1.5 space-y-1">
         <div className="text-[6px] font-semibold text-gray-400 uppercase">Prescriber</div>

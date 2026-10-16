@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Doctor report — options.
 // Date ranges, the section checklist, and the choices remembered on this device.
-// The report name starts from the first name saved in About you.
+// The report name starts from the first name saved in Profile.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const RANGE_OPTIONS = [

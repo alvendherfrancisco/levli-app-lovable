@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
-  Moon, Bell, Volume2, FileText, MessageSquare, Database, Loader2, LogOut,
-  Users, ShieldCheck, Trash2, FileDown, AlertTriangle, BookOpen, Share2,
+  Moon, Volume2, FileText, MessageSquare, Database, Loader2, LogOut,
+  ShieldCheck, Trash2, FileDown, AlertTriangle, BookOpen,
 } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { useAuth } from "@/lib/AuthContext";
@@ -183,12 +183,6 @@ export default function SettingsPage() {
           <SectionHeading>Your data</SectionHeading>
           <div className={CARD_ROWS}>
             <SettingsRow
-              icon={<Share2 size={ICON_SIZE_ROW} className="text-gray-500 dark:text-gray-400" />}
-              label="Share report with my doctor"
-              hint="Doses, side effects and journal as a PDF"
-              to="/report"
-            />
-            <SettingsRow
               icon={exportLoading ? <Loader2 size={ICON_SIZE_ROW} className="animate-spin text-gray-400" /> : <FileDown size={ICON_SIZE_ROW} className="text-gray-500 dark:text-gray-400" />}
               label="Export my data (CSV)"
               hint="Every log you have saved, in a spreadsheet"
@@ -210,19 +204,6 @@ export default function SettingsPage() {
                 setDeleteEmail(""); setDeleteOpen(true);
               }}
               danger
-            />
-          </div>
-        </div>
-
-        {/* 3. Caregiver access */}
-        <div className="px-4 mb-4">
-          <SectionHeading>Caregiver Access</SectionHeading>
-          <div className={CARD_ROWS}>
-            <SettingsRow
-              icon={<Users size={ICON_SIZE_ROW} className="text-gray-500 dark:text-gray-400" />}
-              label="Manage access"
-              hint="Grant scoped, revocable access to someone you trust"
-              to="/caregiver-access"
             />
           </div>
         </div>

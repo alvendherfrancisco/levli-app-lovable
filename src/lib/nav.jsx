@@ -18,7 +18,7 @@ export const PRIMARY_TABS = [
 export const MORE_ITEMS = [
   { path: "/history", label: "History", description: "Calendar of doses and daily logs", kind: "lucide", Icon: CalendarDays },
   { path: "/medications", label: "Meds", description: "Your regimens and repeat schedules", kind: "meds" },
-  { path: "/profile", label: "Profile", description: "Height, goal weight and units", kind: "lucide", Icon: User },
+  { path: "/profile", label: "Profile", description: "Your name, body, goal and prescriber", kind: "lucide", Icon: User },
   { path: "/settings", label: "Settings", description: "Theme, sounds and your data", kind: "lucide", Icon: Settings },
 ];
 

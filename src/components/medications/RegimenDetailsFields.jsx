@@ -127,12 +127,12 @@ export default function RegimenDetailsFields({
         )}
       </SheetField>
 
-      {/* The prescriber is entered in one place — About you — so this form never
+      {/* The prescriber is entered in one place — Profile — so this form never
           asks for it again and simply reads what is saved there. */}
       <p className={SHEET_HINT}>
         {prescriberLabel
-          ? `Prescriber: ${prescriberLabel}. Change it in About you.`
-          : "Add your prescriber in About you — the Contact prescriber button uses it when a dose is overdue."}
+          ? `Prescriber: ${prescriberLabel}. Change it in Profile.`
+          : "Add your prescriber in Profile — the Contact prescriber button uses it when a dose is overdue."}
       </p>
 
       <SheetField label="Notes" htmlFor="med-notes">
