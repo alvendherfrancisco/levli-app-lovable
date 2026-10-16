@@ -1,17 +1,24 @@
 import React, { useState } from "react";
-import { Clock, Heart, Pencil } from "lucide-react";
+import { Clock, Heart } from "lucide-react";
 import { categoryMeta } from "@/lib/journalMeta";
 import { parseShotDate, formatLocaleDate } from "@/lib/dateUtils";
 
 /**
  * One journal entry, kept short: the first line of what was written, the time,
  * and the category it was filed under. The whole note is one tap away — tapping
- * the row opens it, and the entry can be edited from there. Nothing is trimmed
- * away permanently: the note is the same note, simply not all of it on screen at
- * once.
+ * the row opens it. Nothing is trimmed away permanently: the note is the same
+ * note, simply not all of it on screen at once.
+ *
+ * Edit sits at the foot of every card, in the same place on all of them: the same
+ * small soft-indigo pill with no icon, kept in every card whether or not the note
+ * carries a mood, so no two entries read differently.
  *
  * It carries no card of its own; the list draws the card around it.
  */
+const EDIT_BUTTON =
+  "inline-flex min-h-[44px] items-center justify-center rounded-pill border border-indigo-200 bg-indigo-50 px-4 " +
+  "text-sm font-medium text-indigo-700 transition-colors active:scale-[0.98] " +
+  "dark:border-indigo-500/40 dark:bg-indigo-500/15 dark:text-indigo-300";
 export default function JournalEntryCard({ entry, onEdit }) {
   const [open, setOpen] = useState(false);
   const meta = categoryMeta(entry.category);
@@ -59,13 +66,14 @@ export default function JournalEntryCard({ entry, onEdit }) {
         </div>
       </button>
 
-      {open && (
-        <div className="flex justify-end mt-2">
-          <button type="button" onClick={() => onEdit(entry)} className="btn-link text-xs">
-            <Pencil size={12} /> Edit entry
-          </button>
-        </div>
-      )}
+      {/* The card's own action, at its foot and to the right on every entry. The
+          row is drawn whether or not anything sits above it, so the space is kept
+          and every card ends the same way. */}
+      <div className="mt-2 flex justify-end">
+        <button type="button" onClick={() => onEdit?.(entry)} className={EDIT_BUTTON}>
+          Edit
+        </button>
+      </div>
     </div>
   );
 }
