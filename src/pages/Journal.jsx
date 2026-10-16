@@ -4,6 +4,7 @@ import { Settings, BookOpen, Clock, Heart } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import JournalEntryModal from "@/components/modals/JournalEntryModal";
+import SideEffectsPanel from "@/components/insights/SideEffectsPanel";
 import { useAppState } from "@/lib/AppState";
 import { JOURNAL_CATEGORIES, categoryMeta, normaliseCategory, sortJournalNewestFirst } from "@/lib/journalMeta";
 import { parseShotDate, toDayKey, formatLocaleDate } from "@/lib/dateUtils";
@@ -87,8 +88,14 @@ export default function Journal() {
         </div>
       </div>
 
+      {/* What was logged over the last 90 days, summarised at the top of the
+          page (moved here from Insights). */}
+      <div className="w-full max-w-3xl mx-auto pt-4">
+        <SideEffectsPanel />
+      </div>
+
       {/* Category filter chips — icon, colour and text label for each */}
-      <div className="w-full max-w-3xl mx-auto pt-4 px-4 mb-3 flex flex-wrap gap-2">
+      <div className="w-full max-w-3xl mx-auto px-4 mb-3 flex flex-wrap gap-2">
         <button onClick={() => setFilterCat("All")}
           className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
             filterCat === "All"

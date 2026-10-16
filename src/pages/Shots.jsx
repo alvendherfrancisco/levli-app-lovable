@@ -5,6 +5,7 @@ import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import ShotCard from "@/components/shots/ShotCard";
 import ShotSummaryCards from "@/components/shots/ShotSummaryCards";
+import InjectionSiteCard from "@/components/shots/InjectionSiteCard";
 import AddShotModal from "@/components/modals/AddShotModal";
 import { useAppState } from "@/lib/AppState";
 import { addDaysToShotDate, daysUntilShotDate, formatDayKeyShort } from "@/lib/dateUtils";
@@ -80,7 +81,7 @@ export default function Shots() {
           words={words}
         />
 
-        <div className="px-4 pb-4">
+        <div className="px-4">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">History</h2>
           {shotsLoading ? (
             <div className="flex justify-center py-12">
@@ -115,6 +116,12 @@ export default function Shots() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Where the shots were given, below the history it describes (moved here
+          from Insights). */}
+      <div className="w-full max-w-3xl mx-auto">
+        <InjectionSiteCard />
       </div>
 
       <Fab onClick={openNew} label={addLabel} icon={null} />

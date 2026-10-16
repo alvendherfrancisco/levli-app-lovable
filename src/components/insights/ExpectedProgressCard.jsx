@@ -32,7 +32,19 @@ function LegendItem({ color, label }) {
   );
 }
 
-export default function ExpectedProgressCard({ weightHistory, profile, shots }) {
+/** The quiet link under the card, opening the explanation of what GLP-1s do. */
+function HowItWorksLink({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="mx-auto mt-3 flex min-h-[44px] items-center justify-center px-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400"
+    >
+      How GLP-1s work
+    </button>
+  );
+}
+
+export default function ExpectedProgressCard({ weightHistory, profile, shots, onHowItWorks }) {
   const unit = profile?.weight_unit || "lb";
   const unitLabel = weightUnitLabel(unit);
   const { isDark } = useDoseColors();
@@ -57,11 +69,10 @@ export default function ExpectedProgressCard({ weightHistory, profile, shots }) 
       <InsightCard>
         {header}
         <InsightEmptyState
-          icon="trending-up"
-          title="No weight logged yet"
-          description="Log your weight and Levli will show it against a typical GLP-1 curve."
-          action={<Link to="/" className="btn-pill btn-primary">Log your weight</Link>}
+          message="No weight logged yet."
+          action={<Link to="/" className="btn-pill btn-pill-sm btn-primary">Log your weight</Link>}
         />
+        <HowItWorksLink onClick={onHowItWorks} />
       </InsightCard>
     );
   }
@@ -102,10 +113,14 @@ export default function ExpectedProgressCard({ weightHistory, profile, shots }) 
       </p>
 
       {data.loggedCount < 2 && (
-        <Link to="/" className="btn-pill btn-primary mt-4 w-full">
-          Log your weight
-        </Link>
+        <div className="mt-4 flex justify-center">
+          <Link to="/" className="btn-pill btn-pill-sm btn-primary">
+            Log your weight
+          </Link>
+        </div>
       )}
+
+      <HowItWorksLink onClick={onHowItWorks} />
     </InsightCard>
   );
 }

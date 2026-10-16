@@ -54,11 +54,7 @@ export default function SideEffectsPanel() {
       />
 
       {summary.total === 0 ? (
-        <InsightEmptyState
-          icon="warning"
-          title="No side effects logged"
-          description="Side effects you log in the Journal will show up here."
-        />
+        <InsightEmptyState message="No side effects logged in the last 90 days." />
       ) : (
         <>
           <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mb-4">

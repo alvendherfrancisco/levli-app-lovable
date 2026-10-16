@@ -12,7 +12,7 @@ export const HALF_LIFE_SOURCE = [
 ];
 
 /**
- * "How this works" — the assumptions behind the modelled exposure chart, the
+ * "How GLP-1s work" — the assumptions behind the modelled exposure estimate, the
  * source of the half-life, and the model version.
  */
 export default function ExposureHowItWorks({ open, onClose, medication, halfLifeDays, intervalDays }) {
@@ -22,18 +22,18 @@ export default function ExposureHowItWorks({ open, onClose, medication, halfLife
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 overlay-lock" onClick={onClose} aria-hidden="true" />
-      <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="How this works" tabIndex={-1} className="relative bg-white dark:bg-[#0f1117] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[520px] max-h-[92dvh] overflow-y-auto overflow-x-hidden no-scrollbar sheet-lock animate-in slide-in-from-bottom sm:mx-4 dark:shadow-[0_-8px_40px_rgba(0,0,0,0.5)] outline-none">
+      <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="How GLP-1s work" tabIndex={-1} className="relative bg-white dark:bg-[#0f1117] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[520px] max-h-[92dvh] overflow-y-auto overflow-x-hidden no-scrollbar sheet-lock animate-in slide-in-from-bottom sm:mx-4 dark:shadow-[0_-8px_40px_rgba(0,0,0,0.5)] outline-none">
         <div className="sticky top-0 z-10 bg-white dark:bg-[#0f1117]">
           <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
           <div className="flex items-center justify-between px-5 pb-4">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0]">How this works</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0]">How GLP-1s work</h2>
             <button onClick={onClose}><X size={22} className="text-gray-400" /></button>
           </div>
         </div>
 
         <div className="px-5 pb-6 space-y-4 text-sm text-gray-700 dark:text-[#E8E9F0]">
           <div>
-            <h3 className="font-semibold mb-1">What the chart is</h3>
+            <h3 className="font-semibold mb-1">What this is</h3>
             <p className="text-[13px] leading-relaxed">
               An illustrative relative-exposure estimate built from the doses you have logged. It is not a
               blood-level measurement, and not something to adjust your dose by.

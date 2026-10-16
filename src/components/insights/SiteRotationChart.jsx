@@ -37,11 +37,7 @@ export default function SiteRotationChart({ shots, range }) {
 
   if (siteData.length === 0) {
     return (
-      <InsightEmptyState
-        icon="location"
-        title="No injection sites yet"
-        description="Log shots with an injection site to see your rotation here."
-      />
+      <InsightEmptyState message="No injection sites logged yet." />
     );
   }
 
