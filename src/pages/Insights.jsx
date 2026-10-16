@@ -261,7 +261,6 @@ export default function Insights() {
               <p className={`mt-3 text-center ${FOOTNOTE}`}>
                 Illustrative only. Everyone responds differently. Not medical advice.
               </p>
-              <p className={`mt-2 text-center ${FOOTNOTE}`}>Dots: your logged weights · Dashed: 7-day average</p>
               {weightEntries.length === 1 && (
                 <div className="mt-4 flex justify-center">
                   <Link to="/" className="btn-pill btn-pill-sm btn-primary">Log your weight</Link>
