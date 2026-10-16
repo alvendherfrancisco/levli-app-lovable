@@ -225,13 +225,10 @@ export default function Profile() {
       <div className="max-w-3xl mx-auto pt-4">
         {/* Profile Info */}
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
-              <IonIcon name="person" size={18} className="text-indigo-600 dark:text-indigo-400" />
-            </div>
+          <div className="flex items-center gap-2 mb-5">
+...
             <h3 className="font-bold text-gray-900 dark:text-white text-lg">Profile Info</h3>
           </div>
-          <div className="border-b-2 border-indigo-500 w-10 mb-4" />
 
           <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2">Height</label>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -287,13 +284,10 @@ export default function Profile() {
 
         {/* Shot Preferences */}
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
-              <SyringeIcon size={18} className="text-indigo-600 dark:text-indigo-400" />
-            </div>
+          <div className="flex items-center gap-2 mb-5">
+...
             <h3 className="font-bold text-gray-900 dark:text-white text-lg">Shot Preferences</h3>
           </div>
-          <div className="border-b-2 border-indigo-500 w-10 mb-4" />
 
           <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-1">Days Between Shots</label>
           <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
@@ -331,13 +325,12 @@ export default function Profile() {
 
         {/* Your details */}
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-5">
             <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
               <IonIcon name="person" size={18} className="text-indigo-600 dark:text-indigo-400" />
             </div>
             <h3 className="font-bold text-gray-900 dark:text-white text-lg">Your details</h3>
           </div>
-          <div className="border-b-2 border-indigo-500 w-10 mb-4" />
           <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2">First name</label>
           <div className="flex items-center gap-2">
             <input type="text" value={local.first_name || ""} placeholder="First name"
@@ -351,13 +344,12 @@ export default function Profile() {
 
         {/* Prescriber contact */}
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-5">
             <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
               <IonIcon name="person" size={18} className="text-indigo-600 dark:text-indigo-400" />
             </div>
             <h3 className="font-bold text-gray-900 dark:text-white text-lg">Prescriber</h3>
           </div>
-          <div className="border-b-2 border-indigo-500 w-10 mb-4" />
           <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2">Name (optional)</label>
           <input type="text" value={local.prescriber_name || ""} placeholder="e.g. Dr Patel"
           onChange={(e) => setLocal({ ...local, prescriber_name: e.target.value })}
@@ -374,13 +366,12 @@ export default function Profile() {
 
         {/* Measurement Units */}
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-5">
             <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
               <ScaleIcon size={18} className="text-indigo-600 dark:text-indigo-400" />
             </div>
             <h3 className="font-bold text-gray-900 dark:text-white text-lg">Measurement Units</h3>
           </div>
-          <div className="border-b-2 border-indigo-500 w-10 mb-4" />
           <UnitToggle label="Liquid Unit" opt1="mL" opt2="oz" field="liquid_unit" />
           <UnitToggle label="Height Unit" opt1="cm" opt2="in" field="height_unit" />
           <UnitToggle label="Weight Unit" opt1="kg" opt2="lb" field="weight_unit" />
