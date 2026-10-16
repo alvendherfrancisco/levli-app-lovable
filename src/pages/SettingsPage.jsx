@@ -13,6 +13,7 @@ import { buildFullExportCsv, downloadTextFile } from "@/lib/dataExport";
 import ScreenHeader from "@/components/ScreenHeader";
 import SettingsRow from "@/components/SettingsRow";
 import PushSettingsRow from "@/components/settings/PushSettingsRow";
+import UnitToggle from "@/components/settings/UnitToggle";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { toast } from "@/lib/toast";
 import { sendIOSEvent, isRunningInIOSWrapper } from "@/lib/iosBridge";
@@ -42,7 +43,7 @@ const CARD = "bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray
 const CARD_ROWS = `${CARD} px-4 divide-y divide-gray-100 dark:divide-white/[0.07]`;
 
 export default function SettingsPage() {
-  const { darkMode, setDarkMode, profile, shots, journalEntries, dayMetrics, adverseEvents, medications, repeatSchedules, proxyAccess, resetState } = useAppState();
+  const { darkMode, setDarkMode, profile, setProfile, shots, journalEntries, dayMetrics, adverseEvents, medications, repeatSchedules, proxyAccess, resetState } = useAppState();
   const { logout, user } = useAuth();
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -53,6 +54,20 @@ export default function SettingsPage() {
 
   const handleDarkMode = async (val) => {
     await setDarkMode(val);
+  };
+
+  // A unit is a display preference: it is written to the profile and every
+  // screen that shows that measurement re-renders in it immediately.
+  const liquidUnit = String(profile?.liquid_unit || "").toLowerCase() === "oz" ? "oz" : "mL";
+  const heightUnit = profile?.height_unit === "cm" ? "cm" : "in";
+  const weightUnit = profile?.weight_unit === "kg" ? "kg" : "lb";
+
+  const saveUnit = async (field, value) => {
+    try {
+      await setProfile({ ...profile, [field]: value });
+    } catch (err) {
+      toast.error("Couldn't save. Please try again.");
+    }
   };
 
   const handleSound = (val) => {
@@ -134,7 +149,36 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* 2. Your data */}
+        {/* 2. Units — how measurements are shown. Stored values never change:
+            only the display does, and every screen follows at once. */}
+        <div className="px-4 mb-4">
+          <SectionHeading>Units</SectionHeading>
+          <div className={`${CARD} p-4`}>
+            <UnitToggle
+              label="Liquid"
+              value={liquidUnit === "oz" ? "oz" : "mL"}
+              options={["mL", "oz"]}
+              onChange={(v) => saveUnit("liquid_unit", v)}
+            />
+            <UnitToggle
+              label="Height"
+              value={heightUnit === "cm" ? "cm" : "in"}
+              options={["cm", "in"]}
+              onChange={(v) => saveUnit("height_unit", v)}
+            />
+            <UnitToggle
+              label="Weight"
+              value={weightUnit === "kg" ? "kg" : "lb"}
+              options={["kg", "lb"]}
+              onChange={(v) => saveUnit("weight_unit", v)}
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 pt-2">
+              Everything you have already saved stays exactly as it is — only how it is shown changes.
+            </p>
+          </div>
+        </div>
+
+        {/* 3. Your data */}
         <div className="px-4 mb-4">
           <SectionHeading>Your data</SectionHeading>
           <div className={CARD_ROWS}>

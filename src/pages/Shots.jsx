@@ -34,7 +34,11 @@ export default function Shots() {
   const previewShots = visibleShots.slice(0, PREVIEW_COUNT);
 
   const last = shots[0] || null;
-  const daysBetween = effectiveDaysBetween(profile, last?.medication);
+  const daysBetween = effectiveDaysBetween(
+    profile,
+    last?.medication,
+    medications.find((m) => m.medication_name === last?.medication) || null,
+  );
   const nextDate = last ? addDaysToShotDate(last.date, daysBetween) : null;
 
   // Adherence for the most recent medication: doses logged over doses scheduled

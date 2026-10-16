@@ -831,10 +831,17 @@ export function intervalWarning(name, days) {
 }
 
 /**
- * The interval the app should use: the prescriber's override when set,
- * otherwise the label interval, otherwise the saved preference.
+ * The interval the app should use: the prescriber's interval for this
+ * medication when one is saved on the regimen, otherwise the label interval,
+ * otherwise the saved preference.
+ *
+ * `regimen` is the medication record itself (src/lib/medicationLink.js owns the
+ * lookup); the profile's own override is still honoured last for a regimen that
+ * has not been given one yet.
  */
-export function effectiveDaysBetween(profile, medication) {
+export function effectiveDaysBetween(profile, medication, regimen = null) {
+  const custom = parseInt(String(regimen?.custom_interval_days ?? ""), 10);
+  if (Number.isFinite(custom) && custom > 0) return custom;
   const override = parseInt(String(profile?.days_between_override ?? ""), 10);
   if (Number.isFinite(override) && override > 0) return override;
   const label = getIntervalDays(medication || "");

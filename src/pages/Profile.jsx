@@ -1,76 +1,72 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Settings, Check, Loader2 } from "lucide-react";
+import { Settings, Check } from "lucide-react";
 import IonIcon from "@/components/IonIcon";
-import { SyringeIcon, ScaleIcon } from "@/components/CustomIcons";
 import { useAppState } from "@/lib/AppState";
-import { toast } from "@/lib/toast";
+import PageContainer from "@/components/PageContainer";
+import WellbeingNotice from "@/components/wellbeing/WellbeingNotice";
 import {
   heightCmOf, heightCmFromParts, heightPartsFromCm,
-  checkHeight, checkGoal, fromKg, weightUnitLabel,
+  checkHeight, checkGoal, fromKg, weightUnitLabel, kgOfEntry, shownBmi,
 } from "@/lib/measure";
-import {
-  getIntervalDays, effectiveDaysBetween, intervalWarning, plainBrandName,
-} from "@/lib/medicationConfig";
-import { goalBmiSafeguard } from "@/lib/wellbeing";
-import PageContainer from "@/components/PageContainer";
+import { goalBmiSafeguard, wellbeingMessage } from "@/lib/wellbeing";
 
-// Only allow digits, one leading decimal, and basic numeric chars
-function numericOnly(value, { allowDecimal = true, max = null, min = 0 } = {}) {
+/**
+ * About you: the two things Levli needs to know about the person — their body
+ * and their goal, and who prescribes for them.
+ *
+ * Every field saves itself. There is no Save button to remember: the value is
+ * written when the field is left (or Done is tapped on the keyboard), a small
+ * "Saved" says it landed, and a value that cannot be right is refused with a
+ * short line under the field rather than written. Height and goal are shown in
+ * the units chosen in Settings and stored canonically, so switching a unit
+ * changes what is displayed, never what is saved.
+ *
+ * The prescriber is entered here and nowhere else — the Add Medication form
+ * reads it from here — and the same gentle prescriber notice the Insights page
+ * shows appears when the goal weight would put BMI below 18.5.
+ */
+
+// The measurement fields take digits (and a decimal point for weight).
+function numericOnly(value, { allowDecimal = true, max = null } = {}) {
   let v = allowDecimal ? value.replace(/[^0-9.]/g, "") : value.replace(/[^0-9]/g, "");
-  // Prevent multiple decimal points
   const parts = v.split(".");
   if (parts.length > 2) v = parts[0] + "." + parts.slice(1).join("");
   if (max !== null && parseFloat(v) > max) v = String(max);
   return v;
 }
 
+const FIELD =
+  "w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white " +
+  "rounded-xl px-3 py-2.5 text-base outline-none focus:border-indigo-300";
+
+const LABEL = "text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2";
+
+/** A small "Saved" beside a card's heading, for the couple of seconds after a save. */
+function SavedFlag({ show }) {
+  if (!show) return null;
+  return (
+    <span className="flex items-center gap-1 text-xs font-medium text-teal-600 dark:text-teal-400">
+      <Check size={14} aria-hidden="true" /> Saved
+    </span>
+  );
+}
+
 export default function Profile() {
-  const { profile, setProfile, shots } = useAppState();
-  const [local, setLocal] = useState({ ...profile });
-  const [saved, setSaved] = useState({});
-  const [saving, setSaving] = useState({});
-  const [errors, setErrors] = useState({});
+  const { profile, setProfile, dayMetrics } = useAppState();
 
-  useEffect(() => {
-    setLocal({ ...profile });
-  }, [profile]);
+  const heightUnit = profile?.height_unit === "cm" ? "cm" : "in";
+  const weightUnit = profile?.weight_unit === "kg" ? "kg" : "lb";
 
-  const heightUnit = local.height_unit || "in";
-  const weightUnit = local.weight_unit || "lb";
-
-  // The days between shots come from the medication itself. A prescriber's
-  // override replaces it, and is flagged when it is shorter than the label allows.
-  const [overrideOn, setOverrideOn] = useState(!!profile?.days_between_override);
-  const [goalWarning, setGoalWarning] = useState("");
-  const currentMedication = shots?.[0]?.medication || local.default_medication || "";
-  const labelInterval = getIntervalDays(currentMedication);
-  const effectiveInterval = effectiveDaysBetween(local, currentMedication);
-  const overrideWarning = intervalWarning(currentMedication, local.days_between_override);
-
-  const toggleOverride = async () => {
-    if (overrideOn) {
-      setLocal((p) => ({ ...p, days_between_override: "" }));
-      try {
-        await setProfile({ ...profile, days_between_override: "" });
-        toast.success("Profile updated");
-      } catch (err) {
-        toast.error("Couldn't save. Please try again.");
-      }
-    }
-    setOverrideOn((v) => !v);
-  };
-
-  // Height and goal are edited in the display unit and stored canonically
-  // (cm / kg). These inputs are re-derived whenever the profile or the chosen
-  // unit changes, so switching kg↔lb re-renders every screen in that unit.
   const [heightInput, setHeightInput] = useState({ cm: "", ft: "", inch: "" });
   const [goalInput, setGoalInput] = useState("");
-  const [savingHeight, setSavingHeight] = useState(false);
-  const [savingGoal, setSavingGoal] = useState(false);
-  const [heightSaved, setHeightSaved] = useState(false);
-  const [goalSaved, setGoalSaved] = useState(false);
+  const [prescriberName, setPrescriberName] = useState("");
+  const [prescriberContact, setPrescriberContact] = useState("");
+  const [errors, setErrors] = useState({});
+  const [flash, setFlash] = useState("");
 
+  // Each field is re-derived whenever the profile or the chosen unit changes, so
+  // switching kg↔lb re-reads the same stored weight in the other unit.
   useEffect(() => {
     const cm = heightCmOf(profile);
     const parts = cm ? heightPartsFromCm(cm) : { ft: "", inch: "" };
@@ -81,293 +77,193 @@ export default function Profile() {
     });
     const goal = fromKg(profile?.goal_weight_kg, weightUnit);
     setGoalInput(goal == null ? "" : String(goal));
+    setPrescriberName(profile?.prescriber_name || "");
+    setPrescriberContact(profile?.prescriber_contact || "");
   }, [profile?.height_cm, profile?.height_ft, profile?.height_in,
-      profile?.goal_weight_kg, profile?.goal_weight, heightUnit, weightUnit]);
+      profile?.goal_weight_kg, profile?.prescriber_name, profile?.prescriber_contact,
+      heightUnit, weightUnit]);
 
-  const flashSaved = (setter) => {
-    setter(true);
-    setTimeout(() => setter(false), 1500);
+  const flashSaved = (field) => {
+    setFlash(field);
+    window.setTimeout(() => setFlash(""), 2000);
   };
 
-  const saveHeight = async () => {
+  const commitHeight = async () => {
+    const blank = heightUnit === "cm"
+      ? heightInput.cm.trim() === ""
+      : heightInput.ft.trim() === "" && heightInput.inch.trim() === "";
+    if (blank) { setErrors((p) => ({ ...p, height: null })); return; }
+
     const cm = heightUnit === "cm"
       ? parseFloat(heightInput.cm)
       : heightCmFromParts(heightInput.ft, heightInput.inch);
     const check = checkHeight(cm);
-    if (!check.ok) {
-      setErrors((p) => ({ ...p, height: check.message }));
-      return;
-    }
+    if (!check.ok) { setErrors((p) => ({ ...p, height: check.message })); return; }
     setErrors((p) => ({ ...p, height: null }));
-    setSavingHeight(true);
-    try {
-      await setProfile({ ...profile, height_cm: check.cm });
-      toast.success("Profile updated");
-      flashSaved(setHeightSaved);
-    } catch (err) {
-      toast.error("Couldn't save. Please try again.");
-    }
-    setSavingHeight(false);
+    if (Math.abs((heightCmOf(profile) || 0) - check.cm) < 0.05) return;
+    await setProfile({ ...profile, height_cm: check.cm });
+    flashSaved("height");
   };
 
-  const saveGoal = async () => {
-    if (goalInput === "") {
+  const commitGoal = async () => {
+    if (goalInput.trim() === "") {
       setErrors((p) => ({ ...p, goal_weight: null }));
-      setSavingGoal(true);
-      await setProfile({ ...profile, goal_weight_kg: null });
-      setSavingGoal(false);
-      flashSaved(setGoalSaved);
+      if (profile?.goal_weight_kg != null) {
+        await setProfile({ ...profile, goal_weight_kg: null });
+        flashSaved("goal");
+      }
       return;
     }
     const check = checkGoal(goalInput, weightUnit);
     if (!check.ok) {
-      setErrors((p) => ({ ...p, goal_weight: check.message }));
+      setErrors((p) => ({ ...p, goal_weight: check.message || "Please check this value and the unit." }));
       return;
     }
     setErrors((p) => ({ ...p, goal_weight: null }));
-    const goalCheck = goalBmiSafeguard(check.kg, heightCmOf(profile));
-    setGoalWarning(
-      goalCheck.flagged
-        ? `A goal of ${Math.round(check.kg)} kg works out to a BMI of ${goalCheck.bmi.toFixed(1)}, below 18.5. Worth talking to your prescriber before aiming for it — this isn't a diagnosis.`
-        : ""
-    );
-    setSavingGoal(true);
-    try {
-      await setProfile({ ...profile, goal_weight_kg: check.kg });
-      toast.success("Profile updated");
-      flashSaved(setGoalSaved);
-    } catch (err) {
-      toast.error("Couldn't save. Please try again.");
-    }
-    setSavingGoal(false);
+    if (Number(profile?.goal_weight_kg) === check.kg) return;
+    await setProfile({ ...profile, goal_weight_kg: check.kg });
+    flashSaved("goal");
   };
 
-  const handleSave = async (fields) => {
-    const updates = Array.isArray(fields) ? fields : [fields];
-    const key = updates.join("+");
-    // Validate numeric fields before saving
-    const numericFields = ["height_ft", "height_in", "goal_weight", "days_between", "days_between_override"];
-    let hasError = false;
-    updates.forEach((f) => {
-      if (numericFields.includes(f)) {
-        const v = local[f];
-        if (v !== "" && v !== undefined && (isNaN(parseFloat(v)) || parseFloat(v) < 0)) {
-          setErrors((p) => ({ ...p, [f]: "Must be a valid number" }));
-          hasError = true;
-        } else {
-          setErrors((p) => ({ ...p, [f]: null }));
-        }
-      }
-    });
-    if (hasError) return;
-    setSaving((p) => ({ ...p, [key]: true }));
-    const partial = {};
-    updates.forEach((f) => { partial[f] = local[f]; });
-    try {
-      await setProfile({ ...profile, ...partial });
-      toast.success("Profile updated");
-    } catch (err) {
-      toast.error("Couldn't save. Please try again.");
-    }
-    setSaving((p) => ({ ...p, [key]: false }));
-    setSaved((p) => ({ ...p, [key]: true }));
-    setTimeout(() => setSaved((p) => ({ ...p, [key]: false })), 1500);
+  const commitPrescriber = async () => {
+    const name = prescriberName.trim();
+    const contact = prescriberContact.trim();
+    if (name === (profile?.prescriber_name || "") && contact === (profile?.prescriber_contact || "")) return;
+    await setProfile({ ...profile, prescriber_name: name, prescriber_contact: contact });
+    flashSaved("prescriber");
   };
 
-  const SaveBtn = ({ fields }) => {
-    const key = Array.isArray(fields) ? fields.join("+") : fields;
-    return (
-      <button onClick={() => handleSave(fields)}
-      disabled={saving[key]}
-      className={`btn-pill btn-pill-sm min-w-[60px] transition-all flex items-center justify-center ${
-      saved[key] ? "bg-teal-500 text-white" : "bg-indigo-600 text-white"} disabled:opacity-60`
-      }>
-        {saving[key] ? <Loader2 size={14} className="animate-spin" /> : saved[key] ? <Check size={16} /> : "Save"}
-      </button>);
+  // The latest weight that has been logged, and the BMI it makes with the saved
+  // height (null when that cannot be a real adult value — never a stand-in).
+  const heightCm = heightCmOf(profile);
+  const latestWeightKg = useMemo(() => {
+    const rows = (dayMetrics || [])
+      .filter((m) => m?.weight != null)
+      .slice()
+      .sort((a, b) => String(a.day_key).localeCompare(String(b.day_key)));
+    return rows.length ? kgOfEntry(rows[rows.length - 1]) : null;
+  }, [dayMetrics]);
+  const currentBmi = shownBmi(latestWeightKg, heightCm);
 
-  };
-
-  const UnitToggle = ({ label, opt1, opt2, field }) =>
-  <div className="flex items-center justify-between py-2">
-      <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">{label}</span>
-      <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600">
-        {[opt1, opt2].map((opt) =>
-      <button key={opt}
-      onClick={async () => {
-        const next = { ...local, [field]: opt };
-        setLocal(next);
-        try {
-          await setProfile({ ...profile, [field]: opt });
-          toast.success("Profile updated");
-        } catch (err) {
-          toast.error("Couldn't save. Please try again.");
-        }
-      }}
-      className={`px-5 py-2 text-sm font-medium transition-colors ${
-      local[field] === opt ?
-      "bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300" :
-      "bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400"}`
-      }>
-            {opt}
-          </button>
-      )}
-      </div>
-    </div>;
-
+  // The same gentle notice Insights shows, in the same words, and only for the
+  // goal: a goal weight that would put BMI below 18.5.
+  const goalNotice = useMemo(() => {
+    const goalKg = Number(profile?.goal_weight_kg);
+    if (!Number.isFinite(goalKg) || goalKg <= 0) return "";
+    return wellbeingMessage({ goalBmi: goalBmiSafeguard(goalKg, heightCm) });
+  }, [profile?.goal_weight_kg, heightCm]);
 
   return (
-    <PageContainer bottomInset="default" className="bg-white dark:bg-gray-950">
+    <PageContainer bottomInset="default" className="bg-white dark:bg-gray-950" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Profile</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">About you</h1>
         <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
       </div>
 
       <div className="max-w-3xl mx-auto pt-4">
-        {/* Profile Info */}
+        {/* Body and goal */}
         <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2 mb-5">
             <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
               <IonIcon name="person" size={18} className="text-indigo-600 dark:text-indigo-400" />
             </div>
-            <h3 className="font-bold text-gray-900 dark:text-white text-lg">Profile Info</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white text-lg flex-1">Body and goal</h3>
+            <SavedFlag show={flash === "height" || flash === "goal"} />
           </div>
 
-          <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2">Height</label>
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            {heightUnit === "cm" ?
-            <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 min-w-[120px] ${errors.height ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
-                <input type="text" inputMode="decimal" value={heightInput.cm} placeholder="0"
-              onChange={(e) => { setHeightInput({ ...heightInput, cm: numericOnly(e.target.value) }); setErrors((p) => ({ ...p, height: null })); }}
-              className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white min-w-0" />
-                <span className="text-gray-400 text-sm ml-1">cm</span>
-              </div> :
-            <>
-                <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 min-w-[80px] ${errors.height ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
-                  <input type="text" inputMode="decimal" value={heightInput.ft} placeholder="0"
-                onChange={(e) => { setHeightInput({ ...heightInput, ft: numericOnly(e.target.value, { allowDecimal: false }) }); setErrors((p) => ({ ...p, height: null })); }}
-                className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white min-w-0" />
-                  <span className="text-gray-400 text-sm ml-1">ft</span>
+          <label className={LABEL} htmlFor={heightUnit === "cm" ? "height-cm" : "height-ft"}>Height</label>
+          <div className="flex items-center gap-2 flex-wrap">
+            {heightUnit === "cm" ? (
+              <div className={`flex-1 min-w-[120px] flex items-center gap-1 border rounded-xl px-3 py-2.5 bg-white dark:bg-gray-800 ${errors.height ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
+                <input id="height-cm" type="text" inputMode="decimal" value={heightInput.cm} placeholder="0"
+                  onChange={(e) => { setHeightInput({ ...heightInput, cm: numericOnly(e.target.value) }); setErrors((p) => ({ ...p, height: null })); }}
+                  onBlur={commitHeight}
+                  className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white min-w-0" />
+                <span className="text-gray-400 text-sm">cm</span>
+              </div>
+            ) : (
+              <>
+                <div className={`flex-1 min-w-[80px] flex items-center gap-1 border rounded-xl px-3 py-2.5 bg-white dark:bg-gray-800 ${errors.height ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
+                  <input id="height-ft" type="text" inputMode="numeric" value={heightInput.ft} placeholder="0"
+                    onChange={(e) => { setHeightInput({ ...heightInput, ft: numericOnly(e.target.value, { allowDecimal: false }) }); setErrors((p) => ({ ...p, height: null })); }}
+                    onBlur={commitHeight}
+                    className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white min-w-0" />
+                  <span className="text-gray-400 text-sm">ft</span>
                 </div>
-                <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 min-w-[80px] ${errors.height ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
+                <div className={`flex-1 min-w-[80px] flex items-center gap-1 border rounded-xl px-3 py-2.5 bg-white dark:bg-gray-800 ${errors.height ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
                   <input type="text" inputMode="decimal" value={heightInput.inch} placeholder="0"
-                onChange={(e) => { setHeightInput({ ...heightInput, inch: numericOnly(e.target.value, { max: 11.9 }) }); setErrors((p) => ({ ...p, height: null })); }}
-                className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white min-w-0" />
-                  <span className="text-gray-400 text-sm ml-1">in</span>
+                    onChange={(e) => { setHeightInput({ ...heightInput, inch: numericOnly(e.target.value, { max: 11.9 }) }); setErrors((p) => ({ ...p, height: null })); }}
+                    onBlur={commitHeight}
+                    className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white min-w-0" />
+                  <span className="text-gray-400 text-sm">in</span>
                 </div>
               </>
-            }
-            <button onClick={saveHeight} disabled={savingHeight}
-              className="btn-pill btn-pill-sm btn-primary min-w-[60px]">
-              {savingHeight ? <Loader2 size={14} className="animate-spin" /> : heightSaved ? <Check size={16} /> : "Save"}
-            </button>
+            )}
           </div>
-          {errors.height && <p className="text-xs text-orange-500 mt-1">{errors.height}</p>}
-          <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Stored as centimetres.</p>
+          {errors.height && <p className="text-xs text-orange-500 dark:text-orange-400 mt-2">{errors.height}</p>}
 
-          <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2">Goal Weight</label>
-          <div className="flex items-center gap-2">
-            <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 ${errors.goal_weight ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
-              <input type="text" inputMode="decimal" value={goalInput} placeholder="0.0"
+          <label className={`${LABEL} mt-5`} htmlFor="goal-weight">Goal weight</label>
+          <div className={`flex items-center gap-1 border rounded-xl px-3 py-2.5 bg-white dark:bg-gray-800 ${errors.goal_weight ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
+            <input id="goal-weight" type="text" inputMode="decimal" value={goalInput} placeholder="0.0"
               onChange={(e) => { setGoalInput(numericOnly(e.target.value)); setErrors((p) => ({ ...p, goal_weight: null })); }}
-              className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white" />
-              <span className="text-gray-400 text-sm ml-1">{weightUnitLabel(weightUnit)}</span>
-            </div>
-            <button onClick={saveGoal} disabled={savingGoal}
-              className="btn-pill btn-pill-sm btn-primary min-w-[60px]">
-              {savingGoal ? <Loader2 size={14} className="animate-spin" /> : goalSaved ? <Check size={16} /> : "Save"}
-            </button>
+              onBlur={commitGoal}
+              className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white min-w-0" />
+            <span className="text-gray-400 text-sm">{weightUnitLabel(weightUnit)}</span>
           </div>
-          {errors.goal_weight && <p className="text-xs text-orange-500 mt-1">{errors.goal_weight}</p>}
-          {goalWarning && (
-            <p className="text-xs text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/25 rounded-xl px-3 py-2 mt-2 leading-relaxed">{goalWarning}</p>
-          )}
-          <p className="text-xs text-gray-400 dark:text-gray-500">Stored as kilograms.</p>
-        </div>
+          {errors.goal_weight && <p className="text-xs text-orange-500 dark:text-orange-400 mt-2">{errors.goal_weight}</p>}
 
-        {/* Shot Preferences */}
-        <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
-              <SyringeIcon size={18} className="text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <h3 className="font-bold text-gray-900 dark:text-white text-lg">Shot Preferences</h3>
+          <div className="mt-5">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              {currentBmi != null
+                ? `Current BMI ${currentBmi.toFixed(1)}`
+                : "Your BMI appears once your height and a logged weight are saved."}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">A screening measure, not a diagnosis.</p>
           </div>
 
-          <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-1">Days Between Shots</label>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
-            {labelInterval
-              ? <>From <span className="font-medium text-gray-600 dark:text-gray-300">{plainBrandName(currentMedication)}</span> — this product is dosed every {labelInterval} day{labelInterval === 1 ? "" : "s"}.</>
-              : "Log a shot and Levli will use that medication's own interval."}
-          </p>
-          <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-            Your next shot date is worked out {effectiveInterval} day{effectiveInterval === 1 ? "" : "s"} after the last one
-            {profile?.days_between_override ? " (your prescriber's override)" : ""}.
-          </p>
-          <button onClick={toggleOverride} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-2">
-            {overrideOn ? "Use the label interval instead" : "Override with my prescriber's interval"}
-          </button>
-          {overrideOn && (
-            <>
-              <div className="flex items-center gap-2 mb-1">
-                <div className={`flex-1 border rounded-xl px-3 py-2.5 flex items-center bg-white dark:bg-gray-800 ${errors.days_between_override ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
-                  <input type="text" inputMode="numeric" value={local.days_between_override || ""} placeholder={String(labelInterval || 7)}
-                  onChange={(e) => setLocal({ ...local, days_between_override: numericOnly(e.target.value, { allowDecimal: false, max: 90 }) })}
-                  className="w-full outline-none text-base bg-transparent text-gray-900 dark:text-white" />
-                  <span className="text-gray-400 text-sm ml-1">days</span>
-                </div>
-                <SaveBtn fields={["days_between_override"]} />
-              </div>
-              {errors.days_between_override ? <p className="text-xs text-red-500 mb-1">Please enter a whole number (1–90).</p> : null}
-              {overrideWarning ? (
-                <p className="text-xs font-medium text-orange-600 dark:text-orange-400">{overrideWarning}</p>
-              ) : (
-                <p className="text-xs text-gray-400 dark:text-gray-500">Only set this if your prescriber told you to use a different interval.</p>
-              )}
-            </>
-          )}
+          {goalNotice && <WellbeingNotice message={goalNotice} className="mt-3" />}
         </div>
 
-        {/* Prescriber contact */}
-        <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
+        {/* Prescriber */}
+        <div className="mx-4 mb-8 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2 mb-5">
             <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
               <IonIcon name="person" size={18} className="text-indigo-600 dark:text-indigo-400" />
             </div>
-            <h3 className="font-bold text-gray-900 dark:text-white text-lg">Prescriber</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white text-lg flex-1">Prescriber</h3>
+            <SavedFlag show={flash === "prescriber"} />
           </div>
-          <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2">Name (optional)</label>
-          <input type="text" value={local.prescriber_name || ""} placeholder="e.g. Dr Patel"
-          onChange={(e) => setLocal({ ...local, prescriber_name: e.target.value })}
-          className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl px-3 py-2.5 text-base outline-none focus:border-indigo-300 mb-3" />
-          <label className="text-sm text-gray-700 dark:text-gray-300 font-medium block mb-2">Phone or email (optional)</label>
-          <div className="flex items-center gap-2">
-            <input type="text" value={local.prescriber_contact || ""} placeholder="Phone or email"
-            onChange={(e) => setLocal({ ...local, prescriber_contact: e.target.value })}
-            className="flex-1 min-w-0 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl px-3 py-2.5 text-base outline-none focus:border-indigo-300" />
-            <SaveBtn fields={["prescriber_name", "prescriber_contact"]} />
-          </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Used by the "Contact prescriber" button when a dose is overdue or you've had a longer break.</p>
-        </div>
 
-        {/* Measurement Units */}
-        <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
-              <ScaleIcon size={18} className="text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <h3 className="font-bold text-gray-900 dark:text-white text-lg">Measurement Units</h3>
-          </div>
-          <UnitToggle label="Liquid Unit" opt1="mL" opt2="oz" field="liquid_unit" />
-          <UnitToggle label="Height Unit" opt1="cm" opt2="in" field="height_unit" />
-          <UnitToggle label="Weight Unit" opt1="kg" opt2="lb" field="weight_unit" />
-        </div>
+          <label className={LABEL} htmlFor="prescriber-name">Name (optional)</label>
+          <input
+            id="prescriber-name"
+            type="text"
+            value={prescriberName}
+            placeholder="Dr Patel"
+            autoComplete="off"
+            onChange={(e) => setPrescriberName(e.target.value)}
+            onBlur={commitPrescriber}
+            className={FIELD}
+          />
 
-        <div className="mx-4 mb-8 bg-gray-100 dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700">
-          <h4 className="font-bold text-gray-700 dark:text-gray-300 mb-1">Important</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-            This application is not intended as a substitute for professional medical care. Only your doctor can diagnose and treat medical problems.
+          <label className={`${LABEL} mt-4`} htmlFor="prescriber-contact">Phone or email (optional)</label>
+          <input
+            id="prescriber-contact"
+            type="text"
+            inputMode="email"
+            value={prescriberContact}
+            placeholder="Phone or email"
+            autoComplete="off"
+            onChange={(e) => setPrescriberContact(e.target.value)}
+            onBlur={commitPrescriber}
+            className={FIELD}
+          />
+
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+            Used by the "Contact prescriber" button when a dose is overdue or you've had a longer break.
           </p>
         </div>
-        </div>
-        </PageContainer>);
-        }
+      </div>
+    </PageContainer>
+  );
+}

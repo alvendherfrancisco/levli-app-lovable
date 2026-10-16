@@ -78,7 +78,7 @@ export function medicationIntervalDays(medication, profile) {
   const stated = Number(medication?.interval_days);
   if (Number.isFinite(stated) && stated > 0) return stated;
   return frequencyToDays(medication?.frequency)
-    || effectiveDaysBetween(profile, medication?.medication_name);
+    || effectiveDaysBetween(profile, medication?.medication_name, medication);
 }
 
 /** The current name of the medication a shot points at, when it has been renamed. */
