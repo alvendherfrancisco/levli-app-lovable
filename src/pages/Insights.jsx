@@ -268,13 +268,14 @@ export default function Insights() {
           <HowItWorksLink onClick={() => setShowHowItWorks(true)} />
         </InsightCard>
 
-        {/* What keeps coming back over the last 30 or 90 days — logged in one
-            place, read here, directly under the weight it sits beside. */}
-        <SideEffectsCard />
-
         {/* The gentle check-in, when the weight trend itself calls for one. It
-            draws nothing at all unless a safeguard is active. */}
+            draws nothing at all unless a safeguard is active, and sits directly
+            above the side effects it belongs beside. */}
         <WellbeingPanel />
+
+        {/* What keeps coming back over the last 30 or 90 days — logged in one
+            place, read here, under the weight and the check-in it sits beside. */}
+        <SideEffectsCard />
 
         {/* Progress Pictures Panel — a strip of thumbnails with the Add button in
             the header, so the card stays one row tall. */}
