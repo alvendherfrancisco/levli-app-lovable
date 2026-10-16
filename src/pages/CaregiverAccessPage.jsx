@@ -1,71 +1,66 @@
 import React, { useState } from "react";
-import { AlertTriangle, ChevronDown } from "lucide-react";
+import { ChevronDown, Share2 } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import AccessEntry from "@/components/caregiver/AccessEntry";
 import { SHEET_FIELD, SHEET_FIELD_SELECT, SHEET_HINT, SHEET_LABEL } from "@/components/modals/shot/sheetUi";
 import { useAppState } from "@/lib/AppState";
-import { accessStatus, inviteCaregiver, isEmail, SCOPE_OPTIONS } from "@/lib/caregiverShare";
+import { accessStatus, inviteCaregiver, isEmail, SCOPE_OPTIONS, shareInvite } from "@/lib/caregiverShare";
 import { sound } from "@/lib/sounds";
 import { toast } from "@/lib/toast";
 
 /**
  * Caregiver access — who can see this account's logs, and with what level.
  *
- * Granting sends the invitation straight away, so the screen always reports what
- * happened: the address it went to, or the fact that it could not be sent, with a
- * Retry beside it. An entry that is waiting can be resent, and one that has run
- * out its week says so and can be resent too. Revoking asks first and takes effect
- * at once, on the server.
+ * Granting saves the invite as pending and names the address it was granted to.
+ * Nothing leaves the app: the person who granted it shares the invite themselves,
+ * either straight after granting or from any entry that is still waiting, and the
+ * invite becomes active by itself the first time that exact address signs in.
+ * Revoking asks first and takes effect at once, on the server.
  */
 export default function CaregiverAccessPage() {
   const { proxyAccess, loadProxyAccess, revokeProxyAccess } = useAppState();
   const [email, setEmail] = useState("");
   const [scope, setScope] = useState("read");
-  const [sending, setSending] = useState(false);
-  const [busyId, setBusyId] = useState("");
-  const [failed, setFailed] = useState(null);
+  const [saving, setSaving] = useState(false);
+  // The address just granted, so its own Share invite button can sit under the
+  // form without anyone having to type it in again.
+  const [granted, setGranted] = useState("");
   const [revoking, setRevoking] = useState(null);
   const [showPast, setShowPast] = useState(false);
 
   const people = proxyAccess.filter((row) => ["pending", "active"].includes(accessStatus(row)));
   const past = proxyAccess.filter((row) => ["revoked", "expired"].includes(accessStatus(row)));
 
-  /** Creates or resends an invite, and reports how it went. Returns the reply so
-   *  the caller can clear its own field only when something was actually saved. */
-  const runInvite = async (payload) => {
-    setSending(true);
-    try {
-      const data = await inviteCaregiver(payload);
-      if (data.error) {
-        toast.error(data.message || "That invite could not be created.");
-        return data;
-      }
-      if (data.emailSent) toast.success(`Invite sent to ${data.email}`);
-      else setFailed({ email: data.email, accessId: data.accessId, reason: data.emailError });
-      await loadProxyAccess();
-      return data;
-    } catch {
-      toast.error("That invite could not be created. Check your connection and try again.");
-      return null;
-    } finally {
-      setSending(false);
-      setBusyId("");
-    }
-  };
-
+  /** Grants access to one address. Nothing is sent: the invite is saved and waits
+   *  for that exact address to sign in. */
   const handleGrant = async () => {
     const address = email.trim();
     if (!isEmail(address)) { toast.error("Enter a valid email address"); return; }
-    setFailed(null);
-    const data = await runInvite({ email: address, scope });
-    if (data && !data.error) setEmail("");
+    setSaving(true);
+    try {
+      const data = await inviteCaregiver({ email: address, scope });
+      if (data.error) {
+        toast.error(data.message || "That invite could not be created.");
+        return;
+      }
+      toast.success(`Access granted to ${data.email}`);
+      setGranted(data.email);
+      setEmail("");
+      await loadProxyAccess();
+    } catch {
+      toast.error("That invite could not be created. Check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleResend = (entry) => {
-    setFailed(null);
-    setBusyId(entry.id);
-    runInvite({ accessId: entry.id });
+  /** Hands the invite to the phone's own share sheet, so it can go out through
+   *  anything the person already uses. */
+  const handleShare = async (address) => {
+    const how = await shareInvite(address);
+    if (how === "copied") toast.success("Invite copied. Paste it into a message to send it.");
+    else if (how === "unavailable") toast.error("That invite could not be shared here.");
   };
 
   const confirmRevoke = async () => {
@@ -106,35 +101,20 @@ export default function CaregiverAccessPage() {
             ))}
           </select>
 
-          <button onClick={handleGrant} disabled={sending} className="btn-pill btn-primary mt-4 w-full">
-            {sending ? "Sending…" : "Grant Access"}
+          <button onClick={handleGrant} disabled={saving} className="btn-pill btn-primary mt-4 w-full">
+            {saving ? "Granting…" : "Grant Access"}
           </button>
 
-          {/* A send that failed is not a dead end: the invite is saved, and this
-              is where it is tried again. */}
-          {failed && (
-            <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/10">
-              <div className="flex items-start gap-2">
-                <AlertTriangle size={16} className="mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-                <p className="text-sm text-amber-800 dark:text-amber-300">
-                  The invite for {failed.email} was saved, but the email could not be sent.
-                </p>
-              </div>
-              {failed.reason && (
-                <p className="mt-1 ml-6 text-xs text-amber-700/90 dark:text-amber-300/80">{failed.reason}</p>
-              )}
-              <button
-                onClick={() => { setFailed(null); runInvite({ accessId: failed.accessId }); }}
-                disabled={sending}
-                className="mt-2 ml-6 text-sm font-semibold text-amber-900 underline disabled:opacity-60 dark:text-amber-200"
-              >
-                Retry
-              </button>
-            </div>
+          {/* Sharing the invite is the person's own step: the address is already
+              saved, so this only opens the share sheet with the message. */}
+          {granted && (
+            <button onClick={() => handleShare(granted)} className="btn-pill btn-secondary mt-2 w-full">
+              <Share2 size={16} aria-hidden="true" /> Share invite
+            </button>
           )}
 
           <p className={`${SHEET_HINT} mt-3`}>
-            They'll see your shot, journal, and weight records. You can revoke access anytime.
+            They'll see your shot, journal, and weight records once they sign in with this email. You can revoke access anytime.
           </p>
         </div>
 
@@ -150,8 +130,7 @@ export default function CaregiverAccessPage() {
                   <AccessEntry
                     key={entry.id}
                     entry={entry}
-                    busy={busyId === entry.id || sending}
-                    onResend={handleResend}
+                    onShare={handleShare}
                     onRevoke={setRevoking}
                   />
                 ))}
@@ -176,12 +155,7 @@ export default function CaregiverAccessPage() {
             {showPast && (
               <div className="space-y-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                 {past.map((entry) => (
-                  <AccessEntry
-                    key={entry.id}
-                    entry={entry}
-                    busy={busyId === entry.id || sending}
-                    onResend={handleResend}
-                  />
+                  <AccessEntry key={entry.id} entry={entry} />
                 ))}
               </div>
             )}

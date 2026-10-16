@@ -1,4 +1,5 @@
 import { base44 } from "@/api/base44Client";
+import { PUBLIC_BASE_URL } from "@/lib/appInfo";
 import { formatLocaleDate, fromDayKey, parseShotDate } from "@/lib/dateUtils";
 
 /**
@@ -34,10 +35,38 @@ export function accessStatus(access) {
   return Number.isFinite(until) && until < Date.now() ? "expired" : "pending";
 }
 
-/** Grants access and sends the invitation — or resends one, given its accessId. */
+/** Grants access to one address. Nothing is sent from here: the invite is saved
+ *  as pending and becomes active the first time that exact address signs in. */
 export async function inviteCaregiver(payload) {
   const res = await base44.functions.invoke("inviteCaregiver", payload);
   return res?.data || {};
+}
+
+/** The words a person sends when they share an invite themselves. The address is
+ *  the whole point of the message: access is matched to exactly that address. */
+export const inviteMessage = (email) =>
+  `I've shared my Levli records with you. Download the app and sign up with this email (${email}) to view them: ${PUBLIC_BASE_URL}`;
+
+/** Opens the phone's own share sheet with that message, so it can go out through
+ *  Messages, WhatsApp or anything else. Where there is no share sheet — the
+ *  desktop preview, an older browser — the message is copied instead, ready to
+ *  paste. Returns "shared", "cancelled", "copied" or "unavailable". */
+export async function shareInvite(email) {
+  const text = inviteMessage(email);
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Levli", text });
+      return "shared";
+    } catch (error) {
+      if (error?.name === "AbortError") return "cancelled"; // put away, not a failure
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    return "copied";
+  } catch {
+    return "unavailable";
+  }
 }
 
 /** The people who have shared their records with this account. */

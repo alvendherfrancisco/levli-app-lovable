@@ -9,8 +9,6 @@
 // to the address it was sent to.
 
 export const INVITE_DAYS = 7;
-export const APP_URL = "https://levli-app.base44.app";
-export const REGISTER_URL = `${APP_URL}/register`;
 
 const SCOPE_LABELS = { read: "Read only", read_write: "Read & write" };
 

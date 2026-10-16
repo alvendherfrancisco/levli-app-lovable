@@ -3,7 +3,7 @@
   "properties": {
     "grantee_email": {
       "type": "string",
-      "description": "The address the invite was sent to, stored in lower case. The invited person's account is matched to exactly this address when they sign in."
+      "description": "The address the invite was granted to, stored in lower case. The invited person's account is matched to exactly this address when they sign in."
     },
     "grantee_user_id": {
       "type": "string",
@@ -30,7 +30,7 @@
     },
     "owner_name": {
       "type": "string",
-      "description": "The account holder's name when the invite was sent, shown to the invited person in the Shared with me list."
+      "description": "The account holder's name when the invite was saved, shown to the invited person in the Shared with me list."
     },
     "relationship": {
       "type": "string",
@@ -38,7 +38,7 @@
     },
     "invited_date": {
       "type": "string",
-      "description": "ISO timestamp of the invite, reset when it is resent"
+      "description": "ISO timestamp of the invite"
     },
     "expires_at": {
       "type": "string",
@@ -51,14 +51,6 @@
     "revoked_date": {
       "type": "string",
       "description": "ISO timestamp when access was revoked"
-    },
-    "last_email_sent_at": {
-      "type": "string",
-      "description": "ISO timestamp of the last invite email that went out"
-    },
-    "email_error": {
-      "type": "string",
-      "description": "Why the last invite email failed, when it did. Cleared by the next send that succeeds."
     }
   },
   "required": [

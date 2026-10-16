@@ -1,5 +1,5 @@
 import React from "react";
-import { RefreshCcw, X } from "lucide-react";
+import { Share2, X } from "lucide-react";
 import { accessStatus, scopeLabel } from "@/lib/caregiverShare";
 
 const STATUS_LABEL = { pending: "Pending", active: "Active", expired: "Expired", revoked: "Revoked" };
@@ -24,36 +24,40 @@ function metaLine(entry, status) {
 const ACTION = "flex min-h-[44px] items-center gap-1.5 px-2 text-xs font-medium";
 
 /**
- * One entry in the access list: who it is for, what level and where it stands,
- * and only the actions that make sense for that state — a resend while an invite
- * is waiting or has run out, and a revoke while it still counts for something.
+ * One entry in the access list: the address it is for on its own line, so a long
+ * one is never cut off, and under it where the invite stands with the actions that
+ * make sense for that state. A waiting invite can be shared by hand — the message
+ * carries the address access is matched to — and anything that still counts for
+ * something can be revoked.
+ *
+ * Nothing is sent by the app itself, so there is no delivery state to report here.
  */
-export default function AccessEntry({ entry, busy = false, onResend, onRevoke }) {
+export default function AccessEntry({ entry, onShare, onRevoke }) {
   const status = accessStatus(entry);
   return (
-    <div className="flex items-start justify-between gap-2 text-sm">
-      <div className="min-w-0">
-        <span className="block truncate text-gray-700 dark:text-gray-300">{entry.grantee_email}</span>
-        <span className="text-xs text-gray-500 dark:text-[#9A9DAE]">
+    <div className="text-sm">
+      <p className="break-all text-gray-700 dark:text-gray-300">{entry.grantee_email}</p>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <p className="text-xs text-gray-500 dark:text-[#9A9DAE]">
           {scopeLabel(entry.scope)} · {metaLine(entry, status)}{" "}
           <span className="sr-only">{STATUS_LABEL[status]}</span>
-        </span>
-      </div>
-      <div className="flex flex-shrink-0 items-center">
-        {(status === "pending" || status === "expired") && onResend && (
-          <button type="button" onClick={() => onResend(entry)} disabled={busy}
-            aria-label={`Resend the invite to ${entry.grantee_email}`}
-            className={`${ACTION} text-indigo-600 disabled:opacity-50 dark:text-indigo-400`}>
-            <RefreshCcw size={14} aria-hidden="true" /> Resend
-          </button>
-        )}
-        {(status === "pending" || status === "active") && onRevoke && (
-          <button type="button" onClick={() => onRevoke(entry)} disabled={busy}
-            aria-label={`Revoke access for ${entry.grantee_email}`}
-            className={`${ACTION} text-red-600 disabled:opacity-50 dark:text-red-400`}>
-            <X size={14} aria-hidden="true" /> Revoke
-          </button>
-        )}
+        </p>
+        <div className="flex flex-shrink-0 items-center">
+          {status === "pending" && onShare && (
+            <button type="button" onClick={() => onShare(entry.grantee_email)}
+              aria-label={`Share the invite to ${entry.grantee_email}`}
+              className={`${ACTION} text-indigo-600 dark:text-indigo-400`}>
+              <Share2 size={14} aria-hidden="true" /> Share invite
+            </button>
+          )}
+          {(status === "pending" || status === "active") && onRevoke && (
+            <button type="button" onClick={() => onRevoke(entry)}
+              aria-label={`Revoke access for ${entry.grantee_email}`}
+              className={`${ACTION} text-red-600 dark:text-red-400`}>
+              <X size={14} aria-hidden="true" /> Revoke
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
