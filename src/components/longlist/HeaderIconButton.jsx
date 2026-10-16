@@ -1,18 +1,24 @@
 import React from "react";
 
 /**
- * One of the small icons a long list carries in its header — the calendar, the
- * filter, the search.
+ * One of the icons a page carries in its header — the settings gear, the report,
+ * the calendar, the filter, the search.
  *
- * It is a 44px touch target drawn around a 20px glyph. Only its height is pulled
- * back out of the layout (`-my-1.5`), so the icon contributes no more height than
- * the title beside it: the row stays exactly 72px, which is what the month
- * headers below stick to, and a header icon can never push them out of line.
- * Its width is left alone, so two of them never overlap their tap targets.
+ * Every one of them is the same icon: a 24px glyph (HEADER_GLYPH) inside a 44px
+ * touch target, in the same weight and the same colour, so a header reads as one
+ * row of equal controls whichever page it belongs to and whatever the icons are.
+ *
+ * Only its height is pulled back out of the layout (`-my-1.5`), so the icon
+ * contributes no more height than the title beside it: the row stays exactly
+ * 72px, which is what the month headers below stick to, and a header icon can
+ * never push them out of line. Its width is left alone, so two of them never
+ * overlap their tap targets.
  *
  * `active` is the one thing a header icon adds when what it is for is on: the
  * small dot on the filter whenever a filter is narrowing the list.
  */
+export const HEADER_GLYPH = 24;
+
 export const HEADER_ICON =
   "-my-1.5 w-11 h-11 flex shrink-0 items-center justify-center rounded-full " +
   "text-gray-600 dark:text-gray-400";

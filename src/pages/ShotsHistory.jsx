@@ -6,7 +6,7 @@ import EmptyStateCard from "@/components/EmptyStateCard";
 import AddShotModal from "@/components/modals/AddShotModal";
 import ShotListRow from "@/components/shots/ShotListRow";
 import ShotFilterSheet from "@/components/shots/ShotFilterSheet";
-import HeaderIconButton from "@/components/longlist/HeaderIconButton";
+import HeaderIconButton, { HEADER_GLYPH } from "@/components/longlist/HeaderIconButton";
 import MonthSectionList from "@/components/longlist/MonthSectionList";
 import MonthJumpButton from "@/components/longlist/MonthJumpButton";
 import BackToTop from "@/components/longlist/BackToTop";
@@ -134,7 +134,7 @@ export default function ShotsHistory() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex-1 min-w-0 truncate">{heading}</h1>
         <MonthJumpButton months={months} onJump={setJumpMonth} compact />
         <HeaderIconButton label="Filter" onClick={() => setShowFilters(true)} active={hasFilters}>
-          <Filter size={20} aria-hidden="true" />
+          <Filter size={HEADER_GLYPH} aria-hidden="true" />
         </HeaderIconButton>
       </div>
 

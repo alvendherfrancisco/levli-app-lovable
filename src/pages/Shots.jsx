@@ -1,12 +1,18 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Settings, FileText, Syringe, Loader2, Crown } from "lucide-react";
+import { Settings, FileText, Search, Syringe, Loader2, Crown } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
+import EmptyStateCard from "@/components/EmptyStateCard";
 import ShotListRow from "@/components/shots/ShotListRow";
 import ShotSummaryCards from "@/components/shots/ShotSummaryCards";
 import InjectionSiteCard from "@/components/shots/InjectionSiteCard";
 import AddShotModal from "@/components/modals/AddShotModal";
+import HeaderIconButton, { HEADER_ICON, HEADER_GLYPH } from "@/components/longlist/HeaderIconButton";
+import ListSearchBar from "@/components/longlist/ListSearchBar";
+import MonthJumpButton from "@/components/longlist/MonthJumpButton";
+import { DATE_PERIODS, inDatePeriod } from "@/lib/datePeriod";
+import { monthKeyOf, monthKeysOf } from "@/lib/monthGroups";
 import { useAppState } from "@/lib/AppState";
 import { addDaysToShotDate, daysUntilShotDate, formatDayKeyShort } from "@/lib/dateUtils";
 import { useSubscription } from "@/lib/SubscriptionContext";
@@ -24,6 +30,11 @@ const PREVIEW_COUNT = 3;
 export default function Shots() {
   const [showShot, setShowShot] = useState(false);
   const [editingShot, setEditingShot] = useState(null);
+  // What the History block is narrowed by: one word, and a date.
+  const [search, setSearch] = useState("");
+  const [period, setPeriod] = useState("all");
+  const [jumpMonth, setJumpMonth] = useState(null);
+  const [dateSheetOpen, setDateSheetOpen] = useState(false);
   const { shots, shotsLoading, profile, medications } = useAppState();
   const { isPremium, openPaywall } = useSubscription();
   const navigate = useNavigate();
@@ -31,7 +42,23 @@ export default function Shots() {
   const FREE_LIMIT = 10;
   const visibleShots = isPremium ? shots : shots.slice(0, FREE_LIMIT);
   const hiddenCount = isPremium ? 0 : Math.max(0, shots.length - FREE_LIMIT);
-  const previewShots = visibleShots.slice(0, PREVIEW_COUNT);
+  // The history block is narrowed the same way the Journal is, from the row above
+  // it: one word, and a date — this week, this month, or a month of its own. Only
+  // the three most recent that match are shown, as before.
+  const history = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return visibleShots.filter((s) => {
+      if (jumpMonth) {
+        if (monthKeyOf(s.date) !== jumpMonth) return false;
+      } else if (!inDatePeriod(s.date, period)) return false;
+      if (!term) return true;
+      return [s.medication, s.site, s.notes].some((v) => (v || "").toLowerCase().includes(term));
+    });
+  }, [visibleShots, search, period, jumpMonth]);
+  const historyShots = history.slice(0, PREVIEW_COUNT);
+  const months = useMemo(() => monthKeysOf(visibleShots, (s) => s.date), [visibleShots]);
+  const hasHistoryFilters = !!search.trim() || period !== "all" || !!jumpMonth;
+  const clearHistoryFilters = () => { setSearch(""); setPeriod("all"); setJumpMonth(null); };
 
   const last = shots[0] || null;
   const daysBetween = effectiveDaysBetween(
@@ -74,9 +101,13 @@ export default function Shots() {
     <PageContainer bottomInset="fab" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{words.Many}</h1>
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/report")}><FileText size={22} className="text-gray-500" /></button>
-          <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600" /></Link>
+        <div className="flex items-center gap-1">
+          <HeaderIconButton label="Report" onClick={() => navigate("/report")}>
+            <FileText size={HEADER_GLYPH} aria-hidden="true" />
+          </HeaderIconButton>
+          <Link to="/settings" aria-label="Settings" className={HEADER_ICON}>
+            <Settings size={HEADER_GLYPH} aria-hidden="true" />
+          </Link>
         </div>
       </div>
 
@@ -93,6 +124,30 @@ export default function Shots() {
           adherenceRange={adherenceRange}
           words={words}
         />
+
+        {/* The same row the Journal carries, above the list it narrows: the word
+            to look for, with the dates beside it. It appears once there is a
+            history to narrow. */}
+        {shots.length > 0 && (
+          <div className="px-4 pb-4 flex items-center gap-2">
+            <ListSearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder={`Search your ${words.many}`}
+              ariaLabel={`Search your ${words.many}`}
+            />
+            <MonthJumpButton
+              months={months}
+              onJump={(key) => { setJumpMonth(key); setPeriod("all"); }}
+              compact
+              title="Dates"
+              quickOptions={DATE_PERIODS}
+              quickValue={period}
+              onQuick={(key) => { setPeriod(key); setJumpMonth(null); }}
+              onOpenChange={setDateSheetOpen}
+            />
+          </div>
+        )}
 
         <div className="px-4">
           <div className="flex items-center justify-between gap-2 mb-4">
@@ -116,11 +171,18 @@ export default function Shots() {
               <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">No {words.Many} Logged</h3>
               <p className="text-sm">Log your first {words.one} to track your {words.many}{words.one === "shot" ? ", injection sites," : ""} and how you feel over time.</p>
             </div>
+          ) : historyShots.length === 0 && hasHistoryFilters ? (
+            <>
+              <EmptyStateCard icon={Search} title="No matches" />
+              <button type="button" onClick={clearHistoryFilters} className="btn-link text-sm mx-auto mt-4 flex">
+                Clear filters
+              </button>
+            </>
           ) : (
             <div className="space-y-2">
-              {/* The three most recent, each the same compact row the whole
-                  history draws. */}
-              {previewShots.map((shot) => (
+              {/* The three most recent that match, each the same compact row the
+                  whole history draws. */}
+              {historyShots.map((shot) => (
                 <div key={shot.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
                   <ShotListRow shot={shot} onOpen={openEdit} />
                 </div>
@@ -146,11 +208,12 @@ export default function Shots() {
       {/* Where the shots were given, below the history it describes (moved here
           from Insights), with the page's own 16px gap above it rather than
           sitting against the last card. */}
-      <div className="w-full max-w-3xl mx-auto mt-4">
+      <div className="w-full max-w-3xl mx-auto mt-4 pb-8">
         <InjectionSiteCard />
       </div>
 
-      <Fab onClick={openNew} label={addLabel} icon={null} />
+      {/* Out of the way while the date sheet is up. */}
+      {!dateSheetOpen && <Fab onClick={openNew} label={addLabel} icon={null} />}
 
       <AddShotModal open={showShot} onClose={() => { setShowShot(false); setEditingShot(null); }} editingShot={editingShot} />
     </PageContainer>

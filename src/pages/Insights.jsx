@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Settings } from "lucide-react";
+import { HEADER_ICON, HEADER_GLYPH } from "@/components/longlist/HeaderIconButton";
 import IonIcon from "@/components/IonIcon";
 import StatTile from "@/components/insights/StatTile";
 import { FOOTNOTE } from "@/components/insights/insightUi";
@@ -157,7 +158,9 @@ export default function Insights() {
     <PageContainer bottomInset="default" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Insights</h1>
-        <Link to="/settings" aria-label="Settings" className="-mr-2 flex h-11 w-11 items-center justify-center"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
+        <Link to="/settings" aria-label="Settings" className={HEADER_ICON}>
+          <Settings size={HEADER_GLYPH} aria-hidden="true" />
+        </Link>
       </div>
 
       <div className="w-full max-w-3xl mx-auto pt-4">

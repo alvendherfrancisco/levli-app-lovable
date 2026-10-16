@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Settings, BookOpen, Search } from "lucide-react";
-import moment from "moment";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import EmptyStateCard from "@/components/EmptyStateCard";
 import JournalEntryModal from "@/components/modals/JournalEntryModal";
 import JournalCategoryChips from "@/components/journal/JournalCategoryChips";
-import JournalSearchBar from "@/components/journal/JournalSearchBar";
-import HeaderIconButton, { HEADER_ICON } from "@/components/longlist/HeaderIconButton";
+import ListSearchBar from "@/components/longlist/ListSearchBar";
+import { HEADER_ICON, HEADER_GLYPH } from "@/components/longlist/HeaderIconButton";
+import { DATE_PERIODS, inDatePeriod } from "@/lib/datePeriod";
 import JournalEntryCard from "@/components/journal/JournalEntryCard";
 import MonthSectionList from "@/components/longlist/MonthSectionList";
 import MonthJumpButton from "@/components/longlist/MonthJumpButton";
@@ -23,12 +23,12 @@ import { toast } from "@/lib/toast";
  * The Journal: what the person wrote about their day — mood, energy, food,
  * exercise, milestones and general entries.
  *
- * It is a long list, so it behaves like one: the entries newest first, split
- * into months, 20 drawn at a time as the list is scrolled, and one row of
- * categories above them. Everything else is behind the two icons in the header —
- * the search opens a field in the place of that row, and the calendar sheet
- * carries this week, this month, and every month the journal holds. Narrowing the
- * list writes nothing, and "Clear filters" brings the whole journal back.
+ * It is a long list, so it behaves like one, and it reads top to bottom: the
+ * categories, then the word to look for with the dates beside it, then the
+ * entries themselves — newest first, split into months, 20 drawn at a time as the
+ * list is scrolled. The date sheet carries this week, this month, and every month
+ * the journal holds. Narrowing the list writes nothing, and "Clear filters"
+ * brings the whole journal back.
  *
  * Side effects have a form of their own (Home and History) and a summary of their
  * own (the card on Insights), so they are neither written, filtered nor listed
@@ -37,31 +37,6 @@ import { toast } from "@/lib/toast";
  * shown in this list.
  */
 
-// The dates the calendar sheet offers, beside the month picker itself
-// (src/components/longlist/MonthJumpButton.jsx).
-const DATE_OPTIONS = [
-  { key: "all", label: "All dates" },
-  { key: "week", label: "This week" },
-  { key: "month", label: "This month" },
-];
-
-// The dates the chosen period covers, as day keys (YYYY-MM-DD).
-function dateWindow(period) {
-  if (period === "week") {
-    return {
-      start: moment().startOf("isoWeek").format("YYYY-MM-DD"),
-      end: moment().endOf("isoWeek").format("YYYY-MM-DD"),
-    };
-  }
-  if (period === "month") {
-    return {
-      start: moment().startOf("month").format("YYYY-MM-DD"),
-      end: moment().endOf("month").format("YYYY-MM-DD"),
-    };
-  }
-  return { start: "", end: "" };
-}
-
 export default function Journal() {
   const { journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry } = useAppState();
   const [showModal, setShowModal] = useState(false);
@@ -69,8 +44,9 @@ export default function Journal() {
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [period, setPeriod] = useState("all");
-  const [searchOpen, setSearchOpen] = useState(false);
   const [jumpMonth, setJumpMonth] = useState(null);
+  // Kept so the floating button can step out of the date sheet's way.
+  const [dateSheetOpen, setDateSheetOpen] = useState(false);
 
   // Newest first, by the date and time each entry was written, and never the
   // side-effect entries: this list is the Journal's own categories.
@@ -85,12 +61,9 @@ export default function Journal() {
   // What the filters ask for: the category, the word and the dates.
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    const window = dateWindow(period);
     return entries.filter((e) => {
       if (category !== "All" && normaliseCategory(e.category) !== category) return false;
-      const day = e.date || "";
-      if (window.start && day < window.start) return false;
-      if (window.end && day > window.end) return false;
+      if (!inDatePeriod(e.date, period)) return false;
       if (!term) return true;
       return [e.text, categoryMeta(normaliseCategory(e.category)).label, e.mood]
         .some((value) => (value || "").toLowerCase().includes(term));
@@ -151,37 +124,34 @@ export default function Journal() {
     <PageContainer bottomInset="fab" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Journal</h1>
-        <div className="flex items-center gap-1">
-          <HeaderIconButton label="Search entries" onClick={() => setSearchOpen(true)}>
-            <Search size={20} aria-hidden="true" />
-          </HeaderIconButton>
+        <Link to="/settings" aria-label="Settings" className={HEADER_ICON}>
+          <Settings size={HEADER_GLYPH} aria-hidden="true" />
+        </Link>
+      </div>
+
+      <div className="w-full max-w-3xl mx-auto">
+        {/* The categories the list is narrowed by, then the word to look for with
+            the dates beside it — so the list always starts in the same place. */}
+        <JournalCategoryChips category={category} onCategory={setCategory} />
+
+        <div className="px-4 pt-1 pb-1 flex items-center gap-2">
+          <ListSearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder="Search your entries"
+            ariaLabel="Search journal entries"
+          />
           <MonthJumpButton
             months={months}
             onJump={setJumpMonth}
             compact
             title="Dates"
-            quickOptions={DATE_OPTIONS}
+            quickOptions={DATE_PERIODS}
             quickValue={period}
             onQuick={setPeriod}
+            onOpenChange={setDateSheetOpen}
           />
-          <Link to="/settings" aria-label="Settings" className={HEADER_ICON}>
-            <Settings size={20} className="text-gray-600 dark:text-gray-400" aria-hidden="true" />
-          </Link>
         </div>
-      </div>
-
-      <div className="w-full max-w-3xl mx-auto">
-        {/* The categories, or the search field in their place: one row either
-            way, so the list always starts at the same height. */}
-        {searchOpen ? (
-          <JournalSearchBar
-            value={search}
-            onChange={setSearch}
-            onClose={() => { setSearch(""); setSearchOpen(false); }}
-          />
-        ) : (
-          <JournalCategoryChips category={category} onCategory={setCategory} />
-        )}
 
         {entries.length === 0 ? (
           <div className="px-4 pt-4">
@@ -232,7 +202,9 @@ export default function Journal() {
         initialEntry={editingEntry}
       />
       <BackToTop />
-      <Fab onClick={openNew} label="Add entry" icon={null} />
+      {/* Out of the way while the date sheet is up: the sheet covers the foot of
+          the screen itself. */}
+      {!dateSheetOpen && <Fab onClick={openNew} label="Add entry" icon={null} />}
     </PageContainer>
   );
 }

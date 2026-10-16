@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Settings, Pill, Archive, ChevronDown } from "lucide-react";
+import { HEADER_ICON, HEADER_GLYPH } from "@/components/longlist/HeaderIconButton";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import EmptyStateCard from "@/components/EmptyStateCard";
@@ -67,7 +68,9 @@ export default function MyMedications() {
     <PageContainer bottomInset="fab" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Medications</h1>
-        <Link to="/settings" aria-label="Settings"><Settings size={22} className="text-gray-600 dark:text-gray-400" /></Link>
+        <Link to="/settings" aria-label="Settings" className={HEADER_ICON}>
+          <Settings size={HEADER_GLYPH} aria-hidden="true" />
+        </Link>
       </div>
 
       <div className="max-w-3xl mx-auto pt-4 px-4">
