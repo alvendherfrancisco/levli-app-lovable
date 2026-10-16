@@ -17,8 +17,8 @@ import useDoseColors from "@/hooks/useDoseColors";
  * fading to nothing on every side, so it has no edge to be seen. The card in the
  * middle of it is part of the drawing, not a frame for it.
  *
- * `size` is the box the drawing is scaled into — 120px, the slot every lock
- * illustration is drawn in (see PremiumLockGroup) — and the glow behind it scales
+ * `size` is the box the drawing is scaled into — 150px, the size every lock
+ * illustration is drawn at (see PremiumLockGroup) — and the glow behind it scales
  * with it, so the artwork is the same size in the group wherever it is shown.
  * Nothing on it is the person's own data — it is a drawing of a dashboard, not a
  * dashboard.

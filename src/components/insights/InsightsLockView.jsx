@@ -55,12 +55,12 @@ export default function InsightsLockView({ onUnlock, lockScroll = false, classNa
         className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-white dark:to-gray-950"
       />
 
-      {/* The group: centred on the screen's own axis, held a step below the middle
-          (the top padding is what moves it, so the group's own fade-in keeps the
-          transform), clear of the header above and of the safe area at the foot. */}
-      <div className="absolute inset-0 flex items-center justify-center px-4 pb-6 pt-[14vh]">
+      {/* The group: centred on the box it is given both ways, on its own card (see
+          PremiumLockGroup) so its fade-in keeps the transform, and clear of the header
+          above and of the safe area at the foot. */}
+      <div className="absolute inset-0 flex items-center justify-center px-4 py-6">
         <PremiumLockGroup
-          art={<InsightTrendArt />}
+          art={<InsightTrendArt size={150} />}
           title="See your whole journey"
           subtitle="Track every trend and photo"
           onUnlock={onUnlock}

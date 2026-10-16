@@ -52,12 +52,12 @@ export default function ReportLockView({ onUnlock }) {
         className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-indigo-50 dark:to-indigo-950"
       />
 
-      {/* The group: centred on the screen's own axis, a step below the middle so the
-          paper's band and its summary stay in view above it (the top padding is what
-          moves it), with the screen's own 24px kept at the foot. */}
-      <div className="absolute inset-0 flex items-center justify-center px-4 pb-6 pt-[14vh]">
+      {/* The group: centred on the screen both ways, on its own card (see
+          PremiumLockGroup), with the screen's own 24px kept at the foot. The paper's
+          band, its summary and the chart under the card are all still read around it. */}
+      <div className="absolute inset-0 flex items-center justify-center px-4 py-6">
         <PremiumLockGroup
-          art={<ReportArt />}
+          art={<ReportArt size={150} />}
           title="Reports for your doctor"
           subtitle="Share your progress in one tap"
           onUnlock={onUnlock}

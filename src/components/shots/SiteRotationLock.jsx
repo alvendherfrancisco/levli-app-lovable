@@ -13,7 +13,10 @@ import PremiumLockGroup from "@/components/premium/PremiumLockGroup";
  * The group itself is the app's one lock group (see PremiumLockGroup) — the same
  * artwork slot, the same headline and muted line, the same main button and the
  * same terms line as the Report and Insights locks — so the three read as one
- * thing met in three places rather than three designs. Rotation is free, so the
+ * thing met in three places rather than three designs. It is the one place that
+ * asks for the group without its card (`framed={false}`): this lock already sits
+ * inside a card whose scrim ends on that card's own surface, so a panel behind the
+ * words here would be a box inside a box. Rotation is free, so the
  * lock is not about this chart: it points at Premium as a whole, and the line
  * under the headline is the set of benefits the paywall lists.
  *
@@ -33,6 +36,7 @@ export default function SiteRotationLock({ onUnlock }) {
 
       <div className="relative w-full px-4">
         <PremiumLockGroup
+          framed={false}
           art={<SiteRotationArt />}
           title="More with Levli Premium"
           subtitle="Reports, insights and full history"
