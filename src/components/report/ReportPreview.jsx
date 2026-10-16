@@ -206,7 +206,11 @@ export default function ReportPreview({ report, locked = false, overlay = null }
             className="absolute inset-0"
             style={{ background: `linear-gradient(to bottom, ${t.cardBg}00 0%, ${t.cardBg}B3 45%, ${t.cardBg} 100%)` }}
           />
-          <div className="absolute inset-0 flex items-center justify-center">{overlay}</div>
+          {/* The lock sits in the lower part of the blocked area rather than in
+              the middle of it: the blurred lines stay readable above it, and the
+              gradient behind it has already reached the card's own flat surface
+              by the time the artwork starts, so nothing overlaps blurred text. */}
+          <div className="absolute inset-0 flex items-end justify-center pb-4">{overlay}</div>
         </div>
       ) : (
         sections

@@ -13,7 +13,7 @@ import { useIsDarkTheme } from "@/components/report/ReportTheme";
  * page and its lines follow the app's own theme, so the picture reads on the
  * white card in light mode and on the dark one.
  */
-export default function ReportArt() {
+export default function ReportArt({ size = 120 }) {
   const isDark = useIsDarkTheme();
 
   const page = isDark ? "#1E2130" : "#FFFFFF";
@@ -23,10 +23,10 @@ export default function ReportArt() {
     : "linear-gradient(135deg, #A5B4FC, #C4B5FD)";
 
   return (
-    <div className="relative mx-auto h-[120px] w-[120px]" aria-hidden="true">
+    <div className="relative mx-auto" style={{ width: size, height: size }} aria-hidden="true">
       <div
-        className="onb-art-glow absolute left-1/2 top-1/2 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
-        style={{ background: wash }}
+        className="onb-art-glow absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+        style={{ background: wash, width: Math.round(size * 1.2), height: Math.round(size * 1.2) }}
       />
 
       <svg viewBox="0 0 120 120" className="relative h-full w-full" fill="none">

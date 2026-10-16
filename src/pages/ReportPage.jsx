@@ -59,7 +59,9 @@ export default function ReportPage() {
     observer.observe(el);
     measure();
     return () => observer.disconnect();
-  }, []);
+    // The bar only exists with Premium (see below), so the measurement is taken
+    // again when the account's plan changes and the bar appears or goes.
+  }, [isPremium]);
 
   // The name starts from the first name saved in Profile. Once the field has
   // been typed in, that is what is used — the prefilled value never overwrites it.
@@ -224,20 +226,36 @@ export default function ReportPage() {
           </button>
         )}
 
-        {/* The room the fixed bar takes, measured as it renders. */}
-        <div aria-hidden="true" style={{ height: barHeight + 16 }} />
+        {/* The room the fixed bar takes, measured as it renders — only while
+            there is a bar to make room for. */}
+        {isPremium && <div aria-hidden="true" style={{ height: barHeight + 16 }} />}
+
+        {/* Without Premium the screen has no bar at all, so the sharing note is
+            simply the end of the page: one small muted line, inside the column's
+            own 16px margins, scrolling with the content, with the room the home
+            indicator needs kept under it. */}
+        {!isPremium && (
+          <p
+            className="text-center text-[11px] text-gray-500 dark:text-gray-400"
+            style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+          >
+            {SHARE_NOTICE}
+          </p>
+        )}
       </div>
 
       {/* One main action, fixed at the foot of the screen so it is always
-          reachable, with the sharing note directly above it. Without Premium the
-          same button, in the same place, is the way into the plans instead. */}
-      <div ref={barRef} className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
-        <div
-          className="max-w-lg md:max-w-2xl mx-auto px-4 pt-3 space-y-2"
-          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
-        >
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center px-2">{SHARE_NOTICE}</p>
-          {isPremium ? (
+          reachable, with the sharing note directly above it. It is the only bar
+          the screen has: without Premium there is no bar at all — the note sits
+          at the end of the page instead, and the one way into the plans is the
+          Unlock button inside the preview's own lock. */}
+      {isPremium && (
+        <div ref={barRef} className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+          <div
+            className="max-w-lg md:max-w-2xl mx-auto px-4 pt-3 space-y-2"
+            style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+          >
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center px-2">{SHARE_NOTICE}</p>
             <button
               onClick={handleExport}
               disabled={busy || !report.hasAnyData}
@@ -246,11 +264,9 @@ export default function ReportPage() {
               {busy && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
               {busy ? "Generating…" : "Download"}
             </button>
-          ) : (
-            <button onClick={openPaywall} className="btn-pill btn-primary w-full">Unlock</button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

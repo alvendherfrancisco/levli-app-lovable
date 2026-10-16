@@ -1,6 +1,6 @@
 import React from "react";
 import ReportArt from "@/components/report/ReportArt";
-import { HEADING, PRIMARY_BTN, PRIMARY_BTN_ON } from "@/lib/uiStyles";
+import { SUBTITLE } from "@/lib/uiStyles";
 
 /**
  * The lock over the report preview while Levli Premium is not active.
@@ -19,13 +19,15 @@ import { HEADING, PRIMARY_BTN, PRIMARY_BTN_ON } from "@/lib/uiStyles";
  */
 export default function ReportLock({ onUnlock }) {
   return (
-    <div className="relative flex w-full max-w-[320px] flex-col items-center pb-2 text-center">
-      <ReportArt />
-      <h3 className={`${HEADING} mt-4`}>Reports for your doctor</h3>
-      <p className="text-[15px] leading-relaxed text-gray-600 dark:text-gray-300 mt-4">
-        Share your progress in one tap
-      </p>
-      <button type="button" onClick={onUnlock} className={`${PRIMARY_BTN} ${PRIMARY_BTN_ON} mt-4`}>
+    <div className="relative flex w-full max-w-[320px] flex-col items-center text-center">
+      {/* The group is the whole lock: the artwork at 88px, the headline and one
+          muted line 12px apart, and the app's own primary pill 16px under them,
+          full width — small enough that the four of them sit together in the
+          preview's lower part without crowding it. */}
+      <ReportArt size={88} />
+      <h3 className="mt-3 text-[20px] font-semibold leading-tight text-auth-heading">Reports for your doctor</h3>
+      <p className={`${SUBTITLE} mt-3`}>Share your progress in one tap</p>
+      <button type="button" onClick={onUnlock} className="btn-pill btn-primary mt-4 w-full">
         Unlock
       </button>
     </div>
