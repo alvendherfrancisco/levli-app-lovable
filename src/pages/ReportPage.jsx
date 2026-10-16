@@ -10,7 +10,7 @@ import {
   saveReportPrefs,
 } from "@/lib/reportOptions";
 import { buildReportPdf } from "@/lib/reportPdf";
-import { reportFileName, shareOrDownloadPdf } from "@/lib/shareReport";
+import { reportFileName, downloadPdf } from "@/lib/shareReport";
 import ReportOptions from "@/components/report/ReportOptions";
 import ReportPreview from "@/components/report/ReportPreview";
 import ReportEmptyState from "@/components/report/ReportEmptyState";
@@ -102,9 +102,8 @@ export default function ReportPage() {
     setBusy(true);
     try {
       const doc = await buildReportPdf(report);
-      const result = await shareOrDownloadPdf(doc, reportFileName());
-      if (result === "downloaded") toast.success("Report saved as a PDF");
-      if (result === "shared") toast.success("Report shared");
+      downloadPdf(doc, reportFileName());
+      toast.success("Report saved as a PDF");
     } catch (err) {
       console.error("Report export failed:", err);
       toast.error("Could not create the report. Please try again.");
@@ -169,7 +168,7 @@ export default function ReportPage() {
         </button>
         <h1 className="text-center whitespace-nowrap text-[18px] font-semibold text-gray-900 dark:text-white">Report</h1>
         {/* The header carries no second download action: the one main button at
-            the foot of the screen is the only way the report is shared. */}
+            the foot of the screen is the only way the report is exported. */}
         <span aria-hidden="true" />
       </header>
 
@@ -229,7 +228,7 @@ export default function ReportPage() {
             className="btn-pill btn-primary w-full"
           >
             {busy ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Download size={16} aria-hidden="true" />}
-            {busy ? "Generating…" : "Download / Share PDF"}
+            {busy ? "Generating…" : "Download"}
           </button>
         </div>
       </div>
