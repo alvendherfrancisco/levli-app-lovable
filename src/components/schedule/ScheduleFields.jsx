@@ -18,9 +18,13 @@ import { ERROR_TEXT } from "@/lib/uiStyles";
  *
  * A control that is not shown is cleared, so nothing hidden is ever saved, and
  * this is the same block onboarding and Add / Edit Medication both render.
+ *
+ * `showTime={false}` is for a screen that asks the time of day somewhere of its
+ * own (Add / Edit Medication, where the reminder above the form owns it) — the
+ * frequency, the day and the interval are still asked here.
  */
 export default function ScheduleFields({
-  medication, value, onChange, showStartDate = false, error, frequencyLayout,
+  medication, value, onChange, showStartDate = false, showTime = true, error, frequencyLayout,
 }) {
   const info = FREQUENCY_INFO[value?.kind] || {};
   const patch = (next) => onChange({ ...value, ...next });
@@ -52,7 +56,9 @@ export default function ScheduleFields({
         />
       )}
 
-      {(info.time || info.optionalTime) && (
+      {/* The time of day, unless the screen asking this already asks it on its own
+          (see `showTime`): it is then stated once, not twice. */}
+      {showTime && (info.time || info.optionalTime) && (
         <ReminderTimeField
           value={value.reminderTime}
           onChange={(reminderTime) => patch({ reminderTime })}

@@ -12,8 +12,8 @@ import {
   findMedicationOption, isLabelStrength, plainDateLabel, validateRegimenForm,
 } from "@/lib/medicationRegimen";
 import {
-  MULTIPLE_GLP1_NOTE, emptySchedule, hasSecondGlp1Gip, medicationScheduleFields,
-  scheduleStateFromRecord,
+  FREQUENCY_INFO, MULTIPLE_GLP1_NOTE, emptySchedule, hasSecondGlp1Gip,
+  medicationScheduleFields, scheduleStateFromRecord,
 } from "@/lib/medicationSchedule";
 import SheetField from "@/components/modals/shot/SheetField";
 import SheetPickerRow from "@/components/modals/shot/SheetPickerRow";
@@ -24,6 +24,7 @@ import MedicationInfoCard from "@/components/medications/MedicationInfoCard";
 import RegimenDoseField from "@/components/medications/RegimenDoseField";
 import RegimenStartDate from "@/components/medications/RegimenStartDate";
 import RegimenDetailsFields from "@/components/medications/RegimenDetailsFields";
+import ReminderField from "@/components/medications/ReminderField";
 
 const pad = (n) => String(n).padStart(2, "0");
 function todayInput() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
@@ -77,6 +78,9 @@ export default function MedicationModal({ open, onClose, editing }) {
   // The reason the save button is dimmed, said only once it has been tapped.
   const [saveHint, setSaveHint] = useState("");
   const [dupOpen, setDupOpen] = useState(false);
+  // True while a keyboard-raising field holds focus, so the form gets the tail
+  // space it needs to keep that field clear of the keyboard and the Save button.
+  const [typing, setTyping] = useState(false);
   // The form as the record was loaded, so an untouched edit has nothing to save.
   const [savedFields, setSavedFields] = useState({});
   const dupCardRef = useRef(null);
@@ -408,6 +412,32 @@ export default function MedicationModal({ open, onClose, editing }) {
     }
   };
 
+  /** A field that raises the on-screen keyboard. A date or a time never does. */
+  const isTypingField = (el) => {
+    if (!el) return false;
+    if (el.tagName === "TEXTAREA") return true;
+    if (el.tagName !== "INPUT") return false;
+    return !["date", "time", "range", "checkbox", "radio", "file", "color", "button", "submit"].includes(el.type);
+  };
+
+  // The field in hand is brought to the middle of what is left of the sheet once
+  // the keyboard has risen, so it is never sitting behind the Save button.
+  const handleFieldFocus = (e) => {
+    const el = e.target;
+    setTyping(isTypingField(el));
+    setTimeout(() => {
+      try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch { /* ignore */ }
+    }, 180);
+  };
+
+  const handleFieldBlur = () => {
+    // Let the next focus land first, then see who holds focus now.
+    setTimeout(() => {
+      const el = document.activeElement;
+      setTyping(isTypingField(el) && !!bodyRef.current?.contains(el));
+    }, 0);
+  };
+
   const toggleDetails = () => {
     const next = !showDetails;
     if (next) sound.open(); else sound.close();
@@ -456,8 +486,10 @@ export default function MedicationModal({ open, onClose, editing }) {
         <div
           ref={bodyRef}
           className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar overscroll-contain"
+          onFocusCapture={handleFieldFocus}
+          onBlurCapture={handleFieldBlur}
         >
-          <div className="px-5 pb-6 space-y-6">
+          <div className="px-5 pb-6 space-y-4">
             <MedicationSelect
               name={selectedName}
               isCustom={isCustom}
@@ -520,6 +552,16 @@ export default function MedicationModal({ open, onClose, editing }) {
                   onChange={(v) => { setStartDate(v); clearError("startDate"); }}
                   error={errors.startDate}
                 />
+
+                {/* The reminder for a dose day: on to begin with, off in one tap,
+                    and asked only where there is a schedule for it to remind
+                    about — its frequency and day are under More details. */}
+                {FREQUENCY_INFO[schedule.kind] && (
+                  <ReminderField
+                    value={schedule.reminderTime}
+                    onChange={(reminderTime) => setSchedule((prev) => ({ ...prev, reminderTime }))}
+                  />
+                )}
 
                 <div className={`${SHEET_DIVIDER} pt-2`}>
                   <button
@@ -605,6 +647,10 @@ export default function MedicationModal({ open, onClose, editing }) {
               </div>
             )}
           </div>
+
+          {/* With the keyboard up, this tail space is what lets the last field in
+              the form scroll clear of it instead of sitting behind it. */}
+          {typing && <div className="h-28" aria-hidden="true" />}
         </div>
 
         <div

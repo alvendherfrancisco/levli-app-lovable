@@ -1,15 +1,16 @@
-import React, { useState } from "react";
-import { Calendar, X } from "lucide-react";
+import React from "react";
+import { X } from "lucide-react";
 import OptionChips from "@/components/OptionChips";
 import ClearFieldButton from "@/components/ClearFieldButton";
-import ConfirmDialog from "@/components/ConfirmDialog";
 import ScheduleFields from "@/components/schedule/ScheduleFields";
 import SheetField from "@/components/modals/shot/SheetField";
+import SheetPickerRow from "@/components/modals/shot/SheetPickerRow";
+import ReasonSelect from "@/components/medications/ReasonSelect";
 import {
-  SHEET_CHIP, SHEET_CHIP_OFF, SHEET_CHIP_ON, SHEET_CHIP_SM, SHEET_DATE_FIELD_MARK,
+  SHEET_CHIP_OFF, SHEET_CHIP_ON, SHEET_CHIP_SM,
   SHEET_FIELD, SHEET_HINT, SHEET_LABEL_TEXT, SHEET_TEXTAREA,
 } from "@/components/modals/shot/sheetUi";
-import { INDICATION_OPTIONS, statusOptionsFor } from "@/lib/medicationRegimen";
+import { PRESCRIBER_ONLY_NOTE, plainDateLabel, statusOptionsFor } from "@/lib/medicationRegimen";
 
 /** The clear control of an optional field: one small x on the field's line. */
 function ClearX({ show, onClear, label }) {
@@ -26,8 +27,11 @@ function ClearX({ show, onClear, label }) {
 /**
  * Everything the Add / Edit Medication form does not ask for on its face, in the
  * Log shot sheet's own fields: how often the medication is taken, why it was
- * prescribed, the prescriber and, for a regimen that is already saved, its status.
- * All of it is optional — the form saves without a single answer here.
+ * prescribed, the note the prescriber gave with the dose, when it is planned to
+ * stop, the prescriber and — for a regimen that is already saved — its status.
+ *
+ * All of it is optional: the form saves without a single answer here. The time of
+ * day is not asked again here — the reminder above the section already asks it.
  */
 export default function RegimenDetailsFields({
   innerRef,
@@ -39,74 +43,76 @@ export default function RegimenDetailsFields({
   notes, onNotesChange,
   showStatus, status, onStatusChange,
 }) {
-  const [confirmClearReason, setConfirmClearReason] = useState(false);
-
-  // Clearing a typed "Other" reason asks first, because the words go with it.
-  const handleReasonChange = (next) => {
-    if (next === null && indication === "Other" && String(indicationOther || "").trim()) {
-      setConfirmClearReason(true);
-      return;
-    }
-    if (next === null) onIndicationOtherChange("");
-    onIndicationChange(next);
-  };
-
   return (
-    <div ref={innerRef} className="mt-3 space-y-6">
-      {/* How often it is taken, asked with the shared schedule block every screen
-          in the app asks it with — so a regimen set up here and one set up in
-          onboarding carry the same day, time and interval. */}
+    <div ref={innerRef} className="mt-3 space-y-4">
+      {/* How often it is taken, and which day: the shared schedule block every
+          screen in the app asks it with — so a regimen set up here and one set up
+          in onboarding carry the same day and interval. Its time of day is asked
+          by the reminder above, not twice. */}
       <ScheduleFields
         medication={medication}
         value={schedule}
         onChange={onScheduleChange}
         error={scheduleError}
+        showTime={false}
       />
 
-      {/* Why it was prescribed: full-width chips, so a long reason never wraps. */}
-      <OptionChips
-        label="Reason for taking it"
-        labelClass={SHEET_LABEL_TEXT}
-        options={INDICATION_OPTIONS.map((o) => ({ value: o, label: o }))}
+      <ReasonSelect
         value={indication}
-        onChange={handleReasonChange}
-        chipClass={SHEET_CHIP}
-        selectedClass={SHEET_CHIP_ON}
-        unselectedClass={SHEET_CHIP_OFF}
-        wrapClass="grid grid-cols-1 gap-2"
-      >
-        {indication === "Other" && (
-          <SheetField label="Reason from your prescription" htmlFor="indication-other" className="mt-4">
-            <input
-              id="indication-other"
-              type="text"
-              value={indicationOther}
-              onChange={(e) => onIndicationOtherChange(e.target.value)}
-              placeholder="e.g. Fatty liver disease"
-              autoComplete="off"
-              className={SHEET_FIELD}
-            />
-          </SheetField>
-        )}
-        {indicationError && <p className="mt-2 text-sm font-medium text-red-600 dark:text-red-400">{indicationError}</p>}
-      </OptionChips>
+        other={indicationOther}
+        onChange={onIndicationChange}
+        onOtherChange={onIndicationOtherChange}
+        error={indicationError}
+      />
 
+      {/* What the prescriber said about this dose — kept as it was written, never
+          as advice. */}
       <SheetField
-        label="Dose schedule note"
+        label="Note from your prescriber (optional)"
         htmlFor="dose-step"
-        trailing={<ClearX show={!!doseStep} onClear={() => onDoseStepChange("")} label="Clear the dose schedule note" />}
+        trailing={<ClearX show={!!doseStep} onClear={() => onDoseStepChange("")} label="Clear the prescriber note" />}
       >
         <input
           id="dose-step"
           type="text"
           value={doseStep}
           onChange={(e) => onDoseStepChange(e.target.value)}
-          placeholder="e.g. starter dose"
+          placeholder="e.g. Starter dose, increase after 4 weeks"
           autoComplete="off"
           className={SHEET_FIELD}
         />
+        <p className={`${SHEET_HINT} mt-1.5`}>{PRESCRIBER_ONLY_NOTE}</p>
       </SheetField>
 
+      {/* The day the course is planned to end. The device's own picker sits over
+          the sheet's row, so the field reads "Not set" until a day is chosen and
+          still opens the calendar it always did. */}
+      <SheetField
+        label="Planned end date (optional)"
+        htmlFor="end-date"
+        trailing={<ClearX show={!!plannedEndDate} onClear={() => onPlannedEndDateChange("")} label="Clear the planned end date" />}
+      >
+        <div className="relative">
+          <SheetPickerRow
+            value={plannedEndDate ? plainDateLabel(plannedEndDate) : ""}
+            placeholder="Not set"
+          />
+          <input
+            id="end-date"
+            type="date"
+            value={plannedEndDate || ""}
+            onChange={(e) => onPlannedEndDateChange(e.target.value)}
+            aria-label="Planned end date"
+            className="absolute inset-0 h-full w-full min-w-0 box-border cursor-pointer text-[16px] opacity-0 dark:[color-scheme:dark]"
+          />
+        </div>
+        {plannedEndDateError && (
+          <p className="mt-2 text-sm font-medium text-red-600 dark:text-red-400">{plannedEndDateError}</p>
+        )}
+      </SheetField>
+
+      {/* The prescriber, so they are in hand when they are needed. Both are saved
+          on the profile too, which is why the form starts with them filled in. */}
       <div>
         <SheetField
           label="Prescriber name"
@@ -133,6 +139,7 @@ export default function RegimenDetailsFields({
           <input
             id="prescriber-contact"
             type="text"
+            inputMode="email"
             value={prescriberContact}
             onChange={(e) => onPrescriberContactChange(e.target.value)}
             placeholder="Phone or email"
@@ -144,37 +151,12 @@ export default function RegimenDetailsFields({
         <p className={`${SHEET_HINT} mt-1.5`}>Kept on your profile too, so you only enter it once.</p>
       </div>
 
-      <SheetField
-        label="Planned end (optional)"
-        htmlFor="end-date"
-        trailing={<ClearX show={!!plannedEndDate} onClear={() => onPlannedEndDateChange("")} label="Clear the planned end date" />}
-      >
-        <div className="relative">
-          <Calendar
-            size={17}
-            aria-hidden="true"
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            id="end-date"
-            type="date"
-            value={plannedEndDate || ""}
-            onChange={(e) => onPlannedEndDateChange(e.target.value)}
-            aria-label="Planned end date"
-            className={SHEET_DATE_FIELD_MARK}
-          />
-        </div>
-        {plannedEndDateError && (
-          <p className="mt-2 text-sm font-medium text-red-600 dark:text-red-400">{plannedEndDateError}</p>
-        )}
-      </SheetField>
-
       <SheetField label="Notes" htmlFor="med-notes">
         <textarea
           id="med-notes"
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
-          placeholder="Anything you want to remember about this medication"
+          placeholder="Anything you want to remember"
           className={SHEET_TEXTAREA}
         />
       </SheetField>
@@ -195,17 +177,6 @@ export default function RegimenDetailsFields({
           unselectedClass={SHEET_CHIP_OFF}
         />
       )}
-
-      <ConfirmDialog
-        open={confirmClearReason}
-        tone="warning"
-        title="Clear the reason?"
-        message="The reason you typed will be removed with it."
-        confirmLabel="Clear it"
-        cancelLabel="Keep it"
-        onConfirm={() => { setConfirmClearReason(false); onIndicationOtherChange(""); onIndicationChange(null); }}
-        onCancel={() => setConfirmClearReason(false)}
-      />
     </div>
   );
 }
