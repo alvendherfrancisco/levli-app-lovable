@@ -64,6 +64,20 @@ export function moodFor(label) {
   return MOOD_SCALE.find((m) => m.label === label) || MOOD_SCALE[2];
 }
 
+/**
+ * The emoji and the short word a stored mood is shown as on a tag: the same
+ * emoji, and the same word, the mood picker offers (😊 Excellent). A mood saved
+ * under an older wording keeps its own words rather than being renamed.
+ */
+export function moodTag(mood) {
+  const raw = String(mood || "").trim();
+  if (!raw) return null;
+  const match = MOOD_SCALE.find((m) =>
+    [m.label, m.short, m.emoji].some((value) => value.toLowerCase() === raw.toLowerCase())
+  );
+  return match ? { emoji: match.emoji, label: match.short } : { emoji: "", label: raw };
+}
+
 /** "3:05 PM" / "15:05" → minutes after midnight; unusable times sort last. */
 function minutesOf(time) {
   const raw = String(time || "").trim();
