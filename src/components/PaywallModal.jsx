@@ -8,24 +8,26 @@ import { isRunningInIOSWrapper, sendIOSEvent } from "@/lib/iosBridge";
 import { reconcileSubscription } from "@/lib/subscriptionHandler";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import usePremiumPlans from "@/hooks/usePremiumPlans";
+import PaywallHero from "@/components/paywall/PaywallHero";
 import PaywallBenefits from "@/components/paywall/PaywallBenefits";
 import PaywallPlans from "@/components/paywall/PaywallPlans";
 import PaywallBar from "@/components/paywall/PaywallBar";
 
 /**
- * Levli Premium, sold in one screen.
+ * Levli Premium, sold on one calm screen.
  *
  * The sheet is a column of three parts, so nothing can ever sit on top of
- * anything: the close button, the middle — headline, the four benefits and the
- * plans, which is the part that scrolls — and the bar at the foot, which holds
- * the one action, the terms of the plan in hand and the legal row and keeps its
- * own height at the bottom of the screen.
+ * anything: the close button; the middle — one small illustration, the headline,
+ * three short benefits and the three plans, which together fit a phone screen and
+ * which scroll only when the screen is too short for them; and the bar at the
+ * foot, which holds the one action, the terms of the plan in hand and the legal
+ * row and keeps its own height at the bottom.
  *
  * Every price on the screen is read from the product as the sheet opens (see
  * src/lib/premiumPlans.js), never carried here; an account that already has
- * Premium is told so instead of being sold it again; and the purchase itself is
- * handed to the App Store, whose own sheet — with the customer's local price —
- * is presented over this one.
+ * Premium is thanked instead of being sold it again; and the purchase itself is
+ * handed to the App Store, whose own sheet — with the customer's local price — is
+ * presented over this one.
  */
 export default function PaywallModal({ open, onClose }) {
   const { user } = useAuth();
@@ -106,7 +108,7 @@ export default function PaywallModal({ open, onClose }) {
   const retry = plansError ? reload : handleSubscribe;
 
   const closeRow = (
-    <div className="flex justify-end px-4 pt-safe-5 pb-2">
+    <div className="mx-auto flex w-full max-w-md justify-end px-4 pt-safe-5">
       <button
         type="button"
         onClick={handleClose}
@@ -121,18 +123,18 @@ export default function PaywallModal({ open, onClose }) {
   const shell =
     "fixed inset-0 z-[70] flex flex-col overflow-x-hidden bg-white sheet-lock animate-in slide-in-from-bottom outline-none dark:bg-gray-950";
 
-  // Nothing left to sell: an account that already has Premium is told what it has.
+  // Nothing left to sell: an account that already has Premium is thanked.
   if (isPremium) {
     return (
       <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="Levli Premium" tabIndex={-1} className={shell}>
         {closeRow}
-        <div className="flex flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-500/15">
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-500/15">
             <Crown size={26} className="text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
           </span>
           <p className="mt-4 text-xl font-bold text-gray-900 dark:text-white">You have Premium</p>
           <p className="mt-2 text-sm text-gray-500 dark:text-[#9A9DAE]">
-            Every feature is unlocked. Thank you for supporting Levli.
+            Thank you for supporting Levli. Everything is unlocked.
           </p>
           <button type="button" onClick={handleClose} className="btn-pill btn-secondary mt-6 w-full max-w-[280px]">
             Close
@@ -146,11 +148,14 @@ export default function PaywallModal({ open, onClose }) {
     <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="Levli Premium" tabIndex={-1} className={shell}>
       {closeRow}
 
-      {/* The middle: everything that scrolls, with nothing pinned over it. */}
-      <div className="flex-1 overflow-y-auto px-4 pb-6">
-        <h2 className="text-2xl font-bold leading-tight text-gray-900 dark:text-white">Unlock Levli Premium</h2>
-        <p className="mt-2 text-sm text-gray-500 dark:text-[#9A9DAE]">
-          Track every shot and see your progress clearly.
+      {/* The middle: everything above the button, in one centred column, which
+          scrolls only if the screen is too short to hold it. */}
+      <div className="mx-auto w-full max-w-md flex-1 overflow-y-auto px-4 pb-2">
+        <PaywallHero />
+
+        <h2 className="mt-6 text-center text-2xl font-bold text-gray-900 dark:text-white">Go Premium</h2>
+        <p className="mt-1.5 text-center text-sm text-gray-500 dark:text-[#9A9DAE]">
+          Everything you need to stay on track.
         </p>
 
         <PaywallBenefits />

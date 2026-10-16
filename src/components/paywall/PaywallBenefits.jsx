@@ -1,22 +1,32 @@
 import React from "react";
-import { Check } from "lucide-react";
+import { Activity, FileText, PersonStanding } from "lucide-react";
 import { PREMIUM_BENEFITS } from "@/lib/premiumPlans";
 
+/** Each benefit's own tile icon, by the id the benefit is filed under. */
+const ICONS = { reports: FileText, sites: PersonStanding, insights: Activity };
+
 /**
- * What Premium gives you, as a plain checklist: a check in a soft indigo circle
- * and one short line each — no icon grid, and nothing to read twice.
+ * The three things Premium opens, one quiet row each: a small rounded tile with
+ * the icon, the label beside it, and a muted line under the label. Nothing longer
+ * than that — the screen has three of these to read, not an essay.
  */
 export default function PaywallBenefits() {
   return (
     <ul className="mt-6 space-y-3">
-      {PREMIUM_BENEFITS.map((benefit) => (
-        <li key={benefit} className="flex items-start gap-2.5">
-          <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-500/15">
-            <Check size={12} strokeWidth={3} className="text-indigo-600 dark:text-indigo-300" aria-hidden="true" />
-          </span>
-          <span className="text-sm text-gray-700 dark:text-[#E8E9F0]">{benefit}</span>
-        </li>
-      ))}
+      {PREMIUM_BENEFITS.map(({ id, label, detail }) => {
+        const Icon = ICONS[id] || FileText;
+        return (
+          <li key={id} className="flex items-center gap-3">
+            <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-500/15">
+              <Icon size={17} className="text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-gray-900 dark:text-white">{label}</span>
+              <span className="block text-xs text-gray-500 dark:text-[#9A9DAE]">{detail}</span>
+            </span>
+          </li>
+        );
+      })}
     </ul>
   );
 }

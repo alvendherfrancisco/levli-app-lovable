@@ -1,36 +1,37 @@
 /**
- * The Premium plans the paywall offers — the one place the screen's plan words
- * come from, and the one place its numbers are worked out.
+ * The Premium plans the paywall offers, and the three things Premium opens — the
+ * one place the screen's words come from, and the one place its numbers are
+ * worked out.
  *
  * No price is written here. The amounts and the currency are read from the
- * product's own data when the screen opens (see base44/functions/get-premium-prices),
- * and everything on the card is derived from them: the per-month figure of the
- * yearly plan, what the yearly plan saves against twelve months, the button's
- * label and the terms line under it. Two lines on the screen therefore cannot
- * disagree, and a price change needs no release.
+ * product's own data when the screen opens (see
+ * base44/functions/get-premium-prices), and everything a plan card shows is
+ * derived from them: the yearly plan's per-month figure, what it saves against
+ * twelve months, the button's label and the line under it. Two lines on the
+ * screen therefore cannot disagree, and a price change needs no release.
  *
  * Only what a price record cannot carry lives in this file: each plan's name, the
- * wording of its one muted line, and the length of the yearly plan's introductory
- * offer.
+ * length of the yearly plan's introductory offer, and the wording of the three
+ * benefits — labels of no more than three words and a muted line of no more than
+ * five, so nothing on the screen has to be read twice.
  */
 const PLAN_META = {
-  yearly: { name: "Yearly", button: "Start free trial", trialDays: 7, detail: (perMonth) => `${perMonth}/month` },
-  monthly: { name: "Monthly", button: "Subscribe", detail: () => "Cancel anytime" },
-  lifetime: { name: "Lifetime", button: "Buy lifetime", detail: () => "Pay once, keep forever" },
+  yearly: { name: "Yearly", period: "/ year", button: "Start free trial", trialDays: 7 },
+  monthly: { name: "Monthly", period: "/ month", button: "Subscribe", trialDays: 0 },
+  lifetime: { name: "Lifetime", period: "once", button: "Buy lifetime", trialDays: 0 },
 };
 
-/** The four lines the checklist under the headline carries, in order. */
+/** What Premium opens, in the order the screen shows it. */
 export const PREMIUM_BENEFITS = [
-  "Unlimited shots and full history.",
-  "Complete insights and injection site rotation.",
-  "Share reports with your doctor.",
-  "No ads or watermarks.",
+  { id: "reports", label: "Reports", detail: "Share with your doctor" },
+  { id: "sites", label: "Injection site rotation", detail: "See where you inject" },
+  { id: "insights", label: "Full insights", detail: "Charts, trends, and photos" },
 ];
 
 /**
  * One amount, as the store quotes it: the currency and its own symbol, and the
- * customer's own number formatting. Amounts are in the currency's smallest unit,
- * so 50900 is ₱509.
+ * customer's own number formatting. Amounts arrive in the currency's smallest
+ * unit, so 50900 is ₱509.
  */
 export function formatMoney(amountMinor, currency) {
   const amount = Number(amountMinor) / 100;
@@ -49,17 +50,21 @@ export function formatMoney(amountMinor, currency) {
   }
 }
 
+/** A monthly figure in whole currency: 50900 a year reads as ₱42 a month. */
+function perMonth(amountMinor, currency) {
+  const months = Math.round(Number(amountMinor) / 12 / 100) * 100;
+  return formatMoney(months, currency);
+}
+
 /**
- * The store's prices as the screen shows them. Returns [] when nothing has been
- * read yet, and only the plans the store actually offers.
+ * The store's prices as the screen shows them. Returns [] until they have been
+ * read, and only the plans the store actually offers.
  */
 export function buildPlans(store) {
   const prices = store?.plans;
   if (!prices) return [];
   const currency = store.currency;
-  const yearly = prices.yearly;
-  const monthly = prices.monthly;
-  const lifetime = prices.lifetime;
+  const { yearly, monthly, lifetime } = prices;
 
   // What the yearly plan saves over twelve months of the monthly one, worked out
   // from the store's own two amounts so the badge can never go stale.
@@ -75,19 +80,17 @@ export function buildPlans(store) {
 
   if (yearly) {
     const year = formatMoney(yearly.amount, currency);
-    const perMonth = formatMoney(Math.floor(yearly.amount / 12), currency);
     plans.push({
       id: "yearly",
       name: PLAN_META.yearly.name,
-      button: PLAN_META.yearly.button,
-      badge: savingsPct ? `Best value · Save ${savingsPct}%` : "Best value",
-      priceLine: `${year}/year`,
-      detailLine: trialDays > 0
-        ? `${PLAN_META.yearly.detail(perMonth)} · ${trialDays}-day free trial`
-        : PLAN_META.yearly.detail(perMonth),
+      price: year,
+      period: PLAN_META.yearly.period,
+      detail: `${perMonth(yearly.amount, currency)}/month`,
+      badge: savingsPct ? `Save ${savingsPct}%` : null,
+      button: trialDays > 0 ? PLAN_META.yearly.button : PLAN_META.monthly.button,
       terms: trialDays > 0
-        ? `${trialDays} days free, then ${year}/year. Cancel anytime in your Apple ID settings.`
-        : `${year}/year. Cancel anytime in your Apple ID settings.`,
+        ? `${trialDays} days free, then ${year}/year. Cancel anytime.`
+        : `${year}/year. Cancel anytime.`,
     });
   }
 
@@ -96,24 +99,25 @@ export function buildPlans(store) {
     plans.push({
       id: "monthly",
       name: PLAN_META.monthly.name,
-      button: PLAN_META.monthly.button,
+      price: month,
+      period: PLAN_META.monthly.period,
+      detail: null,
       badge: null,
-      priceLine: `${month}/month`,
-      detailLine: PLAN_META.monthly.detail(),
-      terms: `${month}/month. Cancel anytime in your Apple ID settings.`,
+      button: PLAN_META.monthly.button,
+      terms: `${month}/month. Cancel anytime.`,
     });
   }
 
   if (lifetime) {
-    const once = formatMoney(lifetime.amount, currency);
     plans.push({
       id: "lifetime",
       name: PLAN_META.lifetime.name,
-      button: PLAN_META.lifetime.button,
+      price: formatMoney(lifetime.amount, currency),
+      period: PLAN_META.lifetime.period,
+      detail: null,
       badge: null,
-      priceLine: `${once} one time`,
-      detailLine: PLAN_META.lifetime.detail(),
-      terms: `One payment of ${once}. Yours for life, no renewal.`,
+      button: PLAN_META.lifetime.button,
+      terms: "One-time payment. No subscription.",
     });
   }
 

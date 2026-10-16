@@ -1219,3 +1219,50 @@ button.date-chip {
 .tab-item {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* ── Paywall: the hero illustration ────────────────────────────────────────
+   The one visual the Premium screen has: the app's own icon at the centre of a
+   soft glow, with three small tiles floating around it — the three things
+   Premium opens. Flat, brand purple only, and the same in both modes apart from
+   the glow: a pale lavender on the light surface, a deep indigo on the dark one.
+   The colours live here, in both modes, so nothing on that screen is drawn in a
+   fixed value. */
+:root {
+  --paywall-glow-soft: 129 140 248 / 0.22;
+  --paywall-glow-core: 199 210 254 / 0.55;
+}
+
+.dark {
+  --paywall-glow-soft: 79 70 229 / 0.30;
+  --paywall-glow-core: 67 56 202 / 0.55;
+}
+
+.paywall-glow {
+  background-image: radial-gradient(
+    closest-side,
+    rgb(var(--paywall-glow-core)) 0%,
+    rgb(var(--paywall-glow-soft)) 46%,
+    transparent 78%
+  );
+}
+
+/* The illustration arrives with the screen, then breathes: a short rise in, and
+   a slow drift of a few pixels that never stops. Both are dropped when the
+   device asks for reduced motion — the artwork is simply there. */
+@keyframes paywallRise {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes paywallFloat {
+  0%, 100% { transform: translateY(-3px); }
+  50% { transform: translateY(3px); }
+}
+
+.paywall-hero-in { animation: paywallRise 420ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+.paywall-hero-float { animation: paywallFloat 6s ease-in-out 420ms infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .paywall-hero-in,
+  .paywall-hero-float { animation: none; }
+}
