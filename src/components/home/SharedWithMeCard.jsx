@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { Users, X } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
 import { dismissSharedShortcut, undismissedShares } from "@/lib/sharedAccess";
+import CardTitleRow from "@/components/home/CardTitleRow";
+import { CARD } from "@/lib/cardStyles";
 
 /**
  * The Home shortcut to the records other people have shared with this account:
@@ -37,24 +39,21 @@ export default function SharedWithMeCard() {
 
   return (
     <div className="relative mx-4 mb-4">
-      <Link
-        to="/shared-with-me"
-        className="card-line flex items-center gap-2.5 rounded-2xl bg-white py-3 pl-3.5 pr-10 dark:bg-gray-900"
-      >
-        <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10">
-          <Users size={15} className="text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Shared with me</span>
-          <span className="block truncate text-xs text-gray-500 dark:text-[#9A9DAE]">{line}</span>
-        </span>
+      <Link to="/shared-with-me" className={`${CARD} block p-4 pr-12`}>
+        <CardTitleRow
+          icon={<Users size={16} className="text-indigo-500 dark:text-indigo-400" />}
+          label="Shared with me"
+          sub={line}
+        />
       </Link>
 
+      {/* The one action on the row, held on the same centre line as its icon and
+          title. */}
       <button
         type="button"
         onClick={hide}
         aria-label="Hide the Shared with me shortcut"
-        className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full text-gray-400 active:scale-95"
+        className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 active:scale-95"
       >
         <X size={16} aria-hidden="true" />
       </button>

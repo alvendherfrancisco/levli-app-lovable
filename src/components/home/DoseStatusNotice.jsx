@@ -12,7 +12,7 @@ export default function DoseStatusNotice({ evaluation, brand, windowDays, quote,
 
   if (state === MISSED_STATE.WITHIN_WINDOW) {
     return (
-      <div className="mx-4 mb-4 rounded-2xl p-3 border bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20">
+      <div className="mx-4 mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/10">
         <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Your dose was due {dueDate}</p>
         <p className="text-xs mt-1 text-amber-800/90 dark:text-amber-200/90">
           Your medication label says a missed dose can be taken within {windowDays} day{windowDays === 1 ? "" : "s"}. Check with your pharmacist or prescriber if unsure.
@@ -34,7 +34,7 @@ export default function DoseStatusNotice({ evaluation, brand, windowDays, quote,
   }
 
   return (
-    <div className="mx-4 mb-4 rounded-2xl p-3 border bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20">
+    <div className="mx-4 mb-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-500/20 dark:bg-rose-500/10">
       <p className="text-sm font-semibold text-rose-800 dark:text-rose-300">
         Your dose is overdue by {daysLate} day{daysLate === 1 ? "" : "s"}
       </p>

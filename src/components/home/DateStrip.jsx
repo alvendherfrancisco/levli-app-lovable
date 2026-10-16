@@ -179,12 +179,13 @@ export default function DateStrip({ selectedDate, onSelectDate }) {
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
   return (
-    // 12px side margin, to line the first and last tile up with the cards
-    // below; 24px below the strip, so the day in hand sits clear of the card
-    // that follows. The row keeps room for the chosen day's glow inside itself
-    // (see .date-strip in index.css), and the shell clips it only at the screen's
-    // own edge — never inside the strip.
-    <div className="date-strip-shell relative px-3 pt-3 pb-6">
+    // The page's own 16px margin at the sides, so the first and last tile line up
+    // with the cards above and below; the distance from the header comes from the
+    // page itself, so the strip adds none of its own on top; and 24px below it,
+    // so the day in hand sits clear of the card that follows. The row keeps room
+    // for the chosen day's glow inside itself (see .date-strip in index.css), and
+    // the shell clips it only at the screen's own edge — never inside the strip.
+    <div className="date-strip-shell relative px-4 pb-6">
       <div
         ref={scrollerRef}
         onScroll={handleScroll}

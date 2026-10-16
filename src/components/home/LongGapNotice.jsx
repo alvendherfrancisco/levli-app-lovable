@@ -1,5 +1,6 @@
 import React from "react";
 import { X } from "lucide-react";
+import { CARD } from "@/lib/cardStyles";
 
 /**
  * A longer break, said as a reminder rather than a screenful: how long it has
@@ -23,7 +24,7 @@ export default function LongGapNotice({
   const days = `${daysSinceLast} ${daysSinceLast === 1 ? "day" : "days"}`;
 
   return (
-    <div className="relative bg-white dark:bg-gray-900 rounded-2xl p-4 card-line mx-4 mb-4">
+    <div className={`${CARD} relative mx-4 mb-4 p-4`}>
       <button
         type="button"
         onClick={onDismiss}

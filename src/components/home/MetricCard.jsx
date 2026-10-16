@@ -13,7 +13,7 @@ export default function MetricCard({ icon, label, value, unit, color, ariaLabel,
       type="button"
       onClick={onAdd}
       aria-label={ariaLabel || `Log ${label}`}
-      className={`relative w-full h-full min-h-[112px] text-left bg-white dark:bg-gray-900 rounded-2xl p-3 shadow-sm border flex flex-col transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
+      className={`relative w-full h-full min-h-[112px] text-left bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border flex flex-col transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
         highlighted
           ? "border-[1.5px] border-indigo-400 bg-indigo-50 dark:bg-indigo-500/10"
           : "border-cardline"

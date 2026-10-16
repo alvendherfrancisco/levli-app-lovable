@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { PauseCircle } from "lucide-react";
 import { plainBrandName } from "@/lib/medicationConfig";
 import { logWords } from "@/lib/medicationForm";
+import { CARD } from "@/lib/cardStyles";
 
 /**
  * A medication that is not running: paused, stopped or archived. It carries no
@@ -28,8 +29,8 @@ export default function MedicationStatusNote({ medication, totalShots = 0 }) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 mx-4 mb-4">
-      <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-2">{heading}</p>
+    <div className={`${CARD} mx-4 mb-4 p-4`}>
+      <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-3">{heading}</p>
       <div className="bg-gray-50 dark:bg-white/[0.05] rounded-xl p-3 flex items-start gap-2">
         <PauseCircle size={18} className="text-gray-400 mt-0.5 flex-shrink-0" />
         <div>

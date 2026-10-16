@@ -35,7 +35,7 @@ export default function SupplyAlertBanner({ className = "" }) {
   return (
     <div
       role="status"
-      className={`flex items-start gap-3 rounded-2xl border px-4 py-3 ${TONE[alert.kind] || TONE.low} ${className}`}
+      className={`flex items-start gap-3 rounded-2xl border p-4 ${TONE[alert.kind] || TONE.low} ${className}`}
     >
       <AlertTriangle size={18} aria-hidden="true" className="mt-0.5 flex-shrink-0" />
       <div className="min-w-0 flex-1">

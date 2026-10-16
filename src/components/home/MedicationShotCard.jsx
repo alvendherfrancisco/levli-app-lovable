@@ -9,6 +9,7 @@ import { logWords } from "@/lib/medicationForm";
 import { evaluateDoseSchedule, MISSED_STATE } from "@/lib/missedDose";
 import { shotDateFromKey } from "@/lib/repeatSchedule";
 import DoseBadge from "@/components/DoseBadge";
+import { CARD } from "@/lib/cardStyles";
 import DoseStatusNotice from "@/components/home/DoseStatusNotice";
 import LongGapNotice from "@/components/home/LongGapNotice";
 
@@ -51,8 +52,8 @@ export default function MedicationShotCard({ summary, contact, contactHref, arch
 
   if (!lastShot && !dueKey) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 card-line mx-4 mb-4">
-        <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-2">Next {words.One} · {brand}</p>
+      <div className={`${CARD} mx-4 mb-4 p-4`}>
+        <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-3">Next {words.One} · {brand}</p>
         <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-3 flex items-start gap-2">
           <Syringe size={18} className="text-indigo-500 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-indigo-700 dark:text-indigo-300">
@@ -103,14 +104,14 @@ export default function MedicationShotCard({ summary, contact, contactHref, arch
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 card-line mx-4 mb-4">
+      <div className={`${CARD} mx-4 mb-4 p-4`}>
         {/* A date already gone is never labelled as the upcoming shot. */}
-        <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-1">{isLate ? `Scheduled ${words.one}` : `Next ${words.One}`} · {brand}</p>
+        <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-3">{isLate ? `Scheduled ${words.one}` : `Next ${words.One}`} · {brand}</p>
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-[#E8E9F0]">{dueKey ? shotDateFromKey(dueKey) : "—"}</h3>
             <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 mt-0.5">{daysLabel}</p>
-            <div className="mt-2 border-t border-gray-100 dark:border-gray-800 pt-2 flex items-start gap-5">
+            <div className="mt-3 border-t border-gray-100 dark:border-gray-800 pt-3 flex items-start gap-5">
               {lastShot && (
                 <div>
                   <p className="text-xs text-gray-400 dark:text-[#9A9DAE]">Last Dose</p>

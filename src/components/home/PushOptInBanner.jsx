@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Bell, X } from "lucide-react";
+import CardTitleRow from "@/components/home/CardTitleRow";
+import { CARD } from "@/lib/cardStyles";
 import usePushPermission from "@/hooks/usePushPermission";
 import { isRunningInIOSWrapper } from "@/lib/iosBridge";
 import { isPushOn, optInPolicy, turnOnPush } from "@/lib/pushPermission";
@@ -21,20 +23,25 @@ export default function PushOptInBanner() {
   const act = () => { turnOnPush(); if (denied) optInPolicy.markDeniedTipShown(); setHidden(true); };
 
   return (
-    <div className="card-line rounded-2xl bg-white dark:bg-gray-900 p-4 flex items-start gap-3">
-      <div className="w-9 h-9 rounded-full bg-indigo-50 dark:bg-indigo-500/15 flex items-center justify-center flex-shrink-0">
-        <Bell size={18} className="text-indigo-600 dark:text-indigo-400" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          {denied ? "Notifications are off" : "Never miss a shot"}
-        </p>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-          {denied ? "Turn them on in Settings to get your shot-day reminder." : "Get a gentle reminder on the morning of your scheduled shot."}
-        </p>
-        <button onClick={act} className="btn-link text-sm mt-2">{denied ? "Open Settings" : "Turn on reminders"}</button>
-      </div>
-      <button onClick={close} aria-label="Dismiss"><X size={18} className="text-gray-400" /></button>
+    <div className={`${CARD} p-4`}>
+      <CardTitleRow
+        icon={<Bell size={16} className="text-indigo-600 dark:text-indigo-400" />}
+        label={denied ? "Notifications are off" : "Never miss a shot"}
+        trailing={
+          <button
+            type="button"
+            onClick={close}
+            aria-label="Dismiss"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center text-gray-400"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        }
+      />
+      <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+        {denied ? "Turn them on in Settings to get your shot-day reminder." : "Get a gentle reminder on the morning of your scheduled shot."}
+      </p>
+      <button onClick={act} className="btn-link text-sm mt-3">{denied ? "Open Settings" : "Turn on reminders"}</button>
     </div>
   );
 }
