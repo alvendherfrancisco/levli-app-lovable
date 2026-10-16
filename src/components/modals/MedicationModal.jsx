@@ -64,6 +64,8 @@ export default function MedicationModal({ open, onClose, editing }) {
   const [schedule, setSchedule] = useState(() => emptySchedule("", todayInput()));
   const [startDate, setStartDate] = useState(todayInput());
   const [showDetails, setShowDetails] = useState(false);
+  // Supply tracking sits in a folded row of its own, below the details panel.
+  const [showOptions, setShowOptions] = useState(false);
   const [indication, setIndication] = useState("");
   const [indicationOther, setIndicationOther] = useState("");
   const [plannedEndDate, setPlannedEndDate] = useState("");
@@ -71,7 +73,6 @@ export default function MedicationModal({ open, onClose, editing }) {
   // The interval a prescriber directed for this one medication, if any. Empty
   // means the medication's own interval, or its label's, decides the next dose.
   const [intervalOverride, setIntervalOverride] = useState("");
-  const [status, setStatus] = useState("active");
   const [notes, setNotes] = useState("");
   // Supply tracking: off unless it is turned on, and its three numbers are only
   // asked for while it is on (see src/components/medications/SupplyFields.jsx).
@@ -95,6 +96,7 @@ export default function MedicationModal({ open, onClose, editing }) {
   const [savedFields, setSavedFields] = useState({});
   const dupCardRef = useRef(null);
   const detailsRef = useRef(null);
+  const optionsRef = useRef(null);
   const bodyRef = useRef(null);
 
   /** The dose last saved for this medication, if the user has one. */
@@ -115,6 +117,7 @@ export default function MedicationModal({ open, onClose, editing }) {
     setDoseSuggested(false);
     setDoseConfirmed(false);
     setShowDetails(false);
+    setShowOptions(false);
     setRememberedDoses([]);
     setTrackSupply(false); setDosesLeft(""); setSupplyUnit("doses"); setSupplyExpiry(""); setSupplyLot("");
     setIntervalOverride("");
@@ -144,7 +147,6 @@ export default function MedicationModal({ open, onClose, editing }) {
       setPlannedEndDate(editing.planned_end_date || "");
       setDoseStep(editing.titration_stage || "");
       setIntervalOverride(editing.custom_interval_days != null ? String(editing.custom_interval_days) : "");
-      setStatus(editing.status || "active");
       setNotes(editing.notes || "");
       setTrackSupply(!!editing.track_supply);
       setDosesLeft(editing.doses_left != null ? String(editing.doses_left) : "");
@@ -154,6 +156,9 @@ export default function MedicationModal({ open, onClose, editing }) {
       // A regimen that already carries details opens with them visible.
       setShowDetails(!!(editing.indication || editing.planned_end_date || editing.titration_stage
         || editing.prescriber_name || editing.prescriber_contact || editing.notes));
+      // A regimen that is already counting its supply opens with it in view, so
+      // a saved count is never hidden behind a tap.
+      setShowOptions(!!editing.track_supply);
       // The same values as they were loaded, for "has anything changed?".
       setSavedFields({
         selectedName: option ? option.value : "", isCustom: !option, customName: option ? "" : stored,
@@ -162,7 +167,7 @@ export default function MedicationModal({ open, onClose, editing }) {
         plannedEndDate: editing.planned_end_date || "", doseStep: editing.titration_stage || "",
         indication: storedIndicationValue, indicationOther: storedIndicationOther,
         intervalOverride: editing.custom_interval_days != null ? String(editing.custom_interval_days) : "",
-        status: editing.status || "active", notes: editing.notes || "",
+        notes: editing.notes || "",
         trackSupply: !!editing.track_supply,
         dosesLeft: editing.doses_left != null ? String(editing.doses_left) : "",
         supplyUnit: supplyUnitOr(editing.supply_unit, stored),
@@ -175,11 +180,11 @@ export default function MedicationModal({ open, onClose, editing }) {
       setIndication(""); setIndicationOther("");
       setStartDate(today); setPlannedEndDate(""); setDoseStep("");
       setIntervalOverride("");
-      setStatus("active"); setNotes("");
+      setNotes("");
       setSavedFields({
         selectedName: "", isCustom: false, customName: "", route: "", dose: "", unit: "mg",
         schedule: emptySchedule("", today), startDate: today, plannedEndDate: "", doseStep: "",
-        indication: "", indicationOther: "", status: "active", notes: "",
+        indication: "", indicationOther: "", notes: "",
         intervalOverride: "",
         trackSupply: false, dosesLeft: "", supplyUnit: "doses", supplyExpiry: "", supplyLot: "",
       });
@@ -239,7 +244,7 @@ export default function MedicationModal({ open, onClose, editing }) {
   const currentFields = {
     selectedName, isCustom, customName, route, dose, unit, schedule, startDate,
     plannedEndDate, doseStep, indication, indicationOther,
-    status, notes, intervalOverride,
+    notes, intervalOverride,
     trackSupply, dosesLeft, supplyUnit, supplyExpiry, supplyLot,
   };
   const edited = hasChanged(currentFields, savedFields);
@@ -399,7 +404,6 @@ export default function MedicationModal({ open, onClose, editing }) {
       custom_interval_days: intervalOverride !== "" && Number.isFinite(Number(intervalOverride))
         ? Math.max(1, Number(intervalOverride))
         : null,
-      status,
       notes,
       // Supply tracking. With the toggle off the three numbers are written back
       // exactly as they were loaded, so turning it off never wipes a count.
@@ -415,8 +419,6 @@ export default function MedicationModal({ open, onClose, editing }) {
       // log, so its "needs details" mark is cleared here.
       needs_details: false,
     };
-    // A regimen marked stopped ends today, so its schedule pauses with it.
-    if (status === "discontinued" && !editing?.discontinued_date) payload.discontinued_date = todayInput();
     if (rememberedDoses.length) {
       payload.custom_doses = [...new Set([...(editing?.custom_doses || []), ...rememberedDoses])];
     }
@@ -478,6 +480,22 @@ export default function MedicationModal({ open, onClose, editing }) {
     if (!next) return;
     requestAnimationFrame(() => {
       const node = detailsRef.current;
+      const scroller = bodyRef.current;
+      if (!node || !scroller) return;
+      const offset = node.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      scroller.scrollTo({ top: Math.max(0, scroller.scrollTop + offset - 16), behavior: "smooth" });
+    });
+  };
+
+  // The folded supply row opens the same way, bringing itself into view so what
+  // it revealed is on screen rather than below the fold.
+  const toggleOptions = () => {
+    const next = !showOptions;
+    if (next) sound.open(); else sound.close();
+    setShowOptions(next);
+    if (!next) return;
+    requestAnimationFrame(() => {
+      const node = optionsRef.current;
       const scroller = bodyRef.current;
       if (!node || !scroller) return;
       const offset = node.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
@@ -642,12 +660,40 @@ export default function MedicationModal({ open, onClose, editing }) {
                       plannedEndDateError={errors.plannedEndDate}
                       notes={notes}
                       onNotesChange={setNotes}
-                      // A status belongs to a regimen that is already running, so
-                      // it is only offered while editing one.
-                      showStatus={!!editing}
-                      status={status}
-                      onStatusChange={setStatus}
-                    >
+                    />
+                  )}
+                </div>
+
+                {/* Supply tracking, in a folded row of its own so the form's face
+                    stays short — the same row style the details panel opens with.
+                    It opens by itself for a regimen that is already counting its
+                    supply, so a saved count is never hidden behind a tap. */}
+                <div className={`${SHEET_DIVIDER} pt-2`}>
+                  <button
+                    type="button"
+                    onClick={toggleOptions}
+                    aria-expanded={showOptions}
+                    className="flex w-full items-center justify-between gap-2 py-3"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className={SHEET_LABEL_TEXT}>
+                        More options
+                      </span>
+                      {!showOptions && trackSupply && (
+                        <span className="text-[11px] font-medium text-indigo-500 dark:text-indigo-400">
+                          · tracking supply
+                        </span>
+                      )}
+                    </span>
+                    <ChevronDown
+                      size={18}
+                      aria-hidden="true"
+                      className={`text-gray-400 transition-transform ${showOptions ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {showOptions && (
+                    <div ref={optionsRef} className="mt-3">
                       {/* How much is left, when it expires and which lot it is —
                           off by default, and only ever what the user chooses to
                           keep. */}
@@ -668,7 +714,7 @@ export default function MedicationModal({ open, onClose, editing }) {
                         lotNumber={supplyLot}
                         onLotNumberChange={setSupplyLot}
                       />
-                    </RegimenDetailsFields>
+                    </div>
                   )}
                 </div>
               </>

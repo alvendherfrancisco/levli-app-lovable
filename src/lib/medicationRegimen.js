@@ -97,20 +97,9 @@ export const REGIMEN_FOOTER =
 
 export const INDICATION_OPTIONS = ["Type 2 diabetes", "Weight management", "Heart health", "Other"];
 
-export const STATUS_OPTIONS = [
-  { value: "active", label: "Active" },
-  { value: "paused", label: "Paused" },
-  { value: "discontinued", label: "Stopped" },
-];
-
-/** Stored status values that are not one of the three plain choices. */
-const STATUS_EXTRA_LABELS = { switched: "Switched to another medication", archived: "Archived" };
-
-/** The status choices, keeping an existing value that is not one of the three. */
-export function statusOptionsFor(current) {
-  const extra = STATUS_EXTRA_LABELS[current];
-  return extra ? [...STATUS_OPTIONS, { value: current, label: extra }] : STATUS_OPTIONS;
-}
+// A regimen's status is no longer chosen in the form: it is either running (any
+// record that is not archived) or archived from the My Medications screen, which
+// is the one place a medication is stopped.
 
 // ── Validation ─────────────────────────────────────────────────────────────
 

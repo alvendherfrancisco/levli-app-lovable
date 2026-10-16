@@ -1,6 +1,5 @@
 import React from "react";
 import { X } from "lucide-react";
-import OptionChips from "@/components/OptionChips";
 import ClearFieldButton from "@/components/ClearFieldButton";
 import ScheduleFields from "@/components/schedule/ScheduleFields";
 import IntervalOverrideField from "@/components/medications/IntervalOverrideField";
@@ -8,10 +7,9 @@ import SheetField from "@/components/modals/shot/SheetField";
 import SheetPickerRow from "@/components/modals/shot/SheetPickerRow";
 import ReasonSelect from "@/components/medications/ReasonSelect";
 import {
-  SHEET_CHIP_OFF, SHEET_CHIP_ON, SHEET_CHIP_SM,
-  SHEET_FIELD, SHEET_HINT, SHEET_LABEL_TEXT, SHEET_TEXTAREA,
+  SHEET_FIELD, SHEET_HINT, SHEET_TEXTAREA,
 } from "@/components/modals/shot/sheetUi";
-import { PRESCRIBER_ONLY_NOTE, plainDateLabel, statusOptionsFor } from "@/lib/medicationRegimen";
+import { PRESCRIBER_ONLY_NOTE, plainDateLabel } from "@/lib/medicationRegimen";
 
 /** The clear control of an optional field: one small x on the field's line. */
 function ClearX({ show, onClear, label }) {
@@ -29,15 +27,16 @@ function ClearX({ show, onClear, label }) {
  * Everything the Add / Edit Medication form does not ask for on its face, in the
  * Log shot sheet's own fields: how often the medication is taken and the interval
  * a prescriber directed for it, why it was prescribed, the note the prescriber
- * gave with the dose, when it is planned to stop, and — for a regimen that is
- * already saved — its status.
+ * gave with the dose, when it is planned to stop, and the prescriber this
+ * regimen is being taken under.
  *
- * The prescriber is not asked here: name and contact are entered once, in About
- * you (src/pages/Profile.jsx), and this form reads them from there — the line
- * below says so and names what it found.
+ * The prescriber is not entered here: name and contact are entered once, in About
+ * you (src/pages/Profile.jsx), and the field below simply reads what is saved
+ * there — it has a label of its own and says "Not set" until one is added.
  *
  * All of it is optional: the form saves without a single answer here. The time of
  * day is not asked again here — the reminder above the section already asks it.
+ * Supply tracking is not here either: it has a folded row of its own below.
  */
 export default function RegimenDetailsFields({
   innerRef,
@@ -48,8 +47,6 @@ export default function RegimenDetailsFields({
   prescriberLabel,
   plannedEndDate, onPlannedEndDateChange, plannedEndDateError,
   notes, onNotesChange,
-  showStatus, status, onStatusChange,
-  children,
 }) {
   return (
     <div ref={innerRef} className="mt-3 space-y-4">
@@ -128,12 +125,16 @@ export default function RegimenDetailsFields({
       </SheetField>
 
       {/* The prescriber is entered in one place — Profile — so this form never
-          asks for it again and simply reads what is saved there. */}
-      <p className={SHEET_HINT}>
-        {prescriberLabel
-          ? `Prescriber: ${prescriberLabel}. Change it in Profile.`
-          : "Add your prescriber in Profile — the Contact prescriber button uses it when a dose is overdue."}
-      </p>
+          asks for it again: the field reads what is saved there, and says
+          "Not set" until one has been added. */}
+      <SheetField label="Prescriber">
+        <SheetPickerRow value={prescriberLabel} placeholder="Not set" />
+        <p className={`${SHEET_HINT} mt-1.5`}>
+          {prescriberLabel
+            ? "Change it in Profile."
+            : "Add your prescriber in Profile — the Contact prescriber button uses it when a dose is overdue."}
+        </p>
+      </SheetField>
 
       <SheetField label="Notes" htmlFor="med-notes">
         <textarea
@@ -145,26 +146,6 @@ export default function RegimenDetailsFields({
         />
       </SheetField>
 
-      {/* Only a regimen that is already saved has a status to change: a new one
-          is always added active. */}
-      {showStatus && (
-        <OptionChips
-          label="Status"
-          labelClass={SHEET_LABEL_TEXT}
-          options={statusOptionsFor(status)}
-          value={status}
-          onChange={onStatusChange}
-          required
-          soundOnSelect
-          chipClass={SHEET_CHIP_SM}
-          selectedClass={SHEET_CHIP_ON}
-          unselectedClass={SHEET_CHIP_OFF}
-        />
-      )}
-
-      {/* Anything the form hands the section to draw at its own foot — supply
-          tracking, the one part of this form that is not about the regimen. */}
-      {children}
     </div>
   );
 }

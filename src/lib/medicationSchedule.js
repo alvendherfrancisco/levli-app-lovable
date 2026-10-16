@@ -257,7 +257,8 @@ export function hasSecondGlp1Gip(medications = [], medication) {
   if (!generic || !GLP1_GIP_GENERICS.has(generic.toLowerCase())) return false;
   return medications.some((m) => {
     if (!m || m.medication_name === medication) return false;
-    if (m.status && !["active", "paused"].includes(m.status)) return false;
+    // An archived medication is not being taken, so it never counts as another.
+    if (m.status === "archived") return false;
     const other = getMedicationConfig(m.medication_name)?.genericName;
     return !!other && other.toLowerCase() !== generic.toLowerCase() && GLP1_GIP_GENERICS.has(other.toLowerCase());
   });

@@ -12,24 +12,24 @@ import { todayKey } from "@/lib/dateUtils";
 import { getNextOccurrence } from "@/lib/repeatSchedule";
 import { effectiveDaysBetween } from "@/lib/medicationConfig";
 
+// A regimen is either running or archived — there is no third state to be left
+// in. A record with no status at all (saved before statuses existed) counts as
+// the ordinary active one.
 export const MED_STATUS = {
   ACTIVE: "active",
-  PAUSED: "paused",
-  DISCONTINUED: "discontinued",
-  SWITCHED: "switched",
   ARCHIVED: "archived",
 };
 
-export const isActiveMedication = (medication) => medication?.status === MED_STATUS.ACTIVE;
 export const isArchivedMedication = (medication) => medication?.status === MED_STATUS.ARCHIVED;
+export const isActiveMedication = (medication) => !isArchivedMedication(medication);
 
-/** Statuses that carry no schedule pressure: no reminders, no next-shot date. */
-export const isHaltedMedication = (medication) => !!medication?.status && !isActiveMedication(medication);
+/** A regimen carrying no schedule pressure: no reminders, no next-shot date. */
+export const isHaltedMedication = (medication) => isArchivedMedication(medication);
 
 /**
  * The medications a shot picker may offer: only the active ones — plus the one
  * this log already belongs to, so an old entry is never stranded when its
- * medication has since been paused or archived.
+ * medication has since been archived.
  */
 export function pickerMedications(medications = [], current = null) {
   const active = medications.filter(isActiveMedication);

@@ -17,7 +17,7 @@ import LongGapNotice from "@/components/home/LongGapNotice";
  * doses have been logged for it. Every value is that medication's — its repeat
  * schedule when one is running, otherwise its last dose and its own interval.
  */
-export default function MedicationShotCard({ summary, contact, contactHref, stopping, onStop, onLogPastShot }) {
+export default function MedicationShotCard({ summary, contact, contactHref, archiving, onArchive, onLogPastShot }) {
   const { medication, lastShot, totalShots, intervalDays, nextKey } = summary;
   const name = medication.medication_name;
   // The name exactly as the user selected it, ® and all. The plain name is only
@@ -71,8 +71,8 @@ export default function MedicationShotCard({ summary, contact, contactHref, stop
     return (
       <LongGapNotice
         daysSinceLast={evaluation.daysSinceLast}
-        onStop={onStop}
-        stopping={stopping}
+        onArchive={onArchive}
+        archiving={archiving}
         contact={contactButton.contact}
         contactHref={contactButton.contactHref}
         onDismiss={() => putReminderAway(1)}

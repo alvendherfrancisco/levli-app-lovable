@@ -206,6 +206,9 @@ export function AppStateProvider({ children }) {
       // An interval override still held on the profile moves onto the medication
       // it was set for, once, and the profile's copy is cleared.
       migrateIntervalOverride(profileRow, await dataPromise);
+      // A regimen left paused or stopped by the old Status control is archived,
+      // so nothing is ever left half-active.
+      migrateMedicationStatus(await dataPromise);
     })();
   }, [isAuthenticated, authEpoch]);
 
@@ -416,6 +419,29 @@ export function AppStateProvider({ children }) {
       setProfileState((prev) => ({ ...prev, days_between_override: "", interval_migrated_at: stamp }));
     } catch (err) {
       console.error("Interval override migration failed:", err);
+    }
+  };
+
+  // ── One-time move off the old Status control ───────────────────────────────
+  // A regimen used to be Active, Paused or Stopped. There are only two states
+  // now: running, or archived. Anything left marked paused, stopped or switched
+  // by the old control becomes archived, keeping every record it has — nothing
+  // is deleted, and Restore in Meds brings it back on the schedule.
+  //
+  // No stamp is needed: once no such row is left the filter finds nothing and
+  // nothing is written, so it is free to run behind the first screen each launch.
+  const migrateMedicationStatus = async (medList) => {
+    const stale = (medList || []).filter((m) => ["paused", "discontinued", "switched"].includes(m.status));
+    for (const med of stale) {
+      try {
+        const rec = await base44.entities.Medication.update(med.id, {
+          status: "archived",
+          archived_date: med.archived_date || todayKey(),
+        });
+        setMedications((prev) => prev.map((m) => (m.id === med.id ? { ...m, ...rec } : m)));
+      } catch (err) {
+        console.error("Could not archive a medication left paused or stopped:", err);
+      }
     }
   };
 
@@ -796,30 +822,6 @@ export function AppStateProvider({ children }) {
     return list.length;
   };
 
-  // "I stopped this medication": the regimen is marked inactive with the date,
-  // and any running repeat is cancelled, so nothing keeps prompting for it.
-  const stopMedication = async (medicationName) => {
-    const stamped = todayKey();
-    let regimen = medications.find((m) => m.medication_name === medicationName && m.status === "active")
-      || medications.find((m) => m.medication_name === medicationName);
-    if (regimen) {
-      const rec = await base44.entities.Medication.update(regimen.id, {
-        status: "discontinued", discontinued_date: stamped,
-      });
-      setMedications((prev) => prev.map((m) => (m.id === regimen.id ? { ...m, ...rec } : m)));
-      regimen = { ...regimen, ...rec };
-    } else {
-      const rec = await base44.entities.Medication.create({
-        medication_name: medicationName, status: "discontinued", discontinued_date: stamped,
-      });
-      setMedications((prev) => [rec, ...prev]);
-      regimen = rec;
-    }
-    const running = repeatSchedules.filter((s) => s.status === "active" && s.medication === medicationName);
-    for (const s of running) await updateRepeatSchedule(s.id, { status: "cancelled" });
-    return regimen;
-  };
-
   // ── AdverseEvent CRUD ──────────────────────────────────────────────────────
   const addAdverseEvent = async (data) => {
     const rec = await base44.entities.AdverseEvent.create(data);
@@ -1055,7 +1057,7 @@ export function AppStateProvider({ children }) {
       // Journal
       journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry,
       // Medications (regimen)
-      medications, addMedication, updateMedication, deleteMedication, linkShotsToMedication, stopMedication,
+      medications, addMedication, updateMedication, deleteMedication, linkShotsToMedication,
       archiveMedication, restoreMedication, addMedicationCustomDose,
       // Canonical measurements + one-time unit check
       weightUnit: wDisplayUnit, heightCm: heightCmOf(profile), getWeightKg, unitCheck,

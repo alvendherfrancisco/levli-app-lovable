@@ -4,7 +4,8 @@ import { X } from "lucide-react";
 /**
  * A longer break, said as a reminder rather than a screenful: how long it has
  * been, what the prescriber may want, and the ways out — log the shot that was
- * missed, say the medication was stopped, or open the prescriber's number when
+ * missed, archive the medication (the one place a regimen is stopped, confirmed
+ * in the same dialog My Medications uses), or open the prescriber's number when
  * one has been saved.
  *
  * It can be put away. The close button hides it for the day and Snooze for three
@@ -17,7 +18,7 @@ import { X } from "lucide-react";
  * in view.
  */
 export default function LongGapNotice({
-  daysSinceLast, onLogPastShot, onStop, stopping, contact, contactHref, onDismiss, onSnooze,
+  daysSinceLast, onLogPastShot, onArchive, archiving, contact, contactHref, onDismiss, onSnooze,
 }) {
   const days = `${daysSinceLast} ${daysSinceLast === 1 ? "day" : "days"}`;
 
@@ -51,11 +52,11 @@ export default function LongGapNotice({
       <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
         <button
           type="button"
-          onClick={onStop}
-          disabled={stopping}
-          className="text-sm font-medium text-gray-500 dark:text-[#9A9DAE] disabled:opacity-60"
+          onClick={onArchive}
+          disabled={archiving}
+          className="text-sm font-medium text-indigo-600 dark:text-indigo-400 disabled:opacity-60"
         >
-          {stopping ? "Saving…" : "I stopped this medication"}
+          {archiving ? "Archiving…" : "Archive this medication"}
         </button>
         {contact && (
           <a href={contactHref} className="text-sm font-medium text-indigo-600 dark:text-indigo-400">

@@ -7,18 +7,23 @@ import { plainBrandName } from "@/lib/medicationConfig";
 import { medicationSummaries, isActiveMedication } from "@/lib/medicationLink";
 import MedicationShotCard from "@/components/home/MedicationShotCard";
 import MedicationStatusNote from "@/components/home/MedicationStatusNote";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 /**
  * Next Shot — one card per medication. Each medication's next date, last dose
  * and total shots come from its own schedule and its own logged shots, so two
  * medications running together are never mixed into one number.
  *
- * A medication that is paused, stopped or archived carries no next-shot date
- * and no reminder: it is only shown for what it is.
+ * A medication that has been archived carries no next-shot date and no reminder:
+ * it is only shown for what it is, with the way back to Meds.
+ *
+ * A regimen is stopped in one place only: Archive, asked for from the reminder
+ * card below and confirmed in the same dialog the My Medications screen uses.
  */
 export default function NextShotCard({ onLogPastShot }) {
-  const { shots, medications, repeatSchedules, profile, stopMedication } = useAppState();
-  const [stopping, setStopping] = useState(false);
+  const { shots, medications, repeatSchedules, profile, archiveMedication } = useAppState();
+  // The medication the archive dialog is about, if any.
+  const [archiving, setArchiving] = useState(null);
 
   const summaries = medicationSummaries({ medications, shots, repeatSchedules, profile });
   const running = summaries.filter((s) => isActiveMedication(s.medication));
@@ -29,15 +34,18 @@ export default function NextShotCard({ onLogPastShot }) {
     ? (contact.includes("@") ? `mailto:${contact}` : `tel:${contact.replace(/[^\d+]/g, "")}`)
     : "";
 
-  const handleStop = async (medicationName) => {
-    setStopping(true);
+  // Archiving hides the medication and keeps every record it has. The dialog has
+  // already asked, so by the time this runs archiving is what was chosen.
+  const confirmArchive = async () => {
+    const target = archiving;
+    setArchiving(null);
+    if (!target) return;
     try {
-      await stopMedication(medicationName);
-      toast.success(`${plainBrandName(medicationName)} marked as stopped. Its schedule is paused.`);
+      await archiveMedication(target.id);
+      toast.success(`${plainBrandName(target.medication_name)} archived. Its records are kept.`);
     } catch (err) {
-      toast.error("Could not update your medication");
+      toast.error("Could not archive that medication");
     }
-    setStopping(false);
   };
 
   // Nothing is running: either no medication has been added yet, or every one of
@@ -76,8 +84,8 @@ export default function NextShotCard({ onLogPastShot }) {
           summary={summary}
           contact={contact}
           contactHref={contactHref}
-          stopping={stopping}
-          onStop={() => handleStop(summary.medication.medication_name)}
+          archiving={archiving?.id === summary.medication.id}
+          onArchive={() => setArchiving(summary.medication)}
           onLogPastShot={onLogPastShot}
         />
       ))}
@@ -88,6 +96,20 @@ export default function NextShotCard({ onLogPastShot }) {
           totalShots={summary.totalShots}
         />
       ))}
+
+      {/* The same dialog My Medications shows for an archive: what happens, said
+          plainly, and the medication named. */}
+      <ConfirmDialog
+        open={!!archiving}
+        showIcon={false}
+        tone="neutral"
+        title={archiving ? `Archive ${archiving.medication_name}?` : ""}
+        message="It will be hidden from your schedule and shot pickers. Your records stay in your history. You can restore it anytime."
+        confirmLabel="Archive"
+        cancelLabel="Cancel"
+        onConfirm={confirmArchive}
+        onCancel={() => setArchiving(null)}
+      />
     </>
   );
 }
