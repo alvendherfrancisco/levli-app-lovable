@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Crown, Filter, Loader2, Plus, Search, Syringe, X } from "lucide-react";
+import { ChevronLeft, Filter, Loader2, Plus, Search, Syringe, X } from "lucide-react";
+import LevliLockIcon from "@/components/premium/LevliLockIcon";
 import PageContainer from "@/components/PageContainer";
 import EmptyStateCard from "@/components/EmptyStateCard";
 import AddShotModal from "@/components/modals/AddShotModal";
@@ -195,9 +196,7 @@ export default function ShotsHistory() {
 
         {hiddenCount > 0 && (
           <button onClick={openPaywall} className="w-full mt-4 bg-white dark:bg-gray-900 rounded-xl p-4 border border-dashed border-indigo-200 dark:border-indigo-500/30 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/15 flex items-center justify-center flex-shrink-0">
-              <Crown size={18} className="text-indigo-600 dark:text-indigo-400" />
-            </div>
+            <LevliLockIcon size="sm" />
             <div className="text-left">
               <p className="font-semibold text-gray-900 dark:text-white text-sm">{hiddenCount} more {hiddenCount === 1 ? words.one : words.many} in your history</p>
               <p className="text-xs text-gray-400">Unlock with Levli Premium to view your complete {words.one} history.</p>

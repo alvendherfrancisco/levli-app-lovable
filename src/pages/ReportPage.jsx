@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Crown, Eye, Loader2 } from "lucide-react";
+import { ChevronLeft, Eye, Loader2 } from "lucide-react";
+import LevliLockIcon from "@/components/premium/LevliLockIcon";
 import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
 import { useSubscription } from "@/lib/SubscriptionContext";
@@ -134,9 +135,7 @@ export default function ReportPage() {
           <span aria-hidden="true" />
         </header>
         <div className="max-w-lg mx-auto px-4 py-10 flex flex-col items-center text-center">
-          <div className="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-500/15 flex items-center justify-center mb-4">
-            <Crown size={30} className="text-indigo-600" />
-          </div>
+          <LevliLockIcon className="mb-4" />
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Report export is a premium feature</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-sm">Upgrade to Levli Premium to generate and share a PDF summary for your doctor.</p>
           <button onClick={openPaywall} className="btn-pill btn-primary mt-6">Unlock with Levli Premium</button>

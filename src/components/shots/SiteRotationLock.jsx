@@ -1,4 +1,5 @@
 import React from "react";
+import LevliLockIcon from "@/components/premium/LevliLockIcon";
 
 /**
  * The lock over the rotation chart while Levli Premium is not active.
@@ -17,13 +18,7 @@ export default function SiteRotationLock({ onUnlock }) {
   return (
     <div className="absolute inset-0 flex items-center justify-center p-4">
       <div className="flex w-full flex-col items-center rounded-2xl bg-white/90 p-6 text-center shadow-sm backdrop-blur-[2px] dark:bg-gray-900/90">
-        <img
-          src="/assets/brand/levli-icon-96.png?v=2"
-          alt=""
-          width={48}
-          height={48}
-          className="h-12 w-12 rounded-xl"
-        />
+        <LevliLockIcon />
 
         <p className="mt-4 font-bold text-gray-900 dark:text-white">See where you've injected</p>
         <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
