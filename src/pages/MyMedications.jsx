@@ -1,17 +1,17 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Settings, Pill, Calendar, User, Activity, Trash2, ChevronRight, Archive, Package } from "lucide-react";
+import { Settings, Pill, Archive, ChevronDown } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import EmptyStateCard from "@/components/EmptyStateCard";
 import { useAppState } from "@/lib/AppState";
 import MedicationModal from "@/components/modals/MedicationModal";
+import MedicationListCard from "@/components/medications/MedicationListCard";
 import RepeatScheduleCard from "@/components/medications/RepeatScheduleCard";
 import RepeatScheduleModal from "@/components/modals/RepeatScheduleModal";
 import LinkShotsToMedsCard from "@/components/medications/LinkShotsToMedsCard";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { shotsOfMedication } from "@/lib/medicationLink";
-import { supplyLeftText } from "@/lib/supplyTracking";
 import { toast } from "@/lib/toast";
 
 export default function MyMedications() {
@@ -22,9 +22,23 @@ export default function MyMedications() {
   const [editingSchedule, setEditingSchedule] = useState(null);
   // { medication, archive, count } — what the confirmation is about to do.
   const [confirming, setConfirming] = useState(null);
+  // The regimens that have finished stay out of the way until they are asked for.
+  const [showPast, setShowPast] = useState(false);
 
   const openNew = () => { setEditing(null); setModalOpen(true); };
   const openEdit = (m) => { setEditing(m); setModalOpen(true); };
+
+  // What is being taken now comes first; paused, stopped and archived regimens
+  // sit together underneath. A regimen saved before statuses existed counts as
+  // active.
+  const activeMeds = useMemo(
+    () => medications.filter((m) => (m.status || "active") === "active"),
+    [medications]
+  );
+  const pastMeds = useMemo(
+    () => medications.filter((m) => (m.status || "active") !== "active"),
+    [medications]
+  );
 
   // A medication that has shot logs is archived, never removed: the history it
   // belongs to stays exactly where it is. Only a medication with no logs can be
@@ -47,14 +61,6 @@ export default function MyMedications() {
       toast.deleted("Medication removed");
     }
     setConfirming(null);
-  };
-
-  const statusColors = {
-    active: "bg-teal-100 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400",
-    paused: "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400",
-    discontinued: "bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400",
-    switched: "bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400",
-    archived: "bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400",
   };
 
   return (
@@ -90,46 +96,41 @@ export default function MyMedications() {
             description="Add your prescribed regimen to link your shot logs. Levli never generates a schedule for you."
           />
         ) : (
-          <div className="space-y-3">
-            {medications.map((m) => (
-              <div key={m.id} className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-                <div className="flex items-start justify-between gap-2">
-                  <button onClick={() => openEdit(m)} className="flex-1 text-left min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="font-bold text-gray-900 dark:text-white text-base sm:text-lg break-words">{m.medication_name}</span>
-                      {m.status && (
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap flex-shrink-0 ${statusColors[m.status] || statusColors.active}`}>{m.status}</span>
-                      )}
-                      {/* Saved from a shot log, so its schedule is still to come:
-                          the card opens the form where it can be added. */}
-                      {m.needs_details && (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap flex-shrink-0 bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400">
-                          Needs details
-                        </span>
-                      )}
-                    </div>
-                    <div className="space-y-1 text-sm text-gray-500 dark:text-[#9A9DAE]">
-                      {m.prescribed_dose != null && (
-                        <div className="flex items-center gap-2"><Activity size={14} className="text-indigo-500" /> {m.prescribed_dose} {m.dose_unit || "mg"} · {m.frequency || "—"}</div>
-                      )}
-                      {/* How much is left, when the medication tracks its own
-                          supply. */}
-                      {supplyLeftText(m) && (
-                        <div className="flex items-center gap-2"><Package size={14} className="text-indigo-500" /> {supplyLeftText(m)}</div>
-                      )}
-                      {m.indication && <div className="flex items-center gap-2"><Pill size={14} className="text-indigo-500" /> {m.indication}</div>}
-                      {m.titration_stage && <div className="flex items-center gap-2"><Calendar size={14} className="text-orange-500" /> Stage: {m.titration_stage}</div>}
-                      {m.prescriber_name && <div className="flex items-center gap-2"><User size={14} className="text-gray-400" /> {m.prescriber_name}</div>}
-                    </div>
-                  </button>
-                  <div className="flex flex-col gap-2 items-end flex-shrink-0">
-                    <button onClick={() => openEdit(m)} className="text-gray-400 hover:text-indigo-600"><ChevronRight size={20} /></button>
-                    <button onClick={() => requestDelete(m)} aria-label="Remove or archive this medication" className="text-gray-400 hover:text-red-500"><Trash2 size={16} /></button>
+          <>
+            {/* What is being taken now. */}
+            <div className="space-y-3">
+              {activeMeds.map((m) => (
+                <MedicationListCard key={m.id} medication={m} onEdit={openEdit} onDelete={requestDelete} />
+              ))}
+              {activeMeds.length === 0 && (
+                <p className="text-sm text-gray-400 dark:text-gray-500 px-1">
+                  Nothing active right now — everything below has been paused or stopped.
+                </p>
+              )}
+            </div>
+
+            {/* What has finished, folded away until it is asked for. */}
+            {pastMeds.length > 0 && (
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowPast((v) => !v)}
+                  aria-expanded={showPast}
+                  className="w-full flex items-center justify-between gap-2 py-2 text-[13px] font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9A9DAE]"
+                >
+                  <span>Past medications ({pastMeds.length})</span>
+                  <ChevronDown size={16} aria-hidden="true" className={showPast ? "" : "-rotate-90"} />
+                </button>
+                {showPast && (
+                  <div className="space-y-3 mt-2">
+                    {pastMeds.map((m) => (
+                      <MedicationListCard key={m.id} medication={m} onEdit={openEdit} onDelete={requestDelete} />
+                    ))}
                   </div>
-                </div>
+                )}
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 

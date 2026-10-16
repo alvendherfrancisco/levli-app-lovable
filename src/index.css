@@ -211,6 +211,12 @@
 .pt-safe-5 { padding-top: calc(1.25rem + env(safe-area-inset-top, 0px)); }
 @media (min-width: 640px) { .pt-safe-5 { padding-top: calc(1.5rem + env(safe-area-inset-top, 0px)); } }
 
+/* A month's header inside a long list (src/components/longlist/MonthSectionList.jsx).
+   It sticks directly under the page's own sticky header — 24px of top padding,
+   the 32px title and 16px below it — plus the status-bar inset the page header
+   already takes, so the two never overlap and the month sits flush beneath it. */
+.month-heading { top: calc(4.5rem + env(safe-area-inset-top, 0px)); }
+
 /* Safe area padding for bottom tab bar */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);

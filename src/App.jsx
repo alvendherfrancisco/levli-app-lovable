@@ -39,6 +39,7 @@ import TermsPage from '@/pages/TermsPage';
 import MedicalDisclaimerPage from '@/pages/MedicalDisclaimerPage';
 import AboutSourcesPage from '@/pages/AboutSourcesPage';
 import MyMedications from '@/pages/MyMedications';
+import ShotsHistory from '@/pages/ShotsHistory';
 import BackupRestorePage from '@/pages/BackupRestorePage';
 import CaregiverAccessPage from '@/pages/CaregiverAccessPage';
 import HelpFeedbackPage from '@/pages/HelpFeedbackPage';
@@ -122,6 +123,8 @@ const AuthenticatedApp = () => {
           <Route path="/more" element={<More />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
+        {/* The whole dose history, opened from the Shots page. */}
+        <Route path="/shots/history" element={<ShotsHistory />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/backup-restore" element={<BackupRestorePage />} />
         <Route path="/caregiver-access" element={<CaregiverAccessPage />} />

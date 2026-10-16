@@ -1,17 +1,31 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Settings, BookOpen, Clock, Heart } from "lucide-react";
+import { Settings, BookOpen, Search } from "lucide-react";
+import moment from "moment";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
+import EmptyStateCard from "@/components/EmptyStateCard";
 import JournalEntryModal from "@/components/modals/JournalEntryModal";
+import JournalFilters from "@/components/journal/JournalFilters";
+import JournalEntryCard from "@/components/journal/JournalEntryCard";
+import MonthSectionList from "@/components/longlist/MonthSectionList";
+import MonthJumpButton from "@/components/longlist/MonthJumpButton";
+import BackToTop from "@/components/longlist/BackToTop";
+import useProgressiveList from "@/hooks/useProgressiveList";
+import { groupByMonth, monthCountText, monthKeysOf } from "@/lib/monthGroups";
 import { useAppState } from "@/lib/AppState";
-import { JOURNAL_CHOICES, SIDE_EFFECT_CATEGORY, categoryMeta, normaliseCategory, sortJournalNewestFirst } from "@/lib/journalMeta";
-import { parseShotDate, formatLocaleDate } from "@/lib/dateUtils";
+import { SIDE_EFFECT_CATEGORY, categoryMeta, normaliseCategory, sortJournalNewestFirst } from "@/lib/journalMeta";
 import { toast } from "@/lib/toast";
 
 /**
  * The Journal: what the person wrote about their day — mood, energy, food,
  * exercise, milestones and general entries.
+ *
+ * It is a long list, so it behaves like one: the entries newest first, split
+ * into months, 20 drawn at a time as the list is scrolled, and a month picker in
+ * the header to go straight to a month further back. A word can be searched for
+ * and the dates narrowed to this week, this month or a range — that only ever
+ * narrows what is on screen, and "Clear filters" brings the whole journal back.
  *
  * Side effects have a form of their own (Home and History) and a summary of their
  * own (the card on Insights), so they are neither written, filtered nor listed
@@ -19,11 +33,35 @@ import { toast } from "@/lib/toast";
  * deleted: it still counts in History, Insights and the report, it is simply not
  * shown in this list.
  */
+
+// The dates the chosen period covers, as day keys (YYYY-MM-DD).
+function dateWindow(period, from, to) {
+  if (period === "week") {
+    return {
+      start: moment().startOf("isoWeek").format("YYYY-MM-DD"),
+      end: moment().endOf("isoWeek").format("YYYY-MM-DD"),
+    };
+  }
+  if (period === "month") {
+    return {
+      start: moment().startOf("month").format("YYYY-MM-DD"),
+      end: moment().endOf("month").format("YYYY-MM-DD"),
+    };
+  }
+  if (period === "custom") return { start: from || "", end: to || "" };
+  return { start: "", end: "" };
+}
+
 export default function Journal() {
   const { journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry } = useAppState();
   const [showModal, setShowModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
-  const [filterCat, setFilterCat] = useState("All");
+  const [category, setCategory] = useState("All");
+  const [search, setSearch] = useState("");
+  const [period, setPeriod] = useState("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [jumpMonth, setJumpMonth] = useState(null);
 
   // Newest first, by the date and time each entry was written, and never the
   // side-effect entries: this list is the Journal's own categories.
@@ -35,9 +73,58 @@ export default function Journal() {
     [journalEntries]
   );
 
-  const filtered = filterCat === "All"
-    ? entries
-    : entries.filter((e) => normaliseCategory(e.category) === filterCat);
+  // What the filters ask for: the category, the word and the dates.
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    const window = dateWindow(period, from, to);
+    return entries.filter((e) => {
+      if (category !== "All" && normaliseCategory(e.category) !== category) return false;
+      const day = e.date || "";
+      if (window.start && day < window.start) return false;
+      if (window.end && day > window.end) return false;
+      if (!term) return true;
+      return [e.text, categoryMeta(normaliseCategory(e.category)).label, e.mood]
+        .some((value) => (value || "").toLowerCase().includes(term));
+    });
+  }, [entries, category, search, period, from, to]);
+
+  // 20 entries at a time; a new word, category or period starts the list again
+  // from the first page.
+  const list = useProgressiveList(filtered, {
+    resetKey: `${category}|${search}|${period}|${from}|${to}`,
+  });
+  const groups = useMemo(() => groupByMonth(list.visible, (e) => e.date), [list.visible]);
+  const months = useMemo(() => monthKeysOf(filtered, (e) => e.date), [filtered]);
+
+  const { loadMore, hasMore } = list;
+  // A jump to a month the first page does not reach: keep taking pages in until
+  // that month arrives, or the list runs out.
+  useEffect(() => {
+    if (!jumpMonth || !hasMore) return;
+    if (groups.some((g) => g.key === jumpMonth)) return;
+    loadMore();
+  }, [jumpMonth, hasMore, groups, loadMore]);
+
+  const hasFilters = category !== "All" || !!search.trim() || period !== "all";
+  const clearFilters = () => {
+    setCategory("All");
+    setSearch("");
+    setPeriod("all");
+    setFrom("");
+    setTo("");
+  };
+
+  // One line saying what is on screen: the entries this month, or the entries the
+  // chosen period covers.
+  const summary = useMemo(() => {
+    const count = filtered.length;
+    if (period === "week") return `${monthCountText(count, "entry")} this week`;
+    if (period === "month") return `${monthCountText(count, "entry")} this month`;
+    if (period === "custom") return `${monthCountText(count, "entry")} in the dates you chose`;
+    const monthStart = moment().startOf("month").format("YYYY-MM-DD");
+    const thisMonth = filtered.filter((e) => (e.date || "") >= monthStart).length;
+    return thisMonth > 0 ? `${monthCountText(thisMonth, "entry")} this month` : monthCountText(count, "entry");
+  }, [filtered, period]);
 
   const handleSave = async (entry) => {
     if (editingEntry) {
@@ -69,86 +156,59 @@ export default function Journal() {
     <PageContainer bottomInset="fab" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Journal</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <MonthJumpButton months={months} onJump={setJumpMonth} />
           <Link to="/settings" aria-label="Settings" className="w-11 h-11 -m-2.5 flex items-center justify-center rounded-full"><Settings size={22} className="text-gray-600 dark:text-gray-400" aria-hidden="true" /></Link>
         </div>
       </div>
 
-      {/* Category filter chips — icon, colour and text label for each. */}
-      <div className="w-full max-w-3xl mx-auto px-4 pt-4 mb-4 flex flex-wrap gap-2">
-        <button onClick={() => setFilterCat("All")}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-            filterCat === "All"
-              ? "bg-indigo-600 text-white border-indigo-600"
-              : "bg-white dark:bg-gray-900 text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-gray-700"
-          }`}>
-          All
-        </button>
-        {JOURNAL_CHOICES.map((c) => {
-          const active = filterCat === c.key;
-          return (
-            <button key={c.key} onClick={() => setFilterCat(c.key)}
-              style={active ? { background: c.color, borderColor: c.color } : {}}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                active ? "text-white" : "bg-white dark:bg-gray-900 text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-gray-700"
-              }`}>
-              {React.cloneElement(c.icon, { size: 13, style: active ? { color: "#fff" } : { color: c.color } })}
-              {c.label}
-            </button>
-          );
-        })}
-      </div>
-
       <div className="w-full max-w-3xl mx-auto">
-        {filtered.length === 0 ? (
-          <div className="px-4">
-            <div className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center text-gray-400 dark:text-[#9A9DAE] border border-gray-100 dark:border-gray-800">
-              <div className="w-14 h-14 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center mx-auto mb-3">
-                <BookOpen size={32} className="opacity-30" aria-hidden="true" />
-              </div>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">No Journal Entries</h3>
-              <p className="text-sm">Record your mood, energy, meals, exercise and milestones.</p>
-            </div>
+        <JournalFilters
+          category={category} onCategory={setCategory}
+          search={search} onSearch={setSearch}
+          period={period} onPeriod={setPeriod}
+          from={from} to={to} onFrom={setFrom} onTo={setTo}
+        />
+
+        {entries.length === 0 ? (
+          <div className="px-4 pt-4">
+            <EmptyStateCard
+              icon={BookOpen}
+              title="No Journal Entries"
+              description="Record your mood, energy, meals, exercise and milestones."
+            />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="px-4 pt-4">
+            <EmptyStateCard
+              icon={Search}
+              title="No entries match"
+              description="Try another word or another period, or clear the filters to see every entry again."
+            />
+            {hasFilters && (
+              <button type="button" onClick={clearFilters} className="btn-pill btn-secondary w-full mt-3">
+                Clear filters
+              </button>
+            )}
           </div>
         ) : (
-          <div className="px-4 space-y-4">
-            {filtered.map((raw) => {
-              const e = normaliseEntry(raw);
-              const meta = categoryMeta(e.category);
-              const mood = e.mood || "";
-              return (
-                <button key={e.id} onClick={() => openEdit(e)} className="w-full text-left bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden box-border">
-                  <div className="flex items-start gap-3 w-full min-w-0">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: meta.bg }}>
-                      {React.cloneElement(meta.icon, { size: 20, style: { color: meta.color } })}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start gap-2">
-                        <p className="text-sm text-gray-700 dark:text-gray-300 overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0">{e.text}</p>
-                        <span className="text-xs text-gray-500 dark:text-[#9A9DAE] flex-shrink-0 whitespace-nowrap">
-                          {formatLocaleDate(parseShotDate(e.date)) || e.date}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
-                        <Clock size={11} className="flex-shrink-0" /><span>{e.time}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        {mood && (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap flex items-center gap-1 bg-white/10 dark:bg-white/[0.08] text-gray-600 dark:text-[#C0C3D4] border border-gray-200 dark:border-white/[0.1]">
-                            <Heart size={10} /> {mood}
-                          </span>
-                        )}
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap flex items-center gap-1"
-                          style={{ background: meta.bg, color: meta.color }}>
-                          {React.cloneElement(meta.icon, { size: 11 })}
-                          {meta.label}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
+          <div className="px-4 pt-4">
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{summary}</p>
+
+            <MonthSectionList
+              groups={groups}
+              jumpTo={jumpMonth}
+              renderItem={(entry) => (
+                <JournalEntryCard entry={normaliseEntry(entry)} onEdit={openEdit} />
+              )}
+            />
+
+            {hasMore && (
+              <div ref={list.sentinelRef} className="pt-1 pb-3 text-center">
+                <button type="button" onClick={loadMore} className="btn-link text-sm">Load more</button>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Showing {list.shown} of {list.total}</p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -160,6 +220,7 @@ export default function Journal() {
         onDelete={editingEntry ? () => handleDelete(editingEntry.id) : null}
         initialEntry={editingEntry}
       />
+      <BackToTop />
       <Fab onClick={openNew} label="Add entry" icon={null} />
     </PageContainer>
   );

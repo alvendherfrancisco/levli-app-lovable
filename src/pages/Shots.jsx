@@ -16,6 +16,11 @@ import { isActiveMedication } from "@/lib/medicationLink";
 import { calcAdherence } from "@/lib/adherence";
 import SupplyAlertBanner from "@/components/SupplyAlertBanner";
 
+// The History block on this screen is a look at the most recent doses; the whole
+// history opens on its own screen (see src/pages/ShotsHistory.jsx) so this page
+// stays a short one.
+const PREVIEW_COUNT = 5;
+
 export default function Shots() {
   const [showShot, setShowShot] = useState(false);
   const [editingShot, setEditingShot] = useState(null);
@@ -26,6 +31,7 @@ export default function Shots() {
   const FREE_LIMIT = 10;
   const visibleShots = isPremium ? shots : shots.slice(0, FREE_LIMIT);
   const hiddenCount = isPremium ? 0 : Math.max(0, shots.length - FREE_LIMIT);
+  const previewShots = visibleShots.slice(0, PREVIEW_COUNT);
 
   const last = shots[0] || null;
   const daysBetween = effectiveDaysBetween(profile, last?.medication);
@@ -85,7 +91,13 @@ export default function Shots() {
         />
 
         <div className="px-4">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">History</h2>
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">History</h2>
+            {shots.length > 0 && (
+              <Link to="/shots/history" className="btn-link text-sm">View all {words.many}</Link>
+            )}
+          </div>
+
           {shotsLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 size={28} className="animate-spin text-indigo-400" />
@@ -100,11 +112,13 @@ export default function Shots() {
             </div>
           ) : (
             <div className="space-y-4">
-              {visibleShots.map((shot) => (
+              {/* The five most recent, and a way into the whole history. */}
+              {previewShots.map((shot) => (
                 <button key={shot.id} onClick={() => openEdit(shot)} className="w-full text-left">
                   <ShotCard {...shot} drugClass={shot.drug_class} />
                 </button>
               ))}
+
               {hiddenCount > 0 && (
                 <button onClick={openPaywall} className="w-full bg-white dark:bg-gray-900 rounded-xl p-4 border border-dashed border-indigo-200 dark:border-indigo-500/30 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
@@ -116,6 +130,10 @@ export default function Shots() {
                   </div>
                 </button>
               )}
+
+              <Link to="/shots/history" className="btn-pill btn-secondary w-full">
+                View all {words.many}
+              </Link>
             </div>
           )}
         </div>
