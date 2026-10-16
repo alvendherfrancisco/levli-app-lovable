@@ -915,6 +915,27 @@ html { background-color: var(--launch-bg); }
   border-color: rgb(var(--card-border));
 }
 
+/* ── Autofill: the browser's own wash ───────────────────────────────────────
+   Chrome paints an autofilled field itself, with a pale yellow background and a
+   text colour of its own. Neither belongs to the app, and the yellow is
+   unreadable against the dark surfaces. Both are put back here: the field keeps
+   its own surface through an inset shadow (the one property the browser's
+   autofill styling does not override) and its own text colour, in both modes. */
+:root { --field-fill: 255 255 255; }   /* the surface a field sits on, light */
+.dark { --field-fill: 33 37 53; }      /* the same surface, dark */
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: currentColor;
+  caret-color: currentColor;
+  -webkit-box-shadow: 0 0 0 1000px rgb(var(--field-fill)) inset;
+  box-shadow: 0 0 0 1000px rgb(var(--field-fill)) inset;
+}
+
 /* ── Buttons: one pill, one set of colours, everywhere ──────────────────────
    Every button in the app is drawn from the tokens below: a full-radius pill
    (half the button's own height), one indigo fill and white semibold text for a

@@ -1,64 +1,84 @@
 import React from "react";
-import { Share2, X } from "lucide-react";
+import StatusBadge from "@/components/caregiver/StatusBadge";
 import { accessStatus, scopeLabel } from "@/lib/caregiverShare";
 
-const STATUS_LABEL = { pending: "Pending", active: "Active", expired: "Expired", revoked: "Revoked" };
-
-/** "Oct 16" from a stored timestamp — the short form an entry's date reads in. */
+/** "Oct 16" from a stored timestamp — the short form a date reads in here. */
 const shortDate = (value) => {
   const date = new Date(value || "");
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
-/** The line under the address: what level it is, where it stands, and when it
- *  was invited. A pending invite says when it was invited; an active one since
- *  when it has been active. */
-function metaLine(entry, status) {
+/** The date beside the badge: when the invite went out, or — once it is over —
+ *  when it was revoked or ran out. */
+function dateLine(entry, status) {
   const invited = shortDate(entry.invited_date || entry.created_date);
-  if (status === "active") return `Active · since ${shortDate(entry.granted_date || entry.invited_date)}`;
-  if (status === "revoked") return `Revoked · ${shortDate(entry.revoked_date || entry.updated_date)}`;
-  if (status === "expired") return `Expired · invited ${invited}`;
-  return `Pending · invited ${invited}`;
+  if (status === "revoked") return `Revoked ${shortDate(entry.revoked_date || entry.updated_date)}`;
+  if (status === "expired") return `Expired ${invited}`;
+  return `Invited ${invited}`;
 }
 
-const ACTION = "flex min-h-[44px] items-center gap-1.5 px-2 text-xs font-medium";
+const ACTION = "inline-flex items-center py-1.5 text-xs font-medium";
+const MUTED = "text-xs text-gray-500 dark:text-[#9A9DAE]";
 
 /**
- * One entry in the access list: the address it is for on its own line, so a long
- * one is never cut off, and under it where the invite stands with the actions that
- * make sense for that state. A waiting invite can be shared by hand — the message
- * carries the address access is matched to — and anything that still counts for
- * something can be revoked.
+ * One entry in the access list: the whole address on its own line — a long one is
+ * never cut off — then where it stands and when, and finally the two things that
+ * can be done with it, as plain text buttons. A waiting invite can be sent by
+ * hand (the message carries the address access is matched to); anything that
+ * still counts for something can be revoked.
  *
- * Nothing is sent by the app itself, so there is no delivery state to report here.
+ * An entry that is over is shown the same way without the buttons: its state and
+ * date read in muted text where the badge would be.
+ *
+ * Nothing is sent by the app itself, so there is no delivery state to report.
  */
-export default function AccessEntry({ entry, onShare, onRevoke }) {
+export default function AccessEntry({ entry, onShare, onRevoke, showScope = false }) {
   const status = accessStatus(entry);
+  const isPast = status === "revoked" || status === "expired";
+  const canShare = status === "pending" && !!onShare;
+  const canRevoke = !isPast && !!onRevoke;
+
   return (
-    <div className="text-sm">
-      <p className="break-all text-gray-700 dark:text-gray-300">{entry.grantee_email}</p>
-      <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        <p className="text-xs text-gray-500 dark:text-[#9A9DAE]">
-          {scopeLabel(entry.scope)} · {metaLine(entry, status)}{" "}
-          <span className="sr-only">{STATUS_LABEL[status]}</span>
-        </p>
-        <div className="flex flex-shrink-0 items-center">
-          {status === "pending" && onShare && (
-            <button type="button" onClick={() => onShare(entry.grantee_email)}
+    <div className="py-3.5 first:pt-0 last:pb-0">
+      <p className={`break-all text-sm ${isPast ? "text-gray-600 dark:text-[#9A9DAE]" : "font-medium text-gray-900 dark:text-[#E8E9F0]"}`}>
+        {entry.grantee_email}
+      </p>
+
+      {isPast ? (
+        <p className={`mt-1 ${MUTED}`}>{dateLine(entry, status)}</p>
+      ) : (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <StatusBadge status={status} />
+          <span className={MUTED}>
+            {showScope ? `${scopeLabel(entry.scope)} · ` : ""}{dateLine(entry, status)}
+          </span>
+        </div>
+      )}
+
+      {(canShare || canRevoke) && (
+        <div className="mt-1.5 flex items-center gap-4">
+          {canShare && (
+            <button
+              type="button"
+              onClick={() => onShare(entry.grantee_email)}
               aria-label={`Share the invite to ${entry.grantee_email}`}
-              className={`${ACTION} text-indigo-600 dark:text-indigo-400`}>
-              <Share2 size={14} aria-hidden="true" /> Share invite
+              className={`${ACTION} text-indigo-600 dark:text-indigo-400`}
+            >
+              Share invite
             </button>
           )}
-          {(status === "pending" || status === "active") && onRevoke && (
-            <button type="button" onClick={() => onRevoke(entry)}
+          {canRevoke && (
+            <button
+              type="button"
+              onClick={() => onRevoke(entry)}
               aria-label={`Revoke access for ${entry.grantee_email}`}
-              className={`${ACTION} text-red-600 dark:text-red-400`}>
-              <X size={14} aria-hidden="true" /> Revoke
+              className={`${ACTION} text-red-600 dark:text-red-400`}
+            >
+              Revoke
             </button>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

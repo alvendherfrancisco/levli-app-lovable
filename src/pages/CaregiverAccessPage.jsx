@@ -1,36 +1,38 @@
 import React, { useState } from "react";
-import { ChevronDown, Share2 } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import AccessEntry from "@/components/caregiver/AccessEntry";
-import { SHEET_FIELD, SHEET_FIELD_SELECT, SHEET_HINT, SHEET_LABEL } from "@/components/modals/shot/sheetUi";
+import GrantAccessForm from "@/components/caregiver/GrantAccessForm";
+import PastAccessSection from "@/components/caregiver/PastAccessSection";
+import { CARD_DIVIDED, SECTION_LABEL } from "@/lib/cardStyles";
 import { useAppState } from "@/lib/AppState";
-import { accessStatus, inviteCaregiver, isEmail, SCOPE_OPTIONS, shareInvite } from "@/lib/caregiverShare";
-import { sound } from "@/lib/sounds";
+import { accessStatus, inviteCaregiver, isEmail, shareInvite } from "@/lib/caregiverShare";
 import { toast } from "@/lib/toast";
 
 /**
  * Caregiver access — who can see this account's logs, and with what level.
  *
  * Granting saves the invite as pending and names the address it was granted to.
- * Nothing leaves the app: the person who granted it shares the invite themselves,
- * either straight after granting or from any entry that is still waiting, and the
- * invite becomes active by itself the first time that exact address signs in.
- * Revoking asks first and takes effect at once, on the server.
+ * Nothing leaves the app by itself: the person who granted it shares the invite
+ * from the success state, or from any entry that is still waiting, and the invite
+ * becomes active the first time that exact address signs in. Revoking asks first
+ * and takes effect at once, on the server.
  */
 export default function CaregiverAccessPage() {
   const { proxyAccess, loadProxyAccess, revokeProxyAccess } = useAppState();
   const [email, setEmail] = useState("");
   const [scope, setScope] = useState("read");
   const [saving, setSaving] = useState(false);
-  // The address just granted, so its own Share invite button can sit under the
-  // form without anyone having to type it in again.
+  // The address just granted, so its own Share invite button can sit in the
+  // success state without anyone having to type it in again.
   const [granted, setGranted] = useState("");
   const [revoking, setRevoking] = useState(null);
-  const [showPast, setShowPast] = useState(false);
 
   const people = proxyAccess.filter((row) => ["pending", "active"].includes(accessStatus(row)));
   const past = proxyAccess.filter((row) => ["revoked", "expired"].includes(accessStatus(row)));
+  // The level is only worth repeating on a row while more than one of them is in
+  // play; with a single level it would be the same word on every entry.
+  const showScope = new Set(proxyAccess.map((row) => row.scope || "read")).size > 1;
 
   /** Grants access to one address. Nothing is sent: the invite is saved and waits
    *  for that exact address to sign in. */
@@ -63,11 +65,12 @@ export default function CaregiverAccessPage() {
     else if (how === "unavailable") toast.error("That invite could not be shared here.");
   };
 
+  // The dialog asks the question and does its own countdown of the red button, so
+  // nothing is repeated here: by the time this runs, revoking is what was asked for.
   const confirmRevoke = async () => {
     const entry = revoking;
     setRevoking(null);
     if (!entry) return;
-    sound.delete();
     try {
       await revokeProxyAccess(entry.id);
       toast.deleted("Access revoked");
@@ -78,98 +81,56 @@ export default function CaregiverAccessPage() {
 
   return (
     <div className="min-h-screen w-full bg-white dark:bg-gray-950">
-      <ScreenHeader title="Caregiver access" subtitle="Let someone you trust view your records" />
+      <ScreenHeader title="Caregiver access" subtitle="Share your records with someone you trust." />
 
-      <div className="mx-auto max-w-lg pt-2 pb-10">
+      <div className="mx-auto max-w-lg pt-2 pb-16">
         {/* Grant access */}
-        <div className="mx-3 mb-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <label className={SHEET_LABEL} htmlFor="caregiver-email">Their email address</label>
-          <input
-            id="caregiver-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="caregiver@email.com"
-            autoComplete="email"
-            className={SHEET_FIELD}
+        <section className="mb-5 px-4">
+          <p className={`mb-2 ${SECTION_LABEL}`}>Grant access</p>
+          <GrantAccessForm
+            email={email}
+            onEmail={setEmail}
+            scope={scope}
+            onScope={setScope}
+            saving={saving}
+            granted={granted}
+            onGrant={handleGrant}
+            onShare={handleShare}
           />
-
-          <label className={`${SHEET_LABEL} mt-4`} htmlFor="caregiver-scope">What they can see</label>
-          <select id="caregiver-scope" value={scope} onChange={(e) => setScope(e.target.value)} className={SHEET_FIELD_SELECT}>
-            {SCOPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-
-          <button onClick={handleGrant} disabled={saving} className="btn-pill btn-primary mt-4 w-full">
-            {saving ? "Granting…" : "Grant Access"}
-          </button>
-
-          {/* Sharing the invite is the person's own step: the address is already
-              saved, so this only opens the share sheet with the message. */}
-          {granted && (
-            <button onClick={() => handleShare(granted)} className="btn-pill btn-secondary mt-2 w-full">
-              <Share2 size={16} aria-hidden="true" /> Share invite
-            </button>
-          )}
-
-          <p className={`${SHEET_HINT} mt-3`}>
-            They'll see your shot, journal, and weight records once they sign in with this email. You can revoke access anytime.
-          </p>
-        </div>
+        </section>
 
         {/* People with access */}
-        <div className="mx-3 mb-4">
-          <p className="mb-2 px-1 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">People with access</p>
-          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <section className="mb-5 px-4">
+          <p className={`mb-2 ${SECTION_LABEL}`}>People with access</p>
+          <div className={`${CARD_DIVIDED} px-4`}>
             {people.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-[#9A9DAE]">No one else can see your logs.</p>
+              <p className="py-4 text-sm text-gray-500 dark:text-[#9A9DAE]">No one has access yet.</p>
             ) : (
-              <div className="space-y-3">
-                {people.map((entry) => (
-                  <AccessEntry
-                    key={entry.id}
-                    entry={entry}
-                    onShare={handleShare}
-                    onRevoke={setRevoking}
-                  />
-                ))}
-              </div>
+              people.map((entry) => (
+                <AccessEntry
+                  key={entry.id}
+                  entry={entry}
+                  showScope={showScope}
+                  onShare={handleShare}
+                  onRevoke={setRevoking}
+                />
+              ))
             )}
           </div>
-        </div>
+        </section>
 
-        {/* Past access — revoked and expired entries, folded away until asked for */}
-        {past.length > 0 && (
-          <div className="mx-3 mb-4">
-            <button
-              onClick={() => setShowPast((open) => !open)}
-              aria-expanded={showPast}
-              className="flex min-h-[44px] w-full items-center justify-between gap-2 px-1"
-            >
-              <span className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
-                Past access ({past.length})
-              </span>
-              <ChevronDown size={18} className={`text-gray-400 transition-transform ${showPast ? "rotate-180" : ""}`} aria-hidden="true" />
-            </button>
-            {showPast && (
-              <div className="space-y-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                {past.map((entry) => (
-                  <AccessEntry key={entry.id} entry={entry} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Access that has ended, folded away until it is asked for. */}
+        <PastAccessSection entries={past} />
       </div>
 
       <ConfirmDialog
         open={!!revoking}
-        title="Revoke access?"
-        message={revoking ? `${revoking.grantee_email} loses access straight away and these records disappear from their account.` : ""}
+        showIcon={false}
         tone="destructive"
-        confirmLabel="Revoke access"
-        cancelLabel="Keep access"
+        title={revoking ? `Revoke access for ${revoking.grantee_email}?` : "Revoke access?"}
+        message="They will no longer see your records."
+        confirmLabel="Revoke"
+        cancelLabel="Cancel"
         onConfirm={confirmRevoke}
         onCancel={() => setRevoking(null)}
       />
