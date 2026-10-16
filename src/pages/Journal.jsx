@@ -1,10 +1,9 @@
-import React, { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
-import { Settings, BookOpen, Clock, Heart } from "lucide-react";
+import React, { useEffect, useState, useMemo } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Settings, BookOpen, Clock, Heart, X } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import JournalEntryModal from "@/components/modals/JournalEntryModal";
-import SideEffectsPanel from "@/components/insights/SideEffectsPanel";
 import { useAppState } from "@/lib/AppState";
 import { JOURNAL_CATEGORIES, categoryMeta, normaliseCategory, sortJournalNewestFirst } from "@/lib/journalMeta";
 import { parseShotDate, toDayKey, formatLocaleDate } from "@/lib/dateUtils";
@@ -20,12 +19,47 @@ export default function Journal() {
   const [showModal, setShowModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [filterCat, setFilterCat] = useState("All");
+  // A symptom tapped on History's side-effect card arrives as ?symptom=…, and
+  // shows that symptom's own entries.
+  const location = useLocation();
+  const [symptomFilter, setSymptomFilter] = useState(
+    () => new URLSearchParams(window.location.search).get("symptom") || ""
+  );
+
+  useEffect(() => {
+    const symptom = new URLSearchParams(location.search).get("symptom") || "";
+    setSymptomFilter(symptom);
+    if (symptom) setFilterCat("Side effect");
+  }, [location.search]);
 
   // Newest first, by the date and time each entry was written.
   const entries = useMemo(() => sortJournalNewestFirst(journalEntries), [journalEntries]);
-  const filtered = filterCat === "All"
-    ? entries
-    : entries.filter((e) => normaliseCategory(e.category) === filterCat);
+
+  // The records behind the tapped symptom, so an entry linked to one of them
+  // matches even when its own wording differs.
+  const symptomEntryIds = useMemo(() => {
+    if (!symptomFilter) return null;
+    const target = symptomFilter.trim().toLowerCase();
+    return new Set(
+      adverseEvents
+        .filter((e) => String(e.symptom || "").trim().toLowerCase() === target)
+        .map((e) => e.journal_entry_id)
+        .filter(Boolean)
+    );
+  }, [adverseEvents, symptomFilter]);
+
+  const filtered = (filterCat === "All" ? entries : entries.filter((e) => normaliseCategory(e.category) === filterCat))
+    .filter((e) => {
+      if (!symptomFilter) return true;
+      return String(e.text || "").toLowerCase().includes(symptomFilter.trim().toLowerCase())
+        || symptomEntryIds.has(e.id);
+    });
+
+  // Choosing a category clears the symptom a card tapped on History set.
+  const selectCategory = (category) => {
+    setFilterCat(category);
+    setSymptomFilter("");
+  };
 
   const handleSave = async (entry) => {
     if (editingEntry) {
@@ -88,15 +122,23 @@ export default function Journal() {
         </div>
       </div>
 
-      {/* What was logged over the last 90 days, summarised at the top of the
-          page (moved here from Insights). */}
-      <div className="w-full max-w-3xl mx-auto pt-4">
-        <SideEffectsPanel />
-      </div>
+      {/* A symptom tapped on History's side-effect card shows here as its own
+          filter, above the category chips. */}
+      {symptomFilter && (
+        <div className="w-full max-w-3xl mx-auto px-4 pt-4">
+          <button onClick={() => setSymptomFilter("")}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#E11D48]/30 bg-[#E11D48]/10 px-3 py-1 text-xs font-medium text-[#E11D48] dark:text-[#FB7185]">
+            Showing: {symptomFilter}
+            <X size={12} aria-hidden="true" />
+          </button>
+        </div>
+      )}
 
-      {/* Category filter chips — icon, colour and text label for each */}
-      <div className="w-full max-w-3xl mx-auto px-4 mb-3 flex flex-wrap gap-2">
-        <button onClick={() => setFilterCat("All")}
+      {/* Category filter chips — icon, colour and text label for each. The
+          summary of everything logged lives on History now, so these open the
+          page. */}
+      <div className={`w-full max-w-3xl mx-auto px-4 mb-3 flex flex-wrap gap-2${symptomFilter ? "" : " pt-4"}`}>
+        <button onClick={() => selectCategory("All")}
           className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
             filterCat === "All"
               ? "bg-indigo-600 text-white border-indigo-600"
@@ -107,7 +149,7 @@ export default function Journal() {
         {JOURNAL_CATEGORIES.map((c) => {
           const active = filterCat === c.key;
           return (
-            <button key={c.key} onClick={() => setFilterCat(c.key)}
+            <button key={c.key} onClick={() => selectCategory(c.key)}
               style={active ? { background: c.color, borderColor: c.color } : {}}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                 active ? "text-white" : "bg-white dark:bg-gray-900 text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-gray-700"
@@ -126,8 +168,14 @@ export default function Journal() {
               <div className="w-14 h-14 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center mx-auto mb-3">
                 <BookOpen size={32} className="opacity-30" aria-hidden="true" />
               </div>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">No Journal Entries</h3>
-              <p className="text-sm">Record your thoughts, symptoms, and medication experiences.</p>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+                {symptomFilter ? `No entries for “${symptomFilter}”` : "No Journal Entries"}
+              </h3>
+              <p className="text-sm">
+                {symptomFilter
+                  ? "Entries you write about this symptom will show here."
+                  : "Record your thoughts, symptoms, and medication experiences."}
+              </p>
             </div>
           </div>
         ) : (
