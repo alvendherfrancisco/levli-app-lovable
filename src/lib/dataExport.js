@@ -37,7 +37,6 @@ export function buildFullExportCsv(data) {
     ["Journal entries", data.journalEntries],
     ["Side effects", data.adverseEvents],
     ["Medications", plainMedicationColumn(data.medications, "medication_name")],
-    ["Inventory", data.inventory],
     ["Repeat schedules", plainMedicationColumn(data.repeatSchedules, "medication")],
     ["Caregiver access", data.proxyAccess],
   ];

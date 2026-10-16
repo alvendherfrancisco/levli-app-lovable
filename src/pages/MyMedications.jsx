@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Settings, Pill, Calendar, User, Activity, Trash2, ChevronRight, Archive } from "lucide-react";
+import { Settings, Pill, Calendar, User, Activity, Trash2, ChevronRight, Archive, Package } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import EmptyStateCard from "@/components/EmptyStateCard";
@@ -11,6 +11,7 @@ import RepeatScheduleModal from "@/components/modals/RepeatScheduleModal";
 import LinkShotsToMedsCard from "@/components/medications/LinkShotsToMedsCard";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { shotsOfMedication } from "@/lib/medicationLink";
+import { supplyLeftText } from "@/lib/supplyTracking";
 import { toast } from "@/lib/toast";
 
 export default function MyMedications() {
@@ -110,6 +111,11 @@ export default function MyMedications() {
                     <div className="space-y-1 text-sm text-gray-500 dark:text-[#9A9DAE]">
                       {m.prescribed_dose != null && (
                         <div className="flex items-center gap-2"><Activity size={14} className="text-indigo-500" /> {m.prescribed_dose} {m.dose_unit || "mg"} · {m.frequency || "—"}</div>
+                      )}
+                      {/* How much is left, when the medication tracks its own
+                          supply. */}
+                      {supplyLeftText(m) && (
+                        <div className="flex items-center gap-2"><Package size={14} className="text-indigo-500" /> {supplyLeftText(m)}</div>
                       )}
                       {m.indication && <div className="flex items-center gap-2"><Pill size={14} className="text-indigo-500" /> {m.indication}</div>}
                       {m.titration_stage && <div className="flex items-center gap-2"><Calendar size={14} className="text-orange-500" /> Stage: {m.titration_stage}</div>}

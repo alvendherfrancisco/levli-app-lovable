@@ -88,7 +88,7 @@ export default function MedicationStep({ selectedMed, onSelect }) {
       </OnboardingArt>
       <div className={HEAD_BLOCK}>
         <h1 className={HEADING}>Which medication are you on?</h1>
-        <p className={SUBTITLE}>This helps us tailor your dose schedule and inventory tracking.</p>
+        <p className={SUBTITLE}>This helps us tailor your dose schedule and supply tracking.</p>
       </div>
 
       {/* The chips sit straight on the screen's background, centred, with the

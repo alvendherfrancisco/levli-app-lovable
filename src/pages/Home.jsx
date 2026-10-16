@@ -16,6 +16,7 @@ import { logsAsDose } from "@/lib/medicationForm";
 import { isActiveMedication } from "@/lib/medicationLink";
 import UnitCheckPrompt from "@/components/home/UnitCheckPrompt";
 import PushOptInBanner from "@/components/home/PushOptInBanner";
+import SupplyAlertBanner from "@/components/SupplyAlertBanner";
 import { useMountProbe } from "@/lib/perfProbe";
 
 export default function Home() {
@@ -54,6 +55,9 @@ export default function Home() {
       </div>
 
       <div className="w-full max-w-3xl mx-auto pt-4">
+        {/* A supply reminder sits at the top of the screen, where the eye lands
+            first. It never stops a dose being logged. */}
+        <SupplyAlertBanner className="mx-3 mb-4" />
         <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
         <RepeatDoseCard onEdit={(preset) => { setShotPreset(preset); setShowShot(true); }} />
         <NextShotCard onLogPastShot={(preset) => { setShotPreset(preset); setShowShot(true); }} />

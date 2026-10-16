@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { getIntervalDays, getMedicationConfig } from "@/lib/medicationConfig";
 import { scheduleMatchesMedication } from "@/lib/medicationLink";
 import { suggestedSite } from "@/lib/injectionSites";
+import { supplyUnitOr } from "@/lib/supplyTracking";
 import { readCachedProfile, writeCachedProfile, clearCachedProfile } from "@/lib/profileCache";
 import { resolveProfileRecords } from "@/lib/profileRecords";
 import { perfMark } from "@/lib/perfProbe";
@@ -84,8 +85,6 @@ export function AppStateProvider({ children }) {
   // ── New entity states ─────────────────────────────────────────────────────
   const [medications, setMedications] = useState([]);
   const [adverseEvents, setAdverseEvents] = useState([]);
-  const [inventory, setInventory] = useState([]);
-  const [storageLogs, setStorageLogs] = useState([]);
   const [proxyAccess, setProxyAccess] = useState([]);
   const [repeatSchedules, setRepeatSchedules] = useState([]);
 
@@ -177,23 +176,24 @@ export function AppStateProvider({ children }) {
       loadJournal();
       loadProgressPhotos();
       loadAdverseEvents();
-      loadInventory();
-      loadStorageLogs();
       loadProxyAccess();
       loadRepeatSchedules();
       // Shots and medications are loaded together, so every log can be linked to
       // a regimen before the screens read them.
       const dataPromise = Promise.all([loadShots(), loadMedications()])
-        .then(([shotList, medList]) => linkOrphanShots(shotList, medList))
-        .catch((err) => console.error("Startup data load failed:", err))
-        .then(() => perfMark("startup data loaded"));
+        .then(([shotList, medList]) => linkOrphanShots(shotList, medList).then(() => medList))
+        .catch((err) => { console.error("Startup data load failed:", err); return []; })
+        .then((medList) => { perfMark("startup data loaded"); return medList; });
 
       const [profileRow, metricRows] = await Promise.all([profilePromise, metricsPromise]);
       // The one-time unit migration writes to the profile and to the day
       // metrics, so it starts once those reads are in — behind the first screen,
       // never in front of it.
       migrateUnits(profileRow, metricRows);
-      await dataPromise;
+      // The old Stock screen's numbers move onto the medications they name. It
+      // writes to the medications, so it waits for them — and like the unit
+      // migration it runs behind the first screen, never in front of it.
+      migrateSupply(profileRow, await dataPromise);
     })();
   }, [isAuthenticated, authEpoch]);
 
@@ -329,14 +329,49 @@ export function AppStateProvider({ children }) {
     setAdverseEvents(data);
   };
 
-  const loadInventory = async () => {
-    const data = await base44.entities.Inventory.list("-created_date", 200);
-    setInventory(data);
-  };
+  // ── One-time move of the old Stock screen onto the medications ─────────────
+  // The Stock screen kept a product's count, expiry date and lot number in
+  // records of its own. Those records are left exactly as they are: each one's
+  // numbers are copied onto the medication it names, which is where they are
+  // read now (see src/lib/supplyTracking.js). The profile carries the stamp, so
+  // the copy happens once and can never overwrite a count the user has since
+  // corrected by hand.
+  const migrateSupply = async (profileRow, medList) => {
+    try {
+      const p = profileRow || null;
+      if (!p || p.inventory_migrated_at) return;
+      const rows = await base44.entities.Inventory.list("-created_date", 200);
+      const stamp = new Date().toISOString();
 
-  const loadStorageLogs = async () => {
-    const data = await base44.entities.StorageLog.list("-created_date", 200);
-    setStorageLogs(data);
+      for (const row of rows) {
+        const name = String(row.product_name || "").trim().toLowerCase();
+        const med = (medList || []).find((m) => (row.medication_id && m.id === row.medication_id)
+          || (name && String(m.medication_name || "").trim().toLowerCase() === name));
+        // A row with no medication to hold it, or one that is already tracking
+        // its own supply, is left as it is.
+        if (!med || med.track_supply) continue;
+
+        const patch = { track_supply: true };
+        const left = Number(row.remaining_quantity);
+        if (row.remaining_quantity != null && Number.isFinite(left)) {
+          patch.doses_left = Math.max(0, left);
+        }
+        if (row.quantity_unit) patch.supply_unit = supplyUnitOr(row.quantity_unit, med.medication_name);
+        // An opened product is dated by its beyond-use date; the pack expiry is
+        // used when the record holds no beyond-use date.
+        const expiry = row.in_use_expiry || row.expiry_date || "";
+        if (expiry) patch.supply_expiry_date = expiry;
+        if (row.lot_number) patch.lot_number = row.lot_number;
+
+        const rec = await base44.entities.Medication.update(med.id, patch);
+        setMedications((prev) => prev.map((m) => (m.id === med.id ? { ...m, ...rec } : m)));
+      }
+
+      await base44.entities.UserProfile.update(p.id, { inventory_migrated_at: stamp });
+      setProfileState((prev) => ({ ...prev, inventory_migrated_at: stamp }));
+    } catch (err) {
+      console.error("Supply migration failed:", err);
+    }
   };
 
   const loadProxyAccess = async () => {
@@ -393,6 +428,35 @@ export function AppStateProvider({ children }) {
     "insertion_date", "pump_rate", "site_change_date",
   ];
 
+  /**
+   * The record a dose is counted against: by link when the log carries one, by
+   * the name it was logged with otherwise.
+   */
+  const supplyMedication = (idOrName) => medications.find((m) => m.id === idOrName)
+    || medications.find((m) => m.medication_name === idOrName)
+    || null;
+
+  /**
+   * Takes one off (delta -1) or puts one back (delta +1) on a medication's own
+   * supply count. Only a medication that is tracking its supply is touched, and
+   * one with no count yet has nothing to adjust.
+   */
+  const adjustSupply = async (idOrName, delta) => {
+    const med = supplyMedication(idOrName);
+    if (!med?.track_supply) return;
+    const left = Number(med.doses_left);
+    if (!Number.isFinite(left)) return;
+    try {
+      const rec = await base44.entities.Medication.update(med.id, {
+        doses_left: Math.max(0, left + delta),
+      });
+      setMedications((prev) => prev.map((m) => (m.id === med.id ? { ...m, ...rec } : m)));
+    } catch (err) {
+      // The count is a convenience: it is never a reason a log fails to save.
+      console.error("Could not update the supply count:", err);
+    }
+  };
+
   const addShot = async (shot) => {
     const payload = {};
     SHOT_FIELDS.forEach((f) => {
@@ -417,31 +481,33 @@ export function AppStateProvider({ children }) {
     }
     const rec = await base44.entities.Shot.create(payload);
     setShots((prev) => [rec, ...prev].sort(byShotMomentDesc));
-    // Decrement matching inventory
-    if (rec.medication) {
-      const match = inventory.find((i) => i.product_name === rec.medication && i.status === "active" && i.remaining_quantity > 0);
-      if (match) {
-        try {
-          const updated = await base44.entities.Inventory.update(match.id, {
-            remaining_quantity: Math.max(0, match.remaining_quantity - 1),
-          });
-          setInventory((prev) => prev.map((i) => i.id === match.id ? { ...i, ...updated } : i));
-        } catch (e) { /* inventory update is best-effort */ }
-      }
-    }
+    // The dose counts off the medication's own supply, when it tracks one.
+    await adjustSupply(rec.medication_id || rec.medication, -1);
     return rec;
   };
 
   const updateShot = async (id, updates) => {
+    const before = shots.find((s) => s.id === id) || null;
     const rec = await base44.entities.Shot.update(id, updates);
     // Re-sorted, because a moved date changes where the log belongs on the
     // timeline — and so which dose is the latest one.
     setShots((prev) => prev.map((s) => (s.id === id ? { ...s, ...rec } : s)).sort(byShotMomentDesc));
+    // A dose edited onto a different medication is counted there instead, so the
+    // medication it left gets its one back.
+    const wasOn = before ? supplyMedication(before.medication_id || before.medication) : null;
+    const nowOn = supplyMedication(rec.medication_id || rec.medication);
+    if (wasOn && nowOn && wasOn.id !== nowOn.id) {
+      await adjustSupply(wasOn.id, 1);
+      await adjustSupply(nowOn.id, -1);
+    }
   };
 
   const deleteShot = async (id) => {
+    const shot = shots.find((s) => s.id === id) || null;
     await base44.entities.Shot.delete(id);
     setShots((prev) => prev.filter((s) => s.id !== id));
+    // The dose leaves the history, so its one goes back on the supply count.
+    if (shot) await adjustSupply(shot.medication_id || shot.medication, 1);
   };
 
   // ── Day Metrics ────────────────────────────────────────────────────────────
@@ -684,35 +750,6 @@ export function AppStateProvider({ children }) {
     setAdverseEvents((prev) => prev.filter((e) => e.id !== id));
   };
 
-  // ── Inventory CRUD ─────────────────────────────────────────────────────────
-  const addInventory = async (data) => {
-    const rec = await base44.entities.Inventory.create(data);
-    setInventory((prev) => [rec, ...prev]);
-    return rec;
-  };
-
-  const updateInventory = async (id, updates) => {
-    const rec = await base44.entities.Inventory.update(id, updates);
-    setInventory((prev) => prev.map((i) => i.id === id ? { ...i, ...rec } : i));
-  };
-
-  const deleteInventory = async (id) => {
-    await base44.entities.Inventory.delete(id);
-    setInventory((prev) => prev.filter((i) => i.id !== id));
-  };
-
-  // ── StorageLog CRUD ────────────────────────────────────────────────────────
-  const addStorageLog = async (data) => {
-    const rec = await base44.entities.StorageLog.create(data);
-    setStorageLogs((prev) => [rec, ...prev]);
-    return rec;
-  };
-
-  const deleteStorageLog = async (id) => {
-    await base44.entities.StorageLog.delete(id);
-    setStorageLogs((prev) => prev.filter((s) => s.id !== id));
-  };
-
   // ── ProxyAccess CRUD ──────────────────────────────────────────────────────
   const addProxyAccess = async (data) => {
     const rec = await base44.entities.ProxyAccess.create(data);
@@ -810,7 +847,7 @@ export function AppStateProvider({ children }) {
 
   const resetState = () => {
     setShots([]); setDayMetrics({}); setProgressPhotosList([]); setJournalEntries([]);
-    setMedications([]); setAdverseEvents([]); setInventory([]); setStorageLogs([]); setProxyAccess([]);
+    setMedications([]); setAdverseEvents([]); setProxyAccess([]);
     setRepeatSchedules([]);
     setProfileState(DEFAULT_PROFILE); rememberProfileId(null);
     setDarkModeState(false); setOnboardingCompleted(null);
@@ -938,10 +975,6 @@ export function AppStateProvider({ children }) {
       convertAssumedKg, undoUnitConversion, keepWeightsAsLogged,
       // AdverseEvents
       adverseEvents, adverseEventsByDay, addAdverseEvent, updateAdverseEvent, deleteAdverseEvent,
-      // Inventory
-      inventory, addInventory, updateInventory, deleteInventory,
-      // StorageLogs
-      storageLogs, addStorageLog, deleteStorageLog,
       // ProxyAccess
       proxyAccess, addProxyAccess, revokeProxyAccess,
       // Repeat schedules

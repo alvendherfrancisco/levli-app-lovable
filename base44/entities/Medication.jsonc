@@ -128,6 +128,33 @@
     },
     "notes": {
       "type": "string"
+    },
+    "track_supply": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this medication counts its own supply. Off by default: nothing is counted, shown or alerted about until the user turns it on."
+    },
+    "doses_left": {
+      "type": "number",
+      "description": "How many doses (or tablets, pens, vials) are left. Taken down by one when a dose is logged and put back when one is deleted; correctable by hand at any time."
+    },
+    "supply_unit": {
+      "type": "string",
+      "default": "doses",
+      "description": "Unit the supply count is expressed in (doses, tablets, pens, vials, mL, mg, units)."
+    },
+    "supply_expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the supply expires. Used only to raise a neutral reminder \u2014 the app never states whether a product is safe to use."
+    },
+    "lot_number": {
+      "type": "string",
+      "description": "Lot or batch number on the pack or pen, kept for the user's own reference."
+    },
+    "supply_alert_dismissed": {
+      "type": "string",
+      "description": "Signature of the supply alert the user dismissed (e.g. 'low:2', 'expiring:2026-11-01'). The same alert stays hidden until what it says changes."
     }
   },
   "required": [

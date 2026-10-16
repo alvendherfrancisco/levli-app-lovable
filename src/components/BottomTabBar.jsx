@@ -6,7 +6,7 @@ import { sound } from "@/lib/sounds";
 
 /**
  * Phones (below 1024px): a five-item bottom tab bar — Home, Shots, Insights,
- * Journal, More — with History, Meds, Stock, Profile and Settings inside More,
+ * Journal, More — with History, Meds, Profile and Settings inside More,
  * which opens as a sheet resting on the bar rather than a page of its own.
  * Wider screens: the side rail, which lists every destination.
  *

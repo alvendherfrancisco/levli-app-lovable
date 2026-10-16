@@ -42,7 +42,7 @@ const CARD = "bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray
 const CARD_ROWS = `${CARD} px-4 divide-y divide-gray-100 dark:divide-white/[0.07]`;
 
 export default function SettingsPage() {
-  const { darkMode, setDarkMode, profile, shots, journalEntries, dayMetrics, adverseEvents, medications, inventory, repeatSchedules, proxyAccess, resetState } = useAppState();
+  const { darkMode, setDarkMode, profile, shots, journalEntries, dayMetrics, adverseEvents, medications, repeatSchedules, proxyAccess, resetState } = useAppState();
   const { logout, user } = useAuth();
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -69,7 +69,7 @@ export default function SettingsPage() {
     setExportLoading(true);
     const csv = buildFullExportCsv({
       profile, shots, dayMetrics, journalEntries, adverseEvents,
-      medications, inventory, repeatSchedules, proxyAccess,
+      medications, repeatSchedules, proxyAccess,
       email: user?.email,
     });
     downloadTextFile(`levli-data-export-${new Date().toISOString().slice(0, 10)}.csv`, csv);
@@ -228,7 +228,7 @@ export default function SettingsPage() {
       <ConfirmDialog
         open={deleteOpen}
         title="Delete your account?"
-        message="This permanently deletes your account and every record in it — doses, side effects, weight, nutrition, journal entries, photos, inventory. It cannot be undone. Export your data first if you want a copy."
+        message="This permanently deletes your account and every record in it — doses, side effects, weight, nutrition, journal entries, photos, supply details. It cannot be undone. Export your data first if you want a copy."
         confirmLabel={deleteLoading ? "Deleting…" : "Delete everything"}
         cancelLabel="Keep my account"
         destructive

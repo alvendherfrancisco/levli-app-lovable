@@ -53,6 +53,10 @@
       "type": "string",
       "description": "ISO timestamp when legacy height/goal values were converted to canonical cm/kg."
     },
+    "inventory_migrated_at": {
+      "type": "string",
+      "description": "ISO timestamp when the old Stock screen's counts, expiry dates and lot numbers were moved onto the matching medications. Stamped once, so the move never runs twice."
+    },
     "unit_check_status": {
       "type": "string",
       "description": "One-time kg/lb check flow: '' (not asked), 'pending', 'converted', 'kept_lb'."

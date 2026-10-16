@@ -25,6 +25,8 @@ import RegimenDoseField from "@/components/medications/RegimenDoseField";
 import RegimenStartDate from "@/components/medications/RegimenStartDate";
 import RegimenDetailsFields from "@/components/medications/RegimenDetailsFields";
 import ReminderField from "@/components/medications/ReminderField";
+import SupplyFields from "@/components/medications/SupplyFields";
+import { defaultSupplyUnit, supplyUnitOr } from "@/lib/supplyTracking";
 
 const pad = (n) => String(n).padStart(2, "0");
 function todayInput() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
@@ -70,6 +72,13 @@ export default function MedicationModal({ open, onClose, editing }) {
   const [prescriberContact, setPrescriberContact] = useState("");
   const [status, setStatus] = useState("active");
   const [notes, setNotes] = useState("");
+  // Supply tracking: off unless it is turned on, and its three numbers are only
+  // asked for while it is on (see src/components/medications/SupplyFields.jsx).
+  const [trackSupply, setTrackSupply] = useState(false);
+  const [dosesLeft, setDosesLeft] = useState("");
+  const [supplyUnit, setSupplyUnit] = useState("doses");
+  const [supplyExpiry, setSupplyExpiry] = useState("");
+  const [supplyLot, setSupplyLot] = useState("");
   // Strengths typed through "+ Other" and kept, so they are offered as chips next
   // time (they are saved on the record with the rest of the regimen).
   const [rememberedDoses, setRememberedDoses] = useState([]);
@@ -110,6 +119,7 @@ export default function MedicationModal({ open, onClose, editing }) {
     setDoseConfirmed(false);
     setShowDetails(false);
     setRememberedDoses([]);
+    setTrackSupply(false); setDosesLeft(""); setSupplyUnit("doses"); setSupplyExpiry(""); setSupplyLot("");
 
     if (editing) {
       const stored = editing.medication_name || "";
@@ -139,6 +149,11 @@ export default function MedicationModal({ open, onClose, editing }) {
       setPrescriberContact(editing.prescriber_contact || "");
       setStatus(editing.status || "active");
       setNotes(editing.notes || "");
+      setTrackSupply(!!editing.track_supply);
+      setDosesLeft(editing.doses_left != null ? String(editing.doses_left) : "");
+      setSupplyUnit(supplyUnitOr(editing.supply_unit, stored));
+      setSupplyExpiry(editing.supply_expiry_date || "");
+      setSupplyLot(editing.lot_number || "");
       // A regimen that already carries details opens with them visible.
       setShowDetails(!!(editing.indication || editing.planned_end_date || editing.titration_stage
         || editing.prescriber_name || editing.prescriber_contact || editing.notes));
@@ -151,6 +166,11 @@ export default function MedicationModal({ open, onClose, editing }) {
         indication: storedIndicationValue, indicationOther: storedIndicationOther,
         prescriberName: editing.prescriber_name || "", prescriberContact: editing.prescriber_contact || "",
         status: editing.status || "active", notes: editing.notes || "",
+        trackSupply: !!editing.track_supply,
+        dosesLeft: editing.doses_left != null ? String(editing.doses_left) : "",
+        supplyUnit: supplyUnitOr(editing.supply_unit, stored),
+        supplyExpiry: editing.supply_expiry_date || "",
+        supplyLot: editing.lot_number || "",
       });
     } else {
       setSelectedName(""); setIsCustom(false); setCustomName(""); setCustomGeneric("");
@@ -164,6 +184,7 @@ export default function MedicationModal({ open, onClose, editing }) {
         schedule: emptySchedule("", today), startDate: today, plannedEndDate: "", doseStep: "",
         indication: "", indicationOther: "", prescriberName: knownPrescriber,
         prescriberContact: knownContact, status: "active", notes: "",
+        trackSupply: false, dosesLeft: "", supplyUnit: "doses", supplyExpiry: "", supplyLot: "",
       });
     }
   }, [open, editing]);
@@ -215,6 +236,7 @@ export default function MedicationModal({ open, onClose, editing }) {
     selectedName, isCustom, customName, route, dose, unit, schedule, startDate,
     plannedEndDate, doseStep, indication, indicationOther,
     prescriberName, prescriberContact, status, notes,
+    trackSupply, dosesLeft, supplyUnit, supplyExpiry, supplyLot,
   };
   const edited = hasChanged(currentFields, savedFields);
   const canSave = !saving && !problem && (!editing || edited);
@@ -273,6 +295,8 @@ export default function MedicationModal({ open, onClose, editing }) {
     setCustomGeneric("");
     setRoute(picked?.route || "");
     setUnit(picked?.unit || "mg");
+    // A supply count is counted in the new product's own terms.
+    setSupplyUnit(defaultSupplyUnit(name));
     // The label's lowest strength is only pre-filled when nothing was saved for
     // this medication before — an existing dose is never silently changed.
     const lowest = picked?.strengths?.[0]?.value;
@@ -297,6 +321,7 @@ export default function MedicationModal({ open, onClose, editing }) {
       setDose("");
       setDoseSuggested(false);
       setUnit("mg");
+      setSupplyUnit(defaultSupplyUnit(""));
       setRoute("");
       setRememberedDoses([]);
       setSchedule(emptySchedule("", todayInput()));
@@ -367,6 +392,15 @@ export default function MedicationModal({ open, onClose, editing }) {
       prescriber_contact: prescriberContact,
       status,
       notes,
+      // Supply tracking. With the toggle off the three numbers are written back
+      // exactly as they were loaded, so turning it off never wipes a count.
+      track_supply: trackSupply,
+      doses_left: dosesLeft !== "" && Number.isFinite(Number(dosesLeft))
+        ? Math.max(0, Number(dosesLeft))
+        : null,
+      supply_unit: supplyUnit || "doses",
+      supply_expiry_date: supplyExpiry || null,
+      lot_number: supplyLot.trim(),
       regimen_source: "user-entered",
       // Filling in the form is what completes a regimen that was created from a
       // log, so its "needs details" mark is cleared here.
@@ -615,7 +649,28 @@ export default function MedicationModal({ open, onClose, editing }) {
                       showStatus={!!editing}
                       status={status}
                       onStatusChange={setStatus}
-                    />
+                    >
+                      {/* How much is left, when it expires and which lot it is —
+                          off by default, and only ever what the user chooses to
+                          keep. */}
+                      <SupplyFields
+                        trackSupply={trackSupply}
+                        onTrackSupplyChange={(next) => {
+                          setTrackSupply(next);
+                          // Turning it on starts the count in the unit this
+                          // medication is counted in.
+                          if (next) setSupplyUnit((prev) => supplyUnitOr(prev, chosenName));
+                        }}
+                        dosesLeft={dosesLeft}
+                        onDosesLeftChange={setDosesLeft}
+                        unit={supplyUnit}
+                        onUnitChange={setSupplyUnit}
+                        expiryDate={supplyExpiry}
+                        onExpiryDateChange={setSupplyExpiry}
+                        lotNumber={supplyLot}
+                        onLotNumberChange={setSupplyLot}
+                      />
+                    </RegimenDetailsFields>
                   )}
                 </div>
               </>

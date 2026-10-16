@@ -42,6 +42,7 @@ export default function RegimenDetailsFields({
   plannedEndDate, onPlannedEndDateChange, plannedEndDateError,
   notes, onNotesChange,
   showStatus, status, onStatusChange,
+  children,
 }) {
   return (
     <div ref={innerRef} className="mt-3 space-y-4">
@@ -177,6 +178,10 @@ export default function RegimenDetailsFields({
           unselectedClass={SHEET_CHIP_OFF}
         />
       )}
+
+      {/* Anything the form hands the section to draw at its own foot — supply
+          tracking, the one part of this form that is not about the regimen. */}
+      {children}
     </div>
   );
 }

@@ -39,7 +39,6 @@ import TermsPage from '@/pages/TermsPage';
 import MedicalDisclaimerPage from '@/pages/MedicalDisclaimerPage';
 import AboutSourcesPage from '@/pages/AboutSourcesPage';
 import MyMedications from '@/pages/MyMedications';
-import InventoryPage from '@/pages/InventoryPage';
 import BackupRestorePage from '@/pages/BackupRestorePage';
 import CaregiverAccessPage from '@/pages/CaregiverAccessPage';
 import HelpFeedbackPage from '@/pages/HelpFeedbackPage';
@@ -115,7 +114,6 @@ const AuthenticatedApp = () => {
           <Route path="/" element={<HomeOrOnboarding />} />
           <Route path="/shots" element={<Shots />} />
           <Route path="/medications" element={<MyMedications />} />
-          <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/history" element={<History />} />
           {/* Each lazy screen waits on its own, inside the shell: the tab bar
               and the current screen around it stay mounted while it loads. */}

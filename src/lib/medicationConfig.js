@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // CENTRAL MEDICATIONS CONFIG — the ONE place doses are defined in Levli.
 //
-// Shots, Meds, Stock, Insights and Reports all read from here. No screen
+// Shots, Meds, Insights and Reports all read from here. No screen
 // hardcodes a dose list.
 //
 // Each record: brandName (the display name — the ®/™ mark lives here and nowhere
@@ -889,8 +889,8 @@ export function isCustomDoseSource(shot) {
 
 // ── What the pickers offer, and in what order ───────────────────────────────
 // ONE product list for the whole app: the Log shot picker, onboarding, the
-// Add / Edit Medication form, the inventory product list and the reports all
-// read it, so changing it here changes every screen at once.
+// Add / Edit Medication form and the reports all read it, so changing it here
+// changes every screen at once.
 //
 // The order is A to Z by the product's plain name, with the ® mark and any
 // hyphen ignored (so TB-500 sits between Semaglutide and Tirzepatide), and

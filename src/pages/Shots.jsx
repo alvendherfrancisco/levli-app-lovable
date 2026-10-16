@@ -14,6 +14,7 @@ import { effectiveDaysBetween } from "@/lib/medicationConfig";
 import { logWords } from "@/lib/medicationForm";
 import { isActiveMedication } from "@/lib/medicationLink";
 import { calcAdherence } from "@/lib/adherence";
+import SupplyAlertBanner from "@/components/SupplyAlertBanner";
 
 export default function Shots() {
   const [showShot, setShowShot] = useState(false);
@@ -70,6 +71,8 @@ export default function Shots() {
       </div>
 
       <div className="w-full max-w-3xl mx-auto pt-4">
+        {/* The same supply reminder Home shows, in the same words. */}
+        <SupplyAlertBanner className="mx-4 mb-4" />
         <ShotSummaryCards
           totalShots={shots.length}
           last={last}
