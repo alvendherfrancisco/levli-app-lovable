@@ -2,18 +2,24 @@ import { lossFraction, seriesEndWeek, seriesKeyForMedication } from "@/lib/expec
 import { fromKg } from "@/lib/measure";
 
 /**
- * The data behind the Expected Progress card: the user's own logged weights and
- * the expected GLP-1 curve, laid out on one set of x positions so the two can be
- * read against each other.
+ * The data behind the one weight graph: the user's own logged weights, their
+ * 7-day average and the expected GLP-1 curve, laid out on a single set of x
+ * positions so they can be read against each other.
  *
  * Time is measured in WEEKS FROM THE FIRST LOGGED WEIGHT, which is where the
  * expected curve starts: week 0 is that first entry at 0% loss, and every later
  * week reads that fraction off the curve (see src/lib/expectedCurve.js).
  *
- * The window reaches the curve's own last week and no further, so a series that
- * stops at week 64 is not drawn past it. It always shows the progress made so
- * far plus room ahead: a quarter of the elapsed time again, with a floor of 24
- * weeks, so an early curve is not squeezed into a sliver.
+ * A row is built for every DAY of the range, so a weight logged mid-week sits on
+ * its own day, and the 7-day average is the average of the logged entries either
+ * side of it. The window ends today, so the ranges keep meaning "the last 30,
+ * 180 or 365 days"; a brand-new history gets two weeks of axis to itself rather
+ * than a single point.
+ *
+ * "Since start" (daysBack null) is the exception: it runs from the first logged
+ * weight and draws the whole curve to its own last week, so the long view ahead
+ * is there. The 30-day range hides the curve — four weeks of a two-year curve is
+ * a flat line that tells the user nothing.
  *
  * Values are in the unit the profile displays (kg or lb), so the chart, the
  * tooltip and the goal line are all in one unit.
@@ -38,10 +44,12 @@ function dateAtWeek(startKey, week) {
 const dayKeyOf = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-/** A week offset as the short date an axis shows: "Nov '25". */
-export function weekAxisLabel(startKey, week) {
+const round1 = (v) => Math.round(v * 10) / 10;
+
+/** A week offset as the short date the axis shows: "Oct 15". */
+export function shortDateLabel(startKey, week) {
   const d = dateAtWeek(startKey, week);
-  return `${MONTHS[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
+  return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
 }
 
 /** A stored day key written out in full: "Oct 12, 2027". */
@@ -51,11 +59,11 @@ export function fullDateLabel(key) {
 }
 
 /**
- * Builds the card's data from the full weight history, the profile and the shots
- * (the latest shot's medication decides which curve the user is compared with).
- * Returns null when no weight has ever been logged.
+ * Builds the graph's data from the full weight history, the profile and the
+ * shots (the latest shot's medication decides which curve the user is compared
+ * with). Returns null when no weight has ever been logged.
  */
-export function buildExpectedProgress({ weightHistory = [], profile, shots = [], unit = "lb" }) {
+export function buildWeightProgress({ weightHistory = [], profile, shots = [], unit = "lb", daysBack = null }) {
   if (!weightHistory.length) return null;
 
   const first = weightHistory[0];
@@ -63,47 +71,54 @@ export function buildExpectedProgress({ weightHistory = [], profile, shots = [],
   const medication = shots[0]?.medication || profile?.default_medication || "";
   const seriesKey = seriesKeyForMedication(medication, shots[0]?.route);
   const seriesEnd = seriesEndWeek(seriesKey);
+  const showCurve = daysBack != null;
 
-  const elapsedWeeks = Math.max(0, (dayOf(last.date) - dayOf(first.date)) / WEEK_MS);
-  const ahead = Math.max(24, Math.ceil(elapsedWeeks * 1.5));
-  const horizon = Math.max(Math.ceil(elapsedWeeks), Math.min(ahead, seriesEnd));
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayWeek = Math.max(0, (today - dayOf(first.date)) / WEEK_MS);
+  // "Since start" runs the whole history out to the end of the curve — or to
+  // today, when the user has already gone past it. Every other range is the last
+  // N days, ending today.
+  const startWeek = showCurve ? Math.max(0, todayWeek - daysBack / 7) : 0;
+  const roughEnd = showCurve ? todayWeek : Math.max(todayWeek, seriesEnd);
 
-  // One x per week of the curve, plus one at each logged weight's own position,
-  // so a weight logged mid-week sits where it happened.
-  const byWeek = new Map();
-  const pointAt = (week) => {
-    const key = Math.round(week * 1000) / 1000;
-    if (!byWeek.has(key)) {
-      byWeek.set(key, { week: key, isoDate: dayKeyOf(dateAtWeek(first.date, key)), expected: null, actual: null });
-    }
-    return byWeek.get(key);
-  };
+  const startDay = Math.round(startWeek * 7);
+  const endDay = Math.round(Math.max(roughEnd, startWeek + 2) * 7);
+  const windowStart = startDay / 7;
+  const windowEnd = endDay / 7;
 
-  for (let w = 0; w <= Math.min(horizon, seriesEnd); w++) pointAt(w);
+  const byDay = {};
+  weightHistory.forEach((entry) => { byDay[entry.date] = entry.weight; });
 
-  weightHistory.forEach((entry) => {
-    const week = Math.max(0, (dayOf(entry.date) - dayOf(first.date)) / WEEK_MS);
-    pointAt(week).actual = fromKg(entry.kg, unit);
+  const rows = [];
+  for (let offset = startDay; offset <= endDay; offset++) {
+    const key = dayKeyOf(dateAtWeek(first.date, offset / 7));
+    rows.push({ week: offset / 7, isoDate: key, weight: byDay[key] ?? null, rollingAvg: null, expected: null });
+  }
+
+  // The 7-day rolling average, over the logged entries themselves.
+  const logged = rows.filter((r) => r.weight != null);
+  logged.forEach((row, i) => {
+    const window = logged.slice(Math.max(0, i - 6), i + 1);
+    row.rollingAvg = round1(window.reduce((a, r) => a + r.weight, 0) / window.length);
   });
 
-  const points = [...byWeek.values()].sort((a, b) => a.week - b.week);
-  points.forEach((p) => {
-    p.expected = p.week > seriesEnd
-      ? null
-      : fromKg(first.kg * (1 - lossFraction(seriesKey, p.week)), unit);
-  });
+  if (showCurve) {
+    rows.forEach((row) => {
+      if (row.week > seriesEnd) return;
+      row.expected = round1(fromKg(first.kg * (1 - lossFraction(seriesKey, row.week)), unit));
+    });
+  }
 
   return {
-    seriesKey,
-    seriesEnd,
-    horizon,
-    unit,
-    points,
+    seriesKey, seriesEnd, showCurve,
     startKey: first.date,
+    windowStart,
+    windowEnd,
+    rows,
+    goalKg: profile?.goal_weight_kg ?? null,
     startKg: first.kg,
     currentKg: last.kg,
     lostKg: first.kg - last.kg,
-    goalKg: profile?.goal_weight_kg ?? null,
-    loggedCount: weightHistory.length,
+    loggedCount: logged.length,
   };
 }
