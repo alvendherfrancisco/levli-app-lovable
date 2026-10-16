@@ -8,6 +8,7 @@ import WeightReadOnlyCard from "@/components/caregiver/WeightReadOnlyCard";
 import ShotsReadOnlyCard from "@/components/caregiver/ShotsReadOnlyCard";
 import JournalReadOnlyCard from "@/components/caregiver/JournalReadOnlyCard";
 import SideEffectsReadOnlyCard from "@/components/caregiver/SideEffectsReadOnlyCard";
+import InsightsLockView from "@/components/insights/InsightsLockView";
 import { fetchSharedRecords, listSharedWithMe, scopeLabel } from "@/lib/caregiverShare";
 import { kgOfEntry } from "@/lib/measure";
 
@@ -89,14 +90,20 @@ export default function SharedWithMe() {
             {message && <p className="mx-3 mb-4 text-sm text-gray-500 dark:text-[#9A9DAE]">{message}</p>}
             {!data && !message && <Loading />}
 
-            {data && (
+            {data && !person?.is_premium ? (
+              /* Read only, and it follows the owner's plan (the backend sends
+                 their plan with their records): while they have no Premium, their
+                 record pages are held behind the very preview they see on their
+                 own Insights screen — the same blurred sample page, with nothing
+                 of theirs drawn behind it. There is nothing to sell a caregiver,
+                 so the group over it carries no Unlock button. */
+              <InsightsLockView className="mx-3 mb-4 h-[60vh] min-h-[380px] rounded-2xl border border-gray-100 dark:border-gray-800" />
+            ) : data && (
               <>
                 <WeightReadOnlyCard entries={weights} unit={unit} goalKg={person.goal_weight_kg} />
                 <ShotsReadOnlyCard shots={data.shots || []} />
                 <JournalReadOnlyCard entries={data.journal || []} />
-                {/* The side-effects section follows the owner's plan, exactly as the
-                    Insights cards do for them. */}
-                <SideEffectsReadOnlyCard events={data.side_effects || []} locked={!person?.is_premium} />
+                <SideEffectsReadOnlyCard events={data.side_effects || []} />
                 <p className="mx-3 pb-2 text-xs text-gray-400 dark:text-gray-500">
                   These records belong to {person.name} and are shown read only.
                 </p>

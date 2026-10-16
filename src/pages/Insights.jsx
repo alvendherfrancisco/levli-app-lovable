@@ -23,11 +23,7 @@ import WellbeingPanel from "@/components/insights/WellbeingPanel";
 import { toast } from "@/lib/toast";
 import useDoseColors from "@/hooks/useDoseColors";
 import PageContainer from "@/components/PageContainer";
-import PremiumBadge from "@/components/PremiumBadge";
-import PremiumLockedBlock from "@/components/premium/PremiumLockedBlock";
-import InsightTrendArt from "@/components/insights/InsightTrendArt";
-import LockedWeightChartPreview from "@/components/insights/LockedWeightChartPreview";
-import LockedPhotosPreview from "@/components/insights/LockedPhotosPreview";
+import InsightsLockView from "@/components/insights/InsightsLockView";
 import { useSubscription } from "@/lib/SubscriptionContext";
 
 /**
@@ -45,11 +41,11 @@ const WEIGHT_RANGES = {
 
 export default function Insights() {
   const { shots, weightHistory, profile, progressPhotosList, addProgressPhotoRecord, updateProgressPhotoRecord, deleteProgressPhotoRecord, getWeight, unitCheck } = useAppState();
-  // Every chart on this page belongs to Premium; the page itself, the weight
-  // summary above the chart and the prescriber check-in stay free. The lock
-  // follows the subscription as it changes, so a purchase or a restore clears it
-  // on the spot, with nothing to reopen.
-  const { isPremium } = useSubscription();
+  // The whole page belongs to Premium — the weight summary, the tiles, every
+  // chart and the photo strip — so it is either the real Insights or the one lock
+  // over it. It follows the subscription as it changes, so a purchase or a
+  // restore lifts it on the spot, with nothing to reopen.
+  const { isPremium, openPaywall } = useSubscription();
   const locked = !isPremium;
   const [weightRange, setWeightRange] = useState("180 Days");
   // The expected curve is on to begin with; the toggle above the graph turns it off.
@@ -168,14 +164,41 @@ export default function Insights() {
       }`
     : "";
 
+  // The header is the one part of the page the lock leaves alone: the title and
+  // the way into Settings, on the page's own margins, in both states.
+  const header = (
+    <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Insights</h1>
+      <Link to="/settings" aria-label="Settings" className={HEADER_ICON}>
+        <Settings size={HEADER_GLYPH} aria-hidden="true" />
+      </Link>
+    </div>
+  );
+
+  // Without Premium the whole page is one locked page: the header stays, the
+  // prescriber check-in stays (a safety message, never locked or blurred), and
+  // everything else is the blurred sample page with the one lock group centred
+  // over it (see InsightsLockView). Nothing of the person's own reading — a
+  // weight, a chart point, a photo — is drawn anywhere at all.
+  //
+  // The shell is exactly the viewport: it takes the height the tab bar leaves and
+  // clips its own content, so the page cannot scroll and the group stays where it
+  // is put. Below the tab bar's room and above it, it is clear of both.
+  if (locked) {
+    return (
+      <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-white dark:bg-gray-950 pb-safe-content">
+        {header}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <WellbeingPanel />
+          <InsightsLockView onUnlock={openPaywall} className="min-h-0 flex-1" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <PageContainer bottomInset="default" disclaimer>
-      <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Insights</h1>
-        <Link to="/settings" aria-label="Settings" className={HEADER_ICON}>
-          <Settings size={HEADER_GLYPH} aria-hidden="true" />
-        </Link>
-      </div>
+      {header}
 
       <div className="w-full max-w-3xl mx-auto pt-4">
         {/* The gentle prescriber check-in, at the head of the page so it is read
@@ -188,7 +211,6 @@ export default function Insights() {
           <SectionHeader
             icon={<IonIcon name="trending-down" size={20} className="text-indigo-600 dark:text-indigo-400" />}
             title="Weight Change"
-            action={locked ? <PremiumBadge /> : null}
           />
 
           <RangeTabs options={Object.keys(WEIGHT_RANGES)} value={weightRange} onChange={setWeightRange} />
@@ -240,7 +262,7 @@ export default function Insights() {
           {/* The expected curve is offered only where it can be read: the 30-day
               range hides it, because four weeks of a two-year curve is a flat
               line that adds nothing. */}
-          {!locked && progress?.showCurve && weightEntries.length > 0 && (
+          {progress?.showCurve && weightEntries.length > 0 && (
             <div className="mb-2 flex justify-end">
               <button
                 type="button"
@@ -258,21 +280,7 @@ export default function Insights() {
             </div>
           )}
 
-          {weightEntries.length > 0 && locked ? (
-            /* The graph is the Premium part of this card, and the tiles above it
-               are not — so the lock covers the graph alone. None of it is drawn
-               for an account without Premium: the block's own sample shapes stand
-               where the chart would be (see LockedWeightChartPreview), so no
-               weight can be read through the blur or out of the code. */
-            <PremiumLockedBlock
-              full
-              art={<InsightTrendArt />}
-              headline="See your whole journey"
-              line="Track every trend and photo"
-            >
-              <LockedWeightChartPreview />
-            </PremiumLockedBlock>
-          ) : weightEntries.length > 0 ? (
+          {weightEntries.length > 0 ? (
             <>
               <WeightProgressChart
                 rows={rows}
@@ -318,19 +326,10 @@ export default function Insights() {
           <SectionHeader
             icon={<IonIcon name="camera" size={20} className="text-indigo-600 dark:text-indigo-400" />}
             title="Progress Pictures"
-            action={locked
-              ? <PremiumBadge />
-              : <button onClick={openAddPhoto} className="btn-pill btn-pill-sm btn-primary">Add</button>}
+            action={<button onClick={openAddPhoto} className="btn-pill btn-pill-sm btn-primary">Add</button>}
           />
 
-          {locked ? (
-            /* No thumbnail is loaded at all while the card is locked: the strip's
-               own shapes stand in their place, so no photo of the person's is in
-               the page to be read through the blur. */
-            <PremiumLockedBlock>
-              <LockedPhotosPreview />
-            </PremiumLockedBlock>
-          ) : photosAsc.length === 0 ? (
+          {photosAsc.length === 0 ? (
             <InsightEmptyState message="No progress pictures yet." />
           ) : (
             <div className="flex gap-2.5 overflow-x-auto pb-1">

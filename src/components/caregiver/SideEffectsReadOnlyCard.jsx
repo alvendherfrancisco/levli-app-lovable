@@ -1,7 +1,5 @@
 import React from "react";
 import ReadOnlySection from "@/components/caregiver/ReadOnlySection";
-import PremiumLockedBlock from "@/components/premium/PremiumLockedBlock";
-import LockedSideEffectsPreview from "@/components/caregiver/LockedSideEffectsPreview";
 import { dayLabel } from "@/lib/caregiverShare";
 
 /**
@@ -9,21 +7,15 @@ import { dayLabel } from "@/lib/caregiverShare";
  * most recent ones with the severity that was reported. Nothing here is a
  * judgement about a medication, only what was written down.
  *
- * `locked` follows the OWNER's plan (see base44/functions/sharedRecords): this is
- * the one section of a shared record that stands for a Premium card of the owner's
- * own Insights page, so it arrives locked for a caregiver when the owner has no
- * Premium. There is nothing to sell them — the lock carries no button — and
- * nothing of the record is drawn behind it.
+ * It is drawn only while the owner has Premium: the whole shared view follows
+ * their plan, so without it the page is held behind the blurred preview instead
+ * (see SharedWithMe), and nothing of the record reaches this card at all.
  */
-export default function SideEffectsReadOnlyCard({ events = [], locked = false }) {
+export default function SideEffectsReadOnlyCard({ events = [] }) {
   const recent = events.slice(0, 5);
   return (
-    <ReadOnlySection title="Side effects" meta={!locked && events.length ? `${events.length} logged` : null}>
-      {locked ? (
-        <PremiumLockedBlock unlockable={false}>
-          <LockedSideEffectsPreview />
-        </PremiumLockedBlock>
-      ) : recent.length === 0 ? (
+    <ReadOnlySection title="Side effects" meta={events.length ? `${events.length} logged` : null}>
+      {recent.length === 0 ? (
         <p className="text-sm text-gray-400 dark:text-gray-500">No side effects logged yet.</p>
       ) : (
         <div className="space-y-3">
