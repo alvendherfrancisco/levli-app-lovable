@@ -6,7 +6,17 @@ import React from "react";
  * Consistent 280×200 viewBox, responsive width.
  */
 
-function Scene({ blobStyle, children, className = "" }) {
+/**
+ * The illustration slot every scene is drawn in: one width, one aspect (7:5) and
+ * one soft wash behind the artwork, so a picture can never be a different size or
+ * sit differently from one screen to the next.
+ *
+ * Exported because the Premium screen draws its own three illustrations through
+ * this same wrapper (see src/components/paywall/PaywallIllustrations.jsx): the
+ * paywall is a later step of this flow, so its artwork is the same size, the same
+ * format and the same glow as the steps before it.
+ */
+export function Scene({ blobStyle, children, className = "" }) {
   return (
     <div className={`relative w-full max-w-[280px] mx-auto aspect-[7/5] ${className}`}>
       <div className="absolute inset-0 flex items-center justify-center">

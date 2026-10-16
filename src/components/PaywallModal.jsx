@@ -1,29 +1,38 @@
-import React, { useState } from "react";
-import { Crown, X } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { X } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useAppState } from "@/lib/AppState";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
+import { sound } from "@/lib/sounds";
 import { isRunningInIOSWrapper, sendIOSEvent } from "@/lib/iosBridge";
 import { reconcileSubscription } from "@/lib/subscriptionHandler";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import usePremiumPlans from "@/hooks/usePremiumPlans";
-import PaywallHero from "@/components/paywall/PaywallHero";
-import PaywallBenefits from "@/components/paywall/PaywallBenefits";
+import { PREMIUM_SLIDES } from "@/lib/premiumPlans";
+import AmbientBackground from "@/components/onboarding/AmbientBackground";
+import { CompletionIllustration } from "@/components/onboarding/OnboardingIllustrations";
+import PaywallSlides from "@/components/paywall/PaywallSlides";
 import PaywallPlans from "@/components/paywall/PaywallPlans";
 import PaywallBar from "@/components/paywall/PaywallBar";
+import { HEADING, PRIMARY_BTN, PRIMARY_BTN_ON, SUBTITLE } from "@/lib/uiStyles";
 
 /**
- * Levli Premium, sold on one calm screen.
+ * Levli Premium, sold as the flow's last step.
  *
- * The sheet is a column of three parts, so nothing can ever sit on top of
- * anything: the close button; the middle — one small illustration, the headline,
- * three short benefits and the three plans, which together fit a phone screen and
- * which scroll only when the screen is too short for them; and the bar at the
- * foot, which holds the one action, the terms of the plan in hand and the legal
- * row and keeps its own height at the bottom.
+ * The screen is an onboarding page, drawn with the onboarding's own parts: the
+ * same page, wash and panel (AmbientBackground and the auth theme tokens), the
+ * same segmented progress bar across the head — here three segments, one per
+ * feature — the same close button as the flow's back button, the same artwork
+ * slot, headline type and muted line, and the same CTA footer. Only the contents
+ * differ: three slides to swipe through, the plans under them, and the button that
+ * starts the plan in hand.
  *
- * Every price on the screen is read from the product as the sheet opens (see
+ * The panel is a column of three, so nothing can sit on top of anything: the head,
+ * the part that scrolls (slides and plans), and the fixed footer. On a short phone
+ * that middle part scrolls and everything else stays exactly where it is.
+ *
+ * Every price on the screen is read from the product as it opens (see
  * src/lib/premiumPlans.js), never carried here; an account that already has
  * Premium is thanked instead of being sold it again; and the purchase itself is
  * handed to the App Store, whose own sheet — with the customer's local price — is
@@ -35,11 +44,13 @@ export default function PaywallModal({ open, onClose }) {
   const { isPremium } = useSubscription();
   const { plans, loading, error: plansError, reload } = usePremiumPlans(open);
   const [selected, setSelected] = useState("yearly");
+  const [slideIndex, setSlideIndex] = useState(0);
   const [busy, setBusy] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [purchaseError, setPurchaseError] = useState("");
   const [showNoSub, setShowNoSub] = useState(false);
 
+  const trackRef = useRef(null);
   const inWrapper = isRunningInIOSWrapper();
   const handleClose = () => {
     if (inWrapper) sendIOSEvent("wanillajs.event.paywall.closeButtonTapped", { userId: user?.id ?? null });
@@ -47,9 +58,20 @@ export default function PaywallModal({ open, onClose }) {
   };
   const sheetRef = useModal({ open, onDismiss: handleClose });
 
+  // A fresh visit starts on the first feature.
+  useEffect(() => { if (open) setSlideIndex(0); }, [open]);
+
   if (!open) return null;
 
   const plan = plans.find((p) => p.id === selected) || plans[0] || null;
+
+  // Paging a slide: the track is scrolled to it, and the progress bar follows
+  // immediately rather than waiting for the scroll to settle.
+  const goToSlide = (index) => {
+    setSlideIndex(index);
+    const el = trackRef.current;
+    if (el) el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
+  };
 
   const handleSubscribe = async () => {
     setPurchaseError("");
@@ -73,6 +95,7 @@ export default function PaywallModal({ open, onClose }) {
       const state = await reconcileSubscription();
       if (state?.active) {
         refreshProfile?.();
+        sound.success();
         toast.success("Welcome to Levli Premium!");
         onClose();
       }
@@ -107,38 +130,50 @@ export default function PaywallModal({ open, onClose }) {
   const barError = purchaseError || plansError;
   const retry = plansError ? reload : handleSubscribe;
 
-  const closeRow = (
-    <div className="mx-auto flex w-full max-w-md justify-end px-4 pt-safe-5">
-      <button
-        type="button"
-        onClick={handleClose}
-        aria-label="Close"
-        className="flex h-11 w-11 items-center justify-center rounded-full text-gray-400 active:scale-95 dark:text-gray-500"
-      >
-        <X size={22} aria-hidden="true" />
-      </button>
-    </div>
-  );
-
+  // z-70 keeps the screen above every sheet the app opens (the dose sheets sit at
+  // z-60) while staying under the toasts.
   const shell =
-    "fixed inset-0 z-[70] flex flex-col overflow-x-hidden bg-white sheet-lock animate-in slide-in-from-bottom outline-none dark:bg-gray-950";
+    "auth-screen fixed inset-0 z-[70] bg-auth-page flex items-stretch sm:items-center justify-center sm:p-6 overflow-hidden";
+  const panel =
+    "w-full max-w-lg mx-auto flex flex-col h-full sm:h-[88vh] sm:max-h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:shadow-xl bg-auth-panel backdrop-blur-md overflow-hidden relative z-10 border border-auth-divider";
+
+  const closeButton = (
+    <button
+      type="button"
+      onClick={handleClose}
+      aria-label="Close"
+      className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-auth-border bg-auth-card transition-all hover:bg-auth-surface active:scale-95"
+    >
+      <X size={17} className="text-auth-muted" aria-hidden="true" />
+    </button>
+  );
 
   // Nothing left to sell: an account that already has Premium is thanked.
   if (isPremium) {
     return (
       <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="Levli Premium" tabIndex={-1} className={shell}>
-        {closeRow}
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-500/15">
-            <Crown size={26} className="text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
-          </span>
-          <p className="mt-4 text-xl font-bold text-gray-900 dark:text-white">You have Premium</p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-[#9A9DAE]">
-            Thank you for supporting Levli. Everything is unlocked.
-          </p>
-          <button type="button" onClick={handleClose} className="btn-pill btn-secondary mt-6 w-full max-w-[280px]">
-            Close
-          </button>
+        <AmbientBackground themed />
+        <div className={panel}>
+          <div className="flex flex-shrink-0 items-center gap-3 border-b border-auth-border px-5 pt-safe-5 pb-1.5 sm:px-6">
+            <div className="flex-1" />
+            {closeButton}
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6">
+            <div className="flex min-h-full flex-col justify-center gap-6">
+              <CompletionIllustration />
+              <div>
+                <h2 className={`${HEADING} text-center`}>You have Premium</h2>
+                <p className={`${SUBTITLE} mt-2 text-center`}>Everything is unlocked.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="onb-shell-cta flex-shrink-0 border-t border-auth-border px-6 sm:px-8">
+            <button type="button" onClick={handleClose} className={`${PRIMARY_BTN} ${PRIMARY_BTN_ON} mx-auto block max-w-[400px]`}>
+              Close
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -146,34 +181,64 @@ export default function PaywallModal({ open, onClose }) {
 
   return (
     <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="Levli Premium" tabIndex={-1} className={shell}>
-      {closeRow}
+      <AmbientBackground themed />
+      <div className={panel}>
+        {/* The head: the flow's own segmented progress bar, one segment per
+            feature, and the close button where the back button sits. */}
+        <div className="flex flex-shrink-0 items-center gap-3 border-b border-auth-border px-5 pt-safe-5 pb-1.5 sm:px-6">
+          <div className="flex flex-1 gap-1.5">
+            {PREMIUM_SLIDES.map((slide, i) => (
+              <button
+                key={slide.id}
+                type="button"
+                onClick={() => { sound.tap(); goToSlide(i); }}
+                aria-label={slide.label}
+                aria-current={i === slideIndex ? "true" : undefined}
+                className="flex flex-1 items-center py-2.5"
+              >
+                <span
+                  className={`block h-1.5 w-full rounded-full transition-colors duration-500 ${
+                    i <= slideIndex ? "bg-indigo-600" : "bg-auth-track"
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+          {closeButton}
+        </div>
 
-      {/* The middle: everything above the button, in one centred column, which
-          scrolls only if the screen is too short to hold it. */}
-      <div className="mx-auto w-full max-w-md flex-1 overflow-y-auto px-4 pb-2">
-        <PaywallHero />
+        {/* The middle: the slides and the plans, in the flow's own 20px margins.
+            This is the one part that scrolls, and only when the screen is too
+            short to hold it. */}
+        <div className="relative min-h-0 flex-1">
+          <div className="h-full overflow-y-auto overscroll-contain px-5 py-4 sm:px-6">
+            <PaywallSlides trackRef={trackRef} index={slideIndex} onIndexChange={setSlideIndex} />
+            <PaywallPlans
+              className="mt-6"
+              plans={plans}
+              selected={selected}
+              onSelect={setSelected}
+              loading={loading}
+            />
+          </div>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-auth-fade to-transparent"
+          />
+        </div>
 
-        <h2 className="mt-6 text-center text-2xl font-bold text-gray-900 dark:text-white">Go Premium</h2>
-        <p className="mt-1.5 text-center text-sm text-gray-500 dark:text-[#9A9DAE]">
-          Everything you need to stay on track.
-        </p>
-
-        <PaywallBenefits />
-
-        <PaywallPlans plans={plans} selected={selected} onSelect={setSelected} loading={loading} />
+        <PaywallBar
+          label={plan?.button || "Continue"}
+          terms={plan?.terms || ""}
+          busy={busy}
+          disabled={!plan}
+          error={barError}
+          onSubscribe={handleSubscribe}
+          onRetry={retry}
+          onRestore={handleRestore}
+          restoring={restoring}
+        />
       </div>
-
-      <PaywallBar
-        label={plan?.button || "Continue"}
-        terms={plan?.terms || ""}
-        busy={busy}
-        disabled={!plan}
-        error={barError}
-        onSubscribe={handleSubscribe}
-        onRetry={retry}
-        onRestore={handleRestore}
-        restoring={restoring}
-      />
 
       {/* No Subscription Found */}
       {showNoSub && (

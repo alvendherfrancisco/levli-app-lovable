@@ -1,19 +1,19 @@
 /**
- * The Premium plans the paywall offers, and the three things Premium opens — the
- * one place the screen's words come from, and the one place its numbers are
- * worked out.
+ * The Premium screen's words: its three slides, and the plans in front of them.
+ *
+ * The slides are the screen's own copy — one per feature, each a short headline
+ * and one line under it, in the onboarding's voice: short, warm, direct sentences
+ * in sentence case, no jargon, never a line longer than six words.
  *
  * No price is written here. The amounts and the currency are read from the
  * product's own data when the screen opens (see
- * base44/functions/get-premium-prices), and everything a plan card shows is
- * derived from them: the yearly plan's per-month figure, what it saves against
- * twelve months, the button's label and the line under it. Two lines on the
- * screen therefore cannot disagree, and a price change needs no release.
+ * base44/functions/get-premium-prices), and everything a plan row and the bar
+ * show is derived from it: the yearly plan's per-month figure, what it saves
+ * against twelve months, the button's label and the line under it. Two lines on
+ * the screen therefore cannot disagree, and a price change needs no release.
  *
  * Only what a price record cannot carry lives in this file: each plan's name, the
- * length of the yearly plan's introductory offer, and the wording of the three
- * benefits — labels of no more than three words and a muted line of no more than
- * five, so nothing on the screen has to be read twice.
+ * length of the yearly plan's introductory offer, and the slides' copy.
  */
 const PLAN_META = {
   yearly: { name: "Yearly", period: "/ year", button: "Start free trial", trialDays: 7 },
@@ -21,11 +21,11 @@ const PLAN_META = {
   lifetime: { name: "Lifetime", period: "once", button: "Buy lifetime", trialDays: 0 },
 };
 
-/** What Premium opens, in the order the screen shows it. */
-export const PREMIUM_BENEFITS = [
-  { id: "reports", label: "Reports", detail: "Share with your doctor" },
-  { id: "sites", label: "Injection site rotation", detail: "See where you inject" },
-  { id: "insights", label: "Full insights", detail: "Charts, trends, and photos" },
+/** One slide per feature, in the order the screen shows them. */
+export const PREMIUM_SLIDES = [
+  { id: "reports", label: "Reports", headline: "Reports for your doctor", line: "Share your progress in one tap" },
+  { id: "sites", label: "Injection site rotation", headline: "Rotate with confidence", line: "See where you've injected" },
+  { id: "insights", label: "Full insights", headline: "See your whole journey", line: "Track every trend and photo" },
 ];
 
 /**
