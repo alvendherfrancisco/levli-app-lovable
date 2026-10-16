@@ -53,7 +53,7 @@ export default function CustomMedicationFields({
           <AlertTriangle size={13} className="flex-shrink-0" /> {CUSTOM_MEDICATION_WARNING}
         </p>
         <p className="text-[11px] text-orange-700/80 dark:text-orange-300/80 mt-1">
-          Enter exactly what your prescriber or pharmacy gave you. Custom entries are kept out of the medication exposure estimate.
+          Enter exactly what your prescriber or pharmacy gave you.
         </p>
       </div>
     </div>

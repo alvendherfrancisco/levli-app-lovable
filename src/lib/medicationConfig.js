@@ -67,7 +67,7 @@ const researchPeptideEntry = ({ id, name }) => ({
   lastReviewed: "2026-10-07",
   verified: false,
   verifiedNote:
-    `${name} has no approved product or label to check against, so it carries no strength list, no schedule and no missed-dose rule. A typed dose is never used for exposure modelling.`,
+    `${name} has no approved product or label to check against, so it carries no strength list, no schedule and no missed-dose rule.`,
   exposureEligible: false,
 });
 /** Shown wherever a custom entry is used. */
@@ -525,7 +525,7 @@ export const MEDICATION_CONFIG = [
     lastReviewed: "2026-10-07",
     verified: true,
     verifiedNote:
-      "Tablet strengths (0.8 / 2.5 / 5.5 / 9 / 14.5 / 17.2 mg), the once-daily interval, the titration order and the 17.2 mg maximum were read from the FDA prescribing information (approval 2026). The label's missed-dose wording was not read in this pass, so Levli states none for it. No published half-life is held, so it is kept out of the exposure estimate.",
+      "Tablet strengths (0.8 / 2.5 / 5.5 / 9 / 14.5 / 17.2 mg), the once-daily interval, the titration order and the 17.2 mg maximum were read from the FDA prescribing information (approval 2026). The label's missed-dose wording was not read in this pass, so Levli states none for it.",
     exposureEligible: false,
   },
   ...RESEARCH_PEPTIDE_NAMES.map(researchPeptideEntry),
@@ -558,7 +558,7 @@ export const MEDICATION_CONFIG = [
     lastReviewed: "2026-10-05",
     verified: false,
     verifiedNote:
-      "Compounded and generic products have no approved prescribing information, so no dose list can be verified. Any dose may be logged and none is used for exposure modelling.",
+      "Compounded and generic products have no approved prescribing information, so no dose list can be verified. Any dose may be logged.",
     exposureEligible: false,
   },
   {
@@ -583,7 +583,7 @@ export const MEDICATION_CONFIG = [
     lastReviewed: "2026-10-05",
     verified: false,
     verifiedNote:
-      "Compounded and generic products have no approved prescribing information, so no dose list can be verified. No dose logged for these products is used for exposure modelling.",
+      "Compounded and generic products have no approved prescribing information, so no dose list can be verified.",
     exposureEligible: false,
   },
   {
@@ -605,7 +605,7 @@ export const MEDICATION_CONFIG = [
     lastReviewed: "2026-10-05",
     verified: false,
     verifiedNote:
-      "Nothing about a custom entry is verified. It is never used for exposure modelling or interval-based reminders.",
+      "Nothing about a custom entry is verified. It is never used for interval-based reminders.",
     exposureEligible: false,
   },
 ];
