@@ -94,7 +94,9 @@ export default function SharedWithMe() {
                 <WeightReadOnlyCard entries={weights} unit={unit} goalKg={person.goal_weight_kg} />
                 <ShotsReadOnlyCard shots={data.shots || []} />
                 <JournalReadOnlyCard entries={data.journal || []} />
-                <SideEffectsReadOnlyCard events={data.side_effects || []} />
+                {/* The side-effects section follows the owner's plan, exactly as the
+                    Insights cards do for them. */}
+                <SideEffectsReadOnlyCard events={data.side_effects || []} locked={!person?.is_premium} />
                 <p className="mx-3 pb-2 text-xs text-gray-400 dark:text-gray-500">
                   These records belong to {person.name} and are shown read only.
                 </p>

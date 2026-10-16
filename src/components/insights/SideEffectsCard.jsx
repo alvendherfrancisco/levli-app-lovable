@@ -7,6 +7,10 @@ import RangeTabs from "@/components/insights/RangeTabs";
 import { FOOTNOTE } from "@/components/insights/insightUi";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import { useAppState } from "@/lib/AppState";
+import { useSubscription } from "@/lib/SubscriptionContext";
+import PremiumBadge from "@/components/PremiumBadge";
+import PremiumLockedBlock from "@/components/premium/PremiumLockedBlock";
+import LockedSideEffectsPreview from "@/components/insights/LockedSideEffectsPreview";
 import { fromDayKey, parseShotDate, toDayKey, todayKey } from "@/lib/dateUtils";
 
 /** The windows the card can be read over. */
@@ -84,6 +88,11 @@ function afterShotHint(events, shots) {
  */
 export default function SideEffectsCard() {
   const { adverseEvents, shots } = useAppState();
+  // The card's reading is Premium, so it is either the real list or the lock —
+  // decided by the subscription, which lifts the lock the moment a purchase or a
+  // restore lands, with nothing to reopen.
+  const { isPremium } = useSubscription();
+  const locked = !isPremium;
   const [range, setRange] = useState("90 Days");
   const [showAll, setShowAll] = useState(false);
   const [logging, setLogging] = useState(false);
@@ -137,15 +146,25 @@ export default function SideEffectsCard() {
         compact
         icon={<IonIcon name="warning" size={16} className="text-indigo-600 dark:text-indigo-400" />}
         title="Side Effects"
-        action={
-          summary.total > 0 ? (
-            <button onClick={() => setLogging(true)} className="btn-pill btn-pill-sm btn-primary flex-shrink-0">
-              Log
-            </button>
-          ) : null
-        }
+        action={locked ? (
+          <PremiumBadge />
+        ) : summary.total > 0 ? (
+          <button onClick={() => setLogging(true)} className="btn-pill btn-pill-sm btn-primary flex-shrink-0">
+            Log
+          </button>
+        ) : null}
       />
 
+      {locked ? (
+        /* Locked: the ranges, the count and every row are stood in for by the
+           card's own layout in sample shapes (see LockedSideEffectsPreview), so
+           nothing logged on the card is drawn for an account without Premium.
+           Logging a side effect stays free, from Home and the Journal. */
+        <PremiumLockedBlock>
+          <LockedSideEffectsPreview />
+        </PremiumLockedBlock>
+      ) : (
+        <>
       <RangeTabs
         variant="segmented"
         options={Object.keys(RANGES)}
@@ -205,6 +224,9 @@ export default function SideEffectsCard() {
               ))}
             </p>
           )}
+        </>
+      )}
+
         </>
       )}
 

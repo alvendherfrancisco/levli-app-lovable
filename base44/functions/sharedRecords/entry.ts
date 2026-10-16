@@ -18,6 +18,26 @@ import {
  * never given a way to write, and every write entity rule remains owner-scoped,
  * so a caregiver cannot change anything even by calling the API directly.
  */
+/**
+ * Whether the account that owns these records has Levli Premium: the plan saved on
+ * its profile, or a subscription whose expiry is still ahead.
+ *
+ * It is read from the owner — a caregiver's own plan never decides what a shared
+ * record shows — and read with the service role, so whoever asked cannot influence
+ * the answer.
+ */
+async function ownerHasPremium(admin, ownerId, profile) {
+  if (profile?.plan_type === "lifetime" && profile?.subscription_status === "active") return true;
+  if (profile?.subscription_status === "active" || profile?.subscription_status === "trialing") return true;
+
+  const now = Math.floor(Date.now() / 1000);
+  const rows = await admin.entities.UserSubscription
+    .filter({ user_id: ownerId }, "-expiration_date", 1)
+    .catch(() => []);
+  const expires = Number(rows?.[0]?.expiration_date ?? 0);
+  return Number.isFinite(expires) && expires > now;
+}
+
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -70,6 +90,7 @@ export default async function (req) {
       admin.entities.AdverseEvent.filter({ created_by_id: share.owner_id }, { sort: "-onset_date", limit: 200 }),
     ]);
     const profile = profiles.get(share.owner_id) || null;
+    const ownerPremium = await ownerHasPremium(admin, share.owner_id, profile);
 
     return Response.json({
       ok: true,
@@ -81,6 +102,9 @@ export default async function (req) {
         goal_weight_kg: profile?.goal_weight_kg ?? null,
         height_cm: profile?.height_cm ?? null,
         granted_date: share.granted_date,
+        // What the caregiver's screen locks or shows, which is the owner's own
+        // entitlement and not theirs.
+        is_premium: ownerPremium,
       },
       shots: entityRows(shots),
       journal: entityRows(journal),
