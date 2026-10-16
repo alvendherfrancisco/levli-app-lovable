@@ -10,11 +10,16 @@ import {
  * and the same button as every onboarding step), holding the one action, the terms
  * of the plan in hand, and the legal row.
  *
- * It is a fixed-height sibling of the content rather than a layer over it, so the
- * slides and the plans scroll above it and the button is always where it is, on
- * the smallest phone as much as the largest. A failure is reported here, in the
- * one place the action is, in the flow's own notice, with the way to try again
- * beside it.
+ * It is pinned across the foot of the panel, over the slides and the plans that
+ * scroll behind it: the button is always exactly where it is, on the smallest
+ * phone as much as the largest, and the scrolling content keeps the bar's own
+ * height as its last padding (see PaywallModal), so the last plan row always
+ * comes to rest above it. Its spacing is the screen's own — 16px above the
+ * button, 8px under it for the plan note, 16px above the legal row, and only the
+ * home indicator's inset below that (see .paywall-bar in src/index.css).
+ *
+ * A failure is reported here, in the one place the action is, in the flow's own
+ * notice, with the way to try again beside it.
  */
 export default function PaywallBar({
   label, terms, busy, disabled, error,
@@ -23,7 +28,7 @@ export default function PaywallBar({
   const off = busy || disabled;
 
   return (
-    <div className="onb-shell-cta flex-shrink-0 border-t border-auth-border px-6 sm:px-8">
+    <div className="paywall-bar border-t border-auth-border px-4 pt-4">
       <div className="mx-auto w-full max-w-[400px]">
         {error && (
           <div role="alert" className={`${NOTICE} mb-4`}>
@@ -45,9 +50,9 @@ export default function PaywallBar({
           ) : label}
         </button>
 
-        {terms && <p className={`${HELP_ON_SCREEN} mt-3`}>{terms}</p>}
+        {terms && <p className={`${HELP_ON_SCREEN} mt-2`}>{terms}</p>}
 
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[12.5px] text-auth-muted">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-[12.5px] text-auth-muted">
           <a href="/terms" className={LINK_UNDERLINE}>Terms</a>
           <span aria-hidden="true">·</span>
           <button

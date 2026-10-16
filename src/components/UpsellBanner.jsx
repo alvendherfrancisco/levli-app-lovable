@@ -16,7 +16,7 @@ export default function UpsellBanner() {
           <span className="font-bold text-white">Levli Premium</span>
         </div>
         <p className="text-xs text-indigo-100 mb-3 max-w-xs">
-          Unlimited shots, full insights and history, reports, and no ads.
+          Unlimited shots, full insights and history, and reports.
         </p>
         <button
           onClick={openPaywall}

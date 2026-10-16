@@ -1,9 +1,9 @@
 /**
- * The Premium screen's words: its five slides, and the plans in front of them.
+ * The Premium screen's words: its four slides, and the plans in front of them.
  *
  * The slides are the screen's own copy — one per benefit, each a short headline
  * and one line under it, in the onboarding's voice: short, warm, direct sentences
- * in sentence case, no jargon, never a line longer than six words. These five are
+ * in sentence case, no jargon, never a line longer than six words. These four are
  * the benefits Premium is sold on, in one place, so every screen that lists them
  * lists the same ones.
  *
@@ -29,7 +29,6 @@ export const PREMIUM_SLIDES = [
   { id: "insights", label: "Full insights", headline: "See your whole journey", line: "Track every trend and photo" },
   { id: "history", label: "Complete history", headline: "Your full history", line: "Every dose and entry, saved" },
   { id: "reports", label: "Reports", headline: "Reports for your doctor", line: "Share your progress in one tap" },
-  { id: "ads", label: "Ad-free", headline: "Clean and ad-free", line: "No ads. No watermarks." },
 ];
 
 /**

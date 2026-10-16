@@ -835,6 +835,30 @@ html { background-color: var(--launch-bg); }
 .onb-shell-cta { padding-top: 1rem; padding-bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px)); }
 .onb-cta-btn { padding-top: 1rem; padding-bottom: 1rem; }
 
+/* ── The Premium screen: its illustration area and its pinned foot ──────────
+   One illustration area of a fixed height on every slide, so the headline under
+   it — and the plans under that — never move as the slides change. The artwork is
+   centred in it, and on a shorter screen the area gives way before anything is
+   clipped: it shrinks to 180px, and the picture scales itself down to fit (the
+   SVG letterboxes inside the box rather than overflowing it). */
+.paywall-art {
+  height: clamp(180px, 24dvh, 240px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.paywall-art > * {
+  max-height: 100%;
+}
+
+/* The bar is pinned over the content that scrolls behind it, so it carries the
+   card's own surface, and its last line sits on the home indicator's inset
+   alone — no space is left under the legal row. */
+.paywall-bar {
+  background-color: rgb(var(--auth-card));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* ── Card surfaces: one hairline and one shadow for the whole app ───────────
    Every card, tile, list container, input, chip, bottom sheet and modal is
    drawn with the same light hairline the onboarding screens use, and with the

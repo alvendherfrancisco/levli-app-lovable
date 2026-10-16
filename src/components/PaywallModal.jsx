@@ -28,9 +28,11 @@ import { HEADING, PRIMARY_BTN, PRIMARY_BTN_ON, SUBTITLE } from "@/lib/uiStyles";
  * differ: three slides to swipe through, the plans under them, and the button that
  * starts the plan in hand.
  *
- * The panel is a column of three, so nothing can sit on top of anything: the head,
- * the part that scrolls (slides and plans), and the fixed footer. On a short phone
- * that middle part scrolls and everything else stays exactly where it is.
+ * The panel is a column: the head, the part that scrolls (the slides and the
+ * plans), and the bar pinned across the foot. The scroll area keeps the bar's own
+ * height as its last padding, so the last plan row always comes to rest above the
+ * bar and the button never covers it — and the illustration area gives way on a
+ * short screen before anything has to be clipped.
  *
  * Every price on the screen is read from the product as it opens (see
  * src/lib/premiumPlans.js), never carried here; an account that already has
@@ -171,7 +173,7 @@ export default function PaywallModal({ open, onClose }) {
       <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="Levli Premium" tabIndex={-1} className={shell}>
         <AmbientBackground themed />
         <div className={panel}>
-          <div className="flex flex-shrink-0 items-center gap-3 border-b border-auth-border px-5 pt-safe-5 pb-1.5 sm:px-6">
+          <div className="flex flex-shrink-0 items-center gap-3 border-b border-auth-border px-4 pt-safe-5 pb-1.5">
             <div className="flex-1" />
             {closeButton}
           </div>
@@ -202,7 +204,7 @@ export default function PaywallModal({ open, onClose }) {
       <div className={panel}>
         {/* The head: the flow's own segmented progress bar, one segment per
             feature, and the close button where the back button sits. */}
-        <div className="flex flex-shrink-0 items-center gap-3 border-b border-auth-border px-5 pt-safe-5 pb-1.5 sm:px-6">
+        <div className="flex flex-shrink-0 items-center gap-3 border-b border-auth-border px-4 pt-safe-5">
           <div className="flex flex-1 gap-1.5">
             {PREMIUM_SLIDES.map((slide, i) => (
               <button
@@ -224,11 +226,13 @@ export default function PaywallModal({ open, onClose }) {
           {closeButton}
         </div>
 
-        {/* The middle: the slides and the plans, in the flow's own 20px margins.
-            This is the one part that scrolls, and only when the screen is too
-            short to hold it. */}
+        {/* The middle: the slides and the plans, in the same 16px margins as the
+            rest of the screen, under a 24px gap below the progress bar. This is the
+            one part that scrolls, and only when the screen is too short to hold it
+            — the illustration area has already given way first (see .paywall-art in
+            src/index.css). */}
         <div className="relative min-h-0 flex-1">
-          <div className="h-full overflow-y-auto overscroll-contain px-5 py-4 sm:px-6">
+          <div className="h-full overflow-y-auto overscroll-contain px-4 pt-4">
             <PaywallSlides trackRef={trackRef} index={slideIndex} onIndexChange={setSlideIndex} />
             <PaywallPlans
               className="mt-6"
@@ -239,7 +243,7 @@ export default function PaywallModal({ open, onClose }) {
             />
             {/* The room the bottom bar takes, so the last plan row (Lifetime) is
                 never left sitting under it or under the home indicator. */}
-            <div aria-hidden="true" style={{ height: barHeight }} />
+            <div aria-hidden="true" style={{ height: barHeight + 16 }} />
           </div>
           <div
             aria-hidden="true"
@@ -247,7 +251,7 @@ export default function PaywallModal({ open, onClose }) {
           />
         </div>
 
-        <div ref={barRef} className="flex-shrink-0">
+        <div ref={barRef} className="absolute inset-x-0 bottom-0 z-10">
           <PaywallBar
             label={plan?.button || "Continue"}
             terms={plan?.terms || ""}

@@ -2,7 +2,7 @@ import React from "react";
 import { Scene } from "@/components/onboarding/OnboardingIllustrations";
 
 /**
- * The five illustrations the Premium screen shows, one per benefit.
+ * The four illustrations the Premium screen shows, one per benefit.
  *
  * They are drawn through the onboarding's own scene wrapper — the same 280 × 200
  * slot, the same soft wash behind the artwork (which holds itself back on a dark
@@ -14,32 +14,40 @@ import { Scene } from "@/components/onboarding/OnboardingIllustrations";
  * its own, so two of them on one screen can never share a fill.
  */
 
-/** Nothing capped: the syringe, on the card the flow's own steps draw. */
+/** Nothing capped: a full syringe across the card, and the way to add another. */
 export function ShotLimitIllustration() {
   return (
     <Scene blobStyle={{ background: "linear-gradient(135deg, #818CF8, #A5B4FC)" }}>
       <defs>
-        <linearGradient id="premShotSyr" x1="80" y1="82" x2="136" y2="98" gradientUnits="userSpaceOnUse">
+        <linearGradient id="premShotSyr" x1="-8" y1="0" x2="110" y2="22" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#6366F1" /><stop offset="1" stopColor="#8B5CF6" />
+        </linearGradient>
+        <linearGradient id="premShotAdd" x1="182" y1="130" x2="210" y2="158" gradientUnits="userSpaceOnUse">
           <stop stopColor="#8B5CF6" /><stop offset="1" stopColor="#6366F1" />
         </linearGradient>
       </defs>
 
       {/* The card */}
-      <rect x="64" y="50" width="152" height="100" rx="16" fill="white" stroke="#E5E7EB" strokeWidth="1.5" />
+      <rect x="62" y="46" width="156" height="104" rx="16" fill="white" stroke="#E5E7EB" strokeWidth="1.5" />
 
-      {/* A full syringe, lying across it */}
-      <g transform="translate(23 10) rotate(-14 117 90)">
-        <rect x="80" y="82" width="56" height="16" rx="4" fill="url(#premShotSyr)" />
-        <rect x="74" y="78" width="8" height="24" rx="2" fill="#8B5CF6" />
-        <rect x="136" y="84" width="6" height="12" fill="#6366F1" />
-        <rect x="142" y="87" width="18" height="6" fill="#C4B5FD" />
-        <line x1="92" y1="82" x2="92" y2="98" stroke="white" strokeWidth="1" strokeOpacity="0.6" />
-        <line x1="104" y1="82" x2="104" y2="98" stroke="white" strokeWidth="1" strokeOpacity="0.6" />
-        <line x1="116" y1="82" x2="116" y2="98" stroke="white" strokeWidth="1" strokeOpacity="0.6" />
+      {/* A full syringe, across it */}
+      <g transform="translate(74 87) rotate(-20 66 11)">
+        <rect x="-8" y="-4" width="8" height="30" rx="2" fill="#8B5CF6" />
+        <rect x="0" y="0" width="110" height="22" rx="6" fill="url(#premShotSyr)" />
+        <rect x="110" y="3" width="8" height="16" fill="#6366F1" />
+        <rect x="118" y="8" width="22" height="6" rx="3" fill="#C4B5FD" />
+        <line x1="24" y1="0" x2="24" y2="22" stroke="white" strokeWidth="1" strokeOpacity="0.55" />
+        <line x1="48" y1="0" x2="48" y2="22" stroke="white" strokeWidth="1" strokeOpacity="0.55" />
+        <line x1="72" y1="0" x2="72" y2="22" stroke="white" strokeWidth="1" strokeOpacity="0.55" />
+        <line x1="96" y1="0" x2="96" y2="22" stroke="white" strokeWidth="1" strokeOpacity="0.55" />
       </g>
 
+      {/* One more */}
+      <circle cx="196" cy="144" r="14" fill="url(#premShotAdd)" />
+      <path d="M196 138 V150 M190 144 H202" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+
       <g className="animate-onb-sparkle"><path d="M50 72 L 52 77 L 57 79 L 52 81 L 50 86 L 48 81 L 43 79 L 48 77Z" fill="#6366F1" /></g>
-      <g className="animate-onb-sparkle" style={{ animationDelay: "0.9s" }}><path d="M232 124 L 234 129 L 239 131 L 234 133 L 232 138 L 230 133 L 225 131 L 230 129Z" fill="#8B5CF6" /></g>
+      <g className="animate-onb-sparkle" style={{ animationDelay: "0.9s" }}><path d="M232 120 L 234 125 L 239 127 L 234 129 L 232 134 L 230 129 L 225 127 L 230 125Z" fill="#8B5CF6" /></g>
     </Scene>
   );
 }
@@ -170,35 +178,6 @@ export function ReportsIllustration() {
 
       <g className="animate-onb-sparkle"><path d="M50 62 L 52 67 L 57 69 L 52 71 L 50 76 L 48 71 L 43 69 L 48 67Z" fill="#F59E0B" /></g>
       <g className="animate-onb-sparkle" style={{ animationDelay: "0.9s" }}><path d="M232 96 L 234 101 L 239 103 L 234 105 L 232 110 L 230 105 L 225 103 L 230 101Z" fill="#6366F1" /></g>
-    </Scene>
-  );
-}
-
-/** A clean screen: the app's own droplet on a card with nothing else on it. */
-export function CleanIllustration() {
-  return (
-    <Scene blobStyle={{ background: "linear-gradient(135deg, #93C5FD, #C4B5FD)" }}>
-      <defs>
-        <linearGradient id="premCleanDrop" x1="95" y1="40" x2="185" y2="180" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#6366F1" /><stop offset="1" stopColor="#14B8A6" />
-        </linearGradient>
-      </defs>
-
-      {/* The card */}
-      <rect x="76" y="46" width="128" height="108" rx="16" fill="white" stroke="#E5E7EB" strokeWidth="1.5" />
-
-      {/* The droplet, and nothing around it */}
-      <g transform="translate(54 32.5) scale(0.614)">
-        <path d="M140 40 C 140 40, 95 95, 95 135 a45 45 0 0 0 90 0 C 185 95, 140 40, 140 40Z" fill="url(#premCleanDrop)" />
-        <path d="M140 65 C 140 65, 112 105, 112 132 a28 28 0 0 0 28 28" fill="white" fillOpacity="0.15" />
-        <circle cx="126" cy="125" r="4" fill="white" />
-        <circle cx="154" cy="125" r="4" fill="white" />
-        <path d="M128 140 Q 140 150 152 140" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" />
-      </g>
-
-      <g className="animate-onb-sparkle"><path d="M58 64 L 60 69 L 65 71 L 60 73 L 58 78 L 56 73 L 51 71 L 56 69Z" fill="#F59E0B" /></g>
-      <g className="animate-onb-sparkle" style={{ animationDelay: "0.7s" }}><path d="M224 60 L 226 65 L 231 67 L 226 69 L 224 74 L 222 69 L 217 67 L 222 65Z" fill="#6366F1" /></g>
-      <g className="animate-onb-sparkle" style={{ animationDelay: "1.3s" }}><path d="M214 136 L 216 141 L 221 143 L 216 145 L 214 150 L 212 145 L 207 143 L 212 141Z" fill="#EC4899" /></g>
     </Scene>
   );
 }

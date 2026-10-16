@@ -25,7 +25,7 @@ export default function PaywallPlanRow({ plan, selected, onSelect }) {
       role="radio"
       aria-checked={selected}
       onClick={() => { sound.tap(); onSelect(plan.id); }}
-      className={`flex h-[60px] w-full items-center gap-3 rounded-2xl border px-4 text-left transition-colors ${
+      className={`flex h-16 w-full items-center gap-3 rounded-2xl border px-4 text-left transition-colors ${
         selected
           ? "border-auth-tint-border bg-auth-tint"
           : "border-auth-border bg-auth-card hover:border-auth-hover"
