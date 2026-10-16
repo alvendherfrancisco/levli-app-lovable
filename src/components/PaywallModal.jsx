@@ -157,8 +157,14 @@ export default function PaywallModal({ open, onClose }) {
   // it carries a soft, brand-tinted shadow rather than a plain grey one. It also
   // arrives rather than appearing: one short rise as the screen opens (see
   // .paywall-in in src/index.css), dropped entirely with reduced motion.
+  //
+  // The hairline frame is drawn only where the panel floats. On a phone the panel
+  // fills the screen, so a frame would be a line along the screen's own edges — and
+  // its top line sits exactly where the header meets the status bar, which cuts the
+  // background in two instead of letting it run to the top. There the panel is the
+  // screen and needs no frame; only the header's and the bar's own hairlines remain.
   const panel =
-    "paywall-in w-full max-w-lg mx-auto flex flex-col h-full sm:h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:shadow-2xl sm:shadow-indigo-950/15 bg-auth-panel backdrop-blur-md overflow-hidden relative z-10 border border-auth-divider";
+    "paywall-in w-full max-w-lg mx-auto flex flex-col h-full sm:h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:border sm:border-auth-divider sm:shadow-2xl sm:shadow-indigo-950/15 bg-auth-panel backdrop-blur-md overflow-hidden relative z-10";
 
   const closeButton = (
     <button
