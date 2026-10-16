@@ -37,6 +37,9 @@ export const PDF_TOKENS = {
   tooltipText: "#111827",
   doseBarOpacity: 0.7,
   doseBarWidth: 1.2,
+  // Severity is the one thing the report colours besides its single accent: the
+  // levels stay apart from each other in grayscale as well as in colour.
+  severity: { mild: "#15803D", moderate: "#B45309", severe: "#B91C1C", emergency: "#7F1D1D", none: "#4B5563" },
 };
 
 /** On screen, light mode — the same palette as the PDF. */
@@ -78,6 +81,8 @@ export const APP_DARK_TOKENS = {
   tooltipText: "#E8E9F0",
   doseBarOpacity: 0.4,
   doseBarWidth: 1,
+  // The same levels, lightened so they keep their contrast on the dark card.
+  severity: { mild: "#6EE7B7", moderate: "#FCD34D", severe: "#FCA5A5", emergency: "#F87171", none: "#A9AFC0" },
 };
 
 /** The tokens for one preview mode: "app" follows the live theme, "pdf" is fixed light. */
@@ -107,4 +112,7 @@ export const PDF_RGB = {
   avgLine: tokenRgb(PDF_TOKENS.avgLine),
   barFill: tokenRgb(PDF_TOKENS.barFill),
   doseTick: tokenRgb(PDF_TOKENS.doseTick),
+  severity: Object.fromEntries(
+    Object.entries(PDF_TOKENS.severity).map(([key, hex]) => [key, tokenRgb(hex)]),
+  ),
 };

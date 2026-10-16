@@ -9,8 +9,7 @@ import { useReportTokens } from "@/components/report/ReportTheme";
 function Block({ title, children, t }) {
   return (
     <section className="pt-4 mt-4 border-t" style={{ borderColor: t.divider }}>
-      <h3 className="text-base font-bold mb-1" style={{ color: t.ink }}>{title}</h3>
-      <div className="h-0.5 w-10 rounded mb-3" style={{ background: t.accent }} />
+      <h3 className="text-base font-bold mb-3" style={{ color: t.ink }}>{title}</h3>
       <SectionBoundary title={title}>{children}</SectionBoundary>
     </section>
   );

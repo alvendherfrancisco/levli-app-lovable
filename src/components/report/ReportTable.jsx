@@ -16,8 +16,9 @@ import { useReportTokens } from "@/components/report/ReportTheme";
  * a label with nothing after it.
  *
  * `lead` marks the columns that open a phone row, `strong` the one value the
- * eye should land on first. Both are ignored by the table, which shows every
- * column in the order given.
+ * eye should land on first, and `colour` gives a cell its own colour (the
+ * severity of a side effect). All three are ignored by the table, which shows
+ * every column in the order given.
  */
 export default function ReportTable({ columns, rows, rowKey }) {
   const t = useReportTokens();
@@ -26,6 +27,7 @@ export default function ReportTable({ columns, rows, rowKey }) {
     const raw = column.text(row);
     return raw == null || raw === "" ? "" : String(raw);
   };
+  const colourOf = (column, row) => (column.colour ? column.colour(row) : null);
 
   return (
     <>
@@ -49,7 +51,12 @@ export default function ReportTable({ columns, rows, rowKey }) {
               <div className="flex items-baseline justify-between gap-3">
                 <span className="min-w-0 text-sm break-words" style={{ color: t.muted }}>{lead.join(" · ")}</span>
                 {strongValue && (
-                  <span className="flex-shrink-0 text-sm font-semibold" style={{ color: t.ink }}>{strongValue}</span>
+                  <span
+                    className="flex-shrink-0 text-sm font-semibold"
+                    style={{ color: (strong && colourOf(strong, row)) || t.ink }}
+                  >
+                    {strongValue}
+                  </span>
                 )}
               </div>
               {detail.length > 0 && (
@@ -74,9 +81,13 @@ export default function ReportTable({ columns, rows, rowKey }) {
           </thead>
           <tbody>
             {rows.map((row, index) => (
-              <tr key={keyOf(row, index)} className="border-t" style={{ borderColor: t.divider, color: t.ink }}>
+              <tr key={keyOf(row, index)} className="border-t" style={{ borderColor: t.divider }}>
                 {columns.map((column) => (
-                  <td key={column.label} className={`p-2 align-top break-words ${column.strong ? "font-semibold" : ""}`}>
+                  <td
+                    key={column.label}
+                    className={`p-2 align-top break-words ${column.strong ? "font-semibold" : ""}`}
+                    style={{ color: colourOf(column, row) || t.ink }}
+                  >
                     {valueOf(column, row)}
                   </td>
                 ))}

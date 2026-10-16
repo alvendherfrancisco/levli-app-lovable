@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Doctor report — vector charts drawn straight into the PDF.
+// Doctor report — the vector weight chart drawn straight into the PDF.
 //
-// Drawn with primitives (no screenshotting), so they stay sharp in print and
-// keep their contrast on the report's white background. The report uses ONE
-// accent colour — the weight line and the bars — so both charts still read when
-// they are printed in grayscale.
+// Drawn with primitives (no screenshotting), so it stays sharp in print and
+// keeps its contrast on the report's white background. The weight line uses the
+// report's single accent and the rolling average a muted grey, so the chart
+// still reads when the page is printed in grayscale.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { PDF_RGB } from "@/components/report/reportTokens";
@@ -17,7 +17,6 @@ const GRID = PDF_RGB.grid;
 const WEIGHT = PDF_RGB.weightLine; // the report accent
 const AVERAGE = PDF_RGB.avgLine; // muted grey, drawn dashed
 const TICK = PDF_RGB.doseTick;
-const BAR = PDF_RGB.barFill;
 
 export function fitText(doc, text, maxWidth) {
   const str = String(text ?? "");
@@ -41,8 +40,10 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
   const plotX = x + 11;
   const plotW = w - 11;
   const markerBand = 4;
-  const plotY = y + markerBand + 2;
-  const plotH = h - markerBand - 12;
+  // The dose ticks hang along the bottom of the plot, in the gap before the date
+  // labels, so the dosing timeline reads under the weight line rather than over it.
+  const plotY = y + 2;
+  const plotH = h - 12;
   const legendY = plotY + plotH + 8;
 
   // Only real points are drawn; anything unusable is left out.
@@ -110,12 +111,12 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
   });
   doc.setLineDashPattern([], 0);
 
-  // Dose timeline — one light tick per dose date.
+  // Dose timeline — one light tick per dose date, along the bottom of the plot.
   markers.forEach((marker) => {
     const mx = X(marker.ts);
     if (mx < plotX || mx > plotX + plotW) return;
     doc.setFillColor(TICK[0], TICK[1], TICK[2]);
-    doc.rect(mx - 0.3, plotY - markerBand, 0.6, markerBand, "F");
+    doc.rect(mx - 0.3, plotY + plotH + 0.8, 0.6, markerBand, "F");
   });
 
   // Legend, on one line.
@@ -139,26 +140,4 @@ export function drawWeightChart(doc, { x, y, w, h, series = [], markers = [], un
   }
 
   return h + 18;
-}
-
-/** Horizontal bars of how often each side effect was logged, in the accent. */
-export function drawFrequencyBars(doc, { x, y, w, rows, maxLabelWidth = 60, barMaxWidth = 74 }) {
-  const labelW = Math.min(maxLabelWidth, w * 0.34);
-  const rowH = 8.5;
-  const max = Math.max(...rows.map((r) => r.count), 1);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  rows.forEach((row, i) => {
-    const ry = y + i * rowH;
-    doc.setTextColor(INK[0], INK[1], INK[2]);
-    doc.text(fitText(doc, row.label, labelW - 2), x, ry + 3);
-    const barW = Math.max(1.5, (row.count / max) * Math.min(barMaxWidth, w - labelW - 12));
-    doc.setFillColor(BAR[0], BAR[1], BAR[2]);
-    doc.roundedRect(x + labelW, ry, barW, 4.2, 0.8, 0.8, "F");
-    doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
-    doc.text(String(row.count), x + labelW + barW + 2, ry + 3.2);
-  });
-
-  return rows.length * rowH;
 }

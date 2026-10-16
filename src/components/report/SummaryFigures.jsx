@@ -5,6 +5,10 @@ import { useReportTokens } from "@/components/report/ReportTheme";
  * The report's headline figures — a muted label above a bold value, set in a
  * light panel so they read at a glance. Only figures that exist are passed in,
  * so an empty value never appears.
+ *
+ * A figure marked `wide` takes a row of its own: the goal reads as one line
+ * ("Goal" then "40 kg · 10 kg to go"), which is what keeps it from wrapping
+ * awkwardly on a narrow screen.
  */
 export default function SummaryFigures({ figures }) {
   const t = useReportTokens();
@@ -17,11 +21,11 @@ export default function SummaryFigures({ figures }) {
   return (
     <div className={`rounded-xl px-3 py-3 grid gap-x-4 gap-y-3 grid-cols-2 ${columns}`} style={{ background: t.tableHeadBg }}>
       {figures.map((figure) => (
-        <div key={figure.label} className="min-w-0">
+        <div key={figure.label} className={`min-w-0 ${figure.wide ? "col-span-2 sm:col-span-full" : ""}`}>
           <span className="block text-xs leading-snug break-words" style={{ color: t.muted }}>
             {figure.label}
           </span>
-          <span className="block text-lg font-bold leading-tight mt-0.5 break-words" style={{ color: t.ink }}>
+          <span className="block text-base sm:text-lg font-bold leading-tight mt-0.5 break-words" style={{ color: t.ink }}>
             {figure.value}
           </span>
         </div>

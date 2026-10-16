@@ -2,21 +2,24 @@ import React from "react";
 import WeightDoseChart from "@/components/report/WeightDoseChart";
 import DoseTable from "@/components/report/DoseTable";
 import SideEffectsTable from "@/components/report/SideEffectsTable";
-import SideEffectBars from "@/components/report/SideEffectBars";
 import OptionalSections from "@/components/report/OptionalSections";
 import SectionBoundary from "@/components/report/SectionBoundary";
 import SummaryFigures from "@/components/report/SummaryFigures";
+import ReportTable from "@/components/report/ReportTable";
 import {
-  adherenceLine, duplicateLine, formatDayShort, medicationLine, summaryFigures, weightContextLine,
+  doseCountLine, duplicateLine, formatDayShort, medicationLine, summaryFigures, weightContextLine,
 } from "@/lib/reportData";
 import { useReportTokens } from "@/components/report/ReportTheme";
 
-/** One report section. If its content fails, only this section shows a message. */
+/**
+ * One report section: a plain bold heading over a thin divider, so the report
+ * reads as a document rather than as a set of decorated cards. If the section's
+ * content fails, only this section shows a message.
+ */
 function Section({ title, children, t }) {
   return (
     <section className="pt-4 mt-4 border-t" style={{ borderColor: t.divider }}>
-      <h3 className="text-base font-bold mb-1" style={{ color: t.ink }}>{title}</h3>
-      <div className="h-0.5 w-10 rounded mb-3" style={{ background: t.accent }} />
+      <h3 className="text-base font-bold mb-3" style={{ color: t.ink }}>{title}</h3>
       <SectionBoundary title={title}>{children}</SectionBoundary>
     </section>
   );
@@ -24,12 +27,12 @@ function Section({ title, children, t }) {
 
 /**
  * The on-screen report — one component driven entirely by the report tokens, so
- * it mirrors the PDF's content and layout. In "app theme" it follows the live
- * light/dark theme; in "PDF look" it is painted with the always-light PDF
- * tokens, which is exactly what gets exported.
+ * it mirrors the PDF's content and layout. "PDF look" paints it with the
+ * always-light PDF tokens, which is exactly what gets exported; "App theme"
+ * follows the live light/dark theme.
  *
- * It reads the same strings the PDF is drawn from, so the summary, the empty
- * sections and the notes can never say one thing on screen and another in print.
+ * It reads the same strings the PDF is drawn from, so the summary, the section
+ * wording and the notes can never say one thing on screen and another in print.
  */
 export default function ReportPreview({ report }) {
   const t = useReportTokens();
@@ -39,6 +42,7 @@ export default function ReportPreview({ report }) {
   const summary = report.summary;
   const has = (id) => report.sections.includes(id);
   const figures = summaryFigures(summary, unit);
+  const severityColour = (key) => t.severity?.[key] || t.severity?.none || undefined;
 
   return (
     <div
@@ -66,6 +70,9 @@ export default function ReportPreview({ report }) {
               <SummaryFigures figures={figures} />
             </div>
           )}
+          {summary.goalBmiNote && (
+            <p className="text-sm mt-2 break-words" style={{ color: t.muted }}>{summary.goalBmiNote}</p>
+          )}
         </Section>
       )}
 
@@ -79,10 +86,23 @@ export default function ReportPreview({ report }) {
                 <p className="text-sm" style={{ color: t.muted }}>One weight entry in this period.</p>
               )}
               {weight.count >= 2 && (
-                <>
-                  <WeightDoseChart series={weight.series} rows={report.doses.rows} unit={unit} range={report.range} />
-                  <p className="text-sm mt-3" style={{ color: t.muted }}>{weightContextLine(weight, unit)}</p>
-                </>
+                <WeightDoseChart series={weight.series} rows={report.doses.rows} unit={unit} range={report.range} />
+              )}
+              {weight.firstLast?.length > 0 && (
+                <div className="mt-3">
+                  <ReportTable
+                    rows={weight.firstLast}
+                    rowKey={(row) => row.id}
+                    columns={[
+                      { label: "Entry", text: (row) => row.label, lead: true },
+                      { label: "Date", text: (row) => row.dayLabel },
+                      { label: "Weight", text: (row) => row.value, strong: true },
+                    ]}
+                  />
+                </div>
+              )}
+              {weight.count >= 2 && (
+                <p className="text-sm mt-3" style={{ color: t.muted }}>{weightContextLine(weight, unit)}</p>
               )}
               {weight.gaps.length > 0 && (
                 <div className="mt-2 space-y-1">
@@ -99,23 +119,22 @@ export default function ReportPreview({ report }) {
       )}
 
       {has("doses") && (
-        <Section title="Doses taken" t={t}>
+        <Section title="Doses taken (newest first)" t={t}>
           {report.doses.count === 0 ? (
             <p className="text-sm" style={{ color: t.muted }}>No doses logged in this period.</p>
           ) : (
             <>
               <p className="text-sm mb-1 break-words" style={{ color: t.muted }}>
-                {adherenceLine(report.doses.adherence, report.doses.count)}
+                {doseCountLine(report.doses.count, report.doses.adherence)}
               </p>
-              {report.doses.changes.length > 1 && (
-                <p className="text-sm mb-3 break-words" style={{ color: t.muted }}>
-                  Dose: {report.doses.changes.join(" · ")}
-                </p>
-              )}
-              <DoseTable rows={report.doses.rows} showPain={has("injectionSites")} />
-              <p className="text-sm mt-2" style={{ color: t.muted }}>Newest dose first.</p>
+              {report.doses.changes.map((line) => (
+                <p key={line} className="text-sm break-words" style={{ color: t.muted }}>{line}</p>
+              ))}
+              <div className={report.doses.changes.length ? "mt-3" : ""}>
+                <DoseTable rows={report.doses.rows} showPain={has("injectionSites")} />
+              </div>
               {summary.duplicates.map((group, index) => (
-                <p key={`${group.dayLabel}-${group.time}-${index}`} className="text-sm mt-1 break-words" style={{ color: t.muted }}>
+                <p key={`${group.dayLabel}-${group.time}-${index}`} className="text-sm mt-2 break-words" style={{ color: t.muted }}>
                   {duplicateLine(group)}
                 </p>
               ))}
@@ -130,11 +149,22 @@ export default function ReportPreview({ report }) {
             <p className="text-sm" style={{ color: t.muted }}>No side effects logged in this period.</p>
           ) : (
             <>
-              <SideEffectsTable rows={report.sideEffects.rows} />
+              <SideEffectsTable rows={report.sideEffects.rows} severityColour={severityColour} />
               {report.sideEffects.frequency.length > 0 && (
                 <div className="mt-4">
                   <p className="text-sm font-semibold mb-2" style={{ color: t.ink }}>How often each side effect was logged</p>
-                  <SideEffectBars rows={report.sideEffects.frequency} />
+                  <ul className="space-y-1">
+                    {report.sideEffects.frequency.map((row) => (
+                      <li
+                        key={row.label}
+                        className="flex items-baseline justify-between gap-3 text-sm"
+                        style={{ color: t.muted }}
+                      >
+                        <span className="min-w-0 break-words">{row.label}</span>
+                        <span className="flex-shrink-0 font-semibold" style={{ color: t.ink }}>{row.count}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
               <p className="text-sm mt-3" style={{ color: t.muted }}>

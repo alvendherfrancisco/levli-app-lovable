@@ -1,14 +1,14 @@
 import React from "react";
-import { Smartphone, FileText } from "lucide-react";
+import { FileText, Smartphone } from "lucide-react";
 
 /**
- * Switches the preview between the app's own theme and exactly what the
- * exported PDF will look like.
+ * Switches the preview between exactly what the exported PDF looks like — the
+ * default, because the PDF is what gets shared — and the app's own theme.
  */
 export default function PreviewModeToggle({ mode, onChange }) {
   const options = [
-    { id: "app", label: "App theme", Icon: Smartphone },
-    { id: "pdf", label: "PDF look", Icon: FileText },
+    { id: "pdf", label: "PDF", Icon: FileText },
+    { id: "app", label: "On screen", Icon: Smartphone },
   ];
 
   return (
@@ -17,7 +17,6 @@ export default function PreviewModeToggle({ mode, onChange }) {
       role="group"
       aria-label="Preview style"
     >
-      <span className="hidden sm:inline pl-2 pr-1 text-sm text-gray-500 dark:text-gray-400">Preview:</span>
       {options.map(({ id, label, Icon }) => {
         const active = mode === id;
         return (

@@ -11,8 +11,9 @@
 //     muted line; there is never a dash, a placeholder or a note addressed to
 //     the person reading the app, and
 //   • every line of body text is 10pt or larger (only the page footer is
-//     smaller) and one accent colour is used, so the page stays readable printed
-//     in colour or in grayscale.
+//     smaller), one accent colour carries the weight line, and the only other
+//     colours are the side-effect severity levels — so the page stays readable
+//     printed in colour or in grayscale.
 //
 // Rows and charts are never split across pages, and every page carries the same
 // footer.
@@ -21,9 +22,9 @@
 import { fromDayKey, toDayKey } from "@/lib/dateUtils";
 import { REPORT_FOOTER } from "@/lib/reportOptions";
 import {
-  adherenceLine, duplicateLine, formatDayShort, medicationLine, summaryFigures, weightContextLine,
+  doseCountLine, duplicateLine, formatDayShort, medicationLine, summaryFigures, weightContextLine,
 } from "@/lib/reportData";
-import { drawWeightChart, drawFrequencyBars, fitText } from "@/lib/reportPdfCharts";
+import { drawWeightChart, fitText } from "@/lib/reportPdfCharts";
 import { PDF_RGB } from "@/components/report/reportTokens";
 
 const PAGE = { w: 210, h: 297, margin: 14, contentW: 182, bottom: 264 };
@@ -31,7 +32,6 @@ const PAGE = { w: 210, h: 297, margin: 14, contentW: 182, bottom: 264 };
 // always light — nothing here can be darkened by the app's theme.
 const INK = PDF_RGB.ink;
 const MUTED = PDF_RGB.muted;
-const ACCENT = PDF_RGB.accent;
 
 const BODY = 10; // the smallest body text in the document
 const FOOT = 8; // the page footer only
@@ -53,16 +53,16 @@ function ensure(doc, y, needed) {
   return y + needed > PAGE.bottom ? newPage(doc) : y;
 }
 
-/** A section heading with the report's accent rule under it. */
+/** A plain bold heading, with one thin divider under it across the page. */
 function heading(doc, text, y) {
   y = ensure(doc, y, 18);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.setTextColor(INK[0], INK[1], INK[2]);
   doc.text(text, PAGE.margin, y);
-  doc.setDrawColor(ACCENT[0], ACCENT[1], ACCENT[2]);
-  doc.setLineWidth(0.6);
-  doc.line(PAGE.margin, y + 1.8, PAGE.margin + 24, y + 1.8);
+  doc.setDrawColor(PDF_RGB.divider[0], PDF_RGB.divider[1], PDF_RGB.divider[2]);
+  doc.setLineWidth(0.2);
+  doc.line(PAGE.margin, y + 2, PAGE.margin + PAGE.contentW, y + 2);
   return y + 9;
 }
 
@@ -99,8 +99,20 @@ function figurePanel(doc, figures, y) {
   if (!figures.length) return y;
   const pad = 4.5;
 
+  // A figure marked `wide` — the goal, whose value carries "to go" — takes a row
+  // of its own, so it is never wrapped across two columns.
   const rows = [];
-  for (let i = 0; i < figures.length; i += 4) rows.push(figures.slice(i, i + 4));
+  let row = [];
+  figures.forEach((figure) => {
+    if (figure.wide) {
+      if (row.length) { rows.push(row); row = []; }
+      rows.push([figure]);
+      return;
+    }
+    row.push(figure);
+    if (row.length === 4) { rows.push(row); row = []; }
+  });
+  if (row.length) rows.push(row);
 
   rows.forEach((row) => {
     const colW = (PAGE.contentW - pad * 2) / row.length;
@@ -173,7 +185,9 @@ function keyValues(doc, pairs, y) {
 /**
  * A table with per-row page-break safety. Cells wrap onto extra lines and the
  * row grows to fit, so nothing that was logged is missing from the printed
- * report. A column marked `bold` carries the value the eye should land on first.
+ * report. A column marked `bold` carries the value the eye should land on first,
+ * and one marked `colour` prints its cells in the colour it returns — the
+ * severity of a side effect.
  */
 function table(doc, { x = PAGE.margin, y, width = PAGE.contentW, columns, rows, fontSize = BODY }) {
   const headH = 8.6;
@@ -218,7 +232,8 @@ function table(doc, { x = PAGE.margin, y, width = PAGE.contentW, columns, rows, 
     let cx = x + pad;
     cols.forEach((c, ci) => {
       doc.setFont("helvetica", c.bold ? "bold" : "normal");
-      doc.setTextColor(INK[0], INK[1], INK[2]);
+      const colour = (c.colour && c.colour(row)) || INK;
+      doc.setTextColor(colour[0], colour[1], colour[2]);
       doc.text(cells[ci], cx, y + rowH - 3);
       cx += c.w;
     });
@@ -298,9 +313,9 @@ export async function buildReportPdf(report) {
   doc.setTextColor(INK[0], INK[1], INK[2]);
   doc.text("Levli Health Report", PAGE.margin, y);
   y += 3.6;
-  doc.setDrawColor(ACCENT[0], ACCENT[1], ACCENT[2]);
-  doc.setLineWidth(0.9);
-  doc.line(PAGE.margin, y, PAGE.margin + 34, y);
+  doc.setDrawColor(PDF_RGB.divider[0], PDF_RGB.divider[1], PDF_RGB.divider[2]);
+  doc.setLineWidth(0.2);
+  doc.line(PAGE.margin, y, PAGE.margin + PAGE.contentW, y);
   y += 8;
 
   if (report.header.name) y = muted(doc, `Name: ${report.header.name}`, y);
@@ -317,6 +332,7 @@ export async function buildReportPdf(report) {
     });
     if (summary.medications.length && figures.length) y += 1.5;
     y = figurePanel(doc, figures, y);
+    if (summary.goalBmiNote) y = muted(doc, summary.goalBmiNote, y + 1);
     y += 3;
   }
 
@@ -345,6 +361,17 @@ export async function buildReportPdf(report) {
         labelFor: (ts) => formatDayShort(toDayKey(new Date(ts))),
       });
       y = muted(doc, "Solid line: weight entries. Dashed line: 7-day rolling average. Ticks: dose dates.", y);
+      if (weight.firstLast?.length) {
+        y = table(doc, {
+          y,
+          columns: [
+            { label: "Entry", w: 38, text: (r) => r.label },
+            { label: "Date", w: 38, text: (r) => r.dayLabel },
+            { label: "Weight", w: 24, bold: true, text: (r) => r.value },
+          ],
+          rows: weight.firstLast,
+        });
+      }
       y = muted(doc, weightContextLine(weight, unit), y);
       weight.gaps.forEach((gap) => {
         y = muted(doc, `No weight entries between ${formatDayShort(gap.from)} and ${formatDayShort(gap.to)} (${gap.days} days).`, y);
@@ -354,28 +381,28 @@ export async function buildReportPdf(report) {
 
   // ── 4. Doses taken ────────────────────────────────────────────────────────
   if (has("doses")) {
-    y = heading(doc, "Doses taken", y + 3);
+    y = heading(doc, "Doses taken (newest first)", y + 3);
 
     if (!summary.totalDoses) {
       y = muted(doc, "No doses logged in this period.", y);
     } else {
-      y = muted(doc, adherenceLine(report.doses.adherence, summary.totalDoses), y);
-      // The dose history is only listed when it changed; a single steady dose is
-      // already named in the summary above.
-      if (report.doses.changes.length > 1) {
-        y = muted(doc, `Dose: ${report.doses.changes.join(" · ")}`, y);
-      }
+      y = muted(doc, doseCountLine(summary.totalDoses, report.doses.adherence), y);
+      // Each change of dose is stated in words. A dose that never changed is
+      // already named in the summary above, so nothing is repeated here.
+      report.doses.changes.forEach((line) => {
+        y = muted(doc, line, y);
+      });
 
       const showPain = has("injectionSites");
       const columns = [
-        { label: "Date", w: 22, text: (r) => r.dayLabel },
-        { label: "Time", w: 13, text: (r) => r.time },
-        { label: "Dose", w: 17, bold: true, text: (r) => r.doseLabel },
-        { label: "Injection site", w: 30, text: (r) => r.site },
-        ...(showPain ? [{ label: "Pain", w: 12, text: (r) => (r.pain != null ? `${r.pain}/10` : "") }] : []),
+        { label: "Date", w: 20, text: (r) => r.dayLabel },
+        { label: "Time", w: 12, text: (r) => r.time },
+        { label: "Medication", w: 32, text: (r) => r.medication },
+        { label: "Dose", w: 16, bold: true, text: (r) => r.doseLabel },
+        { label: "Injection site", w: 24, text: (r) => r.site },
+        ...(showPain ? [{ label: "Pain", w: 11, text: (r) => (r.pain != null ? `${r.pain}/10` : "") }] : []),
       ];
       y = table(doc, { y, columns, rows: report.doses.rows });
-      y = muted(doc, "Newest dose first.", y - 1);
       summary.duplicates.forEach((group) => {
         y = muted(doc, duplicateLine(group), y);
       });
@@ -392,29 +419,35 @@ export async function buildReportPdf(report) {
       y = table(doc, {
         y,
         columns: [
+          { label: "Symptom", w: 32, text: (r) => r.symptom },
           { label: "Date", w: 20, text: (r) => r.dayLabel },
-          { label: "Side effect", w: 34, text: (r) => r.symptom },
-          { label: "Severity", w: 16, text: (r) => r.severity },
-          { label: "Duration / notes", w: 30, text: (r) => r.detail },
-          { label: "Previous dose", w: 24, text: (r) => (r.prior ? `${r.prior.label} on ${r.prior.dayLabel}` : "None logged") },
+          {
+            label: "Severity",
+            w: 16,
+            bold: true,
+            text: (r) => r.severityLabel,
+            colour: (r) => PDF_RGB.severity[r.severityKey] || PDF_RGB.severity.none,
+          },
+          { label: "Days after dose", w: 34, text: (r) => r.afterDose },
         ],
         rows: report.sideEffects.rows,
       });
 
       if (report.sideEffects.frequency.length) {
-        y = ensure(doc, y, 16 + report.sideEffects.frequency.length * 8.5);
+        y = ensure(doc, y, 16 + report.sideEffects.frequency.length * 8);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10.5);
         doc.setTextColor(INK[0], INK[1], INK[2]);
         doc.text("How often each side effect was logged", PAGE.margin, y);
-        y += 6;
-        y += drawFrequencyBars(doc, {
-          x: PAGE.margin,
+        y += 5;
+        y = table(doc, {
           y,
-          w: PAGE.contentW,
+          columns: [
+            { label: "Side effect", w: 60, text: (r) => r.label },
+            { label: "Times logged", w: 20, bold: true, text: (r) => String(r.count) },
+          ],
           rows: report.sideEffects.frequency,
         });
-        y += 2;
       }
 
       y = muted(doc, "Severe or persistent symptoms should be discussed with a healthcare provider.", y);

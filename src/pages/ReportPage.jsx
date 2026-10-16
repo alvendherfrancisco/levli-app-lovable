@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Crown, Download, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, Crown, Download, Eye, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import { buildReport, medicationList } from "@/lib/reportData";
 import {
-  CORE_IDS, DEFAULT_RANGE, RANGE_OPTIONS, SHARE_NOTICE, loadReportPrefs, normaliseSections, saveReportPrefs,
+  CORE_IDS, DEFAULT_RANGE, RANGE_OPTIONS, REPORT_TAGLINE, SHARE_NOTICE, loadReportPrefs, normaliseSections,
+  saveReportPrefs,
 } from "@/lib/reportOptions";
 import { buildReportPdf } from "@/lib/reportPdf";
 import { reportFileName, shareOrDownloadPdf } from "@/lib/shareReport";
@@ -17,18 +18,16 @@ import ReportStatusScreen from "@/components/report/ReportStatusScreen";
 import PreviewModeToggle from "@/components/report/PreviewModeToggle";
 import { ReportThemeProvider } from "@/components/report/ReportTheme";
 
-const WEIGHT_UNITS = ["lb", "kg"];
-
 export default function ReportPage() {
   const navigate = useNavigate();
   const {
-    shots, weightHistory, dayMetrics, adverseEvents, journalEntries, progressPhotosList, profile,
+    shots, weightHistory, dayMetrics, adverseEvents, journalEntries, progressPhotosList, profile, medications,
     shotsLoading, loadShots, refreshProfile,
   } = useAppState();
   const { isPremium, openPaywall } = useSubscription();
 
   const prefs = useRef(loadReportPrefs());
-  const unitChosenByUser = useRef(!!prefs.current.weightUnit);
+  const nameChosenByUser = useRef(!!prefs.current.name);
 
   const [options, setOptions] = useState({
     // Anything unusable in the remembered choices falls back to the defaults,
@@ -37,24 +36,25 @@ export default function ReportPage() {
     customFrom: typeof prefs.current.customFrom === "string" ? prefs.current.customFrom : "",
     customTo: typeof prefs.current.customTo === "string" ? prefs.current.customTo : "",
     medication: typeof prefs.current.medication === "string" ? prefs.current.medication : "all",
-    weightUnit: WEIGHT_UNITS.includes(prefs.current.weightUnit) ? prefs.current.weightUnit : "lb",
     name: typeof prefs.current.name === "string" ? prefs.current.name : "",
     sections: normaliseSections(prefs.current.sections),
   });
   const [busy, setBusy] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
-  // "app" follows the live theme; "pdf" shows the always-light exported look.
-  const [previewMode, setPreviewMode] = useState("app");
+  // The PDF is what gets shared, so its look is the one the preview opens on.
+  const [previewMode, setPreviewMode] = useState("pdf");
   const [timedOut, setTimedOut] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const settingsRef = useRef(null);
 
-  // The unit follows the Profile setting until it is changed here.
+  // The name starts from the first name saved in About you. Once the field has
+  // been typed in, that is what is used — the prefilled value never overwrites it.
   useEffect(() => {
-    if (unitChosenByUser.current) return;
-    const stored = profile?.weight_unit;
-    if (!WEIGHT_UNITS.includes(stored)) return;
-    setOptions((prev) => (prev.weightUnit === stored ? prev : { ...prev, weightUnit: stored }));
-  }, [profile?.weight_unit]);
+    if (nameChosenByUser.current) return;
+    const saved = String(profile?.first_name || "").trim();
+    if (!saved) return;
+    setOptions((prev) => (prev.name ? prev : { ...prev, name: saved }));
+  }, [profile?.first_name]);
 
   // A load that never finishes says so after 15s instead of showing nothing.
   useEffect(() => {
@@ -73,18 +73,23 @@ export default function ReportPage() {
     refreshProfile?.();
   };
 
-  const medications = useMemo(() => medicationList(shots), [shots]);
-  const medication = options.medication === "all" || medications.includes(options.medication)
+  const medicationsInLog = useMemo(() => medicationList(shots), [shots]);
+  const medication = options.medication === "all" || medicationsInLog.includes(options.medication)
     ? options.medication
     : "all";
 
+  // The weight unit is never chosen here: it follows Settings, through the
+  // profile, so the report and the app always read in the same unit.
   const report = useMemo(() => buildReport(
-    { shots, weightHistory, dayMetrics, adverseEvents, journalEntries, progressPhotosList, profile },
+    { shots, weightHistory, dayMetrics, adverseEvents, journalEntries, progressPhotosList, profile, medications },
     { ...options, medication },
-  ), [shots, weightHistory, dayMetrics, adverseEvents, journalEntries, progressPhotosList, profile, options, medication]);
+  ), [
+    shots, weightHistory, dayMetrics, adverseEvents, journalEntries, progressPhotosList, profile, medications,
+    options, medication,
+  ]);
 
   const updateOptions = (patch) => {
-    if ("weightUnit" in patch) unitChosenByUser.current = true;
+    if ("name" in patch) nameChosenByUser.current = true;
     const next = { ...options, ...patch };
     setOptions(next);
     saveReportPrefs({
@@ -92,10 +97,13 @@ export default function ReportPage() {
       customFrom: next.customFrom,
       customTo: next.customTo,
       medication: next.medication,
-      weightUnit: next.weightUnit,
       name: next.name,
       sections: next.sections.filter((id) => !CORE_IDS.includes(id)),
     });
+  };
+
+  const scrollToSettings = () => {
+    settingsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const handleExport = async () => {
@@ -168,57 +176,69 @@ export default function ReportPage() {
           <ChevronLeft size={22} /><span className="font-medium">Back</span>
         </button>
         <h1 className="text-center whitespace-nowrap text-[18px] font-semibold text-gray-900 dark:text-white">Report</h1>
-        <button
-          onClick={handleExport}
-          disabled={busy || !report.hasAnyData}
-          aria-label="Download or share PDF"
-          className="justify-self-end flex items-center justify-center min-w-[44px] min-h-[44px] text-indigo-600 dark:text-indigo-400 disabled:opacity-40"
-        >
-          {busy ? <Loader2 size={20} className="animate-spin" /> : <Download size={22} />}
-        </button>
+        {/* The header carries no second download action: the one main button at
+            the foot of the screen is the only way the report is shared. */}
+        <span aria-hidden="true" />
       </header>
 
-      {/* A single readable column, widened on larger screens: the report is a
-          document, and the options, the preview and the buttons all belong to
-          that one column. */}
-      <div className="max-w-lg md:max-w-2xl mx-auto px-4 py-4 space-y-4">
-        <ReportOptions
-          options={options}
-          onChange={updateOptions}
-          medications={medications}
-          available={report.available}
-        />
+      {/* A single readable column — the settings, the preview and the button all
+          belong to it — with room kept at the foot for the fixed button bar. */}
+      <div className="max-w-lg md:max-w-2xl mx-auto px-4 pt-4 pb-40 space-y-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{REPORT_TAGLINE}</p>
 
-        {report.hasAnyData && showPreview && (
-          <PreviewModeToggle mode={previewMode} onChange={setPreviewMode} />
-        )}
+        <div ref={settingsRef} className="scroll-mt-[5rem]">
+          <ReportOptions
+            options={options}
+            onChange={updateOptions}
+            medications={medicationsInLog}
+            available={report.available}
+          />
+        </div>
 
         {!report.hasAnyData ? (
-          <ReportEmptyState rangeLabel={report.range.label} onAllTime={() => updateOptions({ rangeId: "all" })} />
+          <ReportEmptyState isAllTime={!!report.range.allTime} onAllTime={() => updateOptions({ rangeId: "all" })} />
         ) : showPreview ? (
-          <ReportThemeProvider mode={previewMode}>
-            <ReportPreview report={report} />
-          </ReportThemeProvider>
-        ) : null}
+          <>
+            {/* Sits directly under the page header while the report is read, so
+                the way back to the settings is always in reach. */}
+            <div className="sticky top-[calc(4.25rem_+_env(safe-area-inset-top,0px))] z-20 -mx-1 px-1 py-2 space-y-2 bg-gray-50 dark:bg-gray-950">
+              <div className="flex items-center justify-between gap-3">
+                <button type="button" onClick={scrollToSettings} className="btn-link text-sm">
+                  <ArrowLeft size={15} aria-hidden="true" /> Back to settings
+                </button>
+                <button type="button" onClick={() => setShowPreview(false)} className="btn-link text-sm">
+                  Hide preview
+                </button>
+              </div>
+              <PreviewModeToggle mode={previewMode} onChange={setPreviewMode} />
+            </div>
+            <ReportThemeProvider mode={previewMode}>
+              <ReportPreview report={report} />
+            </ReportThemeProvider>
+          </>
+        ) : (
+          <button type="button" onClick={() => setShowPreview(true)} className="btn-link text-sm mx-auto py-2">
+            <Eye size={15} aria-hidden="true" /> Show preview
+          </button>
+        )}
+      </div>
 
-        <div className="space-y-2" style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}>
+      {/* One main action, fixed at the foot of the screen so it is always
+          reachable, with the sharing note directly above it. */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+        <div
+          className="max-w-lg md:max-w-2xl mx-auto px-4 pt-3 space-y-2"
+          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+        >
           <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center px-2">{SHARE_NOTICE}</p>
           <button
             onClick={handleExport}
             disabled={busy || !report.hasAnyData}
             className="btn-pill btn-primary w-full"
           >
-            {busy ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-            {busy ? "Generating PDF…" : "Download / Share PDF"}
+            {busy ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Download size={16} aria-hidden="true" />}
+            {busy ? "Generating…" : "Download / Share PDF"}
           </button>
-          {report.hasAnyData && (
-            <button
-              onClick={() => setShowPreview((v) => !v)}
-              className="btn-pill btn-secondary w-full"
-            >
-              {showPreview ? <><EyeOff size={16} /> Hide preview</> : <><Eye size={16} /> Preview report</>}
-            </button>
-          )}
         </div>
       </div>
     </div>
