@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { ChevronDown, SlidersHorizontal } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { OPTIONAL_IDS, RANGE_OPTIONS } from "@/lib/reportOptions";
 import DateInput from "@/components/DateInput";
 import SectionChecklist from "@/components/report/SectionChecklist";
+import RangeSelect from "@/components/report/RangeSelect";
 import {
   SHEET_CHIP_OFF, SHEET_CHIP_ON, SHEET_CHIP_SM, SHEET_FIELD,
 } from "@/components/modals/shot/sheetUi";
@@ -40,24 +41,18 @@ export default function ReportOptions({ options, onChange, medications, availabl
     onChange({ sections: next });
   };
 
-  const optionalAdded = options.sections.filter((id) => OPTIONAL_IDS.includes(id)).length;
-
   return (
     <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 card-line space-y-5">
       <div>
         <p className={LABEL}>Date range</p>
-        {/* One row that scrolls sideways, so five choices never stack the page up. */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mb-1">
-          {RANGE_OPTIONS.map((range) => (
-            <Chip
-              key={range.id}
-              active={options.rangeId === range.id}
-              onClick={() => onChange({ rangeId: range.id })}
-            >
-              {range.label}
-            </Chip>
-          ))}
-        </div>
+        {/* One field, the same one the name below it uses: the ranges are listed
+            over the page rather than in a row that runs off the edge of it. */}
+        <RangeSelect
+          label="Date range"
+          value={options.rangeId}
+          options={RANGE_OPTIONS}
+          onChange={(rangeId) => onChange({ rangeId })}
+        />
         {options.rangeId === "custom" && (
           <div className="flex gap-2 mt-3">
             <DateInput
@@ -109,13 +104,12 @@ export default function ReportOptions({ options, onChange, medications, availabl
           aria-expanded={open}
           className="w-full min-h-[44px] flex items-center justify-between gap-3 text-left"
         >
-          <span className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-            <SlidersHorizontal size={15} aria-hidden="true" /> More options
-          </span>
-          <span className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-            {optionalAdded > 0 ? `${optionalAdded} optional added` : "Core only"}
-            <ChevronDown size={18} className={`transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true" />
-          </span>
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">More options</span>
+          <ChevronDown
+            size={18}
+            className={`text-gray-500 dark:text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
+            aria-hidden="true"
+          />
         </button>
 
         {open && (

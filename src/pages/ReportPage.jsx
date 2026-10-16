@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Crown, Download, Eye, Loader2 } from "lucide-react";
+import { ChevronLeft, Crown, Eye, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
 import { useSubscription } from "@/lib/SubscriptionContext";
@@ -227,7 +227,7 @@ export default function ReportPage() {
             disabled={busy || !report.hasAnyData}
             className="btn-pill btn-primary w-full"
           >
-            {busy ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Download size={16} aria-hidden="true" />}
+            {busy && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
             {busy ? "Generating…" : "Download"}
           </button>
         </div>

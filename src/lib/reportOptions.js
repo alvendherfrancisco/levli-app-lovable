@@ -12,9 +12,9 @@ export const RANGE_OPTIONS = [
   { id: "custom", label: "Custom", days: null },
 ];
 
-// Default when nothing valid is remembered: the last three months — the window a
-// prescriber usually asks about, and short enough to read.
-export const DEFAULT_RANGE = "3m";
+// Default when nothing valid is remembered: the last four weeks — the most recent
+// stretch of the log, and the range the setup screen opens on.
+export const DEFAULT_RANGE = "4w";
 
 // Core sections are always part of the report.
 export const CORE_SECTIONS = [
