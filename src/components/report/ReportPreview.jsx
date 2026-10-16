@@ -27,9 +27,10 @@ function Section({ title, children, t }) {
 
 /**
  * The on-screen report — one component driven entirely by the report tokens, so
- * it mirrors the PDF's content and layout. "PDF look" paints it with the
- * always-light PDF tokens, which is exactly what gets exported; "App theme"
- * follows the live light/dark theme.
+ * it mirrors the PDF's content and layout. It paints itself in the app's own
+ * theme (light or dark), and everything that is not a colour — the layout, the
+ * sections and their order, the type, the spacing — is the PDF's own; the
+ * exported PDF is always the light one.
  *
  * It reads the same strings the PDF is drawn from, so the summary, the section
  * wording and the notes can never say one thing on screen and another in print.

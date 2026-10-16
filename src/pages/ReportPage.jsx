@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, Crown, Download, Eye, Loader2 } from "lucide-react";
+import { ChevronLeft, Crown, Download, Eye, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
 import { useSubscription } from "@/lib/SubscriptionContext";
@@ -15,7 +15,6 @@ import ReportOptions from "@/components/report/ReportOptions";
 import ReportPreview from "@/components/report/ReportPreview";
 import ReportEmptyState from "@/components/report/ReportEmptyState";
 import ReportStatusScreen from "@/components/report/ReportStatusScreen";
-import PreviewModeToggle from "@/components/report/PreviewModeToggle";
 import { ReportThemeProvider } from "@/components/report/ReportTheme";
 
 export default function ReportPage() {
@@ -41,11 +40,8 @@ export default function ReportPage() {
   });
   const [busy, setBusy] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
-  // The PDF is what gets shared, so its look is the one the preview opens on.
-  const [previewMode, setPreviewMode] = useState("pdf");
   const [timedOut, setTimedOut] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const settingsRef = useRef(null);
 
   // The name starts from the first name saved in About you. Once the field has
   // been typed in, that is what is used — the prefilled value never overwrites it.
@@ -100,10 +96,6 @@ export default function ReportPage() {
       name: next.name,
       sections: next.sections.filter((id) => !CORE_IDS.includes(id)),
     });
-  };
-
-  const scrollToSettings = () => {
-    settingsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const handleExport = async () => {
@@ -186,33 +178,33 @@ export default function ReportPage() {
       <div className="max-w-lg md:max-w-2xl mx-auto px-4 pt-4 pb-40 space-y-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">{REPORT_TAGLINE}</p>
 
-        <div ref={settingsRef} className="scroll-mt-[5rem]">
-          <ReportOptions
-            options={options}
-            onChange={updateOptions}
-            medications={medicationsInLog}
-            available={report.available}
-          />
-        </div>
+        <ReportOptions
+          options={options}
+          onChange={updateOptions}
+          medications={medicationsInLog}
+          available={report.available}
+        />
 
         {!report.hasAnyData ? (
           <ReportEmptyState isAllTime={!!report.range.allTime} onAllTime={() => updateOptions({ rangeId: "all" })} />
         ) : showPreview ? (
           <>
             {/* Sits directly under the page header while the report is read, so
-                the way back to the settings is always in reach. */}
-            <div className="sticky top-[calc(4.25rem_+_env(safe-area-inset-top,0px))] z-20 -mx-1 px-1 py-2 space-y-2 bg-gray-50 dark:bg-gray-950">
-              <div className="flex items-center justify-between gap-3">
-                <button type="button" onClick={scrollToSettings} className="btn-link text-sm">
-                  <ArrowLeft size={15} aria-hidden="true" /> Back to settings
-                </button>
+                the preview can be put away and brought back from one place. */}
+            <div className="sticky top-[calc(4.25rem_+_env(safe-area-inset-top,0px))] z-20 -mx-1 px-1 py-2 bg-gray-50 dark:bg-gray-950">
+              <div className="flex items-center justify-end">
                 <button type="button" onClick={() => setShowPreview(false)} className="btn-link text-sm">
                   Hide preview
                 </button>
               </div>
-              <PreviewModeToggle mode={previewMode} onChange={setPreviewMode} />
             </div>
-            <ReportThemeProvider mode={previewMode}>
+            {/* One preview, in the app's own theme: dark surface with light text
+                in dark mode, white with dark text in light mode. Only the colours
+                follow the theme — the layout, the sections and their order, the
+                type, the spacing and every line of content are the PDF's own, so
+                what is read here is what is exported. The exported PDF itself is
+                always the light one, whatever theme the app is in. */}
+            <ReportThemeProvider>
               <ReportPreview report={report} />
             </ReportThemeProvider>
           </>
