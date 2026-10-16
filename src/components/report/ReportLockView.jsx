@@ -30,7 +30,10 @@ export default function ReportLockView({ onUnlock }) {
         className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-b from-transparent via-gray-50/80 to-gray-50 dark:via-gray-950/80 dark:to-gray-950"
       />
 
-      <div className="absolute inset-0 flex items-center justify-center px-4">
+      {/* The group keeps the screen's own 24px at the foot, so the one button is
+          never pressed against the bottom edge on a short screen, and the space the
+          privacy note used to leave under it is gone. */}
+      <div className="absolute inset-0 flex items-center justify-center px-4 pb-6">
         <ReportLock onUnlock={onUnlock} />
       </div>
     </div>

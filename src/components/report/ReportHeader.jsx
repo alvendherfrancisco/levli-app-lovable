@@ -13,13 +13,26 @@ import PremiumBadge from "@/components/PremiumBadge";
  *
  * `showBadge` is off on the locked screen, where the header is all an account
  * without Premium keeps: Back and the screen's name, and nothing else.
+ *
+ * `titleRight` is that locked screen's own arrangement: the name is right-aligned
+ * on the header's right edge, against the same 16px margin the rest of the screen
+ * is set on — the setup card, the preview and the lock group all sit on it — with
+ * Back alone on the left. The name keeps the same type, the same height and the
+ * same vertical alignment it has when it is centred, so only its side changes. An
+ * account with Premium keeps the name centred beside its crown pill.
  */
-export default function ReportHeader({ onBack, showBadge = true }) {
+export default function ReportHeader({ onBack, showBadge = true, titleRight = false }) {
+  const title = (
+    <h1 className="whitespace-nowrap text-[18px] font-semibold text-gray-900 dark:text-white">Report</h1>
+  );
+
   return (
     <header
-      className="w-full sticky top-0 z-30 grid items-center px-5 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800"
+      className={`w-full sticky top-0 z-30 items-center bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 ${
+        titleRight ? "flex justify-between px-4" : "grid px-5"
+      }`}
       style={{
-        gridTemplateColumns: "1fr auto 1fr",
+        ...(titleRight ? null : { gridTemplateColumns: "1fr auto 1fr" }),
         paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))",
         paddingBottom: "0.75rem",
       }}
@@ -31,13 +44,17 @@ export default function ReportHeader({ onBack, showBadge = true }) {
       >
         <ChevronLeft size={22} /><span className="font-medium">Back</span>
       </button>
-      <div className="flex items-center justify-center gap-2">
-        <h1 className="whitespace-nowrap text-[18px] font-semibold text-gray-900 dark:text-white">Report</h1>
-        {showBadge && <PremiumBadge />}
-      </div>
+
+      {titleRight ? title : (
+        <div className="flex items-center justify-center gap-2">
+          {title}
+          {showBadge && <PremiumBadge />}
+        </div>
+      )}
+
       {/* The header carries no second download action: the one main button at the
           foot of the screen is the only way the report is exported. */}
-      <span aria-hidden="true" />
+      {!titleRight && <span aria-hidden="true" />}
     </header>
   );
 }

@@ -156,7 +156,9 @@ export default function ReportPage() {
   if (!isPremium) {
     return (
       <div className="flex h-[100dvh] flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
-        <ReportHeader onBack={() => navigate(-1)} showBadge={false} />
+        {/* The locked header: Back on the left, the screen's name on the right, on
+            the 16px margin the rest of the screen is set on. */}
+        <ReportHeader onBack={() => navigate(-1)} showBadge={false} titleRight />
         {/* Everything under the header, in the room that is left of the screen —
             the header keeps the status-bar inset, and the group is centred in it,
             clear of the foot of the screen. */}

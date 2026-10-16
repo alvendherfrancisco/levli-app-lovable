@@ -1,6 +1,5 @@
 import React from "react";
 import ReportArt from "@/components/report/ReportArt";
-import { SHARE_NOTICE } from "@/lib/reportOptions";
 import { SUBTITLE } from "@/lib/uiStyles";
 
 /**
@@ -10,10 +9,10 @@ import { SUBTITLE } from "@/lib/uiStyles";
  * own primary pill under them.
  *
  * The spacing is the group's own: 12px between the illustration, the headline and
- * the line, 16px above the button, which is full width within the group. The
- * sharing note closes the group as a small muted line under the button — the
- * screen's own privacy line, where an account with Premium reads it under the
- * download button.
+ * the line, and 16px above the button, which is full width within the group. The
+ * group ends there: the screen's privacy line belongs to the report itself, so an
+ * account with Premium reads it above the download button, and the locked screen
+ * carries no line of its own under the button.
  *
  * It sits over the blurred sample page (see ReportLockView), so it is the only
  * thing on the screen that can be pressed. There is no way to put it away: the
@@ -30,7 +29,6 @@ export default function ReportLock({ onUnlock }) {
       <button type="button" onClick={onUnlock} className="btn-pill btn-primary mt-4 w-full">
         Unlock
       </button>
-      <p className="mt-3 text-[11px] leading-snug text-gray-500 dark:text-gray-400">{SHARE_NOTICE}</p>
     </div>
   );
 }
