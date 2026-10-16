@@ -4,7 +4,7 @@ import { toDayKey, todayKey, parseShotDate, byShotMomentDesc } from "@/lib/dateU
 import { getPendingDoses, buildShotFromSchedule } from "@/lib/repeatSchedule";
 import {
   kgOfEntry, toKg, fromKg, roundKg, heightCmOf,
-  detectUnitMismatch, heightCmFromParts,
+  detectUnitMismatch, heightCmFromParts, waterText,
 } from "@/lib/measure";
 import { useAuth } from "@/lib/AuthContext";
 import { getIntervalDays, getMedicationConfig } from "@/lib/medicationConfig";
@@ -461,14 +461,15 @@ export function AppStateProvider({ children }) {
 
   const getNutrition = (dayKey) => {
     const m = dayMetrics[dayKey];
-    // Calories, protein, fiber and carbs show as whole numbers; the liquid
-    // amount keeps the precision of its own unit.
+    // Every one of the five reads as a whole number, water included — only fluid
+    // ounces keep a decimal, where the amount was poured in halves (see
+    // src/lib/measure.js).
     const whole = (v) => String(Math.round(Number(v) || 0));
-    if (!m) return { calories: "0", protein: "0", water: "0.0", fiber: "0", carbs: "0" };
+    if (!m) return { calories: "0", protein: "0", water: "0", fiber: "0", carbs: "0" };
     return {
       calories: whole(m.calories),
       protein: whole(m.protein),
-      water: m.water != null ? String(m.water) : "0.0",
+      water: waterText(m.water, profile?.liquid_unit),
       fiber: whole(m.fiber),
       carbs: whole(m.carbs),
     };

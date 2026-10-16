@@ -1,4 +1,5 @@
 import { parseShotDate } from "@/lib/dateUtils";
+import { logsAsDose } from "@/lib/medicationForm";
 
 /**
  * Every injection site the app offers, in one place: the shot form's picker and
@@ -113,15 +114,17 @@ export function sitesForRoute(route) {
 }
 
 /**
- * The shots with a site logged in the last `days` days, newest first. A shot
- * without a site is left out — this is about where the doses went.
+ * The injections with a site logged in the last `days` days, newest first. A shot
+ * without a site is left out — this is about where the doses went — and so is a
+ * tablet: an oral dose is not placed anywhere, so it is never part of a rotation,
+ * even where an old record still carries a site.
  */
 export function shotsInSiteWindow(shots, days) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return shots
     .filter((s) => {
-      if (!s.site) return false;
+      if (!s.site || logsAsDose(s.medication, { route: s.route })) return false;
       const sd = parseShotDate(s.date);
       if (!sd) return false;
       const daysSince = Math.round((today - sd) / 86400000);

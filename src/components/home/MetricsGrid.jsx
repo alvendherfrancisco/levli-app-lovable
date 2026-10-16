@@ -6,6 +6,7 @@ import { useAppState } from "@/lib/AppState";
 import AddNutritionModal from "@/components/modals/AddNutritionModal";
 import AddMetricModal from "@/components/modals/AddMetricModal";
 import { todayKey } from "@/lib/dateUtils";
+import { waterText } from "@/lib/measure";
 import { weightEntry } from "@/lib/weightEntry";
 import { toast } from "@/lib/toast";
 
@@ -36,8 +37,9 @@ export default function MetricsGrid({ dayKey }) {
   // the app never fills a measurement in as a value the person could save.
   const lastLoggedWeight = weightHistory[weightHistory.length - 1]?.weight;
 
-  // Number formatting for a narrow card: whole numbers for nutrients and
-  // exercise, at most one decimal for weight and water.
+  // Number formatting for a narrow card: whole numbers for nutrients, water and
+  // exercise (water takes a decimal only in fluid ounces, where it is poured in
+  // halves), and one decimal for weight.
   const whole = (v) => String(Math.round(Number(v) || 0));
   const oneDec = (v) => String(Math.round((Number(v) || 0) * 10) / 10);
   const addLabel = (label, valueText) => `${label}, ${valueText}, add entry`;
@@ -104,8 +106,8 @@ export default function MetricsGrid({ dayKey }) {
     },
     {
       icon: <IonIcon name="water" size={20} className="text-blue-500 dark:text-blue-400" />, label: "Water",
-      value: oneDec(nutrition.water), unit: liquidUnit, color: "bg-blue-100 dark:bg-blue-500/10",
-      ariaLabel: addLabel("Water", `${oneDec(nutrition.water)} ${liquidUnit}`),
+      value: waterText(nutrition.water, liquidUnit), unit: liquidUnit, color: "bg-blue-100 dark:bg-blue-500/10",
+      ariaLabel: addLabel("Water", `${waterText(nutrition.water, liquidUnit)} ${liquidUnit}`),
       onAdd: () => setShowNutrition(true),
     },
     {

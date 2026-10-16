@@ -90,6 +90,20 @@ export function heightText(cm, unit) {
   return `${ft} ft ${inch} in (${Math.round(cm)} cm)`;
 }
 
+// ── Water ───────────────────────────────────────────────────────────────────
+/**
+ * A water amount as it reads back: a whole number, the way the day's liquid is
+ * poured and counted ("250" mL, "8" fl oz), and never the "0.0" a decimal would
+ * print for it. Fluid ounces are the one unit that keeps a decimal, because that
+ * is the unit halves are measured in — and only when the value actually has one.
+ */
+export function waterText(value, unit) {
+  const n = Number(value) || 0;
+  const oz = unit !== "ml" && unit !== "mL";
+  const rounded = Math.round(n * 10) / 10;
+  return oz && rounded % 1 !== 0 ? String(rounded) : String(Math.round(n));
+}
+
 // ── Plausibility ────────────────────────────────────────────────────────────
 function inRange(value, range) {
   return Number.isFinite(value) && value >= range.min && value <= range.max;

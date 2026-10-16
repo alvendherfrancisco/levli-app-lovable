@@ -55,7 +55,7 @@ export default function AddNutritionModal({ open, onClose, dayKey }) {
       setSavedValues(current);
       setErrors({});
       setTouched({});
-      setIsNew(!current.calories || current.calories === "0.0");
+      setIsNew(!anyAboveZero(current));
     }
   }, [open, dk]);
 
@@ -86,6 +86,13 @@ export default function AddNutritionModal({ open, onClose, dayKey }) {
     const v = numericOnly(raw);
     setValues((p) => ({ ...p, [key]: v }));
     setErrors((p) => ({ ...p, [key]: v !== "" && !isValidNum(v) ? "Invalid number" : null }));
+  };
+
+  // Tapping a field that is holding a zero empties it, so the first keystroke
+  // starts the number instead of being typed after a zero. A field with a real
+  // amount in it keeps its value and is selected instead, so it can be replaced.
+  const handleFocus = (key) => {
+    if (toNumber(values[key]) === 0) setValues((p) => ({ ...p, [key]: "" }));
   };
 
   const handleSave = () => {
@@ -127,7 +134,7 @@ export default function AddNutritionModal({ open, onClose, dayKey }) {
                 <div className={`flex items-center border rounded-xl px-4 py-3 dark:bg-white/[0.05] ${shown ? "border-red-400" : "border-gray-200 dark:border-white/[0.1]"}`}>
                   <input type="text" inputMode="decimal" value={values[f.key]} placeholder="0"
                     onChange={(e) => handleChange(f.key, e.target.value)}
-                    onFocus={(e) => e.target.select()}
+                    onFocus={(e) => { handleFocus(f.key); e.target.select(); }}
                     onBlur={() => setTouched((p) => ({ ...p, [f.key]: true }))}
                     className="flex-1 min-w-0 outline-none text-base bg-transparent dark:text-[#E8E9F0]" />
                   <span className="flex-shrink-0 whitespace-nowrap text-gray-400 text-sm ml-2">{f.unit}</span>

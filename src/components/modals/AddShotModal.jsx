@@ -1000,8 +1000,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
 
                 {/* Injection site: one row showing the site in hand with its side
                     and figure, opening a menu grouped Front and Back, with the
-                    rotation's suggestion already chosen. */}
-                {isInjectable && (
+                    rotation's suggestion already chosen. A tablet is taken, not
+                    placed, so a pill's log is never asked for a site. */}
+                {isInjectable && !tabletForm && (
                   <SiteSelect
                     sites={siteOptions}
                     value={displayedSite}
