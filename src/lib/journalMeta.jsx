@@ -8,6 +8,14 @@ import React from "react";
 import { Smile, Zap, Utensils, Dumbbell, Star, FileText, AlertTriangle } from "lucide-react";
 import { parseShotDate } from "@/lib/dateUtils";
 
+/**
+ * The category a side effect is saved under. A side effect is logged in its own
+ * form (Home and History) rather than in the Journal, so this key is offered
+ * nowhere — but it is still recognised below, because entries saved before that
+ * change keep it and the Journal leaves them out of its list by it.
+ */
+export const SIDE_EFFECT_CATEGORY = "Side effect";
+
 export const JOURNAL_CATEGORIES = [
   { key: "Mood", label: "Mood", icon: <Smile size={18} />, color: "#6366F1", bg: "rgba(99,102,241,0.13)" },
   { key: "Energy", label: "Energy", icon: <Zap size={18} />, color: "#14B8A6", bg: "rgba(20,184,166,0.13)" },
@@ -17,6 +25,10 @@ export const JOURNAL_CATEGORIES = [
   { key: "General", label: "General", icon: <FileText size={18} />, color: "#818CF8", bg: "rgba(129,140,248,0.13)" },
   { key: "Side effect", label: "Side effect", icon: <AlertTriangle size={18} />, color: "#E11D48", bg: "rgba(225,29,72,0.13)" },
 ];
+
+/** The categories the Journal offers: what it is for — mood, energy, food,
+ *  exercise, milestone and general. Side effects are not one of them. */
+export const JOURNAL_CHOICES = JOURNAL_CATEGORIES.filter((c) => c.key !== SIDE_EFFECT_CATEGORY);
 
 /** Older entries used different names for the same category. */
 const LEGACY_CATEGORY_NAMES = {

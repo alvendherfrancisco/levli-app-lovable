@@ -1,12 +1,16 @@
 import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
+import IonIcon from "@/components/IonIcon";
+import InsightCard from "@/components/insights/InsightCard";
+import SectionHeader from "@/components/insights/SectionHeader";
+import InsightEmptyState from "@/components/insights/InsightEmptyState";
+import RangeTabs from "@/components/insights/RangeTabs";
+import { FOOTNOTE } from "@/components/insights/insightUi";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import { useAppState } from "@/lib/AppState";
 import { fromDayKey, parseShotDate, toDayKey, todayKey } from "@/lib/dateUtils";
 
 /** The windows the card can be read over. */
-const WINDOWS = [30, 90];
+const RANGES = { "30 Days": 30, "90 Days": 90 };
 
 /**
  * The dot each severity is drawn with: one amber-to-red ladder, so the worst a
@@ -69,21 +73,21 @@ function afterShotHint(events, shots) {
 
 /**
  * The side effects logged over the last 30 or 90 days: what keeps coming back,
- * how bad it was, when it last happened, and how it sits against the shots. Each
- * row opens that symptom's own journal entries, so the pattern can be talked
- * through with a prescriber.
+ * how bad it was, when it last happened, and how it sits against the shots.
  *
- * It reads the same structured records the day's own list on Home and History
- * reads — the AdverseEvent records held once in src/lib/AppState.jsx — so a side
- * effect logged, edited or removed anywhere in the app is reflected here the
+ * Logging lives in one place — the Side Effects form (Home and History) — and
+ * this card is the reading of it, so the header offers that same form rather than
+ * a second way in. It reads the very records the day's own list on Home and
+ * History reads (the AdverseEvent records held once in src/lib/AppState.jsx), so a
+ * side effect added, edited or removed anywhere in the app is reflected here the
  * moment it is saved, with no reload.
  */
 export default function SideEffectsCard() {
-  const navigate = useNavigate();
   const { adverseEvents, shots } = useAppState();
-  const [days, setDays] = useState(90);
+  const [range, setRange] = useState("90 Days");
   const [showAll, setShowAll] = useState(false);
   const [logging, setLogging] = useState(false);
+  const days = RANGES[range];
 
   const summary = useMemo(() => {
     const today = fromDayKey(todayKey());
@@ -128,44 +132,42 @@ export default function SideEffectsCard() {
   const visibleRows = showAll ? summary.rows : summary.rows.slice(0, 3);
 
   return (
-    <div className="mx-4 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "rgba(225,29,72,0.12)" }}>
-            <AlertTriangle size={16} className="text-[#E11D48] dark:text-[#FB7185]" />
-          </div>
-          <h2 className="text-base font-semibold text-gray-900 dark:text-white truncate">Side Effects</h2>
-        </div>
-        <div className="flex gap-1.5 flex-shrink-0">
-          {WINDOWS.map((w) => (
-            <button key={w} onClick={() => { setDays(w); setShowAll(false); }}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                days === w
-                  ? "bg-indigo-600 text-white border-indigo-600"
-                  : "bg-white dark:bg-gray-900 text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-gray-700"
-              }`}>
-              {w}d
+    <InsightCard>
+      <SectionHeader
+        compact
+        icon={<IonIcon name="warning" size={16} className="text-indigo-600 dark:text-indigo-400" />}
+        title="Side Effects"
+        action={
+          summary.total > 0 ? (
+            <button onClick={() => setLogging(true)} className="btn-pill btn-pill-sm btn-primary flex-shrink-0">
+              Log side effect
             </button>
-          ))}
-        </div>
-      </div>
+          ) : null
+        }
+      />
+
+      <RangeTabs
+        variant="segmented"
+        options={Object.keys(RANGES)}
+        value={range}
+        onChange={(r) => { setRange(r); setShowAll(false); }}
+        className="mb-4"
+      />
 
       {summary.total === 0 ? (
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <p className="text-sm text-gray-500 dark:text-[#9A9DAE]">No side effects logged</p>
-          <button onClick={() => setLogging(true)} className="btn-pill btn-pill-sm btn-primary">Log one</button>
-        </div>
+        <InsightEmptyState
+          message="No side effects logged"
+          action={<button onClick={() => setLogging(true)} className="btn-pill btn-pill-sm btn-primary">Log one</button>}
+        />
       ) : (
         <>
-          <span className="mt-2 inline-block rounded-full bg-gray-100 dark:bg-white/[0.06] px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:text-[#C0C3D4]">
+          <span className="inline-block rounded-full bg-gray-100 dark:bg-white/[0.06] px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:text-[#C0C3D4]">
             {summary.total} in last {days} days
           </span>
 
           <div className="mt-1.5">
             {visibleRows.map((row) => (
-              <button key={row.symptom}
-                onClick={() => navigate(`/journal?symptom=${encodeURIComponent(row.symptom)}`)}
-                className="flex w-full items-center gap-2.5 py-2 text-left">
+              <div key={row.symptom} className="flex w-full items-center gap-2.5 py-2">
                 <span className="flex w-2 justify-center flex-shrink-0">
                   {row.severity && (
                     <span className="h-2 w-2 rounded-full" style={{ background: SEVERITY_DOT[row.severity] }}
@@ -178,7 +180,7 @@ export default function SideEffectsCard() {
                     style={{ width: `${Math.max(12, Math.round((row.count / summary.maxCount) * 100))}%`, background: "linear-gradient(90deg,#F59E0B,#E11D48)" }} />
                 </span>
                 <span className="w-5 text-right text-xs tabular-nums text-gray-500 dark:text-[#9A9DAE] flex-shrink-0">{row.count}</span>
-              </button>
+              </div>
             ))}
           </div>
 
@@ -188,13 +190,13 @@ export default function SideEffectsCard() {
             </button>
           )}
 
-          <p className="mt-2 text-[11px] leading-relaxed text-gray-500 dark:text-[#9A9DAE]">
+          <p className={`mt-2 ${FOOTNOTE}`}>
             Last logged {summary.lastLabel}
             {summary.afterShot && <> · {summary.afterShot}</>}
           </p>
 
           {summary.anySeverity && (
-            <p className="mt-1.5 flex items-center gap-3 text-[11px] text-gray-500 dark:text-[#9A9DAE]">
+            <p className={`mt-1.5 flex items-center gap-3 ${FOOTNOTE}`}>
               {SEVERITY_LEGEND.map((level) => (
                 <span key={level} className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full" style={{ background: SEVERITY_DOT[level] }} />
@@ -207,6 +209,6 @@ export default function SideEffectsCard() {
       )}
 
       <SideEffectsModal open={logging} onClose={() => setLogging(false)} dayKey={todayKey()} />
-    </div>
+    </InsightCard>
   );
 }

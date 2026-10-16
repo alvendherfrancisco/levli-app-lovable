@@ -1,137 +1,57 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Settings, BookOpen, Clock, Heart, X } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { Settings, BookOpen, Clock, Heart } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import JournalEntryModal from "@/components/modals/JournalEntryModal";
-import SideEffectsCard from "@/components/journal/SideEffectsCard";
 import { useAppState } from "@/lib/AppState";
-import { JOURNAL_CATEGORIES, categoryMeta, normaliseCategory, sortJournalNewestFirst } from "@/lib/journalMeta";
-import { parseShotDate, toDayKey, formatLocaleDate } from "@/lib/dateUtils";
-import { classifyRedFlag } from "@/lib/redFlags";
-import { getRecentMedication } from "@/lib/medicationData";
+import { JOURNAL_CHOICES, SIDE_EFFECT_CATEGORY, categoryMeta, normaliseCategory, sortJournalNewestFirst } from "@/lib/journalMeta";
+import { parseShotDate, formatLocaleDate } from "@/lib/dateUtils";
 import { toast } from "@/lib/toast";
 
+/**
+ * The Journal: what the person wrote about their day — mood, energy, food,
+ * exercise, milestones and general entries.
+ *
+ * Side effects have a form of their own (Home and History) and a summary of their
+ * own (the card on Insights), so they are neither written, filtered nor listed
+ * here. An entry saved as a side effect before that change is kept rather than
+ * deleted: it still counts in History, Insights and the report, it is simply not
+ * shown in this list.
+ */
 export default function Journal() {
-  const {
-    journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry,
-    adverseEvents, addAdverseEvent, updateAdverseEvent, deleteAdverseEvent, shots,
-  } = useAppState();
+  const { journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry } = useAppState();
   const [showModal, setShowModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [filterCat, setFilterCat] = useState("All");
-  // A symptom tapped on History's side-effect card arrives as ?symptom=…, and
-  // shows that symptom's own entries.
-  const location = useLocation();
-  const [symptomFilter, setSymptomFilter] = useState(
-    () => new URLSearchParams(window.location.search).get("symptom") || ""
+
+  // Newest first, by the date and time each entry was written, and never the
+  // side-effect entries: this list is the Journal's own categories.
+  const entries = useMemo(
+    () =>
+      sortJournalNewestFirst(journalEntries).filter(
+        (e) => normaliseCategory(e.category) !== SIDE_EFFECT_CATEGORY
+      ),
+    [journalEntries]
   );
 
-  useEffect(() => {
-    const symptom = new URLSearchParams(location.search).get("symptom") || "";
-    setSymptomFilter(symptom);
-    if (symptom) setFilterCat("Side effect");
-  }, [location.search]);
-
-  // Newest first, by the date and time each entry was written.
-  const entries = useMemo(() => sortJournalNewestFirst(journalEntries), [journalEntries]);
-
-  // The records behind the tapped symptom, so an entry linked to one of them
-  // matches even when its own wording differs.
-  const symptomEntryIds = useMemo(() => {
-    if (!symptomFilter) return null;
-    const target = symptomFilter.trim().toLowerCase();
-    return new Set(
-      adverseEvents
-        .filter((e) => String(e.symptom || "").trim().toLowerCase() === target)
-        .map((e) => e.journal_entry_id)
-        .filter(Boolean)
-    );
-  }, [adverseEvents, symptomFilter]);
-
-  const filtered = (filterCat === "All" ? entries : entries.filter((e) => normaliseCategory(e.category) === filterCat))
-    .filter((e) => {
-      if (!symptomFilter) return true;
-      return String(e.text || "").toLowerCase().includes(symptomFilter.trim().toLowerCase())
-        || symptomEntryIds.has(e.id);
-    });
-
-  // Choosing a category clears the symptom a card tapped on History set.
-  const selectCategory = (category) => {
-    setFilterCat(category);
-    setSymptomFilter("");
-  };
-
-  /**
-   * The one structured record behind a side-effect entry, kept in step with it:
-   * written with the entry, rewritten when the entry changes, and removed when
-   * the entry is no longer a side effect or is deleted. The summary card below,
-   * this page's entries and the day's own list on Home and History therefore all
-   * read the same records and can never disagree.
-   */
-  const syncSideEffectRecord = async (entryId, entry) => {
-    const linked = adverseEvents.filter((e) => e.journal_entry_id === entryId);
-    if (normaliseCategory(entry.category) !== "Side effect") {
-      for (const rec of linked) await deleteAdverseEvent(rec.id);
-      return;
-    }
-    const day = toDayKey(parseShotDate(entry.date) || new Date());
-    const recentMed = getRecentMedication(shots, day) || "";
-    const { tier } = classifyRedFlag(`${entry.severity || ""} ${entry.text}`.trim(), recentMed);
-    const fields = {
-      medication_name: recentMed,
-      symptom: entry.text,
-      severity: entry.severity || "",
-      onset_date: day,
-      day_key: day,
-      notes: entry.text,
-      red_flag_tier: tier || "none",
-    };
-    if (linked.length) {
-      await updateAdverseEvent(linked[0].id, fields);
-    } else {
-      await addAdverseEvent({
-        ...fields,
-        symptom_category: "other",
-        resolved: false,
-        user_attribution: true,
-        journal_entry_id: entryId,
-      });
-    }
-  };
+  const filtered = filterCat === "All"
+    ? entries
+    : entries.filter((e) => normaliseCategory(e.category) === filterCat);
 
   const handleSave = async (entry) => {
     if (editingEntry) {
       await updateJournalEntry(editingEntry.id, entry);
-      try {
-        await syncSideEffectRecord(editingEntry.id, entry);
-      } catch (err) {
-        // The entry itself is already saved; the record can be corrected by hand.
-        toast.error("Saved the entry, but its side-effect record could not be updated");
-      }
       toast.success("Journal entry updated");
     } else {
-      const rec = await addJournalEntry(entry);
-      // A side-effect entry always has a structured record to match it.
-      if (normaliseCategory(entry.category) === "Side effect" && rec?.id) {
-        try {
-          await syncSideEffectRecord(rec.id, entry);
-        } catch (err) {
-          // The journal entry itself is already saved; the log can be re-added by hand.
-          toast.error("Saved the entry, but the side-effect record could not be added");
-        }
-      }
+      await addJournalEntry(entry);
     }
     setEditingEntry(null);
   };
 
   const handleDelete = async (id) => {
     try {
-      // The entry's own side-effect records go with it, so nothing is left
-      // counting a symptom the journal no longer holds.
-      const linked = adverseEvents.filter((e) => e.journal_entry_id === id);
       await deleteJournalEntry(id);
-      for (const rec of linked) await deleteAdverseEvent(rec.id);
       toast.deleted("Journal entry deleted");
       setEditingEntry(null);
       setShowModal(false);
@@ -145,8 +65,6 @@ export default function Journal() {
 
   const normaliseEntry = (e) => ({ ...e, category: normaliseCategory(e.category) });
 
-  const linkedCount = (entryId) => adverseEvents.filter((e) => e.journal_entry_id === entryId).length;
-
   return (
     <PageContainer bottomInset="fab" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
@@ -156,23 +74,9 @@ export default function Journal() {
         </div>
       </div>
 
-      {/* A symptom tapped on the side-effect card below shows here as its own
-          filter, above the category chips. */}
-      {symptomFilter && (
-        <div className="w-full max-w-3xl mx-auto px-4 pt-4">
-          <button onClick={() => setSymptomFilter("")}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#E11D48]/30 bg-[#E11D48]/10 px-3 py-1 text-xs font-medium text-[#E11D48] dark:text-[#FB7185]">
-            Showing: {symptomFilter}
-            <X size={12} aria-hidden="true" />
-          </button>
-        </div>
-      )}
-
-      {/* Category filter chips — icon, colour and text label for each. The
-          summary of everything logged sits at the foot of the page, below the
-          entries it summarises. */}
-      <div className={`w-full max-w-3xl mx-auto px-4 mb-4 flex flex-wrap gap-2${symptomFilter ? "" : " pt-4"}`}>
-        <button onClick={() => selectCategory("All")}
+      {/* Category filter chips — icon, colour and text label for each. */}
+      <div className="w-full max-w-3xl mx-auto px-4 pt-4 mb-4 flex flex-wrap gap-2">
+        <button onClick={() => setFilterCat("All")}
           className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
             filterCat === "All"
               ? "bg-indigo-600 text-white border-indigo-600"
@@ -180,10 +84,10 @@ export default function Journal() {
           }`}>
           All
         </button>
-        {JOURNAL_CATEGORIES.map((c) => {
+        {JOURNAL_CHOICES.map((c) => {
           const active = filterCat === c.key;
           return (
-            <button key={c.key} onClick={() => selectCategory(c.key)}
+            <button key={c.key} onClick={() => setFilterCat(c.key)}
               style={active ? { background: c.color, borderColor: c.color } : {}}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                 active ? "text-white" : "bg-white dark:bg-gray-900 text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-gray-700"
@@ -202,14 +106,8 @@ export default function Journal() {
               <div className="w-14 h-14 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center mx-auto mb-3">
                 <BookOpen size={32} className="opacity-30" aria-hidden="true" />
               </div>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
-                {symptomFilter ? `No entries for “${symptomFilter}”` : "No Journal Entries"}
-              </h3>
-              <p className="text-sm">
-                {symptomFilter
-                  ? "Entries you write about this symptom will show here."
-                  : "Record your thoughts, symptoms, and medication experiences."}
-              </p>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">No Journal Entries</h3>
+              <p className="text-sm">Record your mood, energy, meals, exercise and milestones.</p>
             </div>
           </div>
         ) : (
@@ -218,7 +116,6 @@ export default function Journal() {
               const e = normaliseEntry(raw);
               const meta = categoryMeta(e.category);
               const mood = e.mood || "";
-              const severityRecorded = e.category === "Side effect" ? linkedCount(e.id) : 0;
               return (
                 <button key={e.id} onClick={() => openEdit(e)} className="w-full text-left bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden box-border">
                   <div className="flex items-start gap-3 w-full min-w-0">
@@ -246,9 +143,6 @@ export default function Journal() {
                           {React.cloneElement(meta.icon, { size: 11 })}
                           {meta.label}
                         </span>
-                        {severityRecorded > 0 && (
-                          <span className="text-xs text-gray-400 whitespace-nowrap">• side-effect record added</span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -257,13 +151,6 @@ export default function Journal() {
             })}
           </div>
         )}
-      </div>
-
-      {/* What keeps coming back over the last 30 or 90 days: the summary of the
-          entries above it, drawn below them — and below the empty card when there
-          are none — with the page's own 16px gap between the two. */}
-      <div className="w-full max-w-3xl mx-auto mt-4">
-        <SideEffectsCard />
       </div>
 
       <JournalEntryModal

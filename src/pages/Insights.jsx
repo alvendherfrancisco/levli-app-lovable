@@ -10,6 +10,7 @@ import InsightEmptyState from "@/components/insights/InsightEmptyState";
 import RangeTabs from "@/components/insights/RangeTabs";
 import ProgressPhotoCard from "@/components/insights/ProgressPhotoCard";
 import WeightProgressChart from "@/components/insights/WeightProgressChart";
+import SideEffectsCard from "@/components/insights/SideEffectsCard";
 import HowItWorksLink from "@/components/insights/HowItWorksLink";
 import AddMetricModal from "@/components/modals/AddMetricModal";
 import { useAppState } from "@/lib/AppState";
@@ -266,6 +267,10 @@ export default function Insights() {
 
           <HowItWorksLink onClick={() => setShowHowItWorks(true)} />
         </InsightCard>
+
+        {/* What keeps coming back over the last 30 or 90 days — logged in one
+            place, read here, directly under the weight it sits beside. */}
+        <SideEffectsCard />
 
         {/* The gentle check-in, when the weight trend itself calls for one. It
             draws nothing at all unless a safeguard is active. */}

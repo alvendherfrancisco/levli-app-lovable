@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import { useAppState } from "@/lib/AppState";
-import { getRecentMedication } from "@/lib/medicationData";
-import RedFlagBanner from "@/components/RedFlagBanner";
-import UrgentHelpCard from "@/components/sideEffects/UrgentHelpCard";
-import { JOURNAL_CATEGORIES, MOOD_SCALE, moodFor } from "@/lib/journalMeta";
-import { SEVERITY_LEVELS } from "@/lib/sideEffectSymptoms";
+import { JOURNAL_CHOICES, MOOD_SCALE, moodFor } from "@/lib/journalMeta";
 import useModal from "@/hooks/useModal";
 import useDiscardConfirm from "@/hooks/useDiscardConfirm";
 import { hasChanged } from "@/lib/formValidity";
@@ -24,16 +19,17 @@ function nowFormatted() {
 }
 
 /**
- * Category and mood are separate answers: what the entry is about, and how the
- * day felt. The entry is stamped with the real date and time it was written.
+ * A Journal entry: what it is about, how the day felt, and what the person wrote.
+ * Category and mood are separate answers, and the entry is stamped with the real
+ * date and time it was written.
+ *
+ * A side effect is logged in its own form (Home and History) rather than here, so
+ * it is not one of the categories on offer.
  */
 export default function JournalEntryModal({ open, onClose, onSave, onDelete, initialEntry }) {
   const [text, setText] = useState("");
   const [mood, setMood] = useState(MOOD_SCALE[2]);
   const [category, setCategory] = useState("General");
-  const [severity, setSeverity] = useState("mild");
-  const [urgentOpen, setUrgentOpen] = useState(false);
-  const { darkMode, shots } = useAppState();
 
   useEffect(() => {
     if (!open) return;
@@ -46,8 +42,6 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
       setMood(MOOD_SCALE[2]);
       setCategory("General");
     }
-    setSeverity("mild");
-    setUrgentOpen(false);
   }, [open, initialEntry]);
 
   // What was saved, so an edit with nothing changed has nothing to save: the
@@ -65,8 +59,6 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
 
   if (!open) return null;
 
-  const recentMed = getRecentMedication(shots, null);
-
   const handleSave = async () => {
     if (!canSave) return;
     try {
@@ -75,8 +67,6 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
         text: text.trim(), date, time,
         mood: mood.label, moodColor: "",
         category,
-        // Carried through for the structured side-effect record only.
-        severity: category === "Side effect" ? severity : undefined,
       });
       toast.success(initialEntry ? "Journal entry updated" : "Journal entry added");
       setTimeout(() => onClose(), 500);
@@ -112,7 +102,7 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
           <div>
             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Category</label>
             <div className="flex flex-wrap gap-2">
-              {JOURNAL_CATEGORIES.map((c) => {
+              {JOURNAL_CHOICES.map((c) => {
                 const active = category === c.key;
                 return (
                   <button key={c.key} onClick={() => setCategory(c.key)}
@@ -148,28 +138,6 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
             </div>
           </div>
 
-          {/* Severity, only for a side-effect entry */}
-          {category === "Side effect" && (
-            <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">How bad is it?</label>
-              <div className="flex gap-2">
-                {SEVERITY_LEVELS.map((s) => (
-                  <button key={s.value} onClick={() => setSeverity(s.value)}
-                    className={`flex-1 py-2 rounded-full text-sm font-medium border transition-colors ${
-                      severity === s.value
-                        ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30"
-                        : "bg-white dark:bg-white/[0.05] text-gray-500 dark:text-[#9A9DAE] border-gray-200 dark:border-white/[0.08]"
-                    }`}>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                This is saved as a side-effect record too, so it appears in History, Insights and your report.
-              </p>
-            </div>
-          )}
-
           {/* Text */}
           <div>
             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Your thoughts</label>
@@ -178,17 +146,6 @@ export default function JournalEntryModal({ open, onClose, onSave, onDelete, ini
               className="w-full border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.05] text-gray-900 dark:text-[#E8E9F0] placeholder-gray-400 dark:placeholder-[#9A9DAE] rounded-xl px-4 py-3 text-sm resize-none h-32 outline-none focus:border-indigo-300 dark:focus:border-indigo-500/50" />
           </div>
         </div>
-
-        {category === "Side effect" && (
-          <div className="px-5 pb-3 space-y-2">
-            <UrgentHelpCard
-              open={urgentOpen || severity === "severe"}
-              onToggle={() => setUrgentOpen((v) => !v)}
-              highlight={severity === "severe"}
-            />
-            {text.trim() && <RedFlagBanner text={`${severity} ${text}`} medication={recentMed} />}
-          </div>
-        )}
 
         <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
           {/* The way to remove this entry sits beside the update button, in red,
