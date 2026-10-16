@@ -28,6 +28,22 @@ function DoseMarker({ cx, cy }) {
   );
 }
 
+/**
+ * A tablet, for the products taken by mouth: the same mark for the same job as
+ * the syringe above — a dose's own day, standing on the curve — drawn as the
+ * tablet that was taken rather than a needle.
+ */
+function TabletMarker({ cx, cy }) {
+  if (cx == null || cy == null) return null;
+  return (
+    <g transform={`translate(${cx},${cy})`} aria-hidden="true">
+      <rect x="-4.6" y="-10" width="9.2" height="6.6" rx="3.3" fill={DOSE} />
+      <line x1="-3" y1="-6.7" x2="3" y2="-6.7" stroke="#ffffff" strokeOpacity="0.75" strokeWidth="0.9" />
+      <line x1="0" y1="-3.4" x2="0" y2="0" stroke={DOSE} strokeWidth="1.3" strokeLinecap="round" />
+    </g>
+  );
+}
+
 /** The date in hand, the level, and how far it is from the dose that set it. */
 function LevelTooltip({ active, payload }) {
   const row = active && payload?.length ? payload[0]?.payload : null;
@@ -69,8 +85,16 @@ function LegendKey({ label, children }) {
  * Tapping or dragging the graph reads out the day under the finger — its date, its
  * level and how many days after a dose it is. `example` draws the same shape when
  * nothing has been logged yet, held back so it reads as an illustration.
+ *
+ * `estimated` is the one mark the graph itself carries: a small asterisk in its
+ * top-right corner, for the products whose shape is the app's own estimate (see
+ * src/lib/medicationLevelCurves.js). It is a signpost, not a label — the line it
+ * points at sits under the graph, in the card's own words, opened by the same
+ * asterisk.
  */
-export default function MedicationLevelChart({ points, tickFill, example = false, ariaLabel }) {
+export default function MedicationLevelChart({
+  points, tickFill, example = false, estimated = false, tablet = false, ariaLabel,
+}) {
   const peak = Math.max(
     100,
     ...points.map((point) => Math.max(point.level || 0, point.forecast || 0)),
@@ -84,7 +108,15 @@ export default function MedicationLevelChart({ points, tickFill, example = false
     <div>
       {/* Only the drawing is held back for the example; the legend under it stays
           at full strength, so it can be read on a card with nothing logged yet. */}
-      <div className={`h-56 ${example ? "opacity-40" : ""}`} role="img" aria-label={ariaLabel}>
+      <div className={`relative h-56 ${example ? "opacity-40" : ""}`} role="img" aria-label={ariaLabel}>
+        {estimated && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute right-1 top-0 text-sm font-semibold leading-none text-gray-400 dark:text-[#9A9DAE]"
+          >
+            *
+          </span>
+        )}
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={points} margin={{ top: 22, right: 14, bottom: 4, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
@@ -144,7 +176,7 @@ export default function MedicationLevelChart({ points, tickFill, example = false
               type="monotone"
               dataKey="doseLevel"
               stroke="none"
-              dot={<DoseMarker />}
+              dot={tablet ? <TabletMarker /> : <DoseMarker />}
               activeDot={false}
               connectNulls={false}
               isAnimationActive={false}
@@ -158,7 +190,14 @@ export default function MedicationLevelChart({ points, tickFill, example = false
           One row, evenly spaced, never wrapping. */}
       <div className="mt-3 flex items-center justify-center gap-4">
         <LegendKey label="Dose">
-          <Syringe size={14} style={{ color: DOSE }} aria-hidden="true" />
+          {tablet ? (
+            <svg width="14" height="10" aria-hidden="true">
+              <rect x="0.5" y="1" width="13" height="8" rx="4" fill={DOSE} />
+              <line x1="4.5" y1="5" x2="9.5" y2="5" stroke="#ffffff" strokeOpacity="0.75" strokeWidth="1" />
+            </svg>
+          ) : (
+            <Syringe size={14} style={{ color: DOSE }} aria-hidden="true" />
+          )}
         </LegendKey>
         <LegendKey label="Your level">
           <span className="h-0.5 w-4 rounded" style={{ background: LIVED }} />

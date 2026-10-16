@@ -19,6 +19,13 @@ import {
  *  what is not explained here is in the card's "How this works" sheet. */
 const DISCLAIMER = "Estimate only. Not a blood test or dosing advice.";
 
+/** What the card says instead when the shape it draws is the app's own guess —
+ *  the oral products, which have no published blood-level curve (see
+ *  src/lib/medicationLevelCurves.js). The asterisk it opens with is the one
+ *  standing in the graph's corner. */
+const ESTIMATED_DISCLAIMER =
+  "* Pure estimation. No blood-level data exists for this pill, so the shape is a guess, not a blood test or dosing advice.";
+
 /**
  * Medication Level — what one dose's typical shape adds up to on any day, from the
  * doses actually logged.
@@ -28,8 +35,14 @@ const DISCLAIMER = "Estimate only. Not a blood test or dosing advice.";
  * The card reads the same dose data as the Shots screen, so logging, editing or
  * deleting a dose — a past one included — redraws it at once.
  *
- * A product the app has no curve for (a tablet, a peptide) has no card: the one
- * line in its place says so.
+ * A product the app has no curve for (a peptide, another tablet) has no card: the
+ * one line in its place says so.
+ *
+ * Two of the products it draws — oral semaglutide (the Wegovy® tablet, Rybelsus®)
+ * and orforglipron (Foundayo®) — have no published blood-level curve, so their
+ * shape is the app's own estimate. The card marks those plainly: a small asterisk
+ * in the graph's corner and a line under it saying the shape is a pure
+ * estimation.
  */
 export default function MedicationLevelCard() {
   const { shots, medications, repeatSchedules, profile } = useAppState();
@@ -84,8 +97,10 @@ export default function MedicationLevelCard() {
 
   const percent = level.hasDoses ? Math.round(level.today.level) : null;
   const daysSince = level.today?.daysSinceLast;
+  // Whether the shape behind the figure is the app's own estimate (see above).
+  const estimated = !!level.curve?.estimated;
   const ariaLabel = level.hasDoses
-    ? `Medication level chart. Today ${percent}% of a single-dose peak.`
+    ? `${estimated ? "Estimated medication" : "Medication"} level chart. Today ${percent}% of a single-dose peak.`
     : "Example medication level chart";
 
   return (
@@ -131,6 +146,8 @@ export default function MedicationLevelCard() {
           points={level.points}
           tickFill={tickFill}
           example={!level.hasDoses}
+          estimated={estimated}
+          tablet={!!level.curve?.daily}
           ariaLabel={ariaLabel}
         />
       )}
@@ -142,7 +159,9 @@ export default function MedicationLevelCard() {
         </p>
       )}
 
-      <p className={`mt-3 text-center ${FOOTNOTE}`}>{DISCLAIMER}</p>
+      <p className={`mt-3 text-center ${FOOTNOTE}`}>
+        {estimated ? ESTIMATED_DISCLAIMER : DISCLAIMER}
+      </p>
 
       {/* Centred on the card's own axis: the row takes the full width and the
           link keeps its colour, weight and size. */}
@@ -152,7 +171,7 @@ export default function MedicationLevelCard() {
         </button>
       </div>
 
-      <MedicationLevelHowItWorks open={howOpen} onClose={() => setHowOpen(false)} />
+      <MedicationLevelHowItWorks open={howOpen} onClose={() => setHowOpen(false)} estimated={estimated} />
     </InsightCard>
   );
 }

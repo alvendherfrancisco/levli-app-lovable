@@ -13,12 +13,22 @@ const POINTS = [
   "It is an illustration of a typical pattern, not a measurement of your blood, and not a reason to take a dose early or late.",
 ];
 
+// The two lines added when the shape itself is the app's own estimate: the oral
+// products, which have no published blood-level curve (see
+// src/lib/medicationLevelCurves.js). One says how a once-daily dose behaves, and
+// the other says plainly that the curve is a guess.
+const ESTIMATED_POINTS = [
+  "This medicine is taken once a day, so the level builds up over the first weeks and then holds steady while a dose is taken each day.",
+  "No blood-level data has been published for it, so the shape is an estimated guess rather than a measured one.",
+];
+
 /** The short explanation the level card's "How this works" opens. */
-export default function MedicationLevelHowItWorks({ open, onClose }) {
+export default function MedicationLevelHowItWorks({ open, onClose, estimated = false }) {
+  const points = estimated ? [...POINTS, ...ESTIMATED_POINTS] : POINTS;
   return (
     <InsightSheet open={open} onClose={onClose} title="How this works">
       <ul className="space-y-3">
-        {POINTS.map((text) => (
+        {points.map((text) => (
           <li key={text} className="flex gap-2.5">
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" aria-hidden="true" />
             <span className="text-sm leading-relaxed text-gray-600 dark:text-[#C0C3D4]">{text}</span>

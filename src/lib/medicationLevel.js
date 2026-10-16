@@ -7,6 +7,12 @@
 // build up over the first weeks of a weekly schedule, and it is checked against
 // the workbook's "Weekly dosing" sheet day for day.
 //
+// Two of the tables — oral semaglutide and orforglipron — are the app's own
+// estimate rather than a published curve, and carry `estimated` for the card to
+// say so. Both are taken once a day, which is what `daily` marks: the level
+// climbs to a steady figure and holds, instead of rising and falling around each
+// dose.
+//
 // Everything reads the same dose data the Shots screen does, so a dose added,
 // edited or deleted — a past one included — moves the graph, the Home line and
 // the phase at once. The figure is a share of the peak of one dose, so it passes
@@ -30,6 +36,9 @@ export const PHASE_TONE = {
   "Peak window": "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300",
   Declining: "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
   Low: "bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-[#9A9DAE]",
+  // The phase an oral product settles into: taken every day, it holds its level
+  // rather than rising and falling around each dose.
+  Steady: "bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
 };
 
 // Which curve a brand or generic name follows — the one table that answers it.
@@ -47,10 +56,18 @@ const CURVE_BY_NAME = {
 /** The curve a product follows, or null when the app has none for it. */
 export function curveForMedication(name, route) {
   if (!name) return null;
-  // A product taken by mouth has no injection curve: a tablet (Rybelsus®, the
-  // Wegovy® pill, Foundayo®) is not the shape this table describes.
-  if (isOralMedication(name, route)) return null;
   const key = plainBrandName(name).toLowerCase().trim();
+  // A product taken by mouth has no injection curve — a tablet is not the shape
+  // those tables describe. Two of them have an estimated shape of their own
+  // (see medicationLevelCurves: the card marks it as the app's own estimate);
+  // anything else taken by mouth has none yet.
+  if (isOralMedication(name, route)) {
+    if (key === "rybelsus" || key === "wegovy" || key === "ozempic" || key.startsWith("semaglutide")) {
+      return MEDICATION_CURVES.oral_semaglutide;
+    }
+    if (key === "foundayo" || key.startsWith("orforglipron")) return MEDICATION_CURVES.orforglipron;
+    return null;
+  }
   // A compounded or generic entry names its molecule first ("Semaglutide
   // (generic / compounded)"), and it is the same molecule the curve follows.
   const id = CURVE_BY_NAME[key]
@@ -110,9 +127,12 @@ export function defaultLevelMedication(options = [], shots = []) {
 }
 
 /** The phase the person is in, read from the last dose and what is left. */
-export function phaseFor({ daysSinceLast, level, curve }) {
+export function phaseFor({ daysSinceLast, level, curve, dosesLogged = 0 }) {
   if (daysSinceLast == null || !curve) return null;
   if (level != null && level <= 15) return "Low";
+  // An oral product is taken every day: its level climbs towards its steady
+  // figure over the first week of doses and then holds there.
+  if (curve.daily) return dosesLogged >= 7 ? "Steady" : "Rising";
   if (daysSinceLast <= curve.peakDay - 1) return "Rising";
   if (daysSinceLast <= curve.peakDay + 1) return "Peak window";
   return "Declining";
@@ -222,7 +242,7 @@ export function buildMedicationLevel({
   const lastDoseKey = hasDoses ? drawn[drawn.length - 1].dayKey : null;
   const daysSinceLast = lastDoseKey ? calendarDaysBetween(lastDoseKey, today) : null;
   const todayValue = hasDoses ? round1(levelOn(today)) : null;
-  const phase = phaseFor({ daysSinceLast, level: todayValue, curve });
+  const phase = phaseFor({ daysSinceLast, level: todayValue, curve, dosesLogged: drawn.length });
 
   return {
     supported: true,
