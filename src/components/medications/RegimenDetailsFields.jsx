@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import OptionChips from "@/components/OptionChips";
 import ClearFieldButton from "@/components/ClearFieldButton";
 import ScheduleFields from "@/components/schedule/ScheduleFields";
+import IntervalOverrideField from "@/components/medications/IntervalOverrideField";
 import SheetField from "@/components/modals/shot/SheetField";
 import SheetPickerRow from "@/components/modals/shot/SheetPickerRow";
 import ReasonSelect from "@/components/medications/ReasonSelect";
@@ -26,9 +27,14 @@ function ClearX({ show, onClear, label }) {
 
 /**
  * Everything the Add / Edit Medication form does not ask for on its face, in the
- * Log shot sheet's own fields: how often the medication is taken, why it was
- * prescribed, the note the prescriber gave with the dose, when it is planned to
- * stop, the prescriber and — for a regimen that is already saved — its status.
+ * Log shot sheet's own fields: how often the medication is taken and the interval
+ * a prescriber directed for it, why it was prescribed, the note the prescriber
+ * gave with the dose, when it is planned to stop, and — for a regimen that is
+ * already saved — its status.
+ *
+ * The prescriber is not asked here: name and contact are entered once, in About
+ * you (src/pages/Profile.jsx), and this form reads them from there — the line
+ * below says so and names what it found.
  *
  * All of it is optional: the form saves without a single answer here. The time of
  * day is not asked again here — the reminder above the section already asks it.
@@ -36,9 +42,10 @@ function ClearX({ show, onClear, label }) {
 export default function RegimenDetailsFields({
   innerRef,
   medication, schedule, onScheduleChange, scheduleError,
+  intervalDays, onIntervalDaysChange,
   indication, onIndicationChange, indicationOther, onIndicationOtherChange, indicationError,
   doseStep, onDoseStepChange,
-  prescriberName, onPrescriberNameChange, prescriberContact, onPrescriberContactChange,
+  prescriberLabel,
   plannedEndDate, onPlannedEndDateChange, plannedEndDateError,
   notes, onNotesChange,
   showStatus, status, onStatusChange,
@@ -56,6 +63,14 @@ export default function RegimenDetailsFields({
         onChange={onScheduleChange}
         error={scheduleError}
         showTime={false}
+      />
+
+      {/* The interval a prescriber directed for this one medication, stated
+          against the interval the product is actually dosed at. */}
+      <IntervalOverrideField
+        medication={medication}
+        value={intervalDays}
+        onChange={onIntervalDaysChange}
       />
 
       <ReasonSelect
@@ -112,45 +127,13 @@ export default function RegimenDetailsFields({
         )}
       </SheetField>
 
-      {/* The prescriber, so they are in hand when they are needed. Both are saved
-          on the profile too, which is why the form starts with them filled in. */}
-      <div>
-        <SheetField
-          label="Prescriber name"
-          htmlFor="prescriber-name"
-          trailing={<ClearX show={!!prescriberName} onClear={() => onPrescriberNameChange("")} label="Clear the prescriber name" />}
-        >
-          <input
-            id="prescriber-name"
-            type="text"
-            value={prescriberName}
-            onChange={(e) => onPrescriberNameChange(e.target.value)}
-            placeholder="Dr Patel"
-            autoComplete="off"
-            className={SHEET_FIELD}
-          />
-        </SheetField>
-
-        <SheetField
-          label="Prescriber contact"
-          htmlFor="prescriber-contact"
-          className="mt-4"
-          trailing={<ClearX show={!!prescriberContact} onClear={() => onPrescriberContactChange("")} label="Clear the prescriber contact" />}
-        >
-          <input
-            id="prescriber-contact"
-            type="text"
-            inputMode="email"
-            value={prescriberContact}
-            onChange={(e) => onPrescriberContactChange(e.target.value)}
-            placeholder="Phone or email"
-            autoComplete="off"
-            className={SHEET_FIELD}
-          />
-        </SheetField>
-
-        <p className={`${SHEET_HINT} mt-1.5`}>Kept on your profile too, so you only enter it once.</p>
-      </div>
+      {/* The prescriber is entered in one place — About you — so this form never
+          asks for it again and simply reads what is saved there. */}
+      <p className={SHEET_HINT}>
+        {prescriberLabel
+          ? `Prescriber: ${prescriberLabel}. Change it in About you.`
+          : "Add your prescriber in About you — the Contact prescriber button uses it when a dose is overdue."}
+      </p>
 
       <SheetField label="Notes" htmlFor="med-notes">
         <textarea

@@ -336,27 +336,16 @@ export function MiniProfileScreen() {
         <div className="grid grid-cols-2 gap-1">
           <div className="flex justify-between"><span className="text-[6px] text-gray-500">Height</span><span className="text-[6px] text-gray-900 font-medium">5 ft 6 in</span></div>
           <div className="flex justify-between"><span className="text-[6px] text-gray-500">Goal Weight</span><span className="text-[6px] text-teal-600 font-medium">150 lb</span></div>
+          <div className="flex justify-between"><span className="text-[6px] text-gray-500">Current BMI</span><span className="text-[6px] text-gray-900 font-medium">21.4</span></div>
         </div>
       </Card>
 
-      {/* Shot prefs */}
+      {/* Prescriber — the other card on About you. Units moved to Settings, so
+          the tour no longer shows them here. */}
       <Card className="p-1.5 space-y-1">
-        <div className="text-[6px] font-semibold text-gray-400 uppercase">Shot Preferences</div>
-        <div className="flex justify-between"><span className="text-[6px] text-gray-500">Default Medication</span><span className="text-[6px] text-gray-900 font-medium">Zepbound®</span></div>
-        <div className="flex justify-between"><span className="text-[6px] text-gray-500">Frequency</span><span className="text-[6px] text-gray-900 font-medium">Every 7 days</span></div>
-      </Card>
-
-      {/* Units */}
-      <Card className="p-1.5 space-y-1">
-        <div className="text-[6px] font-semibold text-gray-400 uppercase">Measurement Units</div>
-        <div className="grid grid-cols-3 gap-1">
-          {[["Weight","lb"],["Height","in"],["Liquid","oz"]].map(([l,v]) => (
-            <div key={l} className="text-center">
-              <div className="text-[5px] text-gray-500">{l}</div>
-              <div className="text-[7px] font-bold text-teal-600">{v}</div>
-            </div>
-          ))}
-        </div>
+        <div className="text-[6px] font-semibold text-gray-400 uppercase">Prescriber</div>
+        <div className="flex justify-between"><span className="text-[6px] text-gray-500">Name</span><span className="text-[6px] text-gray-900 font-medium">Dr Patel</span></div>
+        <div className="flex justify-between"><span className="text-[6px] text-gray-500">Phone or email</span><span className="text-[6px] text-gray-900 font-medium">555 0134</span></div>
       </Card>
     </div>
   );

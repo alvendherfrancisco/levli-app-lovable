@@ -49,7 +49,7 @@ const FOOTER_NOTE = "This app is a tracker, not medical advice.";
  */
 export default function MedicationModal({ open, onClose, editing }) {
   const {
-    addMedication, updateMedication, linkShotsToMedication, medications, shots, profile, setProfile,
+    addMedication, updateMedication, linkShotsToMedication, medications, shots, profile,
   } = useAppState();
 
   const [selectedName, setSelectedName] = useState("");
@@ -68,8 +68,9 @@ export default function MedicationModal({ open, onClose, editing }) {
   const [indicationOther, setIndicationOther] = useState("");
   const [plannedEndDate, setPlannedEndDate] = useState("");
   const [doseStep, setDoseStep] = useState("");
-  const [prescriberName, setPrescriberName] = useState("");
-  const [prescriberContact, setPrescriberContact] = useState("");
+  // The interval a prescriber directed for this one medication, if any. Empty
+  // means the medication's own interval, or its label's, decides the next dose.
+  const [intervalOverride, setIntervalOverride] = useState("");
   const [status, setStatus] = useState("active");
   const [notes, setNotes] = useState("");
   // Supply tracking: off unless it is turned on, and its three numbers are only
@@ -107,10 +108,6 @@ export default function MedicationModal({ open, onClose, editing }) {
   useEffect(() => {
     if (!open) return;
     const today = todayInput();
-    // A prescriber already saved on the profile is filled in here, so it is never
-    // entered twice.
-    const knownPrescriber = profile?.prescriber_name || "";
-    const knownContact = profile?.prescriber_contact || "";
 
     setErrors({});
     setSaveHint("");
@@ -120,6 +117,7 @@ export default function MedicationModal({ open, onClose, editing }) {
     setShowDetails(false);
     setRememberedDoses([]);
     setTrackSupply(false); setDosesLeft(""); setSupplyUnit("doses"); setSupplyExpiry(""); setSupplyLot("");
+    setIntervalOverride("");
 
     if (editing) {
       const stored = editing.medication_name || "";
@@ -145,8 +143,7 @@ export default function MedicationModal({ open, onClose, editing }) {
       setStartDate(storedStart);
       setPlannedEndDate(editing.planned_end_date || "");
       setDoseStep(editing.titration_stage || "");
-      setPrescriberName(editing.prescriber_name || "");
-      setPrescriberContact(editing.prescriber_contact || "");
+      setIntervalOverride(editing.custom_interval_days != null ? String(editing.custom_interval_days) : "");
       setStatus(editing.status || "active");
       setNotes(editing.notes || "");
       setTrackSupply(!!editing.track_supply);
@@ -164,7 +161,7 @@ export default function MedicationModal({ open, onClose, editing }) {
         unit: editing.dose_unit || option?.unit || "mg", schedule: storedSchedule, startDate: storedStart,
         plannedEndDate: editing.planned_end_date || "", doseStep: editing.titration_stage || "",
         indication: storedIndicationValue, indicationOther: storedIndicationOther,
-        prescriberName: editing.prescriber_name || "", prescriberContact: editing.prescriber_contact || "",
+        intervalOverride: editing.custom_interval_days != null ? String(editing.custom_interval_days) : "",
         status: editing.status || "active", notes: editing.notes || "",
         trackSupply: !!editing.track_supply,
         dosesLeft: editing.doses_left != null ? String(editing.doses_left) : "",
@@ -177,13 +174,13 @@ export default function MedicationModal({ open, onClose, editing }) {
       setDose(""); setUnit("mg"); setRoute(""); setSchedule(emptySchedule("", today));
       setIndication(""); setIndicationOther("");
       setStartDate(today); setPlannedEndDate(""); setDoseStep("");
-      setPrescriberName(knownPrescriber); setPrescriberContact(knownContact);
+      setIntervalOverride("");
       setStatus("active"); setNotes("");
       setSavedFields({
         selectedName: "", isCustom: false, customName: "", route: "", dose: "", unit: "mg",
         schedule: emptySchedule("", today), startDate: today, plannedEndDate: "", doseStep: "",
-        indication: "", indicationOther: "", prescriberName: knownPrescriber,
-        prescriberContact: knownContact, status: "active", notes: "",
+        indication: "", indicationOther: "", status: "active", notes: "",
+        intervalOverride: "",
         trackSupply: false, dosesLeft: "", supplyUnit: "doses", supplyExpiry: "", supplyLot: "",
       });
     }
@@ -195,6 +192,13 @@ export default function MedicationModal({ open, onClose, editing }) {
   const labelStrengths = option?.strengths || [];
   const chosenName = isCustom ? customName.trim() : selectedName;
   const ready = !!chosenName;
+
+  // What the prescriber line under More details names: the prescriber saved in
+  // About you, which is the one place it is entered.
+  const prescriberLabel = [profile?.prescriber_name, profile?.prescriber_contact]
+    .map((v) => String(v || "").trim())
+    .filter(Boolean)
+    .join(" · ");
 
   /** The strengths offered as chips: the label's own, plus any kept from "Other". */
   const doseValues = useMemo(() => {
@@ -235,7 +239,7 @@ export default function MedicationModal({ open, onClose, editing }) {
   const currentFields = {
     selectedName, isCustom, customName, route, dose, unit, schedule, startDate,
     plannedEndDate, doseStep, indication, indicationOther,
-    prescriberName, prescriberContact, status, notes,
+    status, notes, intervalOverride,
     trackSupply, dosesLeft, supplyUnit, supplyExpiry, supplyLot,
   };
   const edited = hasChanged(currentFields, savedFields);
@@ -274,7 +278,7 @@ export default function MedicationModal({ open, onClose, editing }) {
   if (!open) return null;
 
   const filledDetails = [indication, indicationOther, plannedEndDate, doseStep,
-    prescriberName, prescriberContact, notes].filter(Boolean).length;
+    intervalOverride, notes].filter(Boolean).length;
 
   const clearError = (field) => setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
 
@@ -388,8 +392,13 @@ export default function MedicationModal({ open, onClose, editing }) {
       start_date: startDate,
       planned_end_date: plannedEndDate || null,
       titration_stage: doseStep,
-      prescriber_name: prescriberName,
-      prescriber_contact: prescriberContact,
+      // The prescriber is read from About you — the one place it is entered.
+      prescriber_name: profile?.prescriber_name || editing?.prescriber_name || "",
+      prescriber_contact: profile?.prescriber_contact || editing?.prescriber_contact || "",
+      // The interval a prescriber directed for this medication, when one is set.
+      custom_interval_days: intervalOverride !== "" && Number.isFinite(Number(intervalOverride))
+        ? Math.max(1, Number(intervalOverride))
+        : null,
       status,
       notes,
       // Supply tracking. With the toggle off the three numbers are written back
@@ -425,16 +434,6 @@ export default function MedicationModal({ open, onClose, editing }) {
         toast.success(linked
           ? `Medication added — ${linked} ${words.one} log${linked === 1 ? "" : "s"} linked`
           : "Medication added");
-      }
-      // The prescriber is kept on the profile as well, so it is filled in for you
-      // both here and behind the Profile's Contact prescriber button.
-      const named = prescriberName.trim();
-      if (named && !String(profile?.prescriber_name || "").trim()) {
-        try {
-          await setProfile({ ...profile, prescriber_name: named, prescriber_contact: prescriberContact.trim() });
-        } catch (profileErr) {
-          console.error("Could not save the prescriber to the profile:", profileErr);
-        }
       }
       sound.success();
       setSaving(false);
@@ -635,10 +634,9 @@ export default function MedicationModal({ open, onClose, editing }) {
                       indicationError={errors.indication}
                       doseStep={doseStep}
                       onDoseStepChange={setDoseStep}
-                      prescriberName={prescriberName}
-                      onPrescriberNameChange={setPrescriberName}
-                      prescriberContact={prescriberContact}
-                      onPrescriberContactChange={setPrescriberContact}
+                      intervalDays={intervalOverride}
+                      onIntervalDaysChange={setIntervalOverride}
+                      prescriberLabel={prescriberLabel}
                       plannedEndDate={plannedEndDate}
                       onPlannedEndDateChange={(v) => { setPlannedEndDate(v); clearError("plannedEndDate"); }}
                       plannedEndDateError={errors.plannedEndDate}

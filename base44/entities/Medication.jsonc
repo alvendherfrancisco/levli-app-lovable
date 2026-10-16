@@ -61,6 +61,10 @@
       "type": "number",
       "description": "Days between doses: the user's own number for an every-X-days schedule, and the interval the other kinds run at (1 daily, 7 weekly, 3 twice weekly)."
     },
+    "custom_interval_days": {
+      "type": "number",
+      "description": "The interval between doses when the prescriber directed one that differs from the label, entered on the regimen itself under More details (moved here from the old Shot Preferences card on the Profile). Empty means the medication's own interval, or its label's, decides the next dose date."
+    },
     "indication": {
       "type": "string",
       "description": "Treatment indication as prescribed"

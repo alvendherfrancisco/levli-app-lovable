@@ -27,18 +27,22 @@
     },
     "days_between_override": {
       "type": "string",
-      "description": "Prescriber-directed override for the days between shots. Empty means the app uses the medication's own interval from the central medications config."
+      "description": "Legacy place for a prescriber-directed interval. The override now lives on the medication itself (custom_interval_days); this is kept so an override saved before the move still works until it is carried over."
+    },
+    "interval_migrated_at": {
+      "type": "string",
+      "description": "ISO timestamp when an interval override still held here was carried onto the matching medication. Stamped once, so the move never runs twice."
     },
     "liquid_unit": {
       "type": "string"
     },
     "height_unit": {
       "type": "string",
-      "description": "Display preference for height: cm or in."
+      "description": "Display preference for height: cm or in. Changed in Settings, under Units."
     },
     "weight_unit": {
       "type": "string",
-      "description": "Display preference for weight: kg or lb. Never the storage unit."
+      "description": "Display preference for weight: kg or lb. Never the storage unit. Changed in Settings, under Units."
     },
     "default_medication": {
       "type": "string"
@@ -111,11 +115,11 @@
     },
     "prescriber_name": {
       "type": "string",
-      "description": "Prescriber's name, saved in Profile"
+      "description": "Prescriber's name. Entered in About you and read by every medication and by the Contact prescriber button."
     },
     "prescriber_contact": {
       "type": "string",
-      "description": "Prescriber's phone number or email, saved in Profile. Opened by the Contact prescriber button."
+      "description": "Prescriber's phone number or email. Entered in About you; opened by the Contact prescriber button."
     },
     "weight_tracking_opted_in": {
       "type": "boolean",

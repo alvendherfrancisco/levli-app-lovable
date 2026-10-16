@@ -194,6 +194,9 @@ export function AppStateProvider({ children }) {
       // writes to the medications, so it waits for them — and like the unit
       // migration it runs behind the first screen, never in front of it.
       migrateSupply(profileRow, await dataPromise);
+      // An interval override still held on the profile moves onto the medication
+      // it was set for, once, and the profile's copy is cleared.
+      migrateIntervalOverride(profileRow, await dataPromise);
     })();
   }, [isAuthenticated, authEpoch]);
 
@@ -371,6 +374,39 @@ export function AppStateProvider({ children }) {
       setProfileState((prev) => ({ ...prev, inventory_migrated_at: stamp }));
     } catch (err) {
       console.error("Supply migration failed:", err);
+    }
+  };
+
+  // ── One-time move of an old interval override onto its medication ──────────
+  // The Profile's old Shot Preferences card held a prescriber's interval for the
+  // whole account. It belongs to the regimen it was set for, so it is carried
+  // onto that medication — which is where the next dose date reads it from now —
+  // and the profile's copy is cleared. The stamp makes it a once-only move, so it
+  // can never overwrite an interval the user has since set on the regimen.
+  const migrateIntervalOverride = async (profileRow, medList) => {
+    try {
+      const p = profileRow || null;
+      if (!p || p.interval_migrated_at) return;
+      const legacy = parseInt(String(p.days_between_override ?? ""), 10);
+      if (!Number.isFinite(legacy) || legacy <= 0) return;
+      const list = medList || [];
+      // Nothing to carry it onto yet: leave the stamp unset so it can run later.
+      if (!list.length) return;
+
+      const active = list.filter((m) => (m.status || "active") === "active");
+      const target = active.find((m) => m.medication_name === p.default_medication)
+        || active[0]
+        || list[0];
+      const stamp = new Date().toISOString();
+
+      if (target && target.custom_interval_days == null) {
+        const rec = await base44.entities.Medication.update(target.id, { custom_interval_days: legacy });
+        setMedications((prev) => prev.map((m) => (m.id === target.id ? { ...m, ...rec } : m)));
+      }
+      await base44.entities.UserProfile.update(p.id, { days_between_override: "", interval_migrated_at: stamp });
+      setProfileState((prev) => ({ ...prev, days_between_override: "", interval_migrated_at: stamp }));
+    } catch (err) {
+      console.error("Interval override migration failed:", err);
     }
   };
 
