@@ -1244,38 +1244,9 @@ button.date-chip {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ── The Insights lock ──────────────────────────────────────────────────────
-   The one lock group over the blurred sample page rises a little as it appears,
-   and the illustration's two sparkles drift very slowly, so the group is the only
-   thing on the screen that is moving and never a distraction from the page behind
-   it. Both are dropped entirely with "Reduce Motion": the group is simply there,
-   and the sparkles sit still. */
-@keyframes lockGroupIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.lock-group-in { animation: lockGroupIn 520ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
-
-@keyframes lockSparkleDrift {
-  0%, 100% { transform: translateY(0); opacity: 0.85; }
-  50% { transform: translateY(-4px); opacity: 1; }
-}
-.animate-lock-sparkle { animation: lockSparkleDrift 9s ease-in-out infinite; }
-
-/* The words a lock group carries (the headline and its muted line) sit over the
-   blurred page — a chart, a photo strip, a sheet of report paper — with no card
-   and no panel behind them. What keeps them legible is this: a soft halo on the
-   letters themselves, light in light mode and dark in dark mode, so the text keeps
-   its contrast whichever surface happens to be behind it. A faint radial glow
-   behind the block itself does the rest (it is drawn on each group). */
-.lock-text-shadow {
-  text-shadow: 0 1px 2px rgb(255 255 255 / 0.9), 0 0 10px rgb(255 255 255 / 0.55);
-}
-.dark .lock-text-shadow {
-  text-shadow: 0 1px 3px rgb(0 0 0 / 0.85), 0 0 12px rgb(0 0 0 / 0.6);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lock-group-in { animation: none; }
-  .animate-lock-sparkle { animation: none; }
-}
+/* ── The Premium upgrade overlay ────────────────────────────────────────────
+   The one upgrade card the locked screens show (see
+   src/components/premium/PremiumUpgradeOverlay.jsx) carries no CSS of its own: it
+   is the app's own dialog card — the same surface, hairline, corner radius and
+   .confirm-card entry above — so nothing can drift from the confirmation dialog it
+   sits beside. Its words, its mark and its action are the app's own utilities too. */
