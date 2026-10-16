@@ -135,6 +135,7 @@ A medication regimen: the drug, its schedule, prescriber details and status.
 | `reminder_days` | array\<number\> | – | – | – |
 | `reminder_time` | string | – | – | – |
 | `interval_days` | number | – | – | – |
+| `custom_interval_days` | number | – | – | – |
 | `indication` | string | – | – | – |
 | `start_date` | string (date) | – | – | – |
 | `planned_end_date` | string (date) | – | – | – |
@@ -149,6 +150,14 @@ A medication regimen: the drug, its schedule, prescriber details and status.
 | `custom_doses` | array\<number\> | – | – | – |
 | `shots_linked_count` | number | – | – | – |
 | `notes` | string | – | – | – |
+| `track_supply` | boolean | – | `false` | – |
+| `doses_left` | number | – | – | – |
+| `supply_unit` | string | – | `"doses"` | – |
+| `supply_expiry_date` | string (date) | – | – | – |
+| `lot_number` | string | – | – | – |
+| `supply_alert_dismissed` | string | – | – | – |
+
+A regimen counts its own supply only once `track_supply` is on; until then `doses_left`, `supply_unit`, `supply_expiry_date` and the dismissed-alert signature are not used. An `archived` regimen is hidden from the dose pickers but its logged doses stay in history and reports.
 
 ## ProgressPhoto
 
@@ -168,10 +177,15 @@ Scoped, revocable access granted to a caregiver or proxy.
 | `grantee_email` | string | Yes | – | – |
 | `grantee_user_id` | string | – | – | **User** (filled in on first access) |
 | `scope` | string (enum: `read`, `read_write`) | Yes | – | – |
-| `status` | string (enum: `pending`, `active`, `revoked`) | – | `"pending"` | – |
+| `status` | string (enum: `pending`, `active`, `revoked`, `expired`) | – | `"pending"` | – |
+| `owner_name` | string | – | – | The account holder's name when the invite was saved |
+| `relationship` | string | – | – | – |
+| `invited_date` | string | – | – | – |
+| `expires_at` | string | – | – | Seven days after the invite was sent |
 | `granted_date` | string | – | – | – |
 | `revoked_date` | string | – | – | – |
-| `relationship` | string | – | – | – |
+
+Only an `active` grant gives access: it becomes active the first time the invited address signs in, and a `pending` invite that reaches `expires_at` can no longer be accepted.
 
 ## PushOutbox
 
@@ -300,6 +314,7 @@ The person's settings, units, consent records and onboarding answers.
 | `goal_weight_kg` | number | – | – | – |
 | `days_between` | string | – | – | – |
 | `days_between_override` | string | – | – | – |
+| `interval_migrated_at` | string | – | – | – |
 | `liquid_unit` | string | – | – | – |
 | `height_unit` | string | – | – | – |
 | `weight_unit` | string | – | – | – |
@@ -307,6 +322,7 @@ The person's settings, units, consent records and onboarding answers.
 | `dark_mode` | boolean | – | – | – |
 | `onboarding_completed` | boolean | – | – | – |
 | `units_migrated_at` | string | – | – | – |
+| `inventory_migrated_at` | string | – | – | – |
 | `unit_check_status` | string | – | – | – |
 | `birthdate` | string (date) | – | – | – |
 | `gdpr_consent_date` | string | – | – | – |
@@ -374,4 +390,4 @@ User ──1:many── ProgressPhoto
 User ──1:many── ProxyAccess
 User ──1:1── UserSubscription
 User ──1:many── PushOutbox (server-only)
-``
+`
