@@ -56,7 +56,10 @@ export default function JournalEntryCard({ entry, onEdit }) {
               <span className="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap" style={{ background: meta.bg, color: meta.color }}>
                 {meta.label}
               </span>
-              {open && mood && (
+              {/* The mood the entry was written with, shown whenever there is one
+                  — the same row as the category, wrapping under it only when the
+                  two no longer fit. */}
+              {mood && (
                 <span className="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap flex items-center gap-1 bg-white/10 dark:bg-white/[0.08] text-gray-600 dark:text-[#C0C3D4] border border-gray-200 dark:border-white/[0.1]">
                   <Heart size={10} /> {mood}
                 </span>
@@ -67,9 +70,10 @@ export default function JournalEntryCard({ entry, onEdit }) {
       </button>
 
       {/* The card's own action, at its foot and to the right on every entry. The
-          row is drawn whether or not anything sits above it, so the space is kept
-          and every card ends the same way. */}
-      <div className="mt-2 flex justify-end">
+          row is drawn whether or not anything sits above it, so every card ends
+          the same way — and with no mood to show there is no gap to keep, so the
+          button sits a step closer and the card stays compact. */}
+      <div className={`flex justify-end ${mood ? "mt-2" : "mt-1"}`}>
         <button type="button" onClick={() => onEdit?.(entry)} className={EDIT_BUTTON}>
           Edit
         </button>
