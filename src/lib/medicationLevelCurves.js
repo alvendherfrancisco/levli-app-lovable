@@ -8,9 +8,11 @@
 //   day 0   the day the dose is taken — the sheet carries 0 there
 //   day 1…  % of the peak of a single dose
 //
-// Two curves: tirzepatide (Mounjaro® / Zepbound®) and semaglutide (Wegovy® /
-// Ozempic®). Both tables run to day 49; past that a dose's share is a rounding
-// error, so it counts as nothing.
+// Four tables: tirzepatide (Mounjaro® / Zepbound®) and semaglutide (Wegovy® /
+// Ozempic®) exactly as the workbook gave them, and — added later — two oral
+// products whose tables are the app's own estimate and are marked as such (see
+// the oral section below). Every table runs to day 49; past that a dose's share
+// is a rounding error, so it counts as nothing.
 //
 // Checked against the same file's "Weekly dosing" sheet, which adds a dose every
 // seven days: this table, added up per dose on that schedule, reproduces its
@@ -53,6 +55,52 @@ const SHARED_NOTES = [
   { from: 22, to: null, text: "Low level, still coming down." },
 ];
 
+// ── The two estimated oral curves ───────────────────────────────────────────
+// A tablet is taken once a day, and no published table for one runs day by day
+// the way the injected tables above do. These two entries are therefore the
+// app's own estimate, and each carries `estimated` — the card says so in its own
+// words, beside a small asterisk in the graph's corner (see
+// MedicationLevelCard).
+//
+// The shape of a single dose is read from the second workbook — "Wegovy pill and
+// Foundayo blood level concentrations data" — whose two daily sheets build a
+// once-daily dose up onto what is already there. The fall of one dose is the
+// same figure that accumulation moves by each day:
+//
+//   Oral semaglutide (the Wegovy® tablet and Rybelsus®) — the sheet's gap to its
+//   steady figure halves every seven days, so a dose falls to half in a week: a
+//   seven-day half-life, the same tail the injected semaglutide table carries.
+//
+//   Orforglipron (Foundayo®) — the same sheet's gap closes by ×0.6527 a day,
+//   which is a half-life of about 1.6 days.
+//
+// A tablet is absorbed within hours of being taken, so its own day is its
+// highest: day 0 of each table is 1, and every day after it is that half-life's
+// fall. Added up over a once-daily schedule, that is the rise the sheets show —
+// slow to settle for oral semaglutide, quick for orforglipron.
+const oralValuesFromHalfLife = (halfLifeDays) => Array.from(
+  { length: CURVE_LAST_DAY + 1 },
+  (_, day) => Number(Math.pow(2, -day / halfLifeDays).toFixed(4)),
+);
+
+// The line under the graph for an oral product, read from the day the last dose
+// was taken, since a dose every day is what keeps the level where it is. One set
+// per product: how fast the level falls without a dose is the one thing the two
+// differ on — half in a week for oral semaglutide, half in under two days for
+// orforglipron.
+const ORAL_NOTES = {
+  oral_semaglutide: [
+    { from: 0, to: 0, text: "Today's dose is added to the level already built up." },
+    { from: 1, to: 4, text: "A dose every day keeps the level steady." },
+    { from: 5, to: null, text: "The level falls slowly while no dose is taken." },
+  ],
+  orforglipron: [
+    { from: 0, to: 0, text: "Today's dose is added to the level already built up." },
+    { from: 1, to: 1, text: "A dose every day keeps the level steady." },
+    { from: 2, to: null, text: "The level falls quickly while no dose is taken." },
+  ],
+};
+
 export const MEDICATION_CURVES = {
   tirzepatide: {
     id: "tirzepatide",
@@ -73,6 +121,29 @@ export const MEDICATION_CURVES = {
       { from: 1, to: 1, text: "Hunger and food noise may ease." },
       { from: 2, to: 2, text: "Hunger and food noise may ease most now." },
     ],
+  },
+
+  // Oral semaglutide — the Wegovy® tablet and Rybelsus®. Estimated (see above).
+  oral_semaglutide: {
+    id: "oral_semaglutide",
+    label: "Semaglutide, oral",
+    // Highest on the day it is taken, and a dose a day is what holds it there.
+    peakDay: 0,
+    daily: true,
+    estimated: true,
+    values: oralValuesFromHalfLife(7),
+    notes: ORAL_NOTES.oral_semaglutide,
+  },
+
+  // Orforglipron — Foundayo®. Estimated (see above).
+  orforglipron: {
+    id: "orforglipron",
+    label: "Orforglipron",
+    peakDay: 0,
+    daily: true,
+    estimated: true,
+    values: oralValuesFromHalfLife(1.62),
+    notes: ORAL_NOTES.orforglipron,
   },
 };
 
