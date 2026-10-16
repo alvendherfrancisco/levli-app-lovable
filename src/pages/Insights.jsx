@@ -181,16 +181,18 @@ export default function Insights() {
   // over it (see InsightsLockView). Nothing of the person's own reading — a
   // weight, a chart point, a photo — is drawn anywhere at all.
   //
-  // The shell is exactly the viewport: it takes the height the tab bar leaves and
-  // clips its own content, so the page cannot scroll and the group stays where it
-  // is put. Below the tab bar's room and above it, it is clear of both.
+  // The shell is exactly the viewport and clips its own content, so the page cannot
+  // scroll and the group stays where it is put. It runs to the very bottom of the
+  // screen — the locked sample page and the fade over it reach the tab bar, and pass
+  // under it — while the group keeps its own clear room above the bar, handed to the
+  // lock view below, so no bare strip of background is left between the two.
   if (locked) {
     return (
-      <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-white dark:bg-gray-950 pb-safe-content">
+      <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-white dark:bg-gray-950">
         {header}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <WellbeingPanel />
-          <InsightsLockView onUnlock={openPaywall} lockScroll className="min-h-0 flex-1" />
+          <InsightsLockView onUnlock={openPaywall} lockScroll groupClassName="pb-safe-content" className="min-h-0 flex-1" />
         </div>
       </div>
     );

@@ -31,8 +31,14 @@ import useScrollLock from "@/hooks/useScrollLock";
  * `lockScroll` holds the page behind it still, and only the screen-sized use asks
  * for it: the rounded card on "Shared with me" sits in a page that must keep
  * scrolling, so it leaves the page alone (see src/hooks/useScrollLock.js).
+ *
+ * `groupClassName` is the room the group keeps at the foot of the box it is put in.
+ * The screen-sized use hands it the safe-area clearance the page used to carry
+ * itself, so the group still sits clear of the tab bar while the sample page behind
+ * it — and the fade over it — runs on to the very bottom of the screen, with no bare
+ * strip of background left above the bar.
  */
-export default function InsightsLockView({ onUnlock, lockScroll = false, className = "" }) {
+export default function InsightsLockView({ onUnlock, lockScroll = false, className = "", groupClassName = "" }) {
   useScrollLock(lockScroll);
 
   return (
@@ -46,7 +52,7 @@ export default function InsightsLockView({ onUnlock, lockScroll = false, classNa
       {/* The group: centred on the box it is given both ways, on its own card (see
           PremiumLockGroup) so its fade-in keeps the transform, and clear of the header
           above and of the safe area at the foot. */}
-      <div className="absolute inset-0 flex items-center justify-center px-4 py-6">
+      <div className={`absolute inset-0 flex items-center justify-center px-4 py-6 ${groupClassName}`}>
         <PremiumLockGroup
           art={<InsightTrendArt size={150} />}
           title="See your whole journey"

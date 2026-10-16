@@ -44,7 +44,9 @@ export default function InsightTrendArt({ size = 120 }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
 
   const card = isDark ? "#242842" : "#FFFFFF";
-  const shadow = isDark ? "rgba(0,0,0,0.5)" : "rgba(79,70,229,0.20)";
+  // A soft lift, not a dark weight: each card is held off the wash behind it by the
+  // faintest shadow that still reads as a card, in both modes.
+  const shadow = isDark ? "rgba(0,0,0,0.26)" : "rgba(79,70,229,0.12)";
   const hairline = isDark ? "rgba(255,255,255,0.12)" : "#E8EAF0";
   const grid = isDark ? "rgba(255,255,255,0.10)" : "#EEF2FF";
   const chipIndigo = isDark ? "rgba(129,140,248,0.35)" : "#E0E7FF";
@@ -74,7 +76,7 @@ export default function InsightTrendArt({ size = 120 }) {
       <svg viewBox="0 0 120 120" className="relative h-full w-full" fill="none">
         <defs>
           <filter id={shadowId} x="-25%" y="-25%" width="150%" height="160%">
-            <feDropShadow dx="0" dy="5" stdDeviation="6" floodColor={shadow} />
+            <feDropShadow dx="0" dy="4" stdDeviation="7" floodColor={shadow} />
           </filter>
           <linearGradient id={lineId} x1="18" y1="80" x2="70" y2="50" gradientUnits="userSpaceOnUse">
             <stop stopColor="#6366F1" /><stop offset="1" stopColor="#8B5CF6" />
