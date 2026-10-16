@@ -479,6 +479,19 @@ input[type="range"].pain-slider:active::-moz-range-thumb { transform: scale(1.1)
 .animate-onb-bounce { animation: onbBounce 0.6s ease-out; }
 .animate-onb-sparkle { animation: onbSparkle 3s ease-in-out infinite; }
 
+/* With "Reduce Motion" the glow and the sparkles hold still. They are decoration
+   on a screen whose meaning is already carried by the words and the artwork, so
+   nothing is lost by stopping them — and on the Premium screen it is the picture
+   the person is reading, so a twinkle that will not sit still is a distraction. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-onb-sparkle,
+  .animate-ambient-1,
+  .animate-ambient-2,
+  .animate-ambient-3 {
+    animation: none;
+  }
+}
+
 /* ── "Possible duplicate" warning (Add Shot Log) ───────────────────────────
    A one-second glow on the card's border, drawn the moment it appears. The card
    is keyed so it remounts each time it shows, which replays the highlight on
@@ -857,6 +870,18 @@ html { background-color: var(--launch-bg); }
 .paywall-bar {
   background-color: rgb(var(--auth-card));
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* The panel arrives rather than appearing: one short rise as the screen opens,
+   and nothing else moves after it. With reduced motion the screen is simply
+   there. */
+@keyframes paywallIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.paywall-in { animation: paywallIn 320ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .paywall-in { animation: none; }
 }
 
 /* ── Card surfaces: one hairline and one shadow for the whole app ───────────

@@ -43,11 +43,21 @@ export default function PaywallSlides({ trackRef, index, onIndexChange }) {
       onScroll={handleScroll}
       className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
     >
-      {PREMIUM_SLIDES.map((slide) => {
+      {PREMIUM_SLIDES.map((slide, i) => {
         const Art = ART[slide.id] || InsightsIllustration;
+        const on = i === index;
         return (
           <div key={slide.id} className="w-full flex-shrink-0 snap-center">
-            <div className="paywall-art">
+            {/* The slide in hand is drawn full size and full strength; the ones
+                either side of it sit a step back, so moving between them reads as
+                arriving at the next picture rather than as a page of them sliding
+                past. With reduced motion the slide is simply the one in hand: the
+                size and the strength are its, and only the easing is dropped. */}
+            <div
+              className={`paywall-art motion-safe:transition-[opacity,transform] motion-safe:duration-500 motion-safe:ease-out ${
+                on ? "opacity-100 motion-safe:scale-100" : "opacity-50 motion-safe:scale-[0.94]"
+              }`}
+            >
               <Art />
             </div>
             <h2 className={`${HEADING} mt-6 text-center`}>{slide.headline}</h2>

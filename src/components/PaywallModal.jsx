@@ -153,15 +153,19 @@ export default function PaywallModal({ open, onClose }) {
   // z-60) while staying under the toasts.
   const shell =
     "auth-screen fixed inset-0 z-[70] bg-auth-page flex items-stretch sm:items-center justify-center sm:p-6 overflow-hidden";
+  // The panel is the screen's own surface, and on the wide screens where it floats
+  // it carries a soft, brand-tinted shadow rather than a plain grey one. It also
+  // arrives rather than appearing: one short rise as the screen opens (see
+  // .paywall-in in src/index.css), dropped entirely with reduced motion.
   const panel =
-    "w-full max-w-lg mx-auto flex flex-col h-full sm:h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:shadow-xl bg-auth-panel backdrop-blur-md overflow-hidden relative z-10 border border-auth-divider";
+    "paywall-in w-full max-w-lg mx-auto flex flex-col h-full sm:h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:shadow-2xl sm:shadow-indigo-950/15 bg-auth-panel backdrop-blur-md overflow-hidden relative z-10 border border-auth-divider";
 
   const closeButton = (
     <button
       type="button"
       onClick={handleClose}
       aria-label="Close"
-      className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-auth-border bg-auth-card transition-all hover:bg-auth-surface active:scale-95"
+      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-auth-border bg-auth-card transition-all hover:bg-auth-surface active:scale-95"
     >
       <X size={17} className="text-auth-muted" aria-hidden="true" />
     </button>
@@ -213,11 +217,16 @@ export default function PaywallModal({ open, onClose }) {
                 onClick={() => { sound.tap(); goToSlide(i); }}
                 aria-label={slide.label}
                 aria-current={i === slideIndex ? "true" : undefined}
-                className="flex flex-1 items-center py-2.5"
+                className="flex flex-1 items-center py-3"
               >
+                {/* What is behind you and the step in hand are indigo, and the
+                    step in hand keeps a soft halo, so the screen says where it is
+                    without a label. */}
                 <span
-                  className={`block h-1.5 w-full rounded-full transition-colors duration-500 ${
-                    i <= slideIndex ? "bg-indigo-600" : "bg-auth-track"
+                  className={`block h-1.5 w-full rounded-full transition-all duration-500 ${
+                    i <= slideIndex
+                      ? "bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.45)]"
+                      : "bg-auth-track shadow-none"
                   }`}
                 />
               </button>
@@ -245,9 +254,16 @@ export default function PaywallModal({ open, onClose }) {
                 never left sitting under it or under the home indicator. */}
             <div aria-hidden="true" style={{ height: barHeight + 16 }} />
           </div>
+          {/* The two soft edges of the part that scrolls: what the slides and the
+              plans leave through, above and below, rather than being cut off by
+              the progress bar or by the bar pinned under them. */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-auth-fade to-transparent"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-auth-fade to-transparent"
           />
         </div>
 
@@ -269,9 +285,9 @@ export default function PaywallModal({ open, onClose }) {
       {/* No Subscription Found */}
       {showNoSub && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-8 dark:bg-black/60">
-          <div className="w-full max-w-xs rounded-2xl bg-white p-6 text-center shadow-xl dark:bg-[#16181f]">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">No Subscription Found</h3>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-300">
+          <div className="w-full max-w-xs rounded-2xl border border-auth-border bg-auth-card p-6 text-center shadow-xl">
+            <h3 className="text-lg font-bold text-auth-heading">No Subscription Found</h3>
+            <p className="mt-2 text-sm text-auth-muted">
               We couldn't find an active subscription for your account.
             </p>
             <button type="button" onClick={() => setShowNoSub(false)} className="btn-pill btn-primary mt-5 w-full">
