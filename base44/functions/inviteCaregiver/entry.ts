@@ -40,8 +40,8 @@ export default async function (req) {
         error: live.status === "active" ? "already_active" : "duplicate",
         accessId: live.id,
         message: live.status === "active"
-          ? `${email} already has access to your records.`
-          : `${email} already has an invite waiting.`,
+          ? "This email already has access."
+          : "This email already has an invite waiting.",
       });
     }
 

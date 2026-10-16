@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
 import ScreenHeader from "@/components/ScreenHeader";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import AccessEntry from "@/components/caregiver/AccessEntry";
@@ -27,6 +28,30 @@ export default function CaregiverAccessPage() {
   // success state without anyone having to type it in again.
   const [granted, setGranted] = useState("");
   const [revoking, setRevoking] = useState(null);
+
+  /**
+   * The list stays true on its own: it is read again as the screen opens — so a
+   * row that changed while the app was elsewhere is already right — and again the
+   * moment one of these records changes, which is how a waiting invite turns
+   * Active while this screen is open. Nothing here writes; a failure simply
+   * leaves what is already on screen in place.
+   */
+  useEffect(() => {
+    const reread = () => { loadProxyAccess().catch(() => { /* keep what is shown */ }); };
+    reread();
+    // A screen that cannot listen still reads again every time it is looked at,
+    // so a live connection is never the only way the list can be right.
+    let stop = () => {};
+    try { stop = base44.entities.ProxyAccess.subscribe(reread) || (() => {}); } catch { /* the rereads below cover it */ }
+    window.addEventListener("focus", reread);
+    document.addEventListener("visibilitychange", reread);
+    return () => {
+      stop();
+      window.removeEventListener("focus", reread);
+      document.removeEventListener("visibilitychange", reread);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const people = proxyAccess.filter((row) => ["pending", "active"].includes(accessStatus(row)));
   const past = proxyAccess.filter((row) => ["revoked", "expired"].includes(accessStatus(row)));
@@ -111,7 +136,6 @@ export default function CaregiverAccessPage() {
                   key={entry.id}
                   entry={entry}
                   showScope={showScope}
-                  onShare={handleShare}
                   onRevoke={setRevoking}
                 />
               ))
