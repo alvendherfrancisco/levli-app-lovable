@@ -29,6 +29,9 @@ export default function InjectionSiteCard() {
   const { isPremium, openPaywall } = useSubscription();
   const [range, setRange] = useState("30 Days");
   const [openSite, setOpenSite] = useState(null);
+  // The site in hand: its row in the list and its dot on the figure are marked
+  // together, so the two always read as the one thing.
+  const [selectedSite, setSelectedSite] = useState(null);
 
   const entries = useMemo(() => shotsInSiteWindow(shots, RANGES[range]), [shots, range]);
   const usage = useMemo(() => siteUsage(entries), [entries]);
@@ -37,10 +40,13 @@ export default function InjectionSiteCard() {
   // The longer range is offered only where it has something to show.
   const ninetyDays = useMemo(() => shotsInSiteWindow(shots, NINETY_DAYS), [shots]);
 
-  // A row's site is the site's own key (see src/lib/injectionSites.js), so the
-  // entries behind it are the ones filed under that same key.
-  const openEntries = (site) =>
+  // A row's site is the site's fixed id (see src/lib/injectionSites.js), so the
+  // entries behind it are the ones filed under that same site. Tapping its dot or
+  // its row marks both and opens the entries.
+  const openEntries = (site) => {
+    setSelectedSite(site);
     setOpenSite({ site, entries: entries.filter((s) => siteKey(s.site) === site) });
+  };
 
   return (
     <InsightCard>
@@ -50,7 +56,12 @@ export default function InjectionSiteCard() {
         title="Injection Site Rotation"
       />
 
-      <RangeTabs options={Object.keys(RANGES)} value={range} onChange={setRange} />
+      {/* A new range is a new set of sites, so nothing stays marked from the old one. */}
+      <RangeTabs
+        options={Object.keys(RANGES)}
+        value={range}
+        onChange={(next) => { setRange(next); setSelectedSite(null); }}
+      />
 
       <div className="relative">
         <div className={isPremium ? "" : "blur-sm pointer-events-none select-none opacity-60"}>
@@ -58,6 +69,7 @@ export default function InjectionSiteCard() {
             <BodyOutline
               usage={usage}
               recentSite={recentSite}
+              selectedSite={selectedSite}
               onSelectSite={openEntries}
               className="h-auto w-full"
             />
@@ -80,7 +92,7 @@ export default function InjectionSiteCard() {
             />
           ) : (
             <div className="mt-4">
-              <SiteUsageList usage={usage} onSelectSite={openEntries} />
+              <SiteUsageList usage={usage} selectedSite={selectedSite} onSelectSite={openEntries} />
             </div>
           )}
 

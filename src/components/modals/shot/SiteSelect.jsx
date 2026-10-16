@@ -132,7 +132,7 @@ export default function SiteSelect({ sites, value, suggested = "", onChange }) {
                         key={s.value}
                         site={s.value}
                         label={s.label}
-                        selected={s.value === selected}
+                        selected={s.id === selected}
                         suggested={!!suggestedKey && s.value === suggestedKey}
                         onSelect={choose}
                       />

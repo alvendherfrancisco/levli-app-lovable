@@ -26,7 +26,7 @@ import {
   activeRegimensFor, getDoseDefault, getSmartShotDefaults,
 } from "@/lib/shotDefaults";
 import { addDaysToKey } from "@/lib/repeatSchedule";
-import { INJECTION_SITES } from "@/lib/injectionSites";
+import { INJECTION_SITES, siteKey } from "@/lib/injectionSites";
 import DoseChips from "@/components/modals/DoseChips";
 import { chipsForMedication, withCustomDose } from "@/lib/doseOptions";
 import { isAboveZero } from "@/lib/formValidity";
@@ -227,7 +227,10 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const recommendedSite = getRecommendedSite(activeRoute);
   // A new log opens on the site the rotation suggests, and the row says so.
   const displayedSite = site || recommendedSite;
-  const siteIsSuggested = !editingShot && !!recommendedSite && displayedSite === recommendedSite;
+  // Compared by the site's fixed id rather than its wording, so a suggestion still
+  // reads as the site in hand when the log carries older wording for it.
+  const siteIsSuggested = !editingShot && !!recommendedSite
+    && siteKey(displayedSite) === siteKey(recommendedSite);
   const scheduleFor = (med) => repeatSchedules.find((s) => s.status === "active" && s.medication === med) || null;
 
   // Silently link the log to the user's active regimen for this medication.
@@ -794,9 +797,10 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
             </div>
             {/* Which day this entry belongs to, said at the top: the sheet is
                 opened from the calendar, and the date is the one thing that must
-                never be mistaken. */}
+                never be mistaken. An entry that is already logged is being
+                changed, so it says so. */}
             <p className="px-5 pb-3 text-[13px] font-medium text-indigo-600 dark:text-indigo-400">
-              Logging for {formatLocaleDate(fromDayKey(date))}
+              {editingShot ? `Editing ${word} from` : "Logging for"} {formatLocaleDate(fromDayKey(date))}
             </p>
           </div>
 
