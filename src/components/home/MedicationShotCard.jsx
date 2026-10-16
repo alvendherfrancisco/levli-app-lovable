@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Syringe } from "lucide-react";
+import { isLongGapHidden, hideLongGap } from "@/lib/longGapReminder";
 import { parseShotDate, toDayKey, todayKey, calendarDaysBetween } from "@/lib/dateUtils";
 import {
   getMissedDoseWindowDays, getMissedDoseLabelQuote, getMedicationLabelSource,
@@ -28,6 +29,17 @@ export default function MedicationShotCard({ summary, contact, contactHref, stop
   const windowDays = getMissedDoseWindowDays(name);
   const evaluation = evaluateDoseSchedule({ lastShot, intervalDays, windowDays });
 
+  // The long-gap reminder can be put away for the day, or for three days when it
+  // is snoozed. It is remembered per medication, so hiding one reminder never
+  // silences another.
+  const reminderKey = medication.id || name;
+  const [reminderHidden, setReminderHidden] = useState(() => isLongGapHidden(reminderKey));
+
+  const putReminderAway = (days) => {
+    hideLongGap(reminderKey, days);
+    setReminderHidden(true);
+  };
+
   // The repeat schedule knows the next date when one is running; otherwise it
   // follows from the last dose and the medication's interval.
   const scheduleKey = nextKey || null;
@@ -54,6 +66,9 @@ export default function MedicationShotCard({ summary, contact, contactHref, stop
 
   // A long break: no due date and no ring — the schedule isn't the useful thing here.
   if (lastShot && evaluation.state === MISSED_STATE.LONG_GAP) {
+    // Put away for the day (or for the three a snooze covers), the reminder stays
+    // out of the way and comes back tomorrow if no dose has been logged.
+    if (reminderHidden) return null;
     return (
       <LongGapNotice
         daysSinceLast={evaluation.daysSinceLast}
@@ -61,6 +76,8 @@ export default function MedicationShotCard({ summary, contact, contactHref, stop
         stopping={stopping}
         contact={contactButton.contact}
         contactHref={contactButton.contactHref}
+        onDismiss={() => putReminderAway(1)}
+        onSnooze={() => putReminderAway(3)}
         onLogPastShot={() => onLogPastShot?.({
           medication: name,
           medication_id: medication.id,

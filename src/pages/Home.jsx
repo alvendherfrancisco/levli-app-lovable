@@ -49,7 +49,7 @@ export default function Home() {
   const greeting = hour < 12 ? "Good Morning!" : hour < 18 ? "Good Afternoon!" : "Good Evening!";
 
   return (
-    <PageContainer bottomInset="fab" disclaimer>
+    <PageContainer bottomInset="banner" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-2">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{greeting}</h1>
         <Link to="/settings" aria-label="Settings" className={HEADER_ICON}>
