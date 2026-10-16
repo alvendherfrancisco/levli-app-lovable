@@ -11,8 +11,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const COMPED_EMAILS = [
-  "amermujkan@gmail.com",
   "alvendherfrancisco01@gmail.com",
+  "sam.olsson@kurve.co.uk",
+  "alex@wanilla.co",
+  "amermujkan@gmail.com",
   "mujkanovic.amer@gmail.com",
 ];
 

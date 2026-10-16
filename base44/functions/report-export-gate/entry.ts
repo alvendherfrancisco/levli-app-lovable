@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
+import { hasCompedAccess } from '../../shared/compedAccess.ts';
 
 // The server-side half of the doctor report's Premium lock.
 //
@@ -9,13 +10,6 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 // see src/lib/SubscriptionContext.jsx and src/lib/compedAccess.js — so a locked
 // screen can never be the only thing standing between an account and the PDF.
 
-/** Accounts with complimentary full access. Keep in step with src/lib/compedAccess.js. */
-const COMPED_EMAILS = [
-  'amermujkan@gmail.com',
-  'alvendherfrancisco01@gmail.com',
-  'mujkanovic.amer@gmail.com',
-];
-
 const nowSec = () => Math.floor(Date.now() / 1000);
 
 export default async function (req) {
@@ -24,7 +18,7 @@ export default async function (req) {
     const user = await base44.auth.me().catch(() => null);
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (COMPED_EMAILS.includes(String(user.email || '').trim().toLowerCase())) {
+    if (hasCompedAccess(user.email)) {
       return Response.json({ allowed: true, source: 'complimentary' });
     }
 

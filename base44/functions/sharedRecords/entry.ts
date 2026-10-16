@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import {
   activeSharesFor, claimPendingInvites, entityRows, newestProfileByOwner, personName,
 } from "../../shared/caregiverAccess.ts";
+import { hasCompedAccess } from "../../shared/compedAccess.ts";
 
 /**
  * What a caregiver sees, and the only door to it.
@@ -19,14 +20,16 @@ import {
  * so a caregiver cannot change anything even by calling the API directly.
  */
 /**
- * Whether the account that owns these records has Levli Premium: the plan saved on
- * its profile, or a subscription whose expiry is still ahead.
+ * Whether the account that owns these records has Levli Premium: complimentary
+ * full access on its own email, the plan saved on its profile, or a subscription
+ * whose expiry is still ahead.
  *
  * It is read from the owner — a caregiver's own plan never decides what a shared
  * record shows — and read with the service role, so whoever asked cannot influence
  * the answer.
  */
-async function ownerHasPremium(admin, ownerId, profile) {
+async function ownerHasPremium(admin, ownerId, profile, ownerEmail) {
+  if (hasCompedAccess(ownerEmail)) return true;
   if (profile?.plan_type === "lifetime" && profile?.subscription_status === "active") return true;
   if (profile?.subscription_status === "active" || profile?.subscription_status === "trialing") return true;
 
@@ -90,7 +93,9 @@ export default async function (req) {
       admin.entities.AdverseEvent.filter({ created_by_id: share.owner_id }, { sort: "-onset_date", limit: 200 }),
     ]);
     const profile = profiles.get(share.owner_id) || null;
-    const ownerPremium = await ownerHasPremium(admin, share.owner_id, profile);
+    const ownerPremium = await ownerHasPremium(
+      admin, share.owner_id, profile, users.get(share.owner_id)?.email,
+    );
 
     return Response.json({
       ok: true,
