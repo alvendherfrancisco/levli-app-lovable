@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { toDayKey, todayKey, parseShotDate } from "@/lib/dateUtils";
+import { toDayKey, todayKey, parseShotDate, byShotMomentDesc } from "@/lib/dateUtils";
 import { getPendingDoses, buildShotFromSchedule } from "@/lib/repeatSchedule";
 import {
   kgOfEntry, toKg, fromKg, roundKg, heightCmOf,
@@ -200,7 +200,7 @@ export function AppStateProvider({ children }) {
   const loadShots = async () => {
     setShotsLoading(true);
     const data = await base44.entities.Shot.list("-date", 500);
-    data.sort((a, b) => parseShotDate(b.date) - parseShotDate(a.date));
+    data.sort(byShotMomentDesc);
     setShots(data);
     setShotsLoading(false);
     return data;
@@ -416,7 +416,7 @@ export function AppStateProvider({ children }) {
       if (regimen) payload.medication_id = regimen.id;
     }
     const rec = await base44.entities.Shot.create(payload);
-    setShots((prev) => [rec, ...prev].sort((a, b) => parseShotDate(b.date) - parseShotDate(a.date)));
+    setShots((prev) => [rec, ...prev].sort(byShotMomentDesc));
     // Decrement matching inventory
     if (rec.medication) {
       const match = inventory.find((i) => i.product_name === rec.medication && i.status === "active" && i.remaining_quantity > 0);
@@ -434,7 +434,9 @@ export function AppStateProvider({ children }) {
 
   const updateShot = async (id, updates) => {
     const rec = await base44.entities.Shot.update(id, updates);
-    setShots((prev) => prev.map((s) => s.id === id ? { ...s, ...rec } : s));
+    // Re-sorted, because a moved date changes where the log belongs on the
+    // timeline — and so which dose is the latest one.
+    setShots((prev) => prev.map((s) => (s.id === id ? { ...s, ...rec } : s)).sort(byShotMomentDesc));
   };
 
   const deleteShot = async (id) => {

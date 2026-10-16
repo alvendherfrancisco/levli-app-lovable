@@ -8,7 +8,7 @@ import MetricsGrid from "@/components/home/MetricsGrid";
 import AddShotModal from "@/components/modals/AddShotModal";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import { useAppState } from "@/lib/AppState";
-import { parseShotDate, toDayKey } from "@/lib/dateUtils";
+import { parseShotDate, toDayKey, todayKey, formatDayKeyShort } from "@/lib/dateUtils";
 import { logWords } from "@/lib/medicationForm";
 import { isActiveMedication } from "@/lib/medicationLink";
 import useDoseColors from "@/hooks/useDoseColors";
@@ -23,6 +23,8 @@ export default function History() {
   const [showShot, setShowShot] = useState(false);
   const [showSideEffects, setShowSideEffects] = useState(false);
   const [editingShot, setEditingShot] = useState(null);
+  // The day a new log is opened for: the day in hand on this page.
+  const [shotDayKey, setShotDayKey] = useState(null);
   const { shots, medications, getSideEffects, adverseEventsByDay } = useAppState();
   // Calendar dots carry the dose's own colour, in the theme in use.
   const { color: doseColor } = useDoseColors();
@@ -78,11 +80,19 @@ export default function History() {
     ? toDayKey(new Date(year, month, selectedDay))
     : null;
   const selectedShots = selectedDay ? (shotDayMap[selectedDay] || []) : [];
+  // On any day but today the button says which day it is for, so a dose is never
+  // logged against the wrong date by mistake. Today's own button is unchanged.
+  const todayDayKey = todayKey();
+  const fabLabel = !selectedDayKey || selectedDayKey === todayDayKey
+    ? addLabel
+    : `${addLabel} · ${formatDayKeyShort(selectedDayKey)}`;
   const sideEffects = selectedDayKey ? getSideEffects(selectedDayKey) : "";
   const dayAdverseEvents = selectedDayKey ? (adverseEventsByDay[selectedDayKey] || []) : [];
 
+  // The button below logs for the day selected in the calendar, so a past dose
+  // is entered against the day it was actually taken.
   const openEdit = (shot) => { setEditingShot(shot); setShowShot(true); };
-  const openNew = () => { setEditingShot(null); setShowShot(true); };
+  const openNew = () => { setEditingShot(null); setShotDayKey(selectedDayKey); setShowShot(true); };
 
   return (
     <PageContainer bottomInset="fab">
@@ -143,7 +153,7 @@ export default function History() {
         {selectedDay && selectedShots.length === 0 && (
           <div className="px-4 mb-4">
             <div className="bg-white dark:bg-gray-900 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-800 text-gray-400 dark:text-[#9A9DAE] text-sm">
-              No {words.many} logged for {monthNames[month]} {selectedDay}
+              No {words.many} logged for this day
             </div>
           </div>
         )}
@@ -185,9 +195,9 @@ export default function History() {
 
       </div>
 
-      <Fab onClick={openNew} label={addLabel} icon={null} />
+      <Fab onClick={openNew} label={fabLabel} icon={null} />
 
-      <AddShotModal open={showShot} onClose={() => { setShowShot(false); setEditingShot(null); }} editingShot={editingShot} />
+      <AddShotModal open={showShot} onClose={() => { setShowShot(false); setEditingShot(null); }} editingShot={editingShot} initialDate={shotDayKey} />
       {selectedDayKey && (
         <SideEffectsModal open={showSideEffects} onClose={() => setShowSideEffects(false)} dayKey={selectedDayKey} />
       )}

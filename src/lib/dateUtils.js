@@ -98,3 +98,41 @@ export function parseLocalDateTime(value) {
   const [h, min] = (timePart || "00:00").split(":").map(Number);
   return new Date(y, m - 1, d, h || 0, min || 0);
 }
+
+/**
+ * A logged dose time, stored as "9:00 AM", as a form's own time value "09:00".
+ * The two are written differently — the log keeps the 12-hour form the user read
+ * back, the field needs the 24-hour one — so the reading happens in one place.
+ * Anything unreadable gives "", never a guessed time.
+ */
+export function inputTimeFromShotTime(shotTime) {
+  if (!shotTime) return "";
+  const match = String(shotTime).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!match) return "";
+  let h = Number(match[1]);
+  const m = Number(match[2]);
+  const ampm = (match[3] || "").toUpperCase();
+  if (ampm === "PM" && h !== 12) h += 12;
+  if (ampm === "AM" && h === 12) h = 0;
+  if (h > 23 || m > 59) return "";
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * A logged dose's moment on the timeline, as a comparable number: its own date
+ * and time. Doses are ordered by when they happened, never by when they were
+ * typed in, so an older entry added later never becomes the latest dose — and
+ * the next dose, worked out from the latest one, does not move for it.
+ */
+export function shotMoment(shot) {
+  const d = parseShotDate(shot?.date);
+  if (!d) return 0;
+  const [h, m] = inputTimeFromShotTime(shot?.time).split(":").map(Number);
+  const minutes = Number.isFinite(h) ? h * 60 + (m || 0) : 0;
+  return d.getTime() + minutes * 60000;
+}
+
+/** Newest dose first, by the moment it happened (see shotMoment). */
+export function byShotMomentDesc(a, b) {
+  return shotMoment(b) - shotMoment(a);
+}

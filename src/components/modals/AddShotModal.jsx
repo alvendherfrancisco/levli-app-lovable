@@ -17,7 +17,10 @@ import { getShotDeviceOptions, getDeliveryMethodLabel, RETIRED_DELIVERY_METHODS 
 import { getCapabilityProfile, getCapabilityWarning } from "@/lib/capabilityProfile";
 import { detectDuplicateActiveIngredient } from "@/lib/drugSafety";
 import { convertDose, doseUnitLabel } from "@/lib/units";
-import { parseShotDate, formatShotDate, calendarDaysBetween } from "@/lib/dateUtils";
+import {
+  parseShotDate, formatShotDate, calendarDaysBetween,
+  formatLocaleDate, fromDayKey, inputTimeFromShotTime, shotMoment,
+} from "@/lib/dateUtils";
 import {
   INJECTABLE_ROUTES, ROUTE_CHOICES, getRouteChoices, getDefaultRoute,
   activeRegimensFor, getDoseDefault, getSmartShotDefaults,
@@ -72,11 +75,13 @@ function isTypingField(el) {
   return !["range", "checkbox", "radio", "date", "time", "file", "color", "button", "submit"].includes(el.type);
 }
 
-export default function AddShotModal({ open, onClose, editingShot, initialValues }) {
+export default function AddShotModal({ open, onClose, editingShot, initialValues, initialDate }) {
   const { addShot, updateShot, deleteShot, profile, setProfile, getRecommendedSite, shots, medications,
     repeatSchedules, addRepeatSchedule, updateRepeatSchedule, addMedicationCustomDose,
     addMedication, deleteMedication, linkShotsToMedication } = useAppState();
   const confirmedDupRef = useRef(false);
+  // A date more than a year back is confirmed once, then saved.
+  const confirmedOldRef = useRef(false);
   // The "Possible duplicate" card and the modal's own scroll container.
   const dupCardRef = useRef(null);
   const scrollRef = useRef(null);
@@ -107,6 +112,11 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const [date, setDate] = useState(toInputDate(now));
   const [time, setTime] = useState(toInputTime(now));
   const [showMedDropdown, setShowMedDropdown] = useState(false);
+  // Nothing is logged ahead of now: the date field stops at today and, on today
+  // itself, the time field stops at the current minute.
+  const todayInput = toInputDate(now);
+  const currentTimeInput = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const isTodayDate = date === todayInput;
 
   const [route, setRoute] = useState("");
   const [deviceType, setDeviceType] = useState("");
@@ -115,6 +125,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const [saved, setSaved] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [duplicatePrompt, setDuplicatePrompt] = useState(null);
+  const [oldDatePrompt, setOldDatePrompt] = useState(false);
   // Bumped every time the warning shows, so its highlight replays each time.
   const [dupNonce, setDupNonce] = useState(0);
   const [reporting, setReporting] = useState(false);
@@ -256,6 +267,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     const n = new Date();
     setError(""); setSaved(false); setReporting(false); setDuplicatePrompt(null);
     confirmedDupRef.current = false;
+    confirmedOldRef.current = false;
+    setOldDatePrompt(false);
     dirtyRef.current = false;
     setConfirmDiscard(false);
     setMedicationId("");
@@ -339,10 +352,19 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
         setForm(formForRoute(initialValues.route || smart.route) || smart.form || "");
         setDeviceType(initialValues.device_type || smart.deviceType);
         setNotes(initialValues.notes || "");
-        setDate(initialValues.date || toInputDate(n));
-        setTime(initialValues.time || toInputTime(n));
         setShowDetails(!!initialValues.notes);
       }
+      // A day opened from another screen is dated for that day. A day already
+      // past opens at the time of the user's last dose — so a past entry is
+      // dated rather than timed on the spot — and at noon when nothing has been
+      // logged yet.
+      const seedDate = initialValues?.date || initialDate || toInputDate(n);
+      const seedTime = initialValues?.time
+        || (seedDate < toInputDate(n)
+          ? (inputTimeFromShotTime(shots[0]?.time) || "12:00")
+          : toInputTime(n));
+      setDate(seedDate);
+      setTime(seedTime);
       setRepeatOn(!!scheduleFor(initialValues?.medication || smart.medication));
     }
     if (editingShot) setRepeatOn(!!scheduleFor(editingShot.medication || defaultMed));
@@ -504,13 +526,16 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     else await addRepeatSchedule(base);
   };
 
-  // Same medication logged less than 3 days after the previous shot.
-  const recentSameMedication = () => {
-    if (!previousShot?.date) return null;
-    const days = calendarDaysBetween(previousShot.date, date);
-    if (days < 0 || days >= 3) return null;
-    const label = days === 0 ? "less than a day" : days === 1 ? "1 day" : `${days} days`;
-    return { label, medication: previousShot.medication };
+  // A dose of this medication already logged within a day either side of the
+  // moment being entered — nearly always the same entry tapped twice, whether
+  // it is being logged for today or for a day in the past.
+  const duplicateWithinDay = () => {
+    const moment = new Date(`${date}T${time || "00:00"}`).getTime();
+    return shots.some((s) =>
+      s.id !== editingShot?.id &&
+      s.medication === medication &&
+      Math.abs(shotMoment(s) - moment) <= 24 * 60 * 60 * 1000
+    );
   };
 
   // Saves a typed dose on the medication so it is a chip the next time that
@@ -580,9 +605,28 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
       setError("Enter how many weeks to repeat this dose for.");
       return;
     }
+    // Nothing is logged ahead of today, and never ahead of the current time on
+    // today itself: both fields stop there, and so does the save.
+    if (new Date(`${date}T${time}`).getTime() > Date.now()) {
+      sound.warning();
+      setError(`A ${word} can't be logged in the future. Choose today or an earlier time.`);
+      return;
+    }
+    // A date more than a year back is almost always a mistyped year, so it is
+    // confirmed once before it is saved.
+    if (!confirmedOldRef.current && calendarDaysBetween(date, todayInput) > 365) {
+      sound.warning();
+      setError("");
+      setOldDatePrompt(true);
+      return;
+    }
     if (!editingShot && !confirmedDupRef.current) {
-      const dup = recentSameMedication();
-      if (dup) { setError(""); setDupNonce((n) => n + 1); setDuplicatePrompt(dup); return; }
+      if (duplicateWithinDay()) {
+        setError("");
+        setDupNonce((n) => n + 1);
+        setDuplicatePrompt(true);
+        return;
+      }
     }
     setSaving(true);
     setError(""); setDuplicatePrompt(null);
@@ -748,6 +792,12 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                 <X size={22} className="text-gray-400" />
               </button>
             </div>
+            {/* Which day this entry belongs to, said at the top: the sheet is
+                opened from the calendar, and the date is the one thing that must
+                never be mistaken. */}
+            <p className="px-5 pb-3 text-[13px] font-medium text-indigo-600 dark:text-indigo-400">
+              Logging for {formatLocaleDate(fromDayKey(date))}
+            </p>
           </div>
 
           <div
@@ -969,6 +1019,8 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                 <ShotDateTimeFields
                   date={date}
                   time={time}
+                  dateMax={todayInput}
+                  timeMax={isTodayDate ? currentTimeInput : undefined}
                   onDateChange={setDate}
                   onTimeChange={setTime}
                 />
@@ -1071,7 +1123,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                     className="mx-5 mb-3 scroll-mb-[100px] rounded-xl border border-orange-200 dark:border-orange-500/20 bg-orange-50 dark:bg-orange-500/10 px-3 py-2 text-sm text-orange-700 dark:text-orange-300 animate-duplicate-glow outline-none"
                   >
                     <p className="font-semibold">Possible duplicate</p>
-                    <p className="mt-1">Your last {duplicatePrompt.medication} {word} was {duplicatePrompt.label} ago. Is this a duplicate?</p>
+                    <p className="mt-1">You already logged a {word} around this time. Add another?</p>
                     <div className="flex gap-2 mt-2">
                       <button onClick={() => { confirmedDupRef.current = true; handleSave(); }} className="btn-pill btn-pill-sm bg-orange-600 text-white">Save anyway</button>
                       <button onClick={() => setDuplicatePrompt(null)} className="btn-pill btn-pill-sm btn-secondary">Cancel</button>
@@ -1125,6 +1177,19 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
         cancelLabel="Keep editing"
         onConfirm={() => { setConfirmDiscard(false); dirtyRef.current = false; onClose(); }}
         onCancel={() => setConfirmDiscard(false)}
+      />
+
+      {/* A dose dated more than a year back: asked about once, then saved. */}
+      <ConfirmDialog
+        open={oldDatePrompt}
+        title={`Log a ${word} from ${formatLocaleDate(fromDayKey(date))}?`}
+        message="That is more than a year ago. Save it only if the date is right."
+        tone="warning"
+        icon={AlertTriangle}
+        confirmLabel="Yes, save it"
+        cancelLabel="Change the date"
+        onConfirm={() => { confirmedOldRef.current = true; setOldDatePrompt(false); handleSave(); }}
+        onCancel={() => setOldDatePrompt(false)}
       />
 
       <SideEffectsModal open={reporting} onClose={() => setReporting(false)} dayKey={date} />
