@@ -22,6 +22,7 @@ import {
  */
 export default function DoseChips({
   medication, options = [], value, unit = DOSE_UNIT, onSelect, onAddCustom, variant = "color",
+  label = "Dose",
 }) {
   const numeric = Number(value) || 0;
   const isChipValue = options.includes(numeric);
@@ -82,7 +83,7 @@ export default function DoseChips({
     <div>
       {/* The unit sits beside the label, as small grey text on the right. */}
       <div className="flex items-baseline justify-between gap-2 mb-2">
-        <label className={neutral ? SHEET_LABEL_TEXT : "text-sm font-semibold text-gray-700 dark:text-gray-300"}>Dose</label>
+        <label className={neutral ? SHEET_LABEL_TEXT : "text-sm font-semibold text-gray-700 dark:text-gray-300"}>{label}</label>
         <span className={neutral ? SHEET_HINT : "text-xs text-gray-400 dark:text-gray-500"}>{unit}</span>
       </div>
 

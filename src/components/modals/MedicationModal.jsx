@@ -1,56 +1,59 @@
-import React, { useEffect, useState } from "react";
-import { X, ChevronDown } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, X } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
-import DateInput from "@/components/DateInput";
 import useModal from "@/hooks/useModal";
 import useDiscardConfirm from "@/hooks/useDiscardConfirm";
 import { hasChanged } from "@/lib/formValidity";
 import { toast } from "@/lib/toast";
+import { sound } from "@/lib/sounds";
+import { logWords } from "@/lib/medicationForm";
+import { ROUTE_CHOICES, getRouteChoices } from "@/lib/shotDefaults";
 import {
-  findMedicationOption, isLabelStrength, statusOptionsFor, validateRegimenForm,
-  DOSE_STEP_HELPER,
+  findMedicationOption, isLabelStrength, plainDateLabel, validateRegimenForm,
 } from "@/lib/medicationRegimen";
 import {
   MULTIPLE_GLP1_NOTE, emptySchedule, hasSecondGlp1Gip, medicationScheduleFields,
   scheduleStateFromRecord,
 } from "@/lib/medicationSchedule";
-import { sound } from "@/lib/sounds";
-import MedicationNamePicker from "@/components/medications/MedicationNamePicker";
-import DoseStrengthPicker from "@/components/medications/DoseStrengthPicker";
-import ScheduleFields from "@/components/schedule/ScheduleFields";
-import StartDateField from "@/components/medications/StartDateField";
-import IndicationField from "@/components/medications/IndicationField";
-import ClearFieldButton from "@/components/ClearFieldButton";
-import OptionChips from "@/components/OptionChips";
+import SheetField from "@/components/modals/shot/SheetField";
+import SheetPickerRow from "@/components/modals/shot/SheetPickerRow";
+import SheetSelect from "@/components/modals/shot/SheetSelect";
+import { SHEET_DIVIDER, SHEET_HINT, SHEET_LABEL_TEXT } from "@/components/modals/shot/sheetUi";
+import MedicationSelect from "@/components/medications/MedicationSelect";
+import MedicationInfoCard from "@/components/medications/MedicationInfoCard";
+import RegimenDoseField from "@/components/medications/RegimenDoseField";
+import RegimenStartDate from "@/components/medications/RegimenStartDate";
+import RegimenDetailsFields from "@/components/medications/RegimenDetailsFields";
 
 const pad = (n) => String(n).padStart(2, "0");
 function todayInput() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
 
-const inputClass = "w-full min-h-[52px] rounded-xl border border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-3 py-2.5 text-sm outline-none focus:border-indigo-400 dark:[color-scheme:dark]";
-
 /** The single line shown under the save button. */
 const FOOTER_NOTE = "This app is a tracker, not medical advice.";
 
-/** The status chips inside "More details". */
-const STATUS_CHIP_CLASS = "inline-flex items-center gap-1.5 min-h-[44px] rounded-xl border px-3 text-sm font-semibold";
-const STATUS_SELECTED_CLASS = "bg-indigo-600 border-indigo-600 text-white";
-const STATUS_UNSELECTED_CLASS = "bg-white dark:bg-white/[0.05] border-cardline text-gray-900 dark:text-[#E8E9F0]";
-
 /**
- * Add / Edit Medication — one screen. The four things logged most often (which
- * medication, what dose, how often, when it started) are answered by tapping a
- * chip, with the label's own values pre-filled and clearly editable. Everything
- * else lives in "More details (optional)", closed until it is needed. Nothing
- * here suggests or adjusts a dose: every strength shown is one the product's
- * label lists, and anything else is only ever typed from the prescription.
+ * Add / Edit Medication — one sheet, in the Add shot sheet's own style.
+ *
+ * The medication is asked for first: a searchable, grouped list that folds away
+ * to a single row once one is chosen, with a small card stating what is known
+ * about it (how it is taken, its usual schedule, the strengths its label lists).
+ * With a medication in hand the basics follow — starting dose, route, start date —
+ * and everything else waits behind "More details", so the form stays short.
+ *
+ * Nothing here suggests or adjusts a dose: every strength offered is one the
+ * product's label lists, and anything else is only ever typed from the
+ * prescription and checked against it.
  */
 export default function MedicationModal({ open, onClose, editing }) {
-  const { addMedication, updateMedication, linkShotsToMedication, medications, shots } = useAppState();
+  const {
+    addMedication, updateMedication, linkShotsToMedication, medications, shots, profile, setProfile,
+  } = useAppState();
 
   const [selectedName, setSelectedName] = useState("");
   const [isCustom, setIsCustom] = useState(false);
   const [customName, setCustomName] = useState("");
   const [customGeneric, setCustomGeneric] = useState("");
+  const [route, setRoute] = useState("");
   const [dose, setDose] = useState("");
   const [doseSuggested, setDoseSuggested] = useState(false);
   const [doseConfirmed, setDoseConfirmed] = useState(false);
@@ -66,10 +69,19 @@ export default function MedicationModal({ open, onClose, editing }) {
   const [prescriberContact, setPrescriberContact] = useState("");
   const [status, setStatus] = useState("active");
   const [notes, setNotes] = useState("");
+  // Strengths typed through "+ Other" and kept, so they are offered as chips next
+  // time (they are saved on the record with the rest of the regimen).
+  const [rememberedDoses, setRememberedDoses] = useState([]);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  // The reason the save button is dimmed, said only once it has been tapped.
+  const [saveHint, setSaveHint] = useState("");
+  const [dupOpen, setDupOpen] = useState(false);
   // The form as the record was loaded, so an untouched edit has nothing to save.
   const [savedFields, setSavedFields] = useState({});
+  const dupCardRef = useRef(null);
+  const detailsRef = useRef(null);
+  const bodyRef = useRef(null);
 
   /** The dose last saved for this medication, if the user has one. */
   const lastSavedDose = (name) => {
@@ -81,28 +93,42 @@ export default function MedicationModal({ open, onClose, editing }) {
 
   useEffect(() => {
     if (!open) return;
+    const today = todayInput();
+    // A prescriber already saved on the profile is filled in here, so it is never
+    // entered twice.
+    const knownPrescriber = profile?.prescriber_name || "";
+    const knownContact = profile?.prescriber_contact || "";
+
     setErrors({});
+    setSaveHint("");
+    setDupOpen(false);
     setDoseSuggested(false);
     setDoseConfirmed(false);
     setShowDetails(false);
+    setRememberedDoses([]);
+
     if (editing) {
       const stored = editing.medication_name || "";
       const option = findMedicationOption(stored);
       const storedIndication = String(editing.indication || "").trim();
+      const storedSchedule = scheduleStateFromRecord(editing, option ? option.value : stored, today);
+      const storedStart = editing.start_date || today;
+      const storedIndicationValue = ["Type 2 diabetes", "Weight management", "Heart health"].includes(storedIndication)
+        ? storedIndication : storedIndication ? "Other" : "";
+      const storedIndicationOther = ["Type 2 diabetes", "Weight management", "Heart health"].includes(storedIndication)
+        ? "" : storedIndication;
+      const storedRoute = editing.route || option?.route || "";
+
       setSelectedName(option ? option.value : "");
       setIsCustom(!option);
       setCustomName(option ? "" : stored);
       setDose(editing.prescribed_dose != null ? String(editing.prescribed_dose) : "");
       setUnit(editing.dose_unit || option?.unit || "mg");
-      // A record saved before schedules were held resolves to the product's own
-      // schedule, so the day and time it was already running on are not lost.
-      setSchedule(scheduleStateFromRecord(editing, option ? option.value : stored, todayInput()));
-      setIndication(["Type 2 diabetes", "Weight management", "Heart health"].includes(storedIndication)
-        ? storedIndication : storedIndication ? "Other" : "");
-      setIndicationOther(
-        ["Type 2 diabetes", "Weight management", "Heart health"].includes(storedIndication)
-          ? "" : storedIndication);
-      setStartDate(editing.start_date || todayInput());
+      setRoute(storedRoute);
+      setSchedule(storedSchedule);
+      setIndication(storedIndicationValue);
+      setIndicationOther(storedIndicationOther);
+      setStartDate(storedStart);
       setPlannedEndDate(editing.planned_end_date || "");
       setDoseStep(editing.titration_stage || "");
       setPrescriberName(editing.prescriber_name || "");
@@ -112,104 +138,137 @@ export default function MedicationModal({ open, onClose, editing }) {
       // A regimen that already carries details opens with them visible.
       setShowDetails(!!(editing.indication || editing.planned_end_date || editing.titration_stage
         || editing.prescriber_name || editing.prescriber_contact || editing.notes));
-      // The same values, kept as the record was loaded, for "has anything
-      // changed?" — an edit with nothing changed has nothing to save.
+      // The same values as they were loaded, for "has anything changed?".
       setSavedFields({
-        selectedName: option ? option.value : "",
-        isCustom: !option,
-        customName: option ? "" : stored,
-        dose: editing.prescribed_dose != null ? String(editing.prescribed_dose) : "",
-        unit: editing.dose_unit || option?.unit || "mg",
-        schedule: scheduleStateFromRecord(editing, option ? option.value : stored, todayInput()),
-        startDate: editing.start_date || todayInput(),
-        plannedEndDate: editing.planned_end_date || "",
-        doseStep: editing.titration_stage || "",
-        indication: ["Type 2 diabetes", "Weight management", "Heart health"].includes(storedIndication)
-          ? storedIndication : storedIndication ? "Other" : "",
-        indicationOther: ["Type 2 diabetes", "Weight management", "Heart health"].includes(storedIndication)
-          ? "" : storedIndication,
-        prescriberName: editing.prescriber_name || "",
-        prescriberContact: editing.prescriber_contact || "",
-        status: editing.status || "active",
-        notes: editing.notes || "",
+        selectedName: option ? option.value : "", isCustom: !option, customName: option ? "" : stored,
+        route: storedRoute, dose: editing.prescribed_dose != null ? String(editing.prescribed_dose) : "",
+        unit: editing.dose_unit || option?.unit || "mg", schedule: storedSchedule, startDate: storedStart,
+        plannedEndDate: editing.planned_end_date || "", doseStep: editing.titration_stage || "",
+        indication: storedIndicationValue, indicationOther: storedIndicationOther,
+        prescriberName: editing.prescriber_name || "", prescriberContact: editing.prescriber_contact || "",
+        status: editing.status || "active", notes: editing.notes || "",
       });
     } else {
       setSelectedName(""); setIsCustom(false); setCustomName(""); setCustomGeneric("");
-      setDose(""); setUnit("mg"); setSchedule(emptySchedule("", todayInput()));
+      setDose(""); setUnit("mg"); setRoute(""); setSchedule(emptySchedule("", today));
       setIndication(""); setIndicationOther("");
-      setStartDate(todayInput()); setPlannedEndDate(""); setDoseStep("");
-      setPrescriberName(""); setPrescriberContact(""); setStatus("active"); setNotes("");
+      setStartDate(today); setPlannedEndDate(""); setDoseStep("");
+      setPrescriberName(knownPrescriber); setPrescriberContact(knownContact);
+      setStatus("active"); setNotes("");
       setSavedFields({
-        selectedName: "", isCustom: false, customName: "", dose: "", unit: "mg",
-        schedule: emptySchedule("", todayInput()), startDate: todayInput(),
-        plannedEndDate: "", doseStep: "", indication: "", indicationOther: "",
-        prescriberName: "", prescriberContact: "", status: "active", notes: "",
+        selectedName: "", isCustom: false, customName: "", route: "", dose: "", unit: "mg",
+        schedule: emptySchedule("", today), startDate: today, plannedEndDate: "", doseStep: "",
+        indication: "", indicationOther: "", prescriberName: knownPrescriber,
+        prescriberContact: knownContact, status: "active", notes: "",
       });
     }
   }, [open, editing]);
 
+  // The medication in hand, as the form reads it: a listed product, a name typed
+  // by hand, or nothing yet.
+  const option = isCustom ? null : findMedicationOption(selectedName);
+  const labelStrengths = option?.strengths || [];
+  const chosenName = isCustom ? customName.trim() : selectedName;
+  const ready = !!chosenName;
+
+  /** The strengths offered as chips: the label's own, plus any kept from "Other". */
+  const doseValues = useMemo(() => {
+    const values = [
+      ...labelStrengths.map((s) => s.value),
+      ...(editing?.custom_doses || []),
+      ...rememberedDoses,
+    ].map(Number).filter(Number.isFinite);
+    return [...new Set(values)].sort((a, b) => a - b);
+  }, [option, editing, rememberedDoses]);
+
+  // A dose the label does not list is never blocked — it only has to be checked
+  // against the prescription. A product with no strength list (a compounded or
+  // research one) has nothing to check, so it is never asked for.
+  const needsDoseConfirm = !isCustom && labelStrengths.length > 0
+    && String(dose).trim() !== "" && !isLabelStrength(selectedName, dose);
+
+  const routeOptions = isCustom ? ROUTE_CHOICES : getRouteChoices(selectedName);
+  const routeLabel = route
+    ? ROUTE_CHOICES.concat(routeOptions).find((o) => o.value === route)?.label || route
+    : "";
+
+  // A second GLP-1 / GIP medicine: a neutral note, never a block.
+  const secondGlp1 = !!chosenName && hasSecondGlp1Gip(medications, chosenName);
+
   /**
    * The first thing missing or wrong in the regimen form, or null. Run live to
-   * gate the Save button and again by the save itself, so a dimmed button and a
-   * refused save can never disagree.
+   * gate the save and again by the save itself, so a dimmed button and a refused
+   * save can never disagree.
    */
-  const regimenProblem = () => validateRegimenForm({
+  const problem = validateRegimenForm({
     selectedName, isCustom, customName, dose, doseConfirmed,
-    isStandardDose: !isCustom && isLabelStrength(selectedName, String(dose ?? "").trim()),
+    isStandardDose: !isCustom && (!labelStrengths.length || isLabelStrength(selectedName, String(dose ?? "").trim())),
     startDate, plannedEndDate,
   });
 
   // Everything the form holds, against what the record was loaded with.
   const currentFields = {
-    selectedName, isCustom, customName, dose, unit, schedule, startDate,
+    selectedName, isCustom, customName, route, dose, unit, schedule, startDate,
     plannedEndDate, doseStep, indication, indicationOther,
     prescriberName, prescriberContact, status, notes,
   };
   const edited = hasChanged(currentFields, savedFields);
-  // A missing answer — or a dose that still has to be confirmed against the
-  // prescription — is "nothing to save yet", so the button stays dimmed. A date
-  // that needs checking is not treated that way: it is answered and visible, and
-  // the save path still flags it inline and opens More details, so the button is
-  // never dimmed with no way to find out why.
-  const problem = regimenProblem();
-  const missingAnswer = !!problem && (problem.field === "name" || problem.field === "dose");
-  const canSave = !saving && !missingAnswer && (!editing || edited);
+  const canSave = !saving && !problem && (!editing || edited);
 
   const { requestClose, dialog } = useDiscardConfirm({ dirty: () => (!editing || edited), onClose });
   const sheetRef = useModal({ open, onDismiss: requestClose });
-  if (!open) return null;
 
-  const option = isCustom ? null : findMedicationOption(selectedName);
-  const ready = isCustom || !!option;
-  // A second GLP-1 / GIP medicine: a neutral note, never a block.
-  const chosenName = isCustom ? customName.trim() : selectedName;
-  const secondGlp1 = !!chosenName && hasSecondGlp1Gip(medications, chosenName);
-  const clearError = (field) => setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+  // The card the duplicate question is asked on is brought into view the moment
+  // it appears, so the tap that raised it is answered where the eye already is.
+  useEffect(() => {
+    if (!dupOpen) return;
+    const card = dupCardRef.current;
+    const scroller = bodyRef.current;
+    if (!card || !scroller) return;
+    card.focus({ preventScroll: true });
+    const raf = requestAnimationFrame(() => {
+      const cardRect = card.getBoundingClientRect();
+      const scrollerRect = scroller.getBoundingClientRect();
+      scroller.scrollTo({
+        top: Math.max(0, scroller.scrollTop + (cardRect.top - scrollerRect.top)
+          - (scroller.clientHeight - cardRect.height) / 2),
+        behavior: "smooth",
+      });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [dupOpen]);
+
+  // A hint belongs to the answer it was about: changing anything clears it, and
+  // the field it named with it.
+  useEffect(() => {
+    setSaveHint("");
+    setErrors((prev) => (Object.keys(prev).length ? {} : prev));
+  }, [selectedName, customName, isCustom, dose, startDate, plannedEndDate]);
+
+  if (!open) return null;
 
   const filledDetails = [indication, indicationOther, plannedEndDate, doseStep,
     prescriberName, prescriberContact, notes].filter(Boolean).length;
 
-  const handleSelect = ({ name, isCustom: custom }) => {
-    // Choosing what is already selected only keeps it — nothing is reset.
-    if (custom ? isCustom : (!isCustom && name === selectedName)) return;
+  const clearError = (field) => setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+
+  /** A listed product is chosen: its own strengths, unit and route take over. */
+  const chooseProduct = (name) => {
+    // Tapping the one already chosen only keeps it: nothing is reset.
+    if (!isCustom && name === selectedName) return;
     setErrors({});
+    setSaveHint("");
+    setDupOpen(false);
     setDoseConfirmed(false);
-    // Changing the medication always resets dose, unit and frequency to the new
-    // product's own options.
-    if (custom) {
-      setIsCustom(true);
-      setSelectedName("");
-      setCustomName(name);
-      setCustomGeneric("");
-      setDose(""); setDoseSuggested(false);
-      setUnit("");
-      setSchedule(emptySchedule("", todayInput()));
-      return;
-    }
+    // A strength kept from "+ Other" belongs to the medication it was typed for.
+    setRememberedDoses([]);
     const picked = findMedicationOption(name);
-    setIsCustom(false);
     setSelectedName(name);
+    setIsCustom(false);
     setCustomName("");
+    setCustomGeneric("");
+    setRoute(picked?.route || "");
+    setUnit(picked?.unit || "mg");
     // The label's lowest strength is only pre-filled when nothing was saved for
     // this medication before — an existing dose is never silently changed.
     const lowest = picked?.strengths?.[0]?.value;
@@ -220,29 +279,78 @@ export default function MedicationModal({ open, onClose, editing }) {
       setDose("");
       setDoseSuggested(false);
     }
-    setUnit(picked?.unit || "mg");
     // The new product's own schedule: nothing carries over from the last one.
     setSchedule(emptySchedule(name, todayInput()));
   };
 
-  const handleSave = async () => {
+  /** A name typed by hand: nothing is known about it, so nothing is assumed. */
+  const changeCustomName = (value) => {
+    setErrors({});
+    setSaveHint("");
+    if (!isCustom) {
+      setIsCustom(true);
+      setSelectedName("");
+      setDose("");
+      setDoseSuggested(false);
+      setUnit("mg");
+      setRoute("");
+      setRememberedDoses([]);
+      setSchedule(emptySchedule("", todayInput()));
+    }
+    setCustomName(value);
+  };
+
+  const changeDose = (value) => {
+    setDose(value === "" || value == null ? "" : String(value));
+    setDoseSuggested(false);
+    setDoseConfirmed(false);
+    clearError("dose");
+  };
+
+  /** A strength typed through "+ Other": kept, so it is a chip next time. */
+  const addCustomDose = (value) => {
+    const number = Number(value);
+    if (!Number.isFinite(number) || number <= 0) return;
+    setRememberedDoses((prev) => (prev.includes(number) ? prev : [...prev, number]));
+    changeDose(number);
+  };
+
+  const activeDuplicate = (name) =>
+    medications.some((m) => m.medication_name === name && (!m.status || m.status === "active"));
+
+  const save = async (confirmedDuplicate = false) => {
     const finalName = isCustom ? customName.trim() : selectedName;
-    const picked = findMedicationOption(finalName);
     const doseNum = Number(String(dose ?? "").trim());
 
-    const problem = regimenProblem();
+    // The medication is required, and the one thing most often tapped too early:
+    // the reason is said beside the button and again on the field itself.
     if (problem) {
       sound.warning();
+      setSaveHint(problem.message);
       setErrors({ [problem.field]: problem.message });
-      if (["plannedEndDate"].includes(problem.field)) setShowDetails(true);
+      if (problem.field === "plannedEndDate") setShowDetails(true);
+      return;
+    }
+    // A medication already running is asked about once, before it is added again.
+    if (!editing && !confirmedDuplicate && activeDuplicate(finalName)) {
+      sound.warning();
+      setDupOpen(true);
+      return;
+    }
+    // An edit with nothing changed has nothing to save.
+    if (editing && !edited) {
+      sound.tap();
+      setSaveHint("Nothing has changed yet.");
       return;
     }
 
     setSaving(true);
+    setSaveHint("");
+    setDupOpen(false);
     const payload = {
       medication_name: finalName,
-      generic_name: picked?.generic || (isCustom ? customGeneric.trim() : ""),
-      route: picked?.route || "",
+      generic_name: option?.generic || (isCustom ? customGeneric.trim() : ""),
+      route,
       prescribed_dose: doseNum,
       dose_unit: unit || "mg",
       ...medicationScheduleFields(schedule),
@@ -257,12 +365,16 @@ export default function MedicationModal({ open, onClose, editing }) {
       notes,
       regimen_source: "user-entered",
       // Filling in the form is what completes a regimen that was created from a
-      // shot log, so its "needs details" mark is cleared here.
+      // log, so its "needs details" mark is cleared here.
       needs_details: false,
     };
     // A regimen marked stopped ends today, so its schedule pauses with it.
     if (status === "discontinued" && !editing?.discontinued_date) payload.discontinued_date = todayInput();
+    if (rememberedDoses.length) {
+      payload.custom_doses = [...new Set([...(editing?.custom_doses || []), ...rememberedDoses])];
+    }
 
+    const words = logWords(finalName, { custom: isCustom, route });
     try {
       if (editing) {
         await updateMedication(editing.id, payload);
@@ -270,17 +382,44 @@ export default function MedicationModal({ open, onClose, editing }) {
         toast.success("Medication updated");
       } else {
         const rec = await addMedication(payload);
-        // Every shot log for this medication is linked to the new record.
+        // Every log for this medication is linked to the new record.
         const linked = await linkShotsToMedication(payload.medication_name, rec.id);
-        toast.success(linked ? `Medication added — ${linked} shot log${linked === 1 ? "" : "s"} linked` : "Medication added");
+        toast.success(linked
+          ? `Medication added — ${linked} ${words.one} log${linked === 1 ? "" : "s"} linked`
+          : "Medication added");
+      }
+      // The prescriber is kept on the profile as well, so it is filled in for you
+      // both here and behind the Profile's Contact prescriber button.
+      const named = prescriberName.trim();
+      if (named && !String(profile?.prescriber_name || "").trim()) {
+        try {
+          await setProfile({ ...profile, prescriber_name: named, prescriber_contact: prescriberContact.trim() });
+        } catch (profileErr) {
+          console.error("Could not save the prescriber to the profile:", profileErr);
+        }
       }
       sound.success();
       setSaving(false);
       setTimeout(() => onClose(), 300);
     } catch (err) {
-      toast.error("Couldn't save. Please try again.", { actionLabel: "Retry", onAction: handleSave });
+      console.error("Could not save the medication:", err);
+      toast.error("Couldn't save. Please try again.", { actionLabel: "Retry", onAction: () => save(true) });
       setSaving(false);
     }
+  };
+
+  const toggleDetails = () => {
+    const next = !showDetails;
+    if (next) sound.open(); else sound.close();
+    setShowDetails(next);
+    if (!next) return;
+    requestAnimationFrame(() => {
+      const node = detailsRef.current;
+      const scroller = bodyRef.current;
+      if (!node || !scroller) return;
+      const offset = node.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      scroller.scrollTo({ top: Math.max(0, scroller.scrollTop + offset - 16), behavior: "smooth" });
+    });
   };
 
   return (
@@ -291,231 +430,199 @@ export default function MedicationModal({ open, onClose, editing }) {
         ref={sheetRef}
         role="dialog"
         aria-modal="true"
-        aria-label={editing ? "Edit Medication" : "Add Medication"}
+        aria-labelledby="medication-modal-title"
         tabIndex={-1}
-        className="relative bg-white dark:bg-[#0f1117] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[520px] max-h-[92dvh] overflow-y-auto overflow-x-hidden no-scrollbar sheet-lock animate-in slide-in-from-bottom sm:mx-4 dark:shadow-[0_-8px_40px_rgba(0,0,0,0.5)] outline-none"
+        className="relative flex flex-col w-full sm:max-w-[520px] max-h-[92dvh] overflow-hidden sheet-lock bg-white dark:bg-[#0f1117] rounded-t-3xl sm:rounded-3xl animate-in slide-in-from-bottom sm:mx-4 dark:shadow-[0_-8px_40px_rgba(0,0,0,0.5)] outline-none"
       >
-        <div className="sticky top-0 z-10 bg-white dark:bg-[#0f1117]">
-          <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full" /></div>
-          <div className="flex items-center justify-between px-5 pb-4">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-[#E8E9F0]">{editing ? "Edit Medication" : "Add Medication"}</h2>
-            <button onClick={requestClose} aria-label="Close" className="w-11 h-11 flex items-center justify-center rounded-full">
+        <div className="shrink-0 bg-white dark:bg-[#0f1117]">
+          <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-white/20" /></div>
+          <div className="flex items-center justify-between gap-3 px-5 pb-4 pt-1">
+            <h2 id="medication-modal-title" className="min-w-0 truncate text-[20px] font-semibold leading-tight text-gray-900 dark:text-[#E8E9F0]">
+              {editing ? "Edit Medication" : "Add Medication"}
+            </h2>
+            <button onClick={requestClose} aria-label="Close" className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center">
               <X size={22} className="text-gray-400" />
             </button>
           </div>
-        </div>
-
-        <div className="px-5 pb-5 space-y-5">
-          <MedicationNamePicker
-            selectedName={selectedName}
-            isCustom={isCustom}
-            onSelect={handleSelect}
-            error={errors.name}
-          />
-
-          {/* Two GLP-1 / GIP medicines at once: a neutral note only. Nothing is
-              blocked here and no advice is given. */}
-          {secondGlp1 && (
-            <p className="text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 rounded-xl px-3 py-2.5 leading-snug">
-              {MULTIPLE_GLP1_NOTE}
+          {/* The day this regimen starts, said at the top — the same line the Log
+              shot sheet opens with. */}
+          {plainDateLabel(startDate) && (
+            <p className="px-5 pb-3 text-[13px] font-medium text-indigo-600 dark:text-indigo-400">
+              Starting {plainDateLabel(startDate)}
             </p>
           )}
+        </div>
 
-          {isCustom && (
-            <div>
-              <label htmlFor="custom-med-name" className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
-                Medication name
-              </label>
-              <input
-                id="custom-med-name"
-                type="text"
-                value={customName}
-                autoComplete="off"
-                onChange={(e) => { setCustomName(e.target.value); clearError("name"); }}
-                placeholder="Type the name from your prescription"
-                className={inputClass}
-              />
-              <label htmlFor="custom-med-generic" className="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-3 mb-2 block">
-                Generic name (optional)
-              </label>
-              <input
-                id="custom-med-generic"
-                type="text"
-                value={customGeneric}
-                autoComplete="off"
-                onChange={(e) => setCustomGeneric(e.target.value)}
-                placeholder="e.g. semaglutide"
-                className={inputClass}
-              />
-            </div>
-          )}
+        <div
+          ref={bodyRef}
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar overscroll-contain"
+        >
+          <div className="px-5 pb-6 space-y-6">
+            <MedicationSelect
+              name={selectedName}
+              isCustom={isCustom}
+              customName={customName}
+              customGeneric={customGeneric}
+              onChoose={chooseProduct}
+              onCustomName={changeCustomName}
+              onCustomGeneric={setCustomGeneric}
+              error={errors.name}
+            />
 
-          {!ready ? (
-            <div className="rounded-xl border border-gray-200 dark:border-white/[0.12] bg-gray-50 dark:bg-white/[0.04] px-3 py-3 text-sm text-gray-600 dark:text-[#9A9DAE]">
-              Tap your medication above to see the strengths and schedule on its label.
-            </div>
-          ) : (
-            <>
-              <DoseStrengthPicker
-                option={option}
-                value={dose}
-                onChange={(v) => { setDose(v); setDoseSuggested(false); setDoseConfirmed(false); clearError("dose"); }}
-                confirmed={doseConfirmed}
-                onConfirmedChange={(v) => { setDoseConfirmed(v); clearError("dose"); }}
-                unit={unit}
-                onUnitChange={setUnit}
-                suggested={doseSuggested}
-                error={errors.dose}
-              />
+            {option && <MedicationInfoCard name={option.value} />}
 
-              {/* The same schedule block onboarding uses: frequency, day, time
-                  and interval, all read from the medication's own entry. */}
-              <ScheduleFields
-                medication={isCustom ? customName : selectedName}
-                value={schedule}
-                onChange={(next) => { setSchedule(next); clearError("schedule"); }}
-                error={errors.schedule}
-              />
-            </>
-          )}
+            {/* Two GLP-1 / GIP medicines at once: a neutral note only. Nothing is
+                blocked here and no advice is given. */}
+            {secondGlp1 && (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm leading-snug text-amber-800 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-200">
+                {MULTIPLE_GLP1_NOTE}
+              </p>
+            )}
 
-          <StartDateField
-            value={startDate}
-            onChange={(v) => { setStartDate(v); clearError("startDate"); }}
-            error={errors.startDate}
-          />
+            {/* Only once there is a medication to describe: the dose, the route and
+                the start date. Everything else waits behind More details. */}
+            {ready && (
+              <>
+                <RegimenDoseField
+                  medication={chosenName}
+                  options={doseValues}
+                  value={dose}
+                  unit={unit}
+                  onChange={changeDose}
+                  onUnitChange={setUnit}
+                  onAddCustom={addCustomDose}
+                  confirmed={doseConfirmed}
+                  onConfirmedChange={(v) => { setDoseConfirmed(v); clearError("dose"); }}
+                  needsConfirm={needsDoseConfirm}
+                  suggested={doseSuggested}
+                  error={errors.dose}
+                />
 
-          {/* Everything else, closed until it is needed. */}
-          <div className="border-t border-gray-100 dark:border-white/[0.08] pt-3">
-            <button
-              type="button"
-              onClick={() => { if (showDetails) sound.close(); else sound.open(); setShowDetails((v) => !v); }}
-              aria-expanded={showDetails}
-              className="w-full min-h-[44px] flex items-center justify-between gap-2"
-            >
-              <span className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                More details (optional)
-                {!showDetails && filledDetails > 0 && (
-                  <span className="text-[11px] font-medium text-indigo-500 dark:text-indigo-400">· {filledDetails} filled in</span>
+                {/* A pen or a tablet is a fact about the product, so the route is
+                    shown rather than asked for. A name typed by hand has no such
+                    fact, so there the route is chosen. */}
+                {isCustom ? (
+                  <SheetSelect
+                    id="regimen-route"
+                    label="Route"
+                    value={route}
+                    onChange={setRoute}
+                    options={ROUTE_CHOICES}
+                  />
+                ) : (
+                  <SheetField label="Route">
+                    <SheetPickerRow value={routeLabel} placeholder="Not set" />
+                  </SheetField>
                 )}
-              </span>
-              <ChevronDown size={18} className={`text-gray-400 transition-transform ${showDetails ? "rotate-180" : ""}`} />
-            </button>
 
-            {showDetails && (
-              <div className="mt-3 space-y-4">
-                <IndicationField
-                  value={indication}
-                  onChange={setIndication}
-                  other={indicationOther}
-                  onOtherChange={setIndicationOther}
-                  error={errors.indication}
+                <RegimenStartDate
+                  value={startDate}
+                  onChange={(v) => { setStartDate(v); clearError("startDate"); }}
+                  error={errors.startDate}
                 />
 
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <label htmlFor="end-date" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Planned end (optional)
-                    </label>
-                    <ClearFieldButton show={!!plannedEndDate} onClear={() => { setPlannedEndDate(""); clearError("plannedEndDate"); }} />
-                  </div>
-                  <DateInput
-                    id="end-date"
-                    value={plannedEndDate}
-                    onChange={(value) => { setPlannedEndDate(value); clearError("plannedEndDate"); }}
-                    ariaLabel="Planned end"
-                  />
-                  {errors.plannedEndDate && <p className="text-sm font-medium text-red-600 dark:text-red-400 mt-2">{errors.plannedEndDate}</p>}
+                <div className={`${SHEET_DIVIDER} pt-2`}>
+                  <button
+                    type="button"
+                    onClick={toggleDetails}
+                    aria-expanded={showDetails}
+                    className="flex w-full items-center justify-between gap-2 py-3"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className={SHEET_LABEL_TEXT}>
+                        More details (optional)
+                      </span>
+                      {!showDetails && filledDetails > 0 && (
+                        <span className="text-[11px] font-medium text-indigo-500 dark:text-indigo-400">
+                          · {filledDetails} filled in
+                        </span>
+                      )}
+                    </span>
+                    <ChevronDown
+                      size={18}
+                      aria-hidden="true"
+                      className={`text-gray-400 transition-transform ${showDetails ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {showDetails && (
+                    <RegimenDetailsFields
+                      innerRef={detailsRef}
+                      medication={chosenName}
+                      schedule={schedule}
+                      onScheduleChange={(next) => { setSchedule(next); clearError("schedule"); }}
+                      scheduleError={errors.schedule}
+                      indication={indication}
+                      onIndicationChange={setIndication}
+                      indicationOther={indicationOther}
+                      onIndicationOtherChange={setIndicationOther}
+                      indicationError={errors.indication}
+                      doseStep={doseStep}
+                      onDoseStepChange={setDoseStep}
+                      prescriberName={prescriberName}
+                      onPrescriberNameChange={setPrescriberName}
+                      prescriberContact={prescriberContact}
+                      onPrescriberContactChange={setPrescriberContact}
+                      plannedEndDate={plannedEndDate}
+                      onPlannedEndDateChange={(v) => { setPlannedEndDate(v); clearError("plannedEndDate"); }}
+                      plannedEndDateError={errors.plannedEndDate}
+                      notes={notes}
+                      onNotesChange={setNotes}
+                      // A status belongs to a regimen that is already running, so
+                      // it is only offered while editing one.
+                      showStatus={!!editing}
+                      status={status}
+                      onStatusChange={setStatus}
+                    />
+                  )}
                 </div>
+              </>
+            )}
 
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <label htmlFor="dose-step" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Dose step from your doctor (optional)
-                    </label>
-                    <ClearFieldButton show={!!doseStep} onClear={() => setDoseStep("")} />
-                  </div>
-                  <input
-                    id="dose-step"
-                    type="text"
-                    value={doseStep}
-                    autoComplete="off"
-                    onChange={(e) => setDoseStep(e.target.value)}
-                    placeholder="e.g. starter dose"
-                    className={inputClass}
-                  />
-                  <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-1.5">{DOSE_STEP_HELPER}</p>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <label htmlFor="prescriber-name" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Prescriber name
-                    </label>
-                    <ClearFieldButton show={!!prescriberName} onClear={() => setPrescriberName("")} />
-                  </div>
-                  <input
-                    id="prescriber-name"
-                    type="text"
-                    value={prescriberName}
-                    autoComplete="off"
-                    onChange={(e) => setPrescriberName(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <label htmlFor="prescriber-contact" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Prescriber contact
-                    </label>
-                    <ClearFieldButton show={!!prescriberContact} onClear={() => setPrescriberContact("")} />
-                  </div>
-                  <input
-                    id="prescriber-contact"
-                    type="text"
-                    value={prescriberContact}
-                    autoComplete="off"
-                    onChange={(e) => setPrescriberContact(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-
-                {/* Required: one of these is always the status, so tapping the
-                    chosen one again leaves it as it is. */}
-                <OptionChips
-                  label="Status"
-                  options={statusOptionsFor(status)}
-                  value={status}
-                  onChange={setStatus}
-                  required
-                  soundOnSelect
-                  chipClass={STATUS_CHIP_CLASS}
-                  selectedClass={STATUS_SELECTED_CLASS}
-                  unselectedClass={STATUS_UNSELECTED_CLASS}
-                />
-
-                <div>
-                  <label htmlFor="med-notes" className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Notes</label>
-                  <textarea
-                    id="med-notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={3}
-                    className="w-full rounded-xl border border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0] px-3 py-2.5 text-sm outline-none focus:border-indigo-400"
-                  />
+            {/* A medication that is already running: asked about once. */}
+            {dupOpen && (
+              <div
+                ref={dupCardRef}
+                tabIndex={-1}
+                role="alert"
+                aria-live="assertive"
+                className="rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-700 outline-none animate-duplicate-glow dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300"
+              >
+                <p className="font-semibold">You already have {chosenName} active.</p>
+                <p className="mt-1">Add another?</p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => save(true)}
+                    className="btn-pill btn-pill-sm bg-orange-600 text-white"
+                  >
+                    Add another
+                  </button>
+                  <button type="button" onClick={() => setDupOpen(false)} className="btn-pill btn-pill-sm btn-secondary">
+                    Cancel
+                  </button>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        <div className="sticky bottom-0 px-5 pt-3 bg-white dark:bg-[#0f1117] border-t border-gray-100 dark:border-white/[0.08]" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
-          <button onClick={handleSave} disabled={!canSave} aria-disabled={!canSave || undefined}
-            className="w-full min-h-[56px] btn-pill btn-primary font-semibold text-base flex items-center justify-center gap-2">
+        <div
+          className="shrink-0 border-t border-gray-100 bg-white px-5 pt-4 dark:border-white/[0.08] dark:bg-[#0f1117]"
+          style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}
+        >
+          {saveHint && (
+            <p role="status" className={`${SHEET_HINT} mb-2 text-center`}>{saveHint}</p>
+          )}
+          <button
+            type="button"
+            onClick={() => save()}
+            aria-disabled={!canSave || undefined}
+            className="w-full btn-pill btn-primary"
+          >
             {saving ? "Saving…" : editing ? "Update" : "Save"}
           </button>
-          <p className="text-xs text-gray-500 dark:text-[#9A9DAE] text-center mt-2.5 leading-snug">{FOOTER_NOTE}</p>
+          <p className="mt-2.5 text-center text-xs leading-snug text-gray-500 dark:text-[#9A9DAE]">{FOOTER_NOTE}</p>
         </div>
       </div>
     </div>
