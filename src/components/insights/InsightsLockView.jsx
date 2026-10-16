@@ -2,6 +2,7 @@ import React from "react";
 import InsightsSamplePage from "@/components/insights/InsightsSamplePage";
 import InsightTrendArt from "@/components/insights/InsightTrendArt";
 import PremiumLockGroup from "@/components/premium/PremiumLockGroup";
+import PremiumLockFade from "@/components/premium/PremiumLockFade";
 import useScrollLock from "@/hooks/useScrollLock";
 
 /**
@@ -19,8 +20,9 @@ import useScrollLock from "@/hooks/useScrollLock";
  * nothing that needs hiding, and the layer still takes no tap and no focus and is
  * hidden from accessibility tools.
  *
- * The fade is only the last third and, in light mode, a very light tint: it settles
- * the group into the page without washing the cards out.
+ * The fade is only the last third and light — the same tint, at the same strength, as
+ * the Report lock draws (see PremiumLockFade), so both screens settle into the page
+ * the same way without washing the cards out.
  *
  * It is a layer, not a route: the box it is given decides where it sits and how
  * tall it is, so the same thing serves the screen-sized area behind the Insights
@@ -39,22 +41,7 @@ export default function InsightsLockView({ onUnlock, lockScroll = false, classNa
         <InsightsSamplePage />
       </div>
 
-      {/* The fade: transparent for the top two thirds, then the same tint the Report
-          lock settles into — a light lavender, a deep indigo in dark mode. It is one
-          light tint rather than a near-solid wash, so the tiles and the charts above
-          it keep their colour and the strip under it is still readable, and it is the
-          Report lock's own tint so the two screens read as one design. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-transparent via-white/25 to-indigo-50/70 dark:via-indigo-950/30 dark:to-indigo-950/70"
-      />
-      {/* The last stretch of the layer: the sample page is longer than the screen,
-          so it is clipped at the bottom edge, and these few centimetres settle into
-          that tint's solid colour so the cut is never seen. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-indigo-50 dark:to-indigo-950"
-      />
+      <PremiumLockFade />
 
       {/* The group: centred on the box it is given both ways, on its own card (see
           PremiumLockGroup) so its fade-in keeps the transform, and clear of the header

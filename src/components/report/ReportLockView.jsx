@@ -2,6 +2,7 @@ import React from "react";
 import ReportSamplePage from "@/components/report/ReportSamplePage";
 import ReportArt from "@/components/report/ReportArt";
 import PremiumLockGroup from "@/components/premium/PremiumLockGroup";
+import PremiumLockFade from "@/components/premium/PremiumLockFade";
 import useScrollLock from "@/hooks/useScrollLock";
 
 /**
@@ -18,10 +19,10 @@ import useScrollLock from "@/hooks/useScrollLock";
  * is made up for the picture — so a light blur hides nothing that needs hiding, and
  * the layer still takes no tap and no focus and is hidden from accessibility tools.
  *
- * The fade covers the last third only, so the top of the report stays plain to see:
- * a light lavender tint in light mode, a deep indigo in dark mode, and the last
- * stretch settling into that tint's own solid colour so the sample's cut edge is
- * never seen.
+ * The fade covers the last third only, so the top of the report stays plain to see,
+ * and it is light — a lavender tint in light mode, a deep indigo in dark mode — drawn
+ * by the same component the Insights lock uses (see PremiumLockFade), so the two
+ * screens settle into the page at the same strength.
  *
  * It is a layer, not a route: it fills whatever positioned box it is given, so the
  * screen decides where it sits while the layer stays exactly as tall as the area
@@ -38,19 +39,7 @@ export default function ReportLockView({ onUnlock }) {
         <ReportSamplePage />
       </div>
 
-      {/* The fade: transparent for the top two thirds, then the tint arriving
-          through the last one. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-transparent via-white/25 to-indigo-50/70 dark:via-indigo-950/30 dark:to-indigo-950/70"
-      />
-      {/* The last stretch: the sample page is longer than the screen, so it is
-          clipped at the bottom edge, and these few centimetres settle into the
-          tint's solid colour so the cut is never seen. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-indigo-50 dark:to-indigo-950"
-      />
+      <PremiumLockFade />
 
       {/* The group: centred on the screen both ways, on its own card (see
           PremiumLockGroup), with the screen's own 24px kept at the foot. The paper's

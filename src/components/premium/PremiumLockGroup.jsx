@@ -61,7 +61,7 @@ export default function PremiumLockGroup({ art, title, subtitle, onUnlock, frame
       {framed && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_190px_at_50%_180px,rgba(99,102,241,0.20),rgba(99,102,241,0.07)_45%,rgba(99,102,241,0)_76%)] dark:bg-[radial-gradient(120%_190px_at_50%_180px,rgba(99,102,241,0.36),rgba(99,102,241,0.13)_45%,rgba(99,102,241,0)_76%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_190px_at_50%_180px,rgba(99,102,241,0.13),rgba(99,102,241,0.045)_45%,rgba(99,102,241,0)_76%)] dark:bg-[radial-gradient(120%_190px_at_50%_180px,rgba(99,102,241,0.25),rgba(99,102,241,0.09)_45%,rgba(99,102,241,0)_76%)]"
         />
       )}
 
