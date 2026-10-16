@@ -171,7 +171,7 @@ export default function Journal() {
       {/* Category filter chips — icon, colour and text label for each. The
           summary of everything logged sits at the foot of the page, below the
           entries it summarises. */}
-      <div className={`w-full max-w-3xl mx-auto px-4 mb-3 flex flex-wrap gap-2${symptomFilter ? "" : " pt-4"}`}>
+      <div className={`w-full max-w-3xl mx-auto px-4 mb-4 flex flex-wrap gap-2${symptomFilter ? "" : " pt-4"}`}>
         <button onClick={() => selectCategory("All")}
           className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
             filterCat === "All"
@@ -213,7 +213,7 @@ export default function Journal() {
             </div>
           </div>
         ) : (
-          <div className="px-4 space-y-3">
+          <div className="px-4 space-y-4">
             {filtered.map((raw) => {
               const e = normaliseEntry(raw);
               const meta = categoryMeta(e.category);
@@ -259,9 +259,10 @@ export default function Journal() {
         )}
       </div>
 
-      {/* What keeps coming back over the last 30 or 90 days, summarised below the
-          entries it summarises — and below the empty card when there are none. */}
-      <div className="w-full max-w-3xl mx-auto">
+      {/* What keeps coming back over the last 30 or 90 days: the summary of the
+          entries above it, drawn below them — and below the empty card when there
+          are none — with the page's own 16px gap between the two. */}
+      <div className="w-full max-w-3xl mx-auto mt-4">
         <SideEffectsCard />
       </div>
 
