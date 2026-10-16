@@ -1,5 +1,5 @@
 import React from "react";
-import { Syringe, Pill, MoreHorizontal, Settings, CalendarDays, User } from "lucide-react";
+import { Syringe, Pill, MoreHorizontal, Settings, CalendarDays, User, Users } from "lucide-react";
 import IonIcon from "@/components/IonIcon";
 import { ShotsFilledIcon, MedsFilledIcon, MoreFilledIcon } from "@/components/FilledIcons";
 
@@ -19,6 +19,7 @@ export const MORE_ITEMS = [
   { path: "/history", label: "History", description: "Calendar of doses and daily logs", kind: "lucide", Icon: CalendarDays },
   { path: "/medications", label: "Meds", description: "Your regimens and repeat schedules", kind: "meds" },
   { path: "/profile", label: "Profile", description: "Your name, body, goal and prescriber", kind: "lucide", Icon: User },
+  { path: "/shared-with-me", label: "Shared with me", description: "Records other people have shared with you", kind: "lucide", Icon: Users },
   { path: "/settings", label: "Settings", description: "Theme, sounds and your data", kind: "lucide", Icon: Settings },
 ];
 

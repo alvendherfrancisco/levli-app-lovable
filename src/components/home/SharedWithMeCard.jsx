@@ -1,35 +1,63 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Users } from "lucide-react";
+import { Users, X } from "lucide-react";
 import { useAppState } from "@/lib/AppState";
+import { dismissSharedShortcut, undismissedShares } from "@/lib/sharedAccess";
 
 /**
- * The way into the records other people have shared with this account. It is on
- * Home only while at least one share is live — the list itself is read from the
- * backend, which returns nothing the moment access is revoked.
+ * The Home shortcut to the records other people have shared with this account:
+ * one slim row, shown only while somebody has shared something and the row has
+ * not been put away on this device. Tapping it opens the shared records; the X
+ * hides only the shortcut, never the access itself, which stays a tap away on
+ * the More screen.
+ *
+ * The shares themselves are read from the backend, which returns nothing the
+ * moment access is revoked — so the row is also the app's own answer to whether
+ * anything is still shared with this person.
+ *
+ * It sits in the same gutter and wears the same radius as the other Home cards
+ * (the Next shot card and the stats grid both keep 16px at the sides).
  */
 export default function SharedWithMeCard() {
   const { sharedWithMe } = useAppState();
-  if (!sharedWithMe.length) return null;
+  const [hidden, setHidden] = useState(false);
+  // Which shares are still worth showing, read once per change to the list.
+  const shares = useMemo(() => undismissedShares(sharedWithMe), [sharedWithMe]);
+  if (hidden || !shares.length) return null;
 
-  const names = sharedWithMe.map((share) => share.owner_name).join(", ");
+  const names = shares.map((share) => share.owner_name).join(", ");
+  const line = shares.length === 1
+    ? `${names} shared their records with you`
+    : `${shares.length} people shared their records with you`;
+
+  const hide = () => {
+    dismissSharedShortcut(shares[0].id);
+    setHidden(true);
+  };
+
   return (
-    <Link
-      to="/shared-with-me"
-      className="mx-3 mb-4 flex w-[calc(100%-1.5rem)] items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900"
-    >
-      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10">
-        <Users size={16} className="text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold text-gray-700 dark:text-gray-300">Shared with me</p>
-        <p className="truncate text-sm text-gray-500 dark:text-[#9A9DAE]">
-          {sharedWithMe.length === 1
-            ? `${names} shared their records with you`
-            : `${sharedWithMe.length} people shared their records with you`}
-        </p>
-      </div>
-      <ChevronRight size={18} className="flex-shrink-0 text-gray-400" aria-hidden="true" />
-    </Link>
+    <div className="relative mx-4 mb-4">
+      <Link
+        to="/shared-with-me"
+        className="card-line flex items-center gap-2.5 rounded-2xl bg-white py-3 pl-3.5 pr-10 dark:bg-gray-900"
+      >
+        <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10">
+          <Users size={15} className="text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Shared with me</span>
+          <span className="block truncate text-xs text-gray-500 dark:text-[#9A9DAE]">{line}</span>
+        </span>
+      </Link>
+
+      <button
+        type="button"
+        onClick={hide}
+        aria-label="Hide the Shared with me shortcut"
+        className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full text-gray-400 active:scale-95"
+      >
+        <X size={16} aria-hidden="true" />
+      </button>
+    </div>
   );
 }

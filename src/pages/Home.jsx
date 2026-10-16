@@ -58,7 +58,10 @@ export default function Home() {
         </Link>
       </div>
 
-      <div className="w-full max-w-3xl mx-auto pt-4">
+      {/* The room the floating action button needs: the last row of cards can
+          always be scrolled clear of it, so the stats and the weight card are
+          never left sitting under the button. */}
+      <div className="w-full max-w-3xl mx-auto pt-4 pb-16">
         {/* A supply reminder sits at the top of the screen, where the eye lands
             first. It never stops a dose being logged. */}
         <SupplyAlertBanner className="mx-3 mb-4" />
