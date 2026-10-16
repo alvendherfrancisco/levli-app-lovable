@@ -1,6 +1,6 @@
 import React from "react";
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from "recharts";
-import { fullDateLabel, shortDateLabel } from "@/lib/expectedProgress";
+import { fullDateLabel, weekAxisLabel } from "@/lib/expectedProgress";
 
 // The one place the graph's colours are set: the user's own weights, their
 // average, the expected curve and the goal line.
@@ -52,11 +52,16 @@ function ChartTooltip({ active, payload, unitLabel }) {
  * each dot carries a light ring so it stays legible where the two lines cross.
  *
  * The x axis is weeks since the first logged weight, which is where the curve
- * starts; every tick is labelled with the date it lands on.
+ * starts; every tick is labelled with the date it lands on, in the form its range
+ * calls for — dates on a month, months on a longer one.
  */
 export default function WeightProgressChart({
   rows, startKey, windowStart, windowEnd, goal, showCurve, unitLabel, tickFill, ariaLabel,
 }) {
+  // How many days the range on screen covers, which is what the tick labels are
+  // written for.
+  const spanDays = Math.round((windowEnd - windowStart) * 7);
+
   // The y scale is set from everything drawn, the goal included, so the goal is
   // always on screen and the axis does not jump as the range changes.
   const values = [];
@@ -90,7 +95,7 @@ export default function WeightProgressChart({
               type="number"
               domain={[windowStart, windowEnd]}
               tickCount={5}
-              tickFormatter={(week) => shortDateLabel(startKey, week)}
+              tickFormatter={(week) => weekAxisLabel(startKey, week, spanDays)}
               tick={{ fontSize: 12, fill: tickFill }}
               stroke={tickFill}
               tickMargin={6}

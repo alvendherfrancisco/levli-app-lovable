@@ -8,26 +8,32 @@ import { fromKg } from "@/lib/measure";
  *
  * Time is measured in WEEKS FROM THE FIRST LOGGED WEIGHT, which is where the
  * expected curve starts: week 0 is that first entry at 0% loss, and every later
- * week reads that fraction off the curve (see src/lib/expectedCurve.js).
+ * week reads that fraction off the curve (see src/lib/expectedCurve.js). A range
+ * that reaches back further than that first entry therefore begins at a NEGATIVE
+ * week — the axis is always the calendar range the user asked for, and the part
+ * before their first logged weight is simply empty.
  *
- * A row is built for every DAY of the range, so a weight logged mid-week sits on
- * its own day, and the 7-day average is the average of the logged entries either
- * side of it. The window ends today, so the ranges keep meaning "the last 30,
- * 180 or 365 days"; a brand-new history gets two weeks of axis to itself rather
- * than a single point.
+ * A range is that calendar window: the last 30, 180 or 365 days up to today, in
+ * full, whatever the length of the history, so choosing a tab changes the axis
+ * and the entries it carries. The 7-day average is taken over the logged entries
+ * themselves, either side of each one.
  *
  * "Since start" (daysBack null) is the exception: it runs from the first logged
- * weight rather than the last N days, and draws the whole curve to its own last
- * week, so the long view ahead is on screen.
+ * weight rather than the last N days, out to the end of the curve (or to today,
+ * when the user has already gone past it), so the long view ahead is on screen.
  *
  * showCurve (false on the card's 30-day range) drops the expected values
  * altogether: four weeks of a two-year curve is a flat line that adds nothing.
+ *
+ * The expected curve starts at the first logged weight, follows the typical
+ * shape, and flattens at the goal weight from the profile, which is a floor it
+ * never crosses. Where the typical curve ends above the goal it simply stays
+ * above it: it is never stretched down to hit the goal on a date.
  *
  * Values are in the unit the profile displays (kg or lb), so the chart, the
  * tooltip and the goal line are all in one unit.
  */
 const DAY_MS = 86400000;
-const WEEK_MS = 7 * DAY_MS;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** A stored day key ("2026-03-04") as a local date. */
@@ -48,10 +54,19 @@ const dayKeyOf = (d) =>
 
 const round1 = (v) => Math.round(v * 10) / 10;
 
-/** A week offset as the short date the axis shows: "Oct 15". */
-export function shortDateLabel(startKey, week) {
+/**
+ * The date a tick lands on, written the way its range reads: dates ("Oct 15") on
+ * a month or so, months ("Oct") on the longer half-year, and months with their
+ * year ("Oct '26") on a range of a year or more — where the year is what tells
+ * the two ends of the range apart. Every form is short enough to sit under the
+ * axis without being cut off.
+ */
+export function weekAxisLabel(startKey, week, spanDays) {
   const d = dateAtWeek(startKey, week);
-  return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+  const month = MONTHS[d.getMonth()];
+  if (spanDays <= 45) return `${month} ${d.getDate()}`;
+  if (spanDays <= 200) return month;
+  return `${month} '${String(d.getFullYear()).slice(2)}`;
 }
 
 /** A stored day key written out in full: "Oct 12, 2027". */
@@ -76,17 +91,14 @@ export function buildWeightProgress({ weightHistory = [], profile, shots = [], u
   const sinceStart = daysBack == null;
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const todayWeek = Math.max(0, (today - dayOf(first.date)) / WEEK_MS);
-  // "Since start" runs the whole history out to the end of the curve — or to
-  // today, when the user has already gone past it. Every other range is the last
-  // N days, ending today.
-  const startWeek = sinceStart ? 0 : Math.max(0, todayWeek - daysBack / 7);
-  const roughEnd = sinceStart ? Math.max(todayWeek, seriesEnd) : todayWeek;
+  // Days from the first logged weight to today. The day ranges are measured from
+  // today, so this is what a range hangs off — and because a range is a window of
+  // calendar days rather than of history, its start can fall before that first
+  // entry, which is the negative week the axis then begins at.
+  const todayDay = Math.max(0, Math.round((today - dayOf(first.date)) / DAY_MS));
 
-  const startDay = Math.round(startWeek * 7);
-  const endDay = Math.round(Math.max(roughEnd, startWeek + 2) * 7);
-  const windowStart = startDay / 7;
-  const windowEnd = endDay / 7;
+  const startDay = sinceStart ? 0 : todayDay - Math.round(daysBack);
+  const endDay = sinceStart ? Math.max(todayDay, Math.round(seriesEnd * 7)) : todayDay;
 
   const byDay = {};
   weightHistory.forEach((entry) => { byDay[entry.date] = entry.weight; });
@@ -104,20 +116,29 @@ export function buildWeightProgress({ weightHistory = [], profile, shots = [], u
     row.rollingAvg = round1(window.reduce((a, r) => a + r.weight, 0) / window.length);
   });
 
+  // The goal is a floor the curve settles on rather than a date it is stretched
+  // to. A goal at or above the starting weight is not a target the curve can
+  // flatten onto, so it is left out of the comparison.
+  const goalKg = profile?.goal_weight_kg ?? null;
+  const goalBelowStart = goalKg != null && goalKg < first.kg;
+
   if (showCurve) {
     rows.forEach((row) => {
-      if (row.week > seriesEnd) return;
-      row.expected = round1(fromKg(first.kg * (1 - lossFraction(seriesKey, row.week)), unit));
+      // Nothing before the first logged weight, and nothing past the typical
+      // curve's own last week: the curve is never extended beyond its data.
+      if (row.week < 0 || row.week > seriesEnd) return;
+      const kg = first.kg * (1 - lossFraction(seriesKey, row.week));
+      row.expected = round1(fromKg(goalBelowStart ? Math.max(goalKg, kg) : kg, unit));
     });
   }
 
   return {
     seriesKey, seriesEnd, showCurve,
     startKey: first.date,
-    windowStart,
-    windowEnd,
+    windowStart: startDay / 7,
+    windowEnd: endDay / 7,
     rows,
-    goalKg: profile?.goal_weight_kg ?? null,
+    goalKg,
     startKg: first.kg,
     currentKg: last.kg,
     lostKg: first.kg - last.kg,

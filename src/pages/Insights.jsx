@@ -217,18 +217,20 @@ export default function Insights() {
               range hides it, because four weeks of a two-year curve is a flat
               line that adds nothing. */}
           {progress?.showCurve && weightEntries.length > 0 && (
-            <button
-              type="button"
-              role="switch"
-              aria-checked={showExpected}
-              onClick={() => setShowExpected((v) => !v)}
-              className="mb-3 flex min-h-[44px] w-full items-center justify-between gap-3 rounded-xl border border-cardline px-3.5"
-            >
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Expected</span>
-              <span className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${showExpected ? "bg-indigo-600" : "bg-gray-300 dark:bg-white/20"}`}>
-                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${showExpected ? "left-4" : "left-0.5"}`} />
-              </span>
-            </button>
+            <div className="mb-1.5 flex justify-end">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={showExpected}
+                onClick={() => setShowExpected((v) => !v)}
+                className="inline-flex min-h-[32px] items-center gap-2 rounded-full border border-cardline pl-2.5 pr-2 text-[11px] font-medium text-gray-600 dark:text-gray-300"
+              >
+                Expected
+                <span className={`relative h-4 w-7 flex-shrink-0 rounded-full transition-colors ${showExpected ? "bg-indigo-600" : "bg-gray-300 dark:bg-white/20"}`}>
+                  <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all ${showExpected ? "left-3.5" : "left-0.5"}`} />
+                </span>
+              </button>
+            </div>
           )}
 
           {weightEntries.length > 0 ? (
