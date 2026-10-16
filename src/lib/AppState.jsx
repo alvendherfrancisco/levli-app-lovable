@@ -9,6 +9,7 @@ import {
 import { useAuth } from "@/lib/AuthContext";
 import { getIntervalDays, getMedicationConfig } from "@/lib/medicationConfig";
 import { scheduleMatchesMedication } from "@/lib/medicationLink";
+import { suggestedSite } from "@/lib/injectionSites";
 import { readCachedProfile, writeCachedProfile, clearCachedProfile } from "@/lib/profileCache";
 import { resolveProfileRecords } from "@/lib/profileRecords";
 import { perfMark } from "@/lib/perfProbe";
@@ -365,7 +366,7 @@ export function AppStateProvider({ children }) {
   // Nothing is written until the user confirms.
   const confirmRepeatDose = async (schedule, dayKey) => {
     const injectable = ["subcutaneous", "intramuscular", "intradermal"].includes(schedule.route);
-    const shot = buildShotFromSchedule(schedule, dayKey, injectable ? getRecommendedSite() : schedule.site);
+    const shot = buildShotFromSchedule(schedule, dayKey, injectable ? getRecommendedSite(schedule.route) : schedule.site);
     const rec = await addShot(shot);
     await updateRepeatSchedule(schedule.id, { last_confirmed_date: dayKey });
     return rec;
@@ -904,18 +905,9 @@ export function AppStateProvider({ children }) {
     return acc;
   }, {});
 
-  const getRecommendedSite = useCallback(() => {
-    const sites = [
-      "Stomach – Upper Left", "Stomach – Upper Right",
-      "Stomach – Lower Left", "Stomach – Lower Right",
-      "Thigh – Left", "Thigh – Right",
-      "Upper Arm – Left", "Upper Arm – Right",
-    ];
-    if (shots.length === 0) return sites[0];
-    const lastSite = shots[0].site;
-    const lastIdx = sites.indexOf(lastSite);
-    return sites[(lastIdx + 1) % sites.length];
-  }, [shots]);
+  // The site to suggest next for a route: the one that route offers that was used
+  // longest ago, so the rotation keeps moving (src/lib/injectionSites.js).
+  const getRecommendedSite = useCallback((route) => suggestedSite(shots, route), [shots]);
 
   // Repeat doses due today or overdue, awaiting confirmation
   const pendingRepeatDoses = getPendingDoses(repeatSchedules, shots);

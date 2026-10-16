@@ -1,7 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import useModal from "@/hooks/useModal";
-import { siteDisplayName } from "@/lib/injectionSites";
+import { siteLabel } from "@/lib/injectionSites";
 import { FOOTNOTE } from "@/components/insights/insightUi";
 
 /**
@@ -14,7 +14,7 @@ export default function SiteEntriesSheet({ open, site, entries, onClose }) {
 
   if (!open) return null;
 
-  const name = siteDisplayName(site);
+  const name = siteLabel(site);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center px-6">

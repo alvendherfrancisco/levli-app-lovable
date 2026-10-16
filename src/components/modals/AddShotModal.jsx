@@ -23,6 +23,7 @@ import {
   activeRegimensFor, getDoseDefault, getSmartShotDefaults,
 } from "@/lib/shotDefaults";
 import { addDaysToKey } from "@/lib/repeatSchedule";
+import { sitesForRoute } from "@/lib/injectionSites";
 import DoseChips from "@/components/modals/DoseChips";
 import { chipsForMedication, withCustomDose } from "@/lib/doseOptions";
 import { isAboveZero } from "@/lib/formValidity";
@@ -35,31 +36,15 @@ import SheetPickerRow from "@/components/modals/shot/SheetPickerRow";
 import SheetDoseField from "@/components/modals/shot/SheetDoseField";
 import ShotDateTimeFields from "@/components/modals/shot/ShotDateTimeFields";
 import ShotDetailsSection from "@/components/modals/shot/ShotDetailsSection";
+import SitePicker from "@/components/modals/shot/SitePicker";
 import {
   SHEET_CHIP, SHEET_CHIP_OFF, SHEET_CHIP_ON, SHEET_DIVIDER,
-  SHEET_HINT, SHEET_LABEL, SHEET_LABEL_TEXT, siteLabel,
+  SHEET_HINT, SHEET_LABEL, SHEET_LABEL_TEXT,
 } from "@/components/modals/shot/sheetUi";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
 import { sound } from "@/lib/sounds";
 import { onMajorActionCompleted } from "@/lib/appReview";
-
-// SC injection sites
-const scSites = [
-  "Stomach – Upper Left", "Stomach – Upper Right", "Stomach – Lower Left", "Stomach – Lower Right",
-  "Thigh – Left", "Thigh – Right", "Upper Arm – Left", "Upper Arm – Right",
-];
-// IM injection sites
-const imSites = [
-  "Deltoid – Left", "Deltoid – Right", "Vastus Lateralis – Left", "Vastus Lateralis – Right",
-  "Gluindigo – Left", "Gluindigo – Right",
-];
-// Intradermal sites
-const idSites = [
-  "Inner Forearm – Left", "Inner Forearm – Right",
-  "Upper Arm – Left", "Upper Arm – Right",
-  "Upper Back – Left", "Upper Back – Right",
-];
 
 const pad = (n) => String(n).padStart(2, "0");
 function toInputDate(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
@@ -122,7 +107,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const [date, setDate] = useState(toInputDate(now));
   const [time, setTime] = useState(toInputTime(now));
   const [showMedDropdown, setShowMedDropdown] = useState(false);
-  const [showSiteDropdown, setShowSiteDropdown] = useState(false);
+
   const [route, setRoute] = useState("");
   const [deviceType, setDeviceType] = useState("");
   const [saving, setSaving] = useState(false);
@@ -197,7 +182,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const isShot = activeForm ? activeForm === FORM_INJECTION : INJECTABLE_ROUTES.includes(activeRoute);
   // A tablet has no injection to place, so its route and device are not asked for.
   const tabletForm = activeForm ? activeForm === FORM_PILL : ORAL_ROUTES.includes(activeRoute);
-  const siteOptions = activeRoute === "intramuscular" ? imSites : activeRoute === "intradermal" ? idSites : scSites;
+  // The sites the form offers, from the one shared list the rotation card reads
+  // (src/lib/injectionSites.js), so both name and place a site identically.
+  const siteOptions = sitesForRoute(activeRoute);
   const isReconstituted = activeRoute === "reconstituted_vial" || caps?.supports_reconstitution;
 
   // Route and Device type sit inside "More details" and are always offered — the
@@ -225,7 +212,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
         retired: RETIRED_DELIVERY_METHODS.includes(deviceType),
       }]
     : deviceOptions;
-  const recommendedSite = getRecommendedSite();
+  const recommendedSite = getRecommendedSite(activeRoute);
   // A new log opens on the site the rotation suggests, and the row says so.
   const displayedSite = site || recommendedSite;
   const siteIsSuggested = !editingShot && !!recommendedSite && displayedSite === recommendedSite;
@@ -281,7 +268,7 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
     setInsertionDate(toInputDate(n)); setPumpRate(""); setSiteChangeDate(toInputDate(n));
     setReconstitutionDate(""); setInUseExpiry("");
     setDate(toInputDate(n)); setTime(toInputTime(n));
-    setShowMedDropdown(false); setShowSiteDropdown(false);
+    setShowMedDropdown(false);
     setShowDetails(false);
 
     if (editingShot) {
@@ -960,41 +947,18 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                   )}
                 </div>
 
-                {/* Injection site: one row, with the rotation's suggestion
-                    already chosen. */}
+                {/* Injection site: the two figures themselves, with every site
+                    the form offers on them and the rotation's suggestion already
+                    chosen. */}
                 {isInjectable && (
                   <SheetField label="Injection site">
-                    <div className="relative">
-                      <div data-skip-dirty>
-                        <SheetPickerRow
-                          value={siteLabel(displayedSite)}
-                          tappable
-                          onClick={() => setShowSiteDropdown((v) => !v)}
-                          ariaExpanded={showSiteDropdown}
-                          ariaLabel="Injection site"
-                          tag={siteIsSuggested ? (
-                            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">
-                              Suggested
-                            </span>
-                          ) : null}
-                        />
-                      </div>
-                      {showSiteDropdown && (
-                        <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white shadow-lg dark:border-white/[0.08] dark:bg-[#1e2130]">
-                          {siteOptions.map((s) => (
-                            <button
-                              key={s}
-                              type="button"
-                              onClick={() => { sound.tap(); setSite(s); setShowSiteDropdown(false); }}
-                              aria-pressed={site === s}
-                              className={`w-full min-h-[52px] px-4 py-3 text-left text-sm dark:text-[#E8E9F0] ${site === s ? "bg-indigo-50 font-medium text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300" : "hover:bg-gray-50 dark:hover:bg-white/[0.05]"}`}
-                            >
-                              {siteLabel(s)}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <SitePicker
+                      sites={siteOptions}
+                      value={displayedSite}
+                      suggested={siteIsSuggested ? recommendedSite : ""}
+                      shots={shots}
+                      onChange={setSite}
+                    />
                   </SheetField>
                 )}
 

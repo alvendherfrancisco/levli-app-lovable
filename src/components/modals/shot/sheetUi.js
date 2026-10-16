@@ -66,16 +66,3 @@ export const SHEET_DIVIDER = "border-t border-gray-100 dark:border-white/[0.08]"
 
 // A block inside the sheet (a notice, a summary line).
 export const SHEET_BLOCK = "rounded-2xl border border-gray-100 dark:border-white/[0.08] px-3.5 py-3";
-
-/**
- * A site as it reads on screen. The stored value keeps its own wording
- * ("Stomach – Upper Left"); the sheet shows it as one line of running text, so
- * it becomes "Stomach, upper left". Anything in another shape is shown as it is.
- */
-export function siteLabel(site) {
-  if (!site) return "";
-  const parts = site.split(/\s+[–—]\s+/);
-  if (parts.length !== 2) return site;
-  const [area, where] = parts;
-  return `${area}, ${where.charAt(0).toLowerCase()}${where.slice(1)}`;
-}

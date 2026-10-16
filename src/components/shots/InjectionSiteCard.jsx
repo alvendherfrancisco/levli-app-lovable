@@ -9,7 +9,7 @@ import BodyOutline from "@/components/shots/BodyOutline";
 import SiteUsageList from "@/components/shots/SiteUsageList";
 import SiteEntriesSheet from "@/components/shots/SiteEntriesSheet";
 import { FOOTNOTE } from "@/components/insights/insightUi";
-import { mostRecentSite, shotsInSiteWindow, siteSkewHint, siteUsage } from "@/lib/injectionSites";
+import { mostRecentSite, shotsInSiteWindow, siteKey, siteSkewHint, siteUsage } from "@/lib/injectionSites";
 import { useAppState } from "@/lib/AppState";
 import { useSubscription } from "@/lib/SubscriptionContext";
 
@@ -17,12 +17,12 @@ const RANGES = { "7 Days": 7, "30 Days": 30, "90 Days": 90 };
 const NINETY_DAYS = RANGES["90 Days"];
 
 /**
- * Where the shots have been given over the last 7, 30 or 90 days — the panel
- * that used to sit on Insights, now shown under the shot history it describes.
+ * Where the shots went over the last 7, 30 or 90 days — the panel that sits under
+ * the shot history it describes.
  *
- * The body outline is the same drawing whether or not a range has anything to
- * show, and the panel around it keeps one height on every range, so choosing
- * another tab never moves the page; only its contents change.
+ * The figures are centred between equal margins and grow with the card, the tabs
+ * below the header run the full card width so they line up with them, and the
+ * card is only as tall as what it holds: the sites below the body, then the tip.
  */
 export default function InjectionSiteCard() {
   const { shots } = useAppState();
@@ -37,8 +37,10 @@ export default function InjectionSiteCard() {
   // The longer range is offered only where it has something to show.
   const ninetyDays = useMemo(() => shotsInSiteWindow(shots, NINETY_DAYS), [shots]);
 
+  // A row's site is the site's own key (see src/lib/injectionSites.js), so the
+  // entries behind it are the ones filed under that same key.
   const openEntries = (site) =>
-    setOpenSite({ site, entries: entries.filter((s) => s.site === site) });
+    setOpenSite({ site, entries: entries.filter((s) => siteKey(s.site) === site) });
 
   return (
     <InsightCard>
@@ -48,48 +50,48 @@ export default function InjectionSiteCard() {
         title="Injection Site Rotation"
       />
 
-      <RangeTabs variant="segmented" options={Object.keys(RANGES)} value={range} onChange={setRange} className="mb-4" />
+      <RangeTabs options={Object.keys(RANGES)} value={range} onChange={setRange} />
 
       <div className="relative">
         <div className={isPremium ? "" : "blur-sm pointer-events-none select-none opacity-60"}>
-          {/* One height on every range, so the page never jumps between tabs. */}
-          <div className="flex h-[300px] flex-col">
-            <div className="flex h-[150px] shrink-0 items-center justify-center">
-              <BodyOutline usage={usage} recentSite={recentSite} onSelectSite={openEntries} />
-            </div>
-
-            <div className="mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain no-scrollbar">
-              {usage.length === 0 ? (
-                <div className="flex h-full items-center justify-center">
-                  <InsightEmptyState
-                    message="No shots in this range"
-                    action={
-                      ninetyDays.length > 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => setRange("90 Days")}
-                          className="btn-link min-h-[44px] px-2 text-xs"
-                        >
-                          View last 90 days
-                        </button>
-                      ) : null
-                    }
-                  />
-                </div>
-              ) : (
-                <SiteUsageList usage={usage} recentSite={recentSite} onSelectSite={openEntries} />
-              )}
-            </div>
-
-            {/* A suggestion, never a warning: one quiet line, and only when one
-                site is genuinely carrying the rotation. */}
-            {hint && (
-              <p className="mt-2 flex shrink-0 items-center gap-1.5 text-xs text-gray-500 dark:text-[#9A9DAE]">
-                <Info size={13} className="flex-shrink-0" aria-hidden="true" />
-                {hint}
-              </p>
-            )}
+          <div className="mx-auto w-full max-w-[280px]">
+            <BodyOutline
+              usage={usage}
+              recentSite={recentSite}
+              onSelectSite={openEntries}
+              className="h-auto w-full"
+            />
           </div>
+
+          {usage.length === 0 ? (
+            <InsightEmptyState
+              message="No shots in this range"
+              action={
+                ninetyDays.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setRange("90 Days")}
+                    className="btn-link min-h-[44px] px-2 text-xs"
+                  >
+                    View last 90 days
+                  </button>
+                ) : null
+              }
+            />
+          ) : (
+            <div className="mt-4">
+              <SiteUsageList usage={usage} onSelectSite={openEntries} />
+            </div>
+          )}
+
+          {/* A suggestion, never a warning: one quiet line, kept close under the
+              list it is about. */}
+          {hint && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-gray-500 dark:text-[#9A9DAE]">
+              <Info size={13} className="flex-shrink-0" aria-hidden="true" />
+              {hint}
+            </p>
+          )}
         </div>
 
         {!isPremium && (
@@ -103,7 +105,7 @@ export default function InjectionSiteCard() {
         )}
       </div>
 
-      <p className={`mt-4 text-center ${FOOTNOTE}`}>Rotate sites to support absorption and reduce irritation.</p>
+      <p className={`mt-3 text-center ${FOOTNOTE}`}>Rotate sites to support absorption and reduce irritation.</p>
 
       <SiteEntriesSheet
         open={!!openSite}
