@@ -140,7 +140,7 @@ export default function SideEffectsCard() {
         action={
           summary.total > 0 ? (
             <button onClick={() => setLogging(true)} className="btn-pill btn-pill-sm btn-primary flex-shrink-0">
-              Log side effect
+              Log
             </button>
           ) : null
         }
