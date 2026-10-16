@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import useModal from "@/hooks/useModal";
@@ -10,6 +10,31 @@ import useModal from "@/hooks/useModal";
  * rather than inside the card, so it is never clipped by the card's own edges.
  */
 export default function InsightSheet({ open, onClose, title, children }) {
+  // The page's own offset, read while the body is still scrollable: the sheet's
+  // scroll lock pins the body a moment later, so a later read would only ever see
+  // zero. It is put back the instant the sheet closes, because dropping the
+  // sheet's own history entry is what lets the browser restore an offset of its
+  // own — and that is what moved the page when a medication was chosen or the
+  // sheet was dismissed. Declared before useModal, so the offset is read before
+  // that lock is applied.
+  const pageOffset = useRef(0);
+  useEffect(() => {
+    if (!open) return undefined;
+    pageOffset.current = window.scrollY || 0;
+    return () => {
+      const restore = () => window.scrollTo(0, pageOffset.current);
+      // Immediately, then once the entry drop has settled, so the reader's own
+      // offset is the last word. The window is a fifth of a second: a scroll made
+      // in that same instant is put back, and one made after it is left alone.
+      restore();
+      const frame = requestAnimationFrame(restore);
+      const timer = window.setTimeout(() => { cancelAnimationFrame(frame); restore(); }, 200);
+      // Neither is returned: React ignores the return value of a cleanup, and both
+      // writes are harmless if the sheet is opened again before they run.
+      void timer;
+    };
+  }, [open]);
+
   const sheetRef = useModal({ open, onDismiss: onClose });
 
   if (!open) return null;

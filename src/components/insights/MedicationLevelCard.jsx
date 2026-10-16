@@ -143,9 +143,13 @@ export default function MedicationLevelCard() {
       </p>
       <p className={`mt-1.5 ${FOOTNOTE}`}>{DISCLAIMER}</p>
 
-      <button type="button" onClick={() => setHowOpen(true)} className="btn-link mt-2 text-sm">
-        How this works
-      </button>
+      {/* Centred on the card's own axis: the row takes the full width and the
+          link keeps its colour, weight and size. */}
+      <div className="mt-2 flex justify-center">
+        <button type="button" onClick={() => setHowOpen(true)} className="btn-link text-sm">
+          How this works
+        </button>
+      </div>
 
       <MedicationLevelHowItWorks open={howOpen} onClose={() => setHowOpen(false)} />
     </InsightCard>

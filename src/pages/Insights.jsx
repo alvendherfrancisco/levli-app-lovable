@@ -166,6 +166,11 @@ export default function Insights() {
       </div>
 
       <div className="w-full max-w-3xl mx-auto pt-4">
+        {/* The gentle prescriber check-in, at the head of the page so it is read
+            before the numbers it is read beside. It draws nothing at all unless a
+            safeguard is active. */}
+        <WellbeingPanel />
+
         {/* Weight Change Panel */}
         <InsightCard id="weight-change" className="overflow-hidden scroll-mt-24">
           <SectionHeader
@@ -276,11 +281,6 @@ export default function Insights() {
             level today, the days behind it and the forecast ahead. It sits
             directly under the weight it is read beside. */}
         <MedicationLevelCard />
-
-        {/* The gentle check-in, when the weight trend itself calls for one. It
-            draws nothing at all unless a safeguard is active, and sits directly
-            above the side effects it belongs beside. */}
-        <WellbeingPanel />
 
         {/* What keeps coming back over the last 30 or 90 days — logged in one
             place, read here, under the weight and the check-in it sits beside. */}
