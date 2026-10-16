@@ -190,7 +190,7 @@ export default function Insights() {
         {header}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <WellbeingPanel />
-          <InsightsLockView onUnlock={openPaywall} className="min-h-0 flex-1" />
+          <InsightsLockView onUnlock={openPaywall} lockScroll className="min-h-0 flex-1" />
         </div>
       </div>
     );

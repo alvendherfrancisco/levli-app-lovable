@@ -1,6 +1,6 @@
 import React from "react";
 import SiteRotationArt from "@/components/shots/SiteRotationArt";
-import { HEADING, PRIMARY_BTN, PRIMARY_BTN_ON, SUBTITLE } from "@/lib/uiStyles";
+import PremiumLockGroup from "@/components/premium/PremiumLockGroup";
 
 /**
  * The lock over the rotation chart while Levli Premium is not active.
@@ -10,14 +10,18 @@ import { HEADING, PRIMARY_BTN, PRIMARY_BTN_ON, SUBTITLE } from "@/lib/uiStyles";
  * seen through it at the top and the words below sit straight on the card. No
  * border, no panel, no second surface.
  *
- * The content is the onboarding's own page in miniature — its artwork slot, its
- * headline type, one muted line, and its main button, 16px apart, with the
- * illustration 120px wide and a purple glow behind it — so the locked chart reads
- * as the next step of the same flow rather than a barrier.
+ * The group itself is the app's one lock group (see PremiumLockGroup) — the same
+ * artwork slot, the same headline and muted line, the same main button and the
+ * same terms line as the Report and Insights locks — so the three read as one
+ * thing met in three places rather than three designs. Rotation is free, so the
+ * lock is not about this chart: it points at Premium as a whole, and the line
+ * under the headline is the set of benefits the paywall lists.
  *
  * There is no way to put it away: the preview stays visible behind it so the
- * feature can be seen for what it is, and it takes no tap and no scroll of its own
- * (see LockedSitesPreview). The only action is the way into the plans.
+ * feature can be seen for what it is, and it takes no tap of its own on the chart
+ * below (see LockedSitesPreview). The only action is the way into the plans — and
+ * because this one sits inside a page that must keep scrolling, it deliberately
+ * leaves the page alone (see src/hooks/useScrollLock.js).
  */
 export default function SiteRotationLock({ onUnlock }) {
   return (
@@ -27,19 +31,13 @@ export default function SiteRotationLock({ onUnlock }) {
         className="absolute inset-0 bg-gradient-to-b from-transparent via-white/75 to-white dark:via-gray-900/75 dark:to-gray-900"
       />
 
-      {/* One column, the width the onboarding's own step content has, so the
-          illustration, the words and the button stay a group on a wide card
-          instead of stretching across it. */}
-      <div className="relative flex w-full max-w-[320px] flex-col items-center pb-6 text-center">
-        <SiteRotationArt />
-        {/* The lock points at Premium as a whole rather than naming this chart
-            as one of its benefits: rotation is free, and what Premium carries is
-            the set of benefits the paywall lists. */}
-        <h3 className={`${HEADING} mt-4`}>More with Levli Premium</h3>
-        <p className={`${SUBTITLE} mt-4 whitespace-nowrap`}>Reports, insights and full history</p>
-        <button type="button" onClick={onUnlock} className={`${PRIMARY_BTN} ${PRIMARY_BTN_ON} mt-4`}>
-          Unlock
-        </button>
+      <div className="relative w-full px-4">
+        <PremiumLockGroup
+          art={<SiteRotationArt />}
+          title="More with Levli Premium"
+          subtitle="Reports, insights and full history"
+          onUnlock={onUnlock}
+        />
       </div>
     </div>
   );

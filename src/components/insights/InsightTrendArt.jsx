@@ -17,20 +17,25 @@ import useDoseColors from "@/hooks/useDoseColors";
  * fading to nothing on every side, so it has no edge to be seen. The card in the
  * middle of it is part of the drawing, not a frame for it.
  *
- * 112px wide, as the lock asks for. Nothing on it is the person's own data — it is
- * a drawing of a dashboard, not a dashboard.
+ * `size` is the box the drawing is scaled into — 120px, the slot every lock
+ * illustration is drawn in (see PremiumLockGroup) — and the glow behind it scales
+ * with it, so the artwork is the same size in the group wherever it is shown.
+ * Nothing on it is the person's own data — it is a drawing of a dashboard, not a
+ * dashboard.
  */
 const CARD_LIGHT = "#FFFFFF";
 const CARD_DARK = "#242842";
 
-export default function InsightTrendArt() {
+export default function InsightTrendArt({ size = 120 }) {
   const { isDark } = useDoseColors();
 
   return (
-    <div className="relative mx-auto h-[112px] w-[112px]" aria-hidden="true">
+    <div className="relative mx-auto" style={{ width: size, height: size }} aria-hidden="true">
       <div
-        className="absolute left-1/2 top-1/2 h-[190px] w-[190px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
+          width: Math.round(size * 1.7),
+          height: Math.round(size * 1.7),
           background: isDark
             ? "radial-gradient(closest-side, rgba(99,102,241,0.38), rgba(99,102,241,0))"
             : "radial-gradient(closest-side, rgba(139,92,246,0.22), rgba(139,92,246,0))",

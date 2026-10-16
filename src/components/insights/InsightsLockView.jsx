@@ -1,11 +1,14 @@
 import React from "react";
 import InsightsSamplePage from "@/components/insights/InsightsSamplePage";
-import InsightsLockGroup from "@/components/insights/InsightsLockGroup";
+import InsightTrendArt from "@/components/insights/InsightTrendArt";
+import PremiumLockGroup from "@/components/premium/PremiumLockGroup";
+import useScrollLock from "@/hooks/useScrollLock";
 
 /**
  * The whole locked Insights page, in one layer: the sample page (see
  * InsightsSamplePage) under a light blur, one soft fade over its last third, and
- * the one lock group sitting below the middle of the screen, over that fade.
+ * the one lock group sitting below the middle of the screen, over that fade (see
+ * PremiumLockGroup — the same group the Report screen and the rotation card show).
  *
  * The blur is deliberately light — about 3.5px — so the cards behind it still read
  * as themselves: the weight line, the Expected toggle, the tinted stat tiles, the
@@ -22,8 +25,14 @@ import InsightsLockGroup from "@/components/insights/InsightsLockGroup";
  * It is a layer, not a route: the box it is given decides where it sits and how
  * tall it is, so the same thing serves the screen-sized area behind the Insights
  * header and the rounded card a caregiver reads. Nothing inside it scrolls.
+ *
+ * `lockScroll` holds the page behind it still, and only the screen-sized use asks
+ * for it: the rounded card on "Shared with me" sits in a page that must keep
+ * scrolling, so it leaves the page alone (see src/hooks/useScrollLock.js).
  */
-export default function InsightsLockView({ onUnlock, className = "" }) {
+export default function InsightsLockView({ onUnlock, lockScroll = false, className = "" }) {
+  useScrollLock(lockScroll);
+
   return (
     <div className={`relative overflow-hidden ${className}`}>
       <div aria-hidden="true" className="pointer-events-none select-none blur-[3.5px]">
@@ -47,12 +56,15 @@ export default function InsightsLockView({ onUnlock, className = "" }) {
       />
 
       {/* The group: centred on the screen's own axis, held a step below the middle
-          (the top padding is what moves it, so the fade-in below can own the
-          transform), clear of the header and of the safe area at the foot. */}
-      <div className="absolute inset-0 flex items-center justify-center px-4 pt-[18vh]">
-        <div className="lock-group-in flex w-full justify-center">
-          <InsightsLockGroup onUnlock={onUnlock} />
-        </div>
+          (the top padding is what moves it, so the group's own fade-in keeps the
+          transform), clear of the header above and of the safe area at the foot. */}
+      <div className="absolute inset-0 flex items-center justify-center px-4 pb-6 pt-[14vh]">
+        <PremiumLockGroup
+          art={<InsightTrendArt />}
+          title="See your whole journey"
+          subtitle="Track every trend and photo"
+          onUnlock={onUnlock}
+        />
       </div>
     </div>
   );
