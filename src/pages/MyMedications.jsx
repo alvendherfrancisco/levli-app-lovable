@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Settings, Pill, Archive, ChevronDown } from "lucide-react";
+import { Settings, Pill, ChevronDown } from "lucide-react";
 import { HEADER_ICON, HEADER_GLYPH } from "@/components/longlist/HeaderIconButton";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
@@ -13,56 +13,90 @@ import RepeatScheduleModal from "@/components/modals/RepeatScheduleModal";
 import LinkShotsToMedsCard from "@/components/medications/LinkShotsToMedsCard";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { shotsOfMedication } from "@/lib/medicationLink";
+import { plainBrandName } from "@/lib/medicationConfig";
+import { logWords } from "@/lib/medicationForm";
 import { toast } from "@/lib/toast";
 
+/** A regimen saved before statuses existed counts as the ordinary active one. */
+const medStatus = (m) => m.status || "active";
+
+/**
+ * My Medications — the regimens themselves, in three parts: what is being taken
+ * now, what has been paused or stopped, and what has been archived.
+ *
+ * The ⋯ menu on a card is where the two decisions live, and they never mix:
+ *
+ *   Archive  hides the regimen — off Home, out of the shot pickers, out of
+ *            Insights — and keeps every record it has. It can be restored from
+ *            the Archived section, which is folded away at the bottom.
+ *   Delete   removes the regimen and everything that belongs to it: its logged
+ *            doses, its reminders and the side effects logged against it.
+ *
+ * Each one is confirmed in a dialog that names the medication and says exactly
+ * what will happen; the delete dialog offers the archive in its place.
+ */
 export default function MyMedications() {
-  const { medications, deleteMedication, archiveMedication, shots, repeatSchedules } = useAppState();
+  const { medications, deleteMedication, archiveMedication, restoreMedication, shots, repeatSchedules } = useAppState();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
-  // { medication, archive, count } — what the confirmation is about to do.
+  // { kind: "archive" | "delete", medication, count } — what the dialog is about.
   const [confirming, setConfirming] = useState(null);
   // The regimens that have finished stay out of the way until they are asked for.
   const [showPast, setShowPast] = useState(false);
+  // So do the archived ones.
+  const [showArchived, setShowArchived] = useState(false);
 
   const openNew = () => { setEditing(null); setModalOpen(true); };
   const openEdit = (m) => { setEditing(m); setModalOpen(true); };
 
-  // What is being taken now comes first; paused, stopped and archived regimens
-  // sit together underneath. A regimen saved before statuses existed counts as
-  // active.
-  const activeMeds = useMemo(
-    () => medications.filter((m) => (m.status || "active") === "active"),
-    [medications]
-  );
+  const activeMeds = useMemo(() => medications.filter((m) => medStatus(m) === "active"), [medications]);
   const pastMeds = useMemo(
-    () => medications.filter((m) => (m.status || "active") !== "active"),
+    () => medications.filter((m) => !["active", "archived"].includes(medStatus(m))),
     [medications]
   );
+  const archivedMeds = useMemo(() => medications.filter((m) => medStatus(m) === "archived"), [medications]);
 
-  // A medication that has shot logs is archived, never removed: the history it
-  // belongs to stays exactly where it is. Only a medication with no logs can be
-  // deleted for good.
-  const requestDelete = (m) => {
-    const count = shotsOfMedication(shots, m).length;
-    setConfirming({ medication: m, archive: count > 0, count });
-  };
+  const askArchive = (m) => setConfirming({ kind: "archive", medication: m });
+  // How much history a deletion would take with it, counted from the logs the
+  // medication actually owns.
+  const askDelete = (m) => setConfirming({ kind: "delete", medication: m, count: shotsOfMedication(shots, m).length });
 
-  // The dialog keeps its spinner up while the change is written, then closes on
-  // success — the toast is the confirmation that it landed.
   const handleConfirm = async () => {
     const target = confirming;
     if (!target) return;
-    if (target.archive) {
-      await archiveMedication(target.medication.id);
-      toast.success(`${target.medication.medication_name} archived — your shot history is kept`);
-    } else {
-      await deleteMedication(target.medication.id);
-      toast.deleted("Medication removed");
+    try {
+      if (target.kind === "archive") {
+        await archiveMedication(target.medication.id);
+        toast.success(`${plainBrandName(target.medication.medication_name)} archived. Its records are kept.`);
+      } else {
+        await deleteMedication(target.medication.id);
+        toast.deleted("Medication and its records deleted");
+      }
+      setConfirming(null);
+    } catch (err) {
+      toast.error(target.kind === "archive" ? "Could not archive that medication" : "Could not delete that medication");
     }
-    setConfirming(null);
   };
+
+  const handleRestore = async (m) => {
+    try {
+      await restoreMedication(m.id);
+      toast.success(`${plainBrandName(m.medication_name)} is back on your schedule`);
+    } catch (err) {
+      toast.error("Could not restore that medication");
+    }
+  };
+
+  // The dialog's own words, built from the medication in hand.
+  const deleting = confirming?.kind === "delete";
+  const words = confirming ? logWords(confirming.medication.medication_name, { route: confirming.medication.route }) : null;
+  const dialogMessage = !confirming ? "" : deleting
+    ? (confirming.count === 0
+      ? "This permanently deletes the medication. This can't be undone."
+      : `This permanently deletes the medication and its ${confirming.count} logged ${words.many}. This can't be undone.`)
+    : "It will be hidden from your schedule and shot pickers. Your records stay in your history. You can restore it anytime.";
 
   return (
     <PageContainer bottomInset="fab" disclaimer>
@@ -73,7 +107,7 @@ export default function MyMedications() {
         </Link>
       </div>
 
-      <div className="max-w-3xl mx-auto pt-4 px-4">
+      <div className="w-full max-w-3xl mx-auto pt-4 px-4">
         <LinkShotsToMedsCard />
         {repeatSchedules.filter((s) => s.status !== "cancelled").length > 0 && (
           <div className="mb-5">
@@ -103,12 +137,16 @@ export default function MyMedications() {
             {/* What is being taken now. */}
             <div className="space-y-3">
               {activeMeds.map((m) => (
-                <MedicationListCard key={m.id} medication={m} onEdit={openEdit} onDelete={requestDelete} />
+                <MedicationListCard
+                  key={m.id}
+                  medication={m}
+                  onOpen={openEdit}
+                  onArchive={askArchive}
+                  onDelete={askDelete}
+                />
               ))}
               {activeMeds.length === 0 && (
-                <p className="text-sm text-gray-400 dark:text-gray-500 px-1">
-                  Nothing active right now — everything below has been paused or stopped.
-                </p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 px-1">Nothing active right now.</p>
               )}
             </div>
 
@@ -127,7 +165,42 @@ export default function MyMedications() {
                 {showPast && (
                   <div className="space-y-3 mt-2">
                     {pastMeds.map((m) => (
-                      <MedicationListCard key={m.id} medication={m} onEdit={openEdit} onDelete={requestDelete} />
+                      <MedicationListCard
+                        key={m.id}
+                        medication={m}
+                        onOpen={openEdit}
+                        onArchive={askArchive}
+                        onDelete={askDelete}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Archived: hidden from the schedule and the pickers, kept in full.
+                Every one of them can be put back with Restore. */}
+            {archivedMeds.length > 0 && (
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowArchived((v) => !v)}
+                  aria-expanded={showArchived}
+                  className="w-full flex items-center justify-between gap-2 py-2 text-[13px] font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9A9DAE]"
+                >
+                  <span>Archived ({archivedMeds.length})</span>
+                  <ChevronDown size={16} aria-hidden="true" className={showArchived ? "" : "-rotate-90"} />
+                </button>
+                {showArchived && (
+                  <div className="space-y-3 mt-2">
+                    {archivedMeds.map((m) => (
+                      <MedicationListCard
+                        key={m.id}
+                        medication={m}
+                        onOpen={openEdit}
+                        onDelete={askDelete}
+                        onRestore={handleRestore}
+                      />
                     ))}
                   </div>
                 )}
@@ -148,19 +221,27 @@ export default function MyMedications() {
 
       <ConfirmDialog
         open={!!confirming}
-        tone={confirming?.archive ? "neutral" : "destructive"}
-        icon={confirming?.archive ? Archive : undefined}
-        title={confirming?.archive ? "Archive this medication?" : "Delete this medication?"}
-        message={confirming
-          ? (confirming.archive
-            ? <><strong className="font-semibold text-gray-900 dark:text-white">{confirming.medication.medication_name}</strong> will stop appearing on your schedule and in your shot pickers. Your {confirming.count} shot log{confirming.count === 1 ? "" : "s"} stay in your history.</>
-            : <><strong className="font-semibold text-gray-900 dark:text-white">{confirming.medication.medication_name}</strong> has no shot logs, so nothing else is affected.</>)
-          : undefined}
-        confirmLabel={confirming?.archive ? "Archive" : "Delete"}
-        cancelLabel={confirming?.archive ? "Keep active" : "Keep it"}
+        showIcon={false}
+        tone={deleting ? "destructive" : "neutral"}
+        title={confirming ? `${deleting ? "Delete" : "Archive"} ${confirming.medication.medication_name}?` : ""}
+        message={dialogMessage}
+        confirmLabel={deleting ? "Delete" : "Archive"}
+        cancelLabel="Cancel"
         onConfirm={handleConfirm}
         onCancel={() => setConfirming(null)}
-      />
+      >
+        {/* Removing a medication for good is a big thing to do on purpose; the
+            archive does the same job without losing a single record. */}
+        {deleting && (
+          <button
+            type="button"
+            onClick={() => setConfirming((c) => ({ ...c, kind: "archive" }))}
+            className="mt-3 text-sm font-semibold text-indigo-600 underline dark:text-indigo-400"
+          >
+            Archive instead
+          </button>
+        )}
+      </ConfirmDialog>
     </PageContainer>
   );
 }

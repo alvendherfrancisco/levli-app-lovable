@@ -77,7 +77,10 @@ export function levelCurveFor(medication, shots = []) {
  * account sees the card — and its example curve — rather than nothing.
  */
 export function levelMedicationOptions({ medications = [], shots = [], profile = null }) {
+  // An archived regimen is off the schedule and out of the shot pickers, so it is
+  // not offered here either. Its logged doses stay in History and in the reports.
   const supported = medications
+    .filter((m) => (m.status || "active") !== "archived")
     .filter((m) => levelCurveFor(m, shots))
     .map((m) => ({ id: m.id || m.medication_name, name: m.medication_name, medication: m }));
   if (supported.length || medications.length) return supported;

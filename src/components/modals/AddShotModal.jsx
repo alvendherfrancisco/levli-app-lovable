@@ -88,7 +88,9 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   // The optional fields, so opening their section can bring them into view.
   const detailsRef = useRef(null);
 
-  const defaultMed = profile?.default_medication || "Ozempic®";
+  // Only a medication the account itself answers to is used as a default; nothing
+  // is ever prefilled with a product the person did not choose.
+  const defaultMed = profile?.default_medication || "";
   const now = new Date();
 
   // Not set until it is moved: 0 is then a deliberate "no pain" rather than

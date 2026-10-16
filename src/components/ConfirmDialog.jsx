@@ -54,6 +54,9 @@ export default function ConfirmDialog({
   open, title, message,
   confirmLabel = "Confirm", cancelLabel = "Keep it",
   tone, destructive = false, icon: IconProp, busy = false,
+  // A question about a named thing reads better without a badge over it — the
+  // title carries the whole message. Those callers pass showIcon={false}.
+  showIcon = true,
   onConfirm, onCancel, children,
 }) {
   const resolved = TONES[tone] ? tone : (destructive ? "destructive" : "neutral");
@@ -119,11 +122,13 @@ export default function ConfirmDialog({
         tabIndex={-1}
         className="confirm-card relative w-full min-w-0 max-w-[360px] overflow-x-hidden sheet-lock rounded-[20px] border border-gray-200 bg-white p-6 shadow-2xl outline-none dark:border-white/10 dark:bg-[#16181f] dark:shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
       >
-        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${badge}`}>
-          <Icon size={24} aria-hidden="true" />
-        </div>
+        {showIcon && (
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${badge}`}>
+            <Icon size={24} aria-hidden="true" />
+          </div>
+        )}
 
-        <h2 id={`${uid}-title`} className="text-lg font-bold text-gray-900 dark:text-white mt-4 break-words">
+        <h2 id={`${uid}-title`} className={`text-lg font-bold text-gray-900 dark:text-white break-words ${showIcon ? "mt-4" : ""}`}>
           {title}
         </h2>
         {message && (

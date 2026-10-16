@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Syringe } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Syringe, Pill } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
 import { plainBrandName } from "@/lib/medicationConfig";
-import { logWords } from "@/lib/medicationForm";
 import { medicationSummaries, isActiveMedication } from "@/lib/medicationLink";
 import MedicationShotCard from "@/components/home/MedicationShotCard";
 import MedicationStatusNote from "@/components/home/MedicationStatusNote";
@@ -40,24 +40,31 @@ export default function NextShotCard({ onLogPastShot }) {
     setStopping(false);
   };
 
-  if (running.length === 0 && halted.length === 0) {
-    // Nothing is logged for this account yet. The one line names the medication
-    // the account was set up around, and speaks of doses for a product taken by
-    // mouth — "shot" only ever means an injection.
-    const known = running[0]?.medication || halted[0]?.medication || medications[0] || null;
-    const name = known?.medication_name || profile?.default_medication || "";
-    const words = logWords(name, { route: known?.route });
-
+  // Nothing is running: either no medication has been added yet, or every one of
+  // them has been paused, stopped or archived. The card offers the one thing that
+  // helps here — adding what is being taken now — and any medication that is
+  // logged but not running is shown underneath for what it is.
+  if (running.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 card-line mx-4 mb-4">
-        <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-2">Next {words.One}</p>
-        <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-3 flex items-start gap-2">
-          <Syringe size={18} className="text-indigo-500 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-indigo-700 dark:text-indigo-300">
-            No {words.many} recorded yet{name ? ` for ${name}` : ""}.
-          </p>
+      <>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 card-line mx-4 mb-4">
+          <p className="text-sm text-gray-400 dark:text-[#9A9DAE] mb-2">Next dose</p>
+          <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-3 flex items-start gap-2">
+            <Syringe size={18} className="text-indigo-500 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-indigo-700 dark:text-indigo-300">No medication is scheduled right now.</p>
+          </div>
+          <Link to="/medications" className="btn-pill btn-secondary mt-3 w-full">
+            <Pill size={16} aria-hidden="true" /> Add a medication
+          </Link>
         </div>
-      </div>
+        {halted.map((summary) => (
+          <MedicationStatusNote
+            key={summary.medication.id || summary.medication.medication_name}
+            medication={summary.medication}
+            totalShots={summary.totalShots}
+          />
+        ))}
+      </>
     );
   }
 

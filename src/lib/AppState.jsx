@@ -33,7 +33,9 @@ const DEFAULT_PROFILE = {
   unit_check_status: "", units_migrated_at: "",
   days_between: "7",
   liquid_unit: "oz", height_unit: "in", weight_unit: "lb",
-  default_medication: "Ozempic®", dark_mode: false,
+  // No medication is named on a new account: it is filled in from what the person
+  // answers, and Meds stays empty until they add something themselves.
+  default_medication: "", dark_mode: false,
   birthdate: "", gdpr_consent_date: "", gdpr_privacy_policy_version: "",
   age_confirmed_at: "",
   parental_consent_date: "", parental_consent_name: "",
@@ -735,6 +737,19 @@ export function AppStateProvider({ children }) {
     return rec;
   };
 
+  // Restoring puts an archived regimen back where it was — on Home, in the shot
+  // pickers and in Insights. Nothing about its history was ever touched, so there
+  // is nothing to bring back with it.
+  const restoreMedication = async (id) => {
+    const rec = await base44.entities.Medication.update(id, {
+      status: "active",
+      archived_date: "",
+      discontinued_date: "",
+    });
+    setMedications((prev) => prev.map((m) => m.id === id ? { ...m, ...rec } : m));
+    return rec;
+  };
+
   // A dose typed through "Other" is remembered on the medication itself, so it
   // is offered as a chip next time that medication is logged.
   const addMedicationCustomDose = async (medicationId, dose) => {
@@ -745,9 +760,25 @@ export function AppStateProvider({ children }) {
     await updateMedication(medicationId, { custom_doses: next });
   };
 
+  // Deleting takes the regimen and everything that belongs to it: its logged
+  // doses, its reminders, the side effects logged against it and any old stock row
+  // pointing at it. The server removes the lot in one call, so nothing is left
+  // orphaned; the screens are updated here, so no total, chart or level card goes
+  // on counting what has gone.
   const deleteMedication = async (id) => {
-    await base44.entities.Medication.delete(id);
+    const med = medications.find((m) => m.id === id) || null;
+    const res = await base44.functions.invoke("deleteMedication", { medicationId: id });
+    const reply = res?.data || {};
+    if (reply.error) throw new Error(reply.message || reply.error);
+
     setMedications((prev) => prev.filter((m) => m.id !== id));
+    if (!med) return;
+    // The same rule the lists use to read a row: by the link when it has one, by
+    // the name it was recorded under otherwise.
+    const belongs = (row) => (row.medication_id ? row.medication_id === id : row.medication === med.medication_name);
+    setShots((prev) => prev.filter((s) => !belongs(s)));
+    setRepeatSchedules((prev) => prev.filter((s) => !belongs(s)));
+    setAdverseEvents((prev) => prev.filter((e) => e.medication_name !== med.medication_name));
   };
 
   // Links existing shot logs to a medication record, so every shot points at
@@ -1025,7 +1056,7 @@ export function AppStateProvider({ children }) {
       journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry,
       // Medications (regimen)
       medications, addMedication, updateMedication, deleteMedication, linkShotsToMedication, stopMedication,
-      archiveMedication, addMedicationCustomDose,
+      archiveMedication, restoreMedication, addMedicationCustomDose,
       // Canonical measurements + one-time unit check
       weightUnit: wDisplayUnit, heightCm: heightCmOf(profile), getWeightKg, unitCheck,
       convertAssumedKg, undoUnitConversion, keepWeightsAsLogged,

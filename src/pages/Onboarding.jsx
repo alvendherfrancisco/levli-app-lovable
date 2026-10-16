@@ -10,7 +10,7 @@ import {
   PrivacyIllustration,
   CompletionIllustration,
 } from "@/components/onboarding/OnboardingIllustrations";
-import MedicationStep, { MED_OPTIONS } from "@/components/onboarding/MedicationStep";
+import MedicationStep from "@/components/onboarding/MedicationStep";
 import OnboardingArt from "@/components/onboarding/OnboardingArt";
 import DateField from "@/components/DateField";
 import TrackingStep from "@/components/onboarding/TrackingStep";
@@ -23,11 +23,10 @@ import {
   firstNameFromUser,
 } from "@/lib/onboardingDraft";
 import ScheduleStep from "@/components/onboarding/ScheduleStep";
-import { CUSTOM_MEDICATION_NAME, getDoseUnit, getMedicationConfig } from "@/lib/medicationConfig";
-import { NAME_TO_ENTRY, getMolecularClass } from "@/lib/medicationCatalogue";
+import { CUSTOM_MEDICATION_NAME } from "@/lib/medicationConfig";
 import { toDayKey } from "@/lib/dateUtils";
 import {
-  emptySchedule, getDayInterval, medicationScheduleFields, validateScheduleSelection,
+  emptySchedule, getDayInterval, validateScheduleSelection,
 } from "@/lib/medicationSchedule";
 import { Check, ClipboardList, Settings2, ShieldCheck } from "lucide-react";
 import { useEmailVerification } from "@/hooks/useEmailVerification";
@@ -62,7 +61,7 @@ const PRIVACY_POINTS = [
 export default function Onboarding() {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
-  const { setProfile, profile, medications, addMedication } = useAppState();
+  const { setProfile, profile } = useAppState();
   const { user, isLoadingAuth } = useAuth();
 
   const [selectedMeds, setSelectedMeds] = useState([]);
@@ -196,7 +195,6 @@ export default function Onboarding() {
   // The primary medication, and what is still missing from its schedule. Only
   // the controls the chosen frequency shows are ever required.
   const primaryMedication = selectedMeds[0] || "";
-  const doseUnit = getDoseUnit(primaryMedication);
   const scheduleIssue = validateScheduleSelection({
     medication: primaryMedication,
     kind: schedule.kind,
@@ -253,40 +251,18 @@ export default function Onboarding() {
     // Completion — one save carries the consent and the rest of the profile, so
     // the consent record is never written separately (or lost) on the way.
     const chosen = selectedMeds[0] || "";
-    const realMed = chosen && chosen !== CUSTOM_MEDICATION_NAME ? chosen : "";
-    let defaultMed = realMed || "Ozempic®";
-    if (!realMed && MED_OPTIONS.some((o) => o.value === chosen && String(o.generic).toLowerCase() === "tirzepatide")) {
-      defaultMed = "Zepbound®";
-    }
+    // Only what was actually chosen: an account that picked "Other" carries no
+    // medication name at all until one is added in Medications.
+    const defaultMed = chosen && chosen !== CUSTOM_MEDICATION_NAME ? chosen : "";
 
     const intervalDays = getDayInterval(schedule);
     const daysBetween = intervalDays ? String(intervalDays) : "7";
     const weightOptedIn = tracking.includes("weight");
 
-    // The primary medication itself is created once, here, from what was just
-    // answered — one record for the one medication onboarding asked about, and
-    // none at all when "Other" was picked (that name is added in Medications).
-    // If a record for it already exists, it is left exactly as it is.
-    if (realMed && !medications.some((m) => m.medication_name === realMed)) {
-      const doseValue = Number(String(doseAmount).trim());
-      await addMedication({
-        medication_name: realMed,
-        catalogue_id: NAME_TO_ENTRY[realMed]?.id || "",
-        generic_name: getMedicationConfig(realMed)?.genericName || "",
-        molecular_class: getMolecularClass(realMed) || "",
-        route: getMedicationConfig(realMed)?.route || "",
-        ...(Number.isFinite(doseValue) && doseValue > 0
-          ? { prescribed_dose: doseValue, dose_unit: doseUnit }
-          : {}),
-        ...medicationScheduleFields(schedule),
-        start_date: schedule.kind === "every_x_days" && schedule.startDate
-          ? schedule.startDate
-          : toDayKey(new Date()),
-        status: "active",
-        regimen_source: "user-entered",
-        needs_details: false,
-      });
-    }
+    // Nothing is added to Meds here. What was answered is kept on the account as
+    // its default medication, and the regimen itself is created when the person
+    // adds it in Medications or logs a dose — so Meds only ever holds what they
+    // put there themselves.
 
     await setProfile({
       ...profile,
