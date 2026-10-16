@@ -1,132 +1,204 @@
 import React, { useState } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { AlertTriangle, ChevronDown } from "lucide-react";
 import ScreenHeader from "@/components/ScreenHeader";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import AccessEntry from "@/components/caregiver/AccessEntry";
+import { SHEET_FIELD, SHEET_FIELD_SELECT, SHEET_HINT, SHEET_LABEL } from "@/components/modals/shot/sheetUi";
 import { useAppState } from "@/lib/AppState";
+import { accessStatus, inviteCaregiver, isEmail, SCOPE_OPTIONS } from "@/lib/caregiverShare";
 import { sound } from "@/lib/sounds";
 import { toast } from "@/lib/toast";
 
-/** How a stored scope and status read on screen. */
-const SCOPE_LABEL = { read: "Read only", read_write: "Read & write" };
-const STATUS_LABEL = { pending: "Invited — waiting for them to register", active: "Active" };
-
 /**
- * Caregiver access — who can see this account's logs, and with what scope.
- * Granting, revoking and the record of past access all live here.
+ * Caregiver access — who can see this account's logs, and with what level.
+ *
+ * Granting sends the invitation straight away, so the screen always reports what
+ * happened: the address it went to, or the fact that it could not be sent, with a
+ * Retry beside it. An entry that is waiting can be resent, and one that has run
+ * out its week says so and can be resent too. Revoking asks first and takes effect
+ * at once, on the server.
  */
 export default function CaregiverAccessPage() {
-  const { proxyAccess, addProxyAccess, revokeProxyAccess } = useAppState();
+  const { proxyAccess, loadProxyAccess, revokeProxyAccess } = useAppState();
   const [email, setEmail] = useState("");
   const [scope, setScope] = useState("read");
-  const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [busyId, setBusyId] = useState("");
+  const [failed, setFailed] = useState(null);
+  const [revoking, setRevoking] = useState(null);
   const [showPast, setShowPast] = useState(false);
 
-  const withAccess = proxyAccess.filter((p) => p.status !== "revoked");
-  const past = proxyAccess.filter((p) => p.status === "revoked");
+  const people = proxyAccess.filter((row) => ["pending", "active"].includes(accessStatus(row)));
+  const past = proxyAccess.filter((row) => ["revoked", "expired"].includes(accessStatus(row)));
 
-  const handleGrant = async () => {
-    if (!email.trim()) { toast.error("Enter an email address"); return; }
-    setSaving(true);
+  /** Creates or resends an invite, and reports how it went. Returns the reply so
+   *  the caller can clear its own field only when something was actually saved. */
+  const runInvite = async (payload) => {
+    setSending(true);
     try {
-      await addProxyAccess({
-        grantee_email: email.trim(),
-        scope,
-        status: "pending",
-        granted_date: new Date().toISOString(),
-      });
-      setEmail("");
-      toast.success("Access granted. The recipient can view your data once they register with this email.");
-    } catch (err) {
-      toast.error("Failed to grant access");
+      const data = await inviteCaregiver(payload);
+      if (data.error) {
+        toast.error(data.message || "That invite could not be created.");
+        return data;
+      }
+      if (data.emailSent) toast.success(`Invite sent to ${data.email}`);
+      else setFailed({ email: data.email, accessId: data.accessId, reason: data.emailError });
+      await loadProxyAccess();
+      return data;
+    } catch {
+      toast.error("That invite could not be created. Check your connection and try again.");
+      return null;
+    } finally {
+      setSending(false);
+      setBusyId("");
     }
-    setSaving(false);
   };
 
-  const handleRevoke = async (id) => {
+  const handleGrant = async () => {
+    const address = email.trim();
+    if (!isEmail(address)) { toast.error("Enter a valid email address"); return; }
+    setFailed(null);
+    const data = await runInvite({ email: address, scope });
+    if (data && !data.error) setEmail("");
+  };
+
+  const handleResend = (entry) => {
+    setFailed(null);
+    setBusyId(entry.id);
+    runInvite({ accessId: entry.id });
+  };
+
+  const confirmRevoke = async () => {
+    const entry = revoking;
+    setRevoking(null);
+    if (!entry) return;
     sound.delete();
-    await revokeProxyAccess(id);
-    toast.deleted("Access revoked");
+    try {
+      await revokeProxyAccess(entry.id);
+      toast.deleted("Access revoked");
+    } catch {
+      toast.error("That could not be revoked. Try again.");
+    }
   };
 
   return (
-    <div className="bg-white dark:bg-gray-950 min-h-screen w-full">
-      <ScreenHeader title="Caregiver access" />
+    <div className="min-h-screen w-full bg-white dark:bg-gray-950">
+      <ScreenHeader title="Caregiver access" subtitle="Let someone you trust view your records" />
 
-      <div className="max-w-lg mx-auto pt-4">
+      <div className="mx-auto max-w-lg pt-2 pb-10">
         {/* Grant access */}
-        <div className="px-4 mb-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 space-y-3">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Grant scoped, revocable access to a caregiver or family member so they can view your logs.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="caregiver@email.com"
-                className="flex-1 border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-300 min-w-0" />
-              <select value={scope} onChange={(e) => setScope(e.target.value)}
-                aria-label="Permission"
-                className="border border-gray-200 dark:border-white/[0.1] dark:bg-white/[0.05] dark:text-[#E8E9F0] rounded-xl px-3 py-2 text-sm outline-none sm:w-auto">
-                <option value="read">Read only</option>
-                <option value="read_write">Read & write</option>
-              </select>
+        <div className="mx-3 mb-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <label className={SHEET_LABEL} htmlFor="caregiver-email">Their email address</label>
+          <input
+            id="caregiver-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="caregiver@email.com"
+            autoComplete="email"
+            className={SHEET_FIELD}
+          />
+
+          <label className={`${SHEET_LABEL} mt-4`} htmlFor="caregiver-scope">What they can see</label>
+          <select id="caregiver-scope" value={scope} onChange={(e) => setScope(e.target.value)} className={SHEET_FIELD_SELECT}>
+            {SCOPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+
+          <button onClick={handleGrant} disabled={sending} className="btn-pill btn-primary mt-4 w-full">
+            {sending ? "Sending…" : "Grant Access"}
+          </button>
+
+          {/* A send that failed is not a dead end: the invite is saved, and this
+              is where it is tried again. */}
+          {failed && (
+            <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+              <div className="flex items-start gap-2">
+                <AlertTriangle size={16} className="mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                <p className="text-sm text-amber-800 dark:text-amber-300">
+                  The invite for {failed.email} was saved, but the email could not be sent.
+                </p>
+              </div>
+              {failed.reason && (
+                <p className="mt-1 ml-6 text-xs text-amber-700/90 dark:text-amber-300/80">{failed.reason}</p>
+              )}
+              <button
+                onClick={() => { setFailed(null); runInvite({ accessId: failed.accessId }); }}
+                disabled={sending}
+                className="mt-2 ml-6 text-sm font-semibold text-amber-900 underline disabled:opacity-60 dark:text-amber-200"
+              >
+                Retry
+              </button>
             </div>
-            <button onClick={handleGrant} disabled={saving}
-              className="btn-pill btn-primary w-full">
-              {saving ? "Granting…" : "Grant Access"}
-            </button>
-          </div>
+          )}
+
+          <p className={`${SHEET_HINT} mt-3`}>
+            They'll see your shot, journal, and weight records. You can revoke access anytime.
+          </p>
         </div>
 
         {/* People with access */}
-        <div className="px-4 mb-4">
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 px-1">People with access</p>
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-            {withAccess.length === 0 ? (
+        <div className="mx-3 mb-4">
+          <p className="mb-2 px-1 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">People with access</p>
+          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            {people.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-[#9A9DAE]">No one else can see your logs.</p>
             ) : (
               <div className="space-y-3">
-                {withAccess.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between text-sm gap-2">
-                    <div className="min-w-0">
-                      <span className="text-gray-700 dark:text-gray-300 truncate block">{p.grantee_email}</span>
-                      <span className="text-xs text-gray-500 dark:text-[#9A9DAE]">
-                        {SCOPE_LABEL[p.scope] || p.scope} · {STATUS_LABEL[p.status] || p.status}
-                      </span>
-                    </div>
-                    <button onClick={() => handleRevoke(p.id)} aria-label={`Revoke access for ${p.grantee_email}`}
-                      className="text-red-600 dark:text-red-400 flex items-center gap-1 text-xs min-h-[44px] px-2 flex-shrink-0">
-                      <X size={14} aria-hidden="true" /> Revoke
-                    </button>
-                  </div>
+                {people.map((entry) => (
+                  <AccessEntry
+                    key={entry.id}
+                    entry={entry}
+                    busy={busyId === entry.id || sending}
+                    onResend={handleResend}
+                    onRevoke={setRevoking}
+                  />
                 ))}
               </div>
             )}
           </div>
         </div>
 
-        {/* Past access — collapsed until it is asked for */}
+        {/* Past access — revoked and expired entries, folded away until asked for */}
         {past.length > 0 && (
-          <div className="px-4 mb-4">
-            <button onClick={() => setShowPast((v) => !v)} aria-expanded={showPast}
-              className="w-full flex items-center justify-between gap-2 min-h-[44px] px-1">
-              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
+          <div className="mx-3 mb-4">
+            <button
+              onClick={() => setShowPast((open) => !open)}
+              aria-expanded={showPast}
+              className="flex min-h-[44px] w-full items-center justify-between gap-2 px-1"
+            >
+              <span className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
                 Past access ({past.length})
               </span>
-              <ChevronDown size={18} className={`text-gray-400 transition-transform ${showPast ? "rotate-180" : ""}`} />
+              <ChevronDown size={18} className={`text-gray-400 transition-transform ${showPast ? "rotate-180" : ""}`} aria-hidden="true" />
             </button>
             {showPast && (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 space-y-3">
-                {past.map((p) => (
-                  <div key={p.id} className="text-sm">
-                    <span className="text-gray-500 dark:text-[#9A9DAE] truncate block">{p.grantee_email}</span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">
-                      {SCOPE_LABEL[p.scope] || p.scope} · Revoked
-                    </span>
-                  </div>
+              <div className="space-y-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                {past.map((entry) => (
+                  <AccessEntry
+                    key={entry.id}
+                    entry={entry}
+                    busy={busyId === entry.id || sending}
+                    onResend={handleResend}
+                  />
                 ))}
               </div>
             )}
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!revoking}
+        title="Revoke access?"
+        message={revoking ? `${revoking.grantee_email} loses access straight away and these records disappear from their account.` : ""}
+        tone="destructive"
+        confirmLabel="Revoke access"
+        cancelLabel="Keep access"
+        onConfirm={confirmRevoke}
+        onCancel={() => setRevoking(null)}
+      />
     </div>
   );
 }

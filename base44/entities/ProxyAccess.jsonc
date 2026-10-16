@@ -3,11 +3,11 @@
   "properties": {
     "grantee_email": {
       "type": "string",
-      "description": "Email of the account granted access"
+      "description": "The address the invite was sent to, stored in lower case. The invited person's account is matched to exactly this address when they sign in."
     },
     "grantee_user_id": {
       "type": "string",
-      "description": "User ID of the grantee once they register (filled in on first access)"
+      "description": "User ID of the grantee, filled in the first time they sign in with the invited address. Empty while the invite is pending."
     },
     "scope": {
       "type": "string",
@@ -22,21 +22,43 @@
       "enum": [
         "pending",
         "active",
-        "revoked"
+        "revoked",
+        "expired"
       ],
-      "default": "pending"
+      "default": "pending",
+      "description": "pending until the invited person signs in with that address, then active. Only active grants access."
+    },
+    "owner_name": {
+      "type": "string",
+      "description": "The account holder's name when the invite was sent, shown to the invited person in the Shared with me list."
+    },
+    "relationship": {
+      "type": "string",
+      "description": "Relationship to account holder (e.g. parent, spouse, caregiver)"
+    },
+    "invited_date": {
+      "type": "string",
+      "description": "ISO timestamp of the invite, reset when it is resent"
+    },
+    "expires_at": {
+      "type": "string",
+      "description": "ISO timestamp seven days after the invite. A pending invite that reaches it can no longer be accepted."
     },
     "granted_date": {
       "type": "string",
-      "description": "ISO timestamp when access was granted"
+      "description": "ISO timestamp when the invite was accepted and access became active"
     },
     "revoked_date": {
       "type": "string",
       "description": "ISO timestamp when access was revoked"
     },
-    "relationship": {
+    "last_email_sent_at": {
       "type": "string",
-      "description": "Relationship to account holder (e.g. parent, spouse, caregiver)"
+      "description": "ISO timestamp of the last invite email that went out"
+    },
+    "email_error": {
+      "type": "string",
+      "description": "Why the last invite email failed, when it did. Cleared by the next send that succeeds."
     }
   },
   "required": [

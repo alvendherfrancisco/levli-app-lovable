@@ -15,6 +15,7 @@ import { readCachedProfile, writeCachedProfile, clearCachedProfile } from "@/lib
 import { resolveProfileRecords } from "@/lib/profileRecords";
 import { perfMark } from "@/lib/perfProbe";
 import useAuthEpoch from "@/hooks/useAuthEpoch";
+import { listSharedWithMe } from "@/lib/caregiverShare";
 
 const AppStateContext = createContext(null);
 
@@ -86,6 +87,8 @@ export function AppStateProvider({ children }) {
   const [medications, setMedications] = useState([]);
   const [adverseEvents, setAdverseEvents] = useState([]);
   const [proxyAccess, setProxyAccess] = useState([]);
+  // Records other people have shared with this account (the caregiver's side).
+  const [sharedWithMe, setSharedWithMe] = useState([]);
   const [repeatSchedules, setRepeatSchedules] = useState([]);
 
   // ── Dark mode ──────────────────────────────────────────────────────────────
@@ -177,6 +180,10 @@ export function AppStateProvider({ children }) {
       loadProgressPhotos();
       loadAdverseEvents();
       loadProxyAccess();
+      // Someone else's records, if any have been shared with this account. The
+      // call also links an invite addressed to this email, so a share is live the
+      // first time the invited person signs in with that address.
+      loadSharedWithMe();
       loadRepeatSchedules();
       // Shots and medications are loaded together, so every log can be linked to
       // a regimen before the screens read them.
@@ -413,6 +420,19 @@ export function AppStateProvider({ children }) {
   const loadProxyAccess = async () => {
     const data = await base44.entities.ProxyAccess.list("-created_date", 100);
     setProxyAccess(data);
+  };
+
+  // ── Records shared with this account (the caregiver's side) ────────────────
+  // The list comes from the backend, which is also what decides access: only a
+  // share that is still active is ever returned. The same call links any invite
+  // addressed to this email, which is why accepting one needs no code. A failure
+  // here leaves the caregiver's card off Home and never disturbs the rest.
+  const loadSharedWithMe = async () => {
+    try {
+      setSharedWithMe(await listSharedWithMe());
+    } catch (err) {
+      console.error("Could not load shared records:", err);
+    }
   };
 
   // ── Repeat schedules ──────────────────────────────────────────────────────
@@ -1012,7 +1032,9 @@ export function AppStateProvider({ children }) {
       // AdverseEvents
       adverseEvents, adverseEventsByDay, addAdverseEvent, updateAdverseEvent, deleteAdverseEvent,
       // ProxyAccess
-      proxyAccess, addProxyAccess, revokeProxyAccess,
+      proxyAccess, addProxyAccess, revokeProxyAccess, loadProxyAccess,
+      // Records shared with this account (the caregiver's side)
+      sharedWithMe, loadSharedWithMe,
       // Repeat schedules
       repeatSchedules, pendingRepeatDoses, addRepeatSchedule, updateRepeatSchedule,
       loadRepeatSchedules, confirmRepeatDose, skipRepeatDose,

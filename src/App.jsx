@@ -42,6 +42,7 @@ import MyMedications from '@/pages/MyMedications';
 import ShotsHistory from '@/pages/ShotsHistory';
 import BackupRestorePage from '@/pages/BackupRestorePage';
 import CaregiverAccessPage from '@/pages/CaregiverAccessPage';
+import SharedWithMe from '@/pages/SharedWithMe';
 import HelpFeedbackPage from '@/pages/HelpFeedbackPage';
 
 // Layout
@@ -128,6 +129,8 @@ const AuthenticatedApp = () => {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/backup-restore" element={<BackupRestorePage />} />
         <Route path="/caregiver-access" element={<CaregiverAccessPage />} />
+        {/* The other side of the same feature: records shared with this account. */}
+        <Route path="/shared-with-me" element={<SharedWithMe />} />
         <Route path="/help-feedback" element={<HelpFeedbackPage />} />
         {/* The old developer push test screen is gone; send its link to Settings. */}
         <Route path="/push-test" element={<Navigate to="/settings" replace />} />

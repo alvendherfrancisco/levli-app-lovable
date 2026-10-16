@@ -17,6 +17,7 @@ import { logsAsDose } from "@/lib/medicationForm";
 import { isActiveMedication } from "@/lib/medicationLink";
 import UnitCheckPrompt from "@/components/home/UnitCheckPrompt";
 import PushOptInBanner from "@/components/home/PushOptInBanner";
+import SharedWithMeCard from "@/components/home/SharedWithMeCard";
 import SupplyAlertBanner from "@/components/SupplyAlertBanner";
 import { useMountProbe } from "@/lib/perfProbe";
 
@@ -65,6 +66,9 @@ export default function Home() {
         <RepeatDoseCard onEdit={(preset) => { setShotPreset(preset); setShowShot(true); }} />
         <NextShotCard onLogPastShot={(preset) => { setShotPreset(preset); setShowShot(true); }} />
         <div className="mx-3 mb-4 empty:hidden"><PushOptInBanner /></div>
+        {/* Records someone else has shared with this account, when there are any.
+            It renders nothing at all otherwise. */}
+        <SharedWithMeCard />
         <MetricsGrid dayKey={dk} />
 
         {/* Side Effects card */}
