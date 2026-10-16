@@ -10,6 +10,7 @@ import SectionHeader from "@/components/insights/SectionHeader";
 import InsightEmptyState from "@/components/insights/InsightEmptyState";
 import RangeTabs from "@/components/insights/RangeTabs";
 import ProgressPhotoCard from "@/components/insights/ProgressPhotoCard";
+import ExpectedProgressCard from "@/components/insights/ExpectedProgressCard";
 import AddMetricModal from "@/components/modals/AddMetricModal";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useAppState } from "@/lib/AppState";
@@ -386,6 +387,9 @@ export default function Insights() {
             <p className={`mt-3 text-center ${FOOTNOTE}`}>Solid: daily entries · Dashed: 7-day average</p>
           )}
         </InsightCard>
+
+        {/* Expected Progress Panel */}
+        <ExpectedProgressCard weightHistory={weightHistory} profile={profile} shots={shots} />
 
         {/* Progress Pictures Panel */}
         <InsightCard>
