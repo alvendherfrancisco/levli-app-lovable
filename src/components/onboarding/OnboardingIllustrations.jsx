@@ -11,20 +11,27 @@ import React from "react";
  * one soft wash behind the artwork, so a picture can never be a different size or
  * sit differently from one screen to the next.
  *
- * Exported because the Premium screen draws its own three illustrations through
- * this same wrapper (see src/components/paywall/PaywallIllustrations.jsx): the
- * paywall is a later step of this flow, so its artwork is the same size, the same
- * format and the same glow as the steps before it.
+ * Exported because the Premium screen draws its own illustrations through this
+ * same wrapper (see src/components/paywall/PaywallIllustrations.jsx): the paywall
+ * is a later step of this flow, so its artwork is the same size and the same
+ * format as the steps before it.
+ *
+ * `glow` draws the wash behind the artwork. The Premium screen turns it off,
+ * because its slides scroll inside a track whose own edges would clip a glow —
+ * there the screen carries one wash, across the whole head and outside the track
+ * (see PaywallModal) — and a scene drawn without one is simply the artwork.
  */
-export function Scene({ blobStyle, children, className = "" }) {
+export function Scene({ blobStyle, glow = true, children, className = "" }) {
   return (
     <div className={`relative w-full max-w-[280px] mx-auto aspect-[7/5] ${className}`}>
-      <div className="absolute inset-0 flex items-center justify-center">
-        {/* The wash behind the artwork. It is the same in both modes; the class
-            holds it back on a dark page so it blends into the background rather
-            than lighting up a halo (see src/index.css). */}
-        <div className="onb-art-glow w-44 h-44 rounded-full blur-3xl" style={blobStyle} />
-      </div>
+      {glow && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          {/* The wash behind the artwork. It is the same in both modes; the class
+              holds it back on a dark page so it blends into the background rather
+              than lighting up a halo (see src/index.css). */}
+          <div className="onb-art-glow w-44 h-44 rounded-full blur-3xl" style={blobStyle} />
+        </div>
+      )}
       <svg viewBox="0 0 280 200" className="relative w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
         {children}
       </svg>

@@ -5,9 +5,15 @@ import { Scene } from "@/components/onboarding/OnboardingIllustrations";
  * The four illustrations the Premium screen shows, one per benefit.
  *
  * They are drawn through the onboarding's own scene wrapper — the same 280 × 200
- * slot and the same soft wash behind the artwork, which holds itself back on a dark
- * page — so the Premium screen reads as the step after the onboarding rather than a
+ * slot — so the Premium screen reads as the step after the onboarding rather than a
  * screen of its own.
+ *
+ * The wrapper's own glow is switched off (glow={false}): these four sit in a track
+ * that scrolls sideways, and a glow drawn inside it is clipped by that track's own
+ * edges — a straight cut across the picture, a few centimetres under the progress
+ * bar. The screen's wash is drawn once instead, across the whole head and outside
+ * the track (see PaywallModal), so it runs unbroken from the bar down behind the
+ * artwork and the headline whatever the slides are doing.
  *
  * One card, one size, one light: all four are the same white card in the same place
  * (56,40 – 224,160), lifted off the wash by the same soft indigo shadow, so the
@@ -32,7 +38,7 @@ function Card({ shadowId }) {
 /** Nothing capped: what is already logged, the dose itself, and room for one more. */
 export function ShotLimitIllustration() {
   return (
-    <Scene blobStyle={{ background: "linear-gradient(135deg, #818CF8, #C4B5FD)" }}>
+    <Scene glow={false}>
       <defs>
         <filter id="premShotShadow" x="-20%" y="-20%" width="140%" height="150%">
           <feDropShadow dx="0" dy="7" stdDeviation="8" floodColor="#4F46E5" floodOpacity="0.2" />
@@ -76,7 +82,7 @@ export function ShotLimitIllustration() {
 /** What the trends look like: the figures, the trend, and the photo beside them. */
 export function InsightsIllustration() {
   return (
-    <Scene blobStyle={{ background: "linear-gradient(135deg, #818CF8, #A78BFA)" }}>
+    <Scene glow={false}>
       <defs>
         <filter id="premInsShadow" x="-20%" y="-20%" width="140%" height="150%">
           <feDropShadow dx="0" dy="7" stdDeviation="8" floodColor="#4F46E5" floodOpacity="0.2" />
@@ -127,7 +133,7 @@ export function InsightsIllustration() {
 /** Everything kept: the timeline of entries, newest at the foot. */
 export function HistoryIllustration() {
   return (
-    <Scene blobStyle={{ background: "linear-gradient(135deg, #818CF8, #93C5FD)" }}>
+    <Scene glow={false}>
       <defs>
         <filter id="premHisShadow" x="-20%" y="-20%" width="140%" height="150%">
           <feDropShadow dx="0" dy="7" stdDeviation="8" floodColor="#4F46E5" floodOpacity="0.2" />
@@ -171,7 +177,7 @@ export function HistoryIllustration() {
 /** The page that goes to the doctor: the report, and the way it is sent. */
 export function ReportsIllustration() {
   return (
-    <Scene blobStyle={{ background: "linear-gradient(135deg, #818CF8, #5EEAD4)" }}>
+    <Scene glow={false}>
       <defs>
         <filter id="premRepShadow" x="-20%" y="-20%" width="140%" height="150%">
           <feDropShadow dx="0" dy="7" stdDeviation="8" floodColor="#4F46E5" floodOpacity="0.2" />

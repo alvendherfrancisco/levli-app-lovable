@@ -247,7 +247,19 @@ export default function PaywallModal({ open, onClose }) {
             — the illustration area has already given way first (see .paywall-art in
             src/index.css). */}
         <div className="relative min-h-0 flex-1">
-          <div className="h-full overflow-y-auto overscroll-contain px-4 pt-4">
+          {/* The screen's wash: the flow's own soft gradient, drawn once across the
+              head of this part of the panel rather than inside a slide. It begins
+              directly under the progress bar — the first thing under the head — and
+              fades to nothing on every side well inside its own box, so no edge of
+              it can be cut by the bar above it, by the headline across it or by the
+              plans below. It stays put while the slides move over it. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-0 h-[320px] bg-[radial-gradient(120%_100%_at_50%_0%,rgba(99,102,241,0.17),rgba(99,102,241,0.07)_42%,rgba(99,102,241,0)_78%)] dark:bg-[radial-gradient(120%_100%_at_50%_0%,rgba(99,102,241,0.30),rgba(99,102,241,0.12)_42%,rgba(99,102,241,0)_78%)]"
+          />
+          {/* `relative` is what keeps the slides and the plans above the wash they
+              are drawn on rather than under a tint of it. */}
+          <div className="relative h-full overflow-y-auto overscroll-contain px-4 pt-4">
             <PaywallSlides trackRef={trackRef} index={slideIndex} onIndexChange={setSlideIndex} />
             <PaywallPlans
               className="mt-6"
@@ -260,13 +272,11 @@ export default function PaywallModal({ open, onClose }) {
                 never left sitting under it or under the home indicator. */}
             <div aria-hidden="true" style={{ height: barHeight + 16 }} />
           </div>
-          {/* The two soft edges of the part that scrolls: what the slides and the
-              plans leave through, above and below, rather than being cut off by
-              the progress bar or by the bar pinned under them. */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-auth-fade to-transparent"
-          />
+          {/* The one soft edge of the part that scrolls: what the plans leave
+              through at the foot, rather than being cut off by the bar pinned under
+              them. There is deliberately none at the top now: a light band there is
+              a line drawn across the wash, and the wash is what runs under the head
+              unbroken. */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-auth-fade to-transparent"

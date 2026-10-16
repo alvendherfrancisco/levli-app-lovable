@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { PREMIUM_SLIDES } from "@/lib/premiumPlans";
 import { HEADING, SUBTITLE } from "@/lib/uiStyles";
 import {
@@ -28,12 +28,27 @@ const ART = {
  * 24px, the headline, 8px, its line. The headline therefore sits at exactly the
  * same height on every slide, and the plans under the track never move as the
  * slides change.
+ *
+ * How strong each picture is drawn is read from the swipe itself, not from which
+ * slide the track has passed: the slide in hand is full size and full strength and
+ * the ones either side are a step back, and every position in between is the one
+ * the finger is at (`.paywall-slide` and --slide-step, in src/index.css). A swipe
+ * and a tap on the progress bar therefore both arrive smoothly, and the picture
+ * never jumps to full at the halfway point. With reduced motion only the size and
+ * the strength are dropped; the slide in hand is simply the one in hand.
  */
 export default function PaywallSlides({ trackRef, index, onIndexChange }) {
+  // Where the track is, as a number of slides: 0 is the first one in hand, 0.5 is
+  // exactly between two of them, 1 is the second one arrived at. It starts on the
+  // slide the screen opens on, so nothing is out of place before the first swipe.
+  const [swipe, setSwipe] = useState(index);
+
   const handleScroll = () => {
     const el = trackRef.current;
     if (!el || !el.clientWidth) return;
-    const next = Math.max(0, Math.min(PREMIUM_SLIDES.length - 1, Math.round(el.scrollLeft / el.clientWidth)));
+    const at = el.scrollLeft / el.clientWidth;
+    setSwipe(at);
+    const next = Math.max(0, Math.min(PREMIUM_SLIDES.length - 1, Math.round(at)));
     if (next !== index) onIndexChange(next);
   };
 
@@ -45,19 +60,11 @@ export default function PaywallSlides({ trackRef, index, onIndexChange }) {
     >
       {PREMIUM_SLIDES.map((slide, i) => {
         const Art = ART[slide.id] || InsightsIllustration;
-        const on = i === index;
+        // 0 for the slide in hand, up to 1 for the one a whole slide away.
+        const step = Math.min(1, Math.abs(i - swipe));
         return (
           <div key={slide.id} className="w-full flex-shrink-0 snap-center">
-            {/* The slide in hand is drawn full size and full strength; the ones
-                either side of it sit a step back, so moving between them reads as
-                arriving at the next picture rather than as a page of them sliding
-                past. With reduced motion the slide is simply the one in hand: the
-                size and the strength are its, and only the easing is dropped. */}
-            <div
-              className={`paywall-art motion-safe:transition-[opacity,transform] motion-safe:duration-500 motion-safe:ease-out ${
-                on ? "opacity-100 motion-safe:scale-100" : "opacity-50 motion-safe:scale-[0.94]"
-              }`}
-            >
+            <div className="paywall-art paywall-slide" style={{ "--slide-step": step.toFixed(3) }}>
               <Art />
             </div>
             <h2 className={`${HEADING} mt-6 text-center`}>{slide.headline}</h2>

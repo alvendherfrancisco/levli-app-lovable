@@ -864,6 +864,23 @@ html { background-color: var(--launch-bg); }
   max-height: 100%;
 }
 
+/* How strong a slide is drawn, read from the swipe itself: --slide-step is 0 for
+   the slide in hand and 1 for one a whole slide away, and every value between is
+   a position the finger is at. So the picture grows and brightens as it is swiped
+   in and shrinks as it is swiped out, continuously, instead of flipping to full at
+   the halfway point. Nothing here is transitioned in CSS: the value is the
+   gesture. With "Reduce Motion" the slide in hand is simply drawn at full size. */
+.paywall-slide {
+  opacity: calc(1 - 0.5 * var(--slide-step, 0));
+  transform: scale(calc(1 - 0.06 * var(--slide-step, 0)));
+}
+@media (prefers-reduced-motion: reduce) {
+  .paywall-slide {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* The bar is pinned over the content that scrolls behind it, so it carries the
    card's own surface, and its last line sits on the home indicator's inset
    alone — no space is left under the legal row. */
