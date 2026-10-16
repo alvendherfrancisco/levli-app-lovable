@@ -23,7 +23,7 @@ import {
   activeRegimensFor, getDoseDefault, getSmartShotDefaults,
 } from "@/lib/shotDefaults";
 import { addDaysToKey } from "@/lib/repeatSchedule";
-import { sitesForRoute } from "@/lib/injectionSites";
+import { INJECTION_SITES } from "@/lib/injectionSites";
 import DoseChips from "@/components/modals/DoseChips";
 import { chipsForMedication, withCustomDose } from "@/lib/doseOptions";
 import { isAboveZero } from "@/lib/formValidity";
@@ -36,7 +36,7 @@ import SheetPickerRow from "@/components/modals/shot/SheetPickerRow";
 import SheetDoseField from "@/components/modals/shot/SheetDoseField";
 import ShotDateTimeFields from "@/components/modals/shot/ShotDateTimeFields";
 import ShotDetailsSection from "@/components/modals/shot/ShotDetailsSection";
-import SitePicker from "@/components/modals/shot/SitePicker";
+import SiteSelect from "@/components/modals/shot/SiteSelect";
 import {
   SHEET_CHIP, SHEET_CHIP_OFF, SHEET_CHIP_ON, SHEET_DIVIDER,
   SHEET_HINT, SHEET_LABEL, SHEET_LABEL_TEXT,
@@ -182,9 +182,10 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
   const isShot = activeForm ? activeForm === FORM_INJECTION : INJECTABLE_ROUTES.includes(activeRoute);
   // A tablet has no injection to place, so its route and device are not asked for.
   const tabletForm = activeForm ? activeForm === FORM_PILL : ORAL_ROUTES.includes(activeRoute);
-  // The sites the form offers, from the one shared list the rotation card reads
-  // (src/lib/injectionSites.js), so both name and place a site identically.
-  const siteOptions = sitesForRoute(activeRoute);
+  // The sites the menu offers, from the one shared list the rotation card draws
+  // (src/lib/injectionSites.js), so both name and place a site identically: the
+  // front sites under Front, the back ones under Back.
+  const siteOptions = INJECTION_SITES;
   const isReconstituted = activeRoute === "reconstituted_vial" || caps?.supports_reconstitution;
 
   // Route and Device type sit inside "More details" and are always offered — the
@@ -947,19 +948,18 @@ export default function AddShotModal({ open, onClose, editingShot, initialValues
                   )}
                 </div>
 
-                {/* Injection site: the two figures themselves, with every site
-                    the form offers on them and the rotation's suggestion already
-                    chosen. */}
+                {/* Injection site: one row showing the site in hand with its side
+                    and figure, opening a menu grouped Front and Back, with the
+                    rotation's suggestion already chosen. */}
                 {isInjectable && (
-                  <SheetField label="Injection site">
-                    <SitePicker
-                      sites={siteOptions}
-                      value={displayedSite}
-                      suggested={siteIsSuggested ? recommendedSite : ""}
-                      shots={shots}
-                      onChange={setSite}
-                    />
-                  </SheetField>
+                  <SiteSelect
+                    sites={siteOptions}
+                    value={displayedSite}
+                    suggested={siteIsSuggested ? recommendedSite : ""}
+                    // The choice itself is what makes the log an edit; opening or
+                    // closing the menu changes nothing.
+                    onChange={(next) => { markEdited(); setSite(next); }}
+                  />
                 )}
 
                 {/* The shot's date and time, side by side and equal width, each
