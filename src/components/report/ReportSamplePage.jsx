@@ -1,7 +1,7 @@
 import React from "react";
 import { ChevronDown } from "lucide-react";
 import { REPORT_TAGLINE } from "@/lib/reportOptions";
-import { PDF_TOKENS } from "@/components/report/reportTokens";
+import { ReportThemeProvider, useReportTokens } from "@/components/report/ReportTheme";
 import { SHEET_DIVIDER, SHEET_FIELD, SHEET_FIELD_SELECT } from "@/components/modals/shot/sheetUi";
 
 /**
@@ -10,11 +10,11 @@ import { SHEET_DIVIDER, SHEET_FIELD, SHEET_FIELD_SELECT } from "@/components/mod
  * "Hide preview" line, and under them the report itself, drawn as the sheet of
  * paper it is.
  *
- * The paper is white in both modes — it is the PDF the person gets, and the
- * exported PDF is always the light one — with the purple band across its head,
- * the summary, the figures and the chart, so it reads on the dark screen as a
- * bright page does. It is tilted a degree and carries a soft shadow, the way a
- * page laid on a desk reads, and it lies behind the lock group.
+ * The paper follows the app's own theme, exactly as the report preview on the real
+ * screen does (see ReportPreview): the light page in light mode, and the darker
+ * sheet in dark mode, with the purple band across its head, the summary, the
+ * figures and the chart. It is tilted a degree and carries a soft shadow, the way
+ * a page laid on a desk reads, and it lies behind the lock group.
  *
  * Nothing on it is real. Every value is invented for the picture ("Alex Morgan",
  * "1 Jun – 31 Aug 2026", "-8.4 kg"), the chart is a drawn line rather than a
@@ -25,10 +25,10 @@ import { SHEET_DIVIDER, SHEET_FIELD, SHEET_FIELD_SELECT } from "@/components/mod
  * accessibility tool.
  *
  * The setup card is the app's own — the very field classes the real form uses —
- * and follows the app's live theme. The paper under it is drawn with the report's
- * always-light tokens (see src/components/report/reportTokens.js).
+ * and follows the app's live theme. The paper under it reads the same theme, from
+ * the report's own token sets (see src/components/report/reportTokens.js), so the
+ * two always agree in either mode.
  */
-const T = PDF_TOKENS;
 
 const SAMPLE_STATS = [
   { label: "Weight change", value: "-8.4 kg" },
@@ -47,6 +47,7 @@ const LABEL = "text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2";
 
 /** One report section: a bold heading over a thin divider, as the report draws it. */
 function Section({ title, children }) {
+  const T = useReportTokens();
   return (
     <section className="pt-4 mt-4 border-t" style={{ borderColor: T.divider }}>
       <h3 className="text-base font-bold mb-3" style={{ color: T.ink }}>{title}</h3>
@@ -57,6 +58,7 @@ function Section({ title, children }) {
 
 /** A table row reduced to its shape: a bar the length of a line of text. */
 function Bar({ width }) {
+  const T = useReportTokens();
   return <span className="block h-3 rounded-full" style={{ width, background: T.barTrack }} />;
 }
 
@@ -66,6 +68,7 @@ function Bar({ width }) {
  * not a chart — it plots nothing but the picture's own made-up line.
  */
 function SampleChart() {
+  const T = useReportTokens();
   const points = [[6, 52], [42, 44], [78, 47], [114, 34], [150, 28], [216, 16]];
   return (
     <svg viewBox="0 0 220 64" className="h-16 w-full" fill="none" preserveAspectRatio="none" aria-hidden="true">
@@ -92,6 +95,19 @@ function SampleChart() {
 }
 
 export default function ReportSamplePage() {
+  // The same theme the real report preview follows, so the page behind the lock
+  // and the page under it are the same page in either mode.
+  return (
+    <ReportThemeProvider mode="app">
+      <SamplePage />
+    </ReportThemeProvider>
+  );
+}
+
+/** The page itself, in the token set the provider above supplies. */
+function SamplePage() {
+  const T = useReportTokens();
+
   return (
     <div className="mx-auto w-full max-w-lg md:max-w-2xl px-4 pt-4 space-y-4">
       <p className="text-sm text-gray-500 dark:text-gray-400">{REPORT_TAGLINE}</p>

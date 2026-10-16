@@ -13,7 +13,8 @@ import useScrollLock from "@/hooks/useScrollLock";
  *
  * The blur is light — about 3.5px — so the page behind it is read as the screen it
  * is: the setup with the date range and the name, and under it the report itself,
- * a white page with its purple band, its summary, its figures and its chart. That
+ * with its purple band, its summary, its figures and its chart, in the app's own
+ * colours — the light page in light mode, the darker sheet in dark mode. That
  * is the whole point of the screen: an account without Premium is meant to see what
  * it is buying. Nothing of the person's own is behind it — every value on the page
  * is made up for the picture — so a light blur hides nothing that needs hiding, and
