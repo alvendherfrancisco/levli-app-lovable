@@ -72,6 +72,11 @@ function afterShotHint(events, shots) {
  * how bad it was, when it last happened, and how it sits against the shots. Each
  * row opens that symptom's own journal entries, so the pattern can be talked
  * through with a prescriber.
+ *
+ * It reads the same structured records the day's own list on Home and History
+ * reads — the AdverseEvent records held once in src/lib/AppState.jsx — so a side
+ * effect logged, edited or removed anywhere in the app is reflected here the
+ * moment it is saved, with no reload.
  */
 export default function SideEffectsCard() {
   const navigate = useNavigate();

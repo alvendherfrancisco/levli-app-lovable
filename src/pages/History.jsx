@@ -5,7 +5,6 @@ import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import ShotCard from "@/components/shots/ShotCard";
 import MetricsGrid from "@/components/home/MetricsGrid";
-import SideEffectsCard from "@/components/history/SideEffectsCard";
 import AddShotModal from "@/components/modals/AddShotModal";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import { useAppState } from "@/lib/AppState";
@@ -183,9 +182,6 @@ export default function History() {
           </button>
         )}
 
-        {/* What keeps coming back over the last 30 or 90 days, summarised —
-            moved here from the top of the Journal. */}
-        <SideEffectsCard />
       </div>
 
       <Fab onClick={openNew} label={addLabel} icon={null} />

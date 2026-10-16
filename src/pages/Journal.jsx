@@ -4,6 +4,7 @@ import { Settings, BookOpen, Clock, Heart, X } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import JournalEntryModal from "@/components/modals/JournalEntryModal";
+import SideEffectsCard from "@/components/journal/SideEffectsCard";
 import { useAppState } from "@/lib/AppState";
 import { JOURNAL_CATEGORIES, categoryMeta, normaliseCategory, sortJournalNewestFirst } from "@/lib/journalMeta";
 import { parseShotDate, toDayKey, formatLocaleDate } from "@/lib/dateUtils";
@@ -14,7 +15,7 @@ import { toast } from "@/lib/toast";
 export default function Journal() {
   const {
     journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry,
-    adverseEvents, addAdverseEvent, shots,
+    adverseEvents, addAdverseEvent, updateAdverseEvent, deleteAdverseEvent, shots,
   } = useAppState();
   const [showModal, setShowModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -61,31 +62,60 @@ export default function Journal() {
     setSymptomFilter("");
   };
 
+  /**
+   * The one structured record behind a side-effect entry, kept in step with it:
+   * written with the entry, rewritten when the entry changes, and removed when
+   * the entry is no longer a side effect or is deleted. The summary card below,
+   * this page's entries and the day's own list on Home and History therefore all
+   * read the same records and can never disagree.
+   */
+  const syncSideEffectRecord = async (entryId, entry) => {
+    const linked = adverseEvents.filter((e) => e.journal_entry_id === entryId);
+    if (normaliseCategory(entry.category) !== "Side effect") {
+      for (const rec of linked) await deleteAdverseEvent(rec.id);
+      return;
+    }
+    const day = toDayKey(parseShotDate(entry.date) || new Date());
+    const recentMed = getRecentMedication(shots, day) || "";
+    const { tier } = classifyRedFlag(`${entry.severity || ""} ${entry.text}`.trim(), recentMed);
+    const fields = {
+      medication_name: recentMed,
+      symptom: entry.text,
+      severity: entry.severity || "",
+      onset_date: day,
+      day_key: day,
+      notes: entry.text,
+      red_flag_tier: tier || "none",
+    };
+    if (linked.length) {
+      await updateAdverseEvent(linked[0].id, fields);
+    } else {
+      await addAdverseEvent({
+        ...fields,
+        symptom_category: "other",
+        resolved: false,
+        user_attribution: true,
+        journal_entry_id: entryId,
+      });
+    }
+  };
+
   const handleSave = async (entry) => {
     if (editingEntry) {
       await updateJournalEntry(editingEntry.id, entry);
+      try {
+        await syncSideEffectRecord(editingEntry.id, entry);
+      } catch (err) {
+        // The entry itself is already saved; the record can be corrected by hand.
+        toast.error("Saved the entry, but its side-effect record could not be updated");
+      }
       toast.success("Journal entry updated");
     } else {
       const rec = await addJournalEntry(entry);
       // A side-effect entry always has a structured record to match it.
       if (normaliseCategory(entry.category) === "Side effect" && rec?.id) {
-        const day = toDayKey(parseShotDate(entry.date) || new Date());
-        const recentMed = getRecentMedication(shots, day) || "";
-        const { tier } = classifyRedFlag(`${entry.severity || ""} ${entry.text}`.trim(), recentMed);
         try {
-          await addAdverseEvent({
-            medication_name: recentMed,
-            symptom: entry.text,
-            symptom_category: "other",
-            severity: entry.severity || "",
-            onset_date: day,
-            day_key: day,
-            resolved: false,
-            user_attribution: true,
-            red_flag_tier: tier || "none",
-            notes: entry.text,
-            journal_entry_id: rec.id,
-          });
+          await syncSideEffectRecord(rec.id, entry);
         } catch (err) {
           // The journal entry itself is already saved; the log can be re-added by hand.
           toast.error("Saved the entry, but the side-effect record could not be added");
@@ -97,7 +127,11 @@ export default function Journal() {
 
   const handleDelete = async (id) => {
     try {
+      // The entry's own side-effect records go with it, so nothing is left
+      // counting a symptom the journal no longer holds.
+      const linked = adverseEvents.filter((e) => e.journal_entry_id === id);
       await deleteJournalEntry(id);
+      for (const rec of linked) await deleteAdverseEvent(rec.id);
       toast.deleted("Journal entry deleted");
       setEditingEntry(null);
       setShowModal(false);
@@ -122,7 +156,7 @@ export default function Journal() {
         </div>
       </div>
 
-      {/* A symptom tapped on History's side-effect card shows here as its own
+      {/* A symptom tapped on the side-effect card below shows here as its own
           filter, above the category chips. */}
       {symptomFilter && (
         <div className="w-full max-w-3xl mx-auto px-4 pt-4">
@@ -135,8 +169,8 @@ export default function Journal() {
       )}
 
       {/* Category filter chips — icon, colour and text label for each. The
-          summary of everything logged lives on History now, so these open the
-          page. */}
+          summary of everything logged sits at the foot of the page, below the
+          entries it summarises. */}
       <div className={`w-full max-w-3xl mx-auto px-4 mb-3 flex flex-wrap gap-2${symptomFilter ? "" : " pt-4"}`}>
         <button onClick={() => selectCategory("All")}
           className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
@@ -223,6 +257,12 @@ export default function Journal() {
             })}
           </div>
         )}
+      </div>
+
+      {/* What keeps coming back over the last 30 or 90 days, summarised below the
+          entries it summarises — and below the empty card when there are none. */}
+      <div className="w-full max-w-3xl mx-auto">
+        <SideEffectsCard />
       </div>
 
       <JournalEntryModal
