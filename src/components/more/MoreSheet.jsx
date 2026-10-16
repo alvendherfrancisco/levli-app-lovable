@@ -45,7 +45,7 @@ export default function MoreSheet({ open, onClose, bottom }) {
           </button>
         </div>
 
-        <ul className="px-4 pb-4 divide-y divide-gray-100 dark:divide-white/[0.07]">
+        <ul className="px-4 pb-4 space-y-2">
           {MORE_ITEMS.map((item) => (
             <li key={item.path}>
               <Link
