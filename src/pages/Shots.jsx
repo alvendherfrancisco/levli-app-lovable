@@ -99,7 +99,9 @@ export default function Shots() {
 
   return (
     <PageContainer bottomInset="fab" disclaimer>
-      <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
+      {/* 16px at the sides, the page's one margin: the title starts on the same
+          line as the edge of every card below it. */}
+      <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-4 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{words.Many}</h1>
         <div className="flex items-center gap-1">
           <HeaderIconButton label="Report" onClick={() => navigate("/report")}>
