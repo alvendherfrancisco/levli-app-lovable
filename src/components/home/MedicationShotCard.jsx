@@ -9,6 +9,7 @@ import { evaluateDoseSchedule, MISSED_STATE } from "@/lib/missedDose";
 import { shotDateFromKey } from "@/lib/repeatSchedule";
 import DoseBadge from "@/components/DoseBadge";
 import DoseStatusNotice from "@/components/home/DoseStatusNotice";
+import MedicationLevelLine from "@/components/home/MedicationLevelLine";
 import LongGapNotice from "@/components/home/LongGapNotice";
 
 /**
@@ -129,6 +130,10 @@ export default function MedicationShotCard({ summary, contact, contactHref, stop
             </span>
           </div>
         </div>
+
+        {/* What today's level is for this medication, and the way into the graph
+            that explains it. Drawn only where the app has a curve for the product. */}
+        <MedicationLevelLine medication={medication} />
       </div>
 
       {lastShot && (

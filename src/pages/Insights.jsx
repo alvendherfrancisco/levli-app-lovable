@@ -11,6 +11,7 @@ import InsightEmptyState from "@/components/insights/InsightEmptyState";
 import RangeTabs from "@/components/insights/RangeTabs";
 import ProgressPhotoCard from "@/components/insights/ProgressPhotoCard";
 import WeightProgressChart from "@/components/insights/WeightProgressChart";
+import MedicationLevelCard from "@/components/insights/MedicationLevelCard";
 import SideEffectsCard from "@/components/insights/SideEffectsCard";
 import AddMetricModal from "@/components/modals/AddMetricModal";
 import { useAppState } from "@/lib/AppState";
@@ -60,14 +61,15 @@ export default function Insights() {
   );
   const rows = progress?.rows || [];
 
-  // Arriving from Home's Weight Progress card: the page opens on the Weight Change
-  // card instead of at the top. The card belongs to this page, so by the time this
-  // runs it is on screen — the short wait is only for the layout to settle.
+  // Arriving from Home — the Weight Progress card, or the medication level line on
+  // the Next Dose card: the page opens on the card named in the link instead of at
+  // the top. Both cards belong to this page, so by the time this runs they are on
+  // screen — the short wait is only for the layout to settle.
   const { hash } = useLocation();
   useEffect(() => {
-    if (hash !== "#weight-change") return;
+    if (hash !== "#weight-change" && hash !== "#medication-level") return;
     const timer = window.setTimeout(() => {
-      document.getElementById("weight-change")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
     return () => window.clearTimeout(timer);
   }, [hash]);
@@ -269,6 +271,11 @@ export default function Insights() {
           )}
 
         </InsightCard>
+
+        {/* What the logged doses add up to, in the typical shape of one dose: the
+            level today, the days behind it and the forecast ahead. It sits
+            directly under the weight it is read beside. */}
+        <MedicationLevelCard />
 
         {/* The gentle check-in, when the weight trend itself calls for one. It
             draws nothing at all unless a safeguard is active, and sits directly
