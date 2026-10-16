@@ -34,8 +34,16 @@ function Section({ title, children, t }) {
  *
  * It reads the same strings the PDF is drawn from, so the summary, the section
  * wording and the notes can never say one thing on screen and another in print.
+ *
+ * With `locked` — an account without Levli Premium — the same report is still
+ * drawn, but only its own header is left readable: the sections below are held
+ * at a fixed height under a blur that takes no tap and no scroll, the card's own
+ * surface fades up over them, and the `overlay` (the lock, see ReportLock) sits
+ * centred on that part. That is why the scrim is drawn here rather than by the
+ * lock: only this component knows the surface the current theme has given the
+ * card, so the fade can end exactly on it in light and in dark mode.
  */
-export default function ReportPreview({ report }) {
+export default function ReportPreview({ report, locked = false, overlay = null }) {
   const t = useReportTokens();
   const header = report.header;
   const unit = report.unit;
@@ -45,18 +53,11 @@ export default function ReportPreview({ report }) {
   const figures = summaryFigures(summary, unit);
   const severityColour = (key) => t.severity?.[key] || t.severity?.none || undefined;
 
-  return (
-    <div
-      className="report-page rounded-2xl border p-4 sm:p-5 min-w-0 overflow-x-hidden break-words"
-      style={{ background: t.cardBg, borderColor: t.cardBorder, color: t.ink }}
-    >
-      <h2 className="text-xl font-bold" style={{ color: t.ink }}>Levli Health Report</h2>
-      <div className="text-sm mt-1 space-y-0.5" style={{ color: t.muted }}>
-        {header.name && <p className="break-words">Name: {header.name}</p>}
-        <p className="break-words">Date range: {header.rangeLabel}</p>
-        <p className="break-words">Generated: {header.generatedLabel}</p>
-      </div>
-
+  // Everything under the header: the sections themselves, in the PDF's own order.
+  // Drawn in full for an account with Premium, and drawn from these same lines —
+  // never a second, shorter version — behind the lock.
+  const sections = (
+    <>
       {(summary.medications.length > 0 || figures.length > 0) && (
         <Section title="Summary" t={t}>
           <div className="space-y-1">
@@ -177,6 +178,39 @@ export default function ReportPreview({ report }) {
       )}
 
       <OptionalSections report={report} />
+    </>
+  );
+
+  return (
+    <div
+      className="report-page rounded-2xl border p-4 sm:p-5 min-w-0 overflow-x-hidden break-words"
+      style={{ background: t.cardBg, borderColor: t.cardBorder, color: t.ink }}
+    >
+      <h2 className="text-xl font-bold" style={{ color: t.ink }}>Levli Health Report</h2>
+      <div className="text-sm mt-1 space-y-0.5" style={{ color: t.muted }}>
+        {header.name && <p className="break-words">Name: {header.name}</p>}
+        <p className="break-words">Date range: {header.rangeLabel}</p>
+        <p className="break-words">Generated: {header.generatedLabel}</p>
+      </div>
+
+      {locked ? (
+        <div className="relative mt-4 h-[340px] overflow-hidden">
+          {/* The report, kept as it is and held under the blur: no tap, no
+              selection, and no scrolling it into focus. */}
+          <div aria-hidden="true" className="pointer-events-none select-none blur-[6px]">
+            {sections}
+          </div>
+          {/* The card's own surface, fading up from nothing to flat. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0"
+            style={{ background: `linear-gradient(to bottom, ${t.cardBg}00 0%, ${t.cardBg}B3 45%, ${t.cardBg} 100%)` }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">{overlay}</div>
+        </div>
+      ) : (
+        sections
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Eye, Loader2 } from "lucide-react";
-import LevliLockIcon from "@/components/premium/LevliLockIcon";
+import { base44 } from "@/api/base44Client";
 import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
 import { useSubscription } from "@/lib/SubscriptionContext";
@@ -14,8 +14,10 @@ import { buildReportPdf } from "@/lib/reportPdf";
 import { reportFileName, downloadPdf } from "@/lib/shareReport";
 import ReportOptions from "@/components/report/ReportOptions";
 import ReportPreview from "@/components/report/ReportPreview";
+import ReportLock from "@/components/report/ReportLock";
 import ReportEmptyState from "@/components/report/ReportEmptyState";
 import ReportStatusScreen from "@/components/report/ReportStatusScreen";
+import PremiumBadge from "@/components/PremiumBadge";
 import { ReportThemeProvider } from "@/components/report/ReportTheme";
 
 export default function ReportPage() {
@@ -43,6 +45,21 @@ export default function ReportPage() {
   const [showPreview, setShowPreview] = useState(true);
   const [timedOut, setTimedOut] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  // How tall the fixed bar is, measured as it renders (see the spacer at the end
+  // of the column).
+  const barRef = useRef(null);
+  const [barHeight, setBarHeight] = useState(0);
+
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const measure = () => setBarHeight(Math.round(el.offsetHeight));
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    measure();
+    return () => observer.disconnect();
+  }, []);
 
   // The name starts from the first name saved in Profile. Once the field has
   // been typed in, that is what is used — the prefilled value never overwrites it.
@@ -102,6 +119,16 @@ export default function ReportPage() {
   const handleExport = async () => {
     setBusy(true);
     try {
+      // The account's entitlement is confirmed by the backend before a single
+      // page is drawn, not only by this screen's own lock: no route into the
+      // export — this button, the row on Profile, a deep link — can produce a
+      // PDF for an account without Premium.
+      const gate = await base44.functions.invoke("report-export-gate", {});
+      if (!gate?.data?.allowed) {
+        toast.error("Levli Premium is needed to export the report");
+        openPaywall();
+        return;
+      }
       const doc = await buildReportPdf(report);
       downloadPdf(doc, reportFileName());
       toast.success("Report saved as a PDF");
@@ -112,37 +139,6 @@ export default function ReportPage() {
       setBusy(false);
     }
   };
-
-  if (!isPremium) {
-    return (
-      <div className="bg-gray-50 dark:bg-gray-950 min-h-screen w-full">
-        <header
-          className="w-full sticky top-0 z-30 grid items-center px-5 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800"
-          style={{
-            gridTemplateColumns: "1fr auto 1fr",
-            paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))",
-            paddingBottom: "0.75rem",
-          }}
-        >
-          <button
-            onClick={() => navigate(-1)}
-            aria-label="Back"
-            className="justify-self-start flex items-center gap-1 min-w-[44px] min-h-[44px] text-indigo-600 dark:text-indigo-400"
-          >
-            <ChevronLeft size={22} /><span className="font-medium">Back</span>
-          </button>
-          <h1 className="text-center whitespace-nowrap text-[18px] font-semibold text-gray-900 dark:text-white">Report</h1>
-          <span aria-hidden="true" />
-        </header>
-        <div className="max-w-lg mx-auto px-4 py-10 flex flex-col items-center text-center">
-          <LevliLockIcon className="mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Report export is a premium feature</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-sm">Upgrade to Levli Premium to generate and share a PDF summary for your doctor.</p>
-          <button onClick={openPaywall} className="btn-pill btn-primary mt-6">Unlock with Levli Premium</button>
-        </div>
-      </div>
-    );
-  }
 
   if (shotsLoading) {
     return <ReportStatusScreen failed={timedOut} onRetry={retry} />;
@@ -165,15 +161,23 @@ export default function ReportPage() {
         >
           <ChevronLeft size={22} /><span className="font-medium">Back</span>
         </button>
-        <h1 className="text-center whitespace-nowrap text-[18px] font-semibold text-gray-900 dark:text-white">Report</h1>
+        {/* The screen is a Premium feature, and says so beside its own name, in
+            the crown pill the app's locked cards already wear. */}
+        <div className="flex items-center justify-center gap-2">
+          <h1 className="whitespace-nowrap text-[18px] font-semibold text-gray-900 dark:text-white">Report</h1>
+          <PremiumBadge />
+        </div>
         {/* The header carries no second download action: the one main button at
             the foot of the screen is the only way the report is exported. */}
         <span aria-hidden="true" />
       </header>
 
       {/* A single readable column — the settings, the preview and the button all
-          belong to it — with room kept at the foot for the fixed button bar. */}
-      <div className="max-w-lg md:max-w-2xl mx-auto px-4 pt-4 pb-40 space-y-4">
+          belong to it — with room kept at the foot for the fixed button bar: the
+          bar's own measured height, added as the last block of the column, so a
+          taller bar (a wrapped note, a larger text size, the home indicator on
+          one device and not another) can never leave anything under it. */}
+      <div className="max-w-lg md:max-w-2xl mx-auto px-4 pt-4 space-y-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">{REPORT_TAGLINE}</p>
 
         <ReportOptions
@@ -203,7 +207,15 @@ export default function ReportPage() {
                 what is read here is what is exported. The exported PDF itself is
                 always the light one, whatever theme the app is in. */}
             <ReportThemeProvider>
-              <ReportPreview report={report} />
+              {/* Without Premium the report is still set up and still read — the
+                  header, the name and the dates stay sharp — and everything under
+                  it is held behind the lock, with the way into the plans on top
+                  of it (see ReportPreview's `locked`). */}
+              <ReportPreview
+                report={report}
+                locked={!isPremium}
+                overlay={isPremium ? null : <ReportLock onUnlock={openPaywall} />}
+              />
             </ReportThemeProvider>
           </>
         ) : (
@@ -211,24 +223,32 @@ export default function ReportPage() {
             <Eye size={15} aria-hidden="true" /> Show preview
           </button>
         )}
+
+        {/* The room the fixed bar takes, measured as it renders. */}
+        <div aria-hidden="true" style={{ height: barHeight + 16 }} />
       </div>
 
       {/* One main action, fixed at the foot of the screen so it is always
-          reachable, with the sharing note directly above it. */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+          reachable, with the sharing note directly above it. Without Premium the
+          same button, in the same place, is the way into the plans instead. */}
+      <div ref={barRef} className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
         <div
           className="max-w-lg md:max-w-2xl mx-auto px-4 pt-3 space-y-2"
           style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
         >
           <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center px-2">{SHARE_NOTICE}</p>
-          <button
-            onClick={handleExport}
-            disabled={busy || !report.hasAnyData}
-            className="btn-pill btn-primary w-full"
-          >
-            {busy && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
-            {busy ? "Generating…" : "Download"}
-          </button>
+          {isPremium ? (
+            <button
+              onClick={handleExport}
+              disabled={busy || !report.hasAnyData}
+              className="btn-pill btn-primary w-full"
+            >
+              {busy && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
+              {busy ? "Generating…" : "Download"}
+            </button>
+          ) : (
+            <button onClick={openPaywall} className="btn-pill btn-primary w-full">Unlock</button>
+          )}
         </div>
       </div>
     </div>
