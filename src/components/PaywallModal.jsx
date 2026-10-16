@@ -1,32 +1,41 @@
 import React, { useState } from "react";
-import { X, Syringe, BarChart3, History, FileText, Droplet } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { Crown, X } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useAppState } from "@/lib/AppState";
 import useModal from "@/hooks/useModal";
 import { toast } from "@/lib/toast";
 import { isRunningInIOSWrapper, sendIOSEvent } from "@/lib/iosBridge";
 import { reconcileSubscription } from "@/lib/subscriptionHandler";
+import { useSubscription } from "@/lib/SubscriptionContext";
+import usePremiumPlans from "@/hooks/usePremiumPlans";
+import PaywallBenefits from "@/components/paywall/PaywallBenefits";
+import PaywallPlans from "@/components/paywall/PaywallPlans";
+import PaywallBar from "@/components/paywall/PaywallBar";
 
-const PLANS = [
-  { id: "monthly", name: "Monthly", desc: "Full access for just ₱125.00/month" },
-  { id: "yearly", name: "Yearly", desc: "First 1 week free, then ₱509.00/year (₱42.41/month)", badge: "66% OFF" },
-  { id: "lifetime", name: "Lifetime", desc: "Lifetime access for just ₱1,010.00", badge: "Popular" },
-];
-
-const FEATURES = [
-  { icon: Syringe, label: "Track Unlimited Shots" },
-  { icon: BarChart3, label: "Unlock Comprehensive Insights" },
-  { icon: History, label: "Unlock Complete History" },
-  { icon: FileText, label: "Generate & Share Reports" },
-  { icon: Droplet, label: "Remove Ads and Watermarks" },
-];
-
+/**
+ * Levli Premium, sold in one screen.
+ *
+ * The sheet is a column of three parts, so nothing can ever sit on top of
+ * anything: the close button, the middle — headline, the four benefits and the
+ * plans, which is the part that scrolls — and the bar at the foot, which holds
+ * the one action, the terms of the plan in hand and the legal row and keeps its
+ * own height at the bottom of the screen.
+ *
+ * Every price on the screen is read from the product as the sheet opens (see
+ * src/lib/premiumPlans.js), never carried here; an account that already has
+ * Premium is told so instead of being sold it again; and the purchase itself is
+ * handed to the App Store, whose own sheet — with the customer's local price —
+ * is presented over this one.
+ */
 export default function PaywallModal({ open, onClose }) {
   const { user } = useAuth();
   const { refreshProfile } = useAppState();
+  const { isPremium } = useSubscription();
+  const { plans, loading, error: plansError, reload } = usePremiumPlans(open);
   const [selected, setSelected] = useState("yearly");
   const [busy, setBusy] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [purchaseError, setPurchaseError] = useState("");
   const [showNoSub, setShowNoSub] = useState(false);
 
   const inWrapper = isRunningInIOSWrapper();
@@ -38,103 +47,138 @@ export default function PaywallModal({ open, onClose }) {
 
   if (!open) return null;
 
-  const handleCheckout = () => {
-    // StoreKit trigger: posted verbatim, outside the wanillajs envelope.
-    window.webkit?.messageHandlers?.gameEvents?.postMessage({ notificationName: "paywall.subscriptions.show" });
-    sendIOSEvent("wanillajs.event.paywall.subscribeButtonTapped", { userId: user?.id ?? null });
-  };
+  const plan = plans.find((p) => p.id === selected) || plans[0] || null;
 
-  const handleRestore = async () => {
+  const handleSubscribe = async () => {
+    setPurchaseError("");
+    // The purchase is completed by the App Store, in the app itself: without that
+    // bridge there is nothing on this screen to buy with, and saying so is better
+    // than a button that does nothing.
+    const store = window.webkit?.messageHandlers?.gameEvents;
+    if (!store?.postMessage) {
+      setPurchaseError("Purchases are completed in the Levli app for iPhone. Open the app and try again.");
+      return;
+    }
     setBusy(true);
     try {
-      const s = await reconcileSubscription();
-      refreshProfile?.();
-      if (s.active) { toast.success("Premium restored!"); onClose(); } else setShowNoSub(true);
+      // StoreKit trigger: posted verbatim, outside the wanillajs envelope.
+      store.postMessage({ notificationName: "paywall.subscriptions.show" });
+      sendIOSEvent("wanillajs.event.paywall.subscribeButtonTapped", { userId: user?.id ?? null, plan: plan?.id ?? null });
+      // The App Store sheet is presented over this screen, and the entitlement
+      // comes back through the wrapper's own status hint, which closes this sheet.
+      // Checking here as well is what turns a sheet that never opened into a
+      // message with a way to try again.
+      const state = await reconcileSubscription();
+      if (state?.active) {
+        refreshProfile?.();
+        toast.success("Welcome to Levli Premium!");
+        onClose();
+      }
+    } catch {
+      setPurchaseError("We couldn't reach the App Store. Check your connection and try again.");
     } finally {
       setBusy(false);
     }
   };
 
-  return (
-    <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="Levli Premium" tabIndex={-1} className="fixed inset-0 z-[70] bg-white flex flex-col overflow-x-hidden sheet-lock animate-in slide-in-from-bottom outline-none">
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-5 pt-6 pb-2">
-        <button onClick={handleRestore} className="text-sm text-gray-500 hover:text-indigo-600">Restore</button>
-        <button onClick={handleClose} aria-label="Close"><X size={22} className="text-gray-400" /></button>
+  const handleRestore = async () => {
+    setPurchaseError("");
+    setRestoring(true);
+    try {
+      const s = await reconcileSubscription();
+      refreshProfile?.();
+      if (s.active) {
+        toast.success("Premium restored!");
+        onClose();
+      } else {
+        setShowNoSub(true);
+      }
+    } catch {
+      setPurchaseError("We couldn't check your purchases. Try again in a moment.");
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  // A single failure line for the bar, and the retry that belongs to whichever
+  // half of the screen failed — the plans, or the purchase.
+  const barError = purchaseError || plansError;
+  const retry = plansError ? reload : handleSubscribe;
+
+  const closeRow = (
+    <div className="flex justify-end px-4 pt-safe-5 pb-2">
+      <button
+        type="button"
+        onClick={handleClose}
+        aria-label="Close"
+        className="flex h-11 w-11 items-center justify-center rounded-full text-gray-400 active:scale-95 dark:text-gray-500"
+      >
+        <X size={22} aria-hidden="true" />
+      </button>
+    </div>
+  );
+
+  const shell =
+    "fixed inset-0 z-[70] flex flex-col overflow-x-hidden bg-white sheet-lock animate-in slide-in-from-bottom outline-none dark:bg-gray-950";
+
+  // Nothing left to sell: an account that already has Premium is told what it has.
+  if (isPremium) {
+    return (
+      <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="Levli Premium" tabIndex={-1} className={shell}>
+        {closeRow}
+        <div className="flex flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-500/15">
+            <Crown size={26} className="text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+          </span>
+          <p className="mt-4 text-xl font-bold text-gray-900 dark:text-white">You have Premium</p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-[#9A9DAE]">
+            Every feature is unlocked. Thank you for supporting Levli.
+          </p>
+          <button type="button" onClick={handleClose} className="btn-pill btn-secondary mt-6 w-full max-w-[280px]">
+            Close
+          </button>
+        </div>
       </div>
+    );
+  }
 
-      {/* Scrollable content — scrollbar hidden */}
-      <div className="flex-1 overflow-y-auto px-5 pb-32 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        <div className="text-center mt-4 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Be Consistent. Be Healthier</h2>
-          <p className="text-sm text-gray-500 mt-2">Your Health Deserves The Full Experience. – Go Premium!</p>
-        </div>
+  return (
+    <div ref={sheetRef} role="dialog" aria-modal="true" aria-label="Levli Premium" tabIndex={-1} className={shell}>
+      {closeRow}
 
-        {/* Plan cards */}
-        <div className="space-y-3 mb-6">
-          {PLANS.map((p) => (
-            <button key={p.id} onClick={() => setSelected(p.id)}
-              className={`w-full text-left rounded-2xl p-4 border transition-colors ${
-                selected === p.id ? "border-indigo-600 bg-indigo-50" : "border-cardline bg-white"
-              }`}>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-gray-900 text-lg">{p.name}</span>
-                {p.badge && (
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                    p.badge === "Popular" ? "bg-indigo-600 text-white" : "bg-amber-100 text-amber-700"
-                  }`}>{p.badge}</span>
-                )}
-              </div>
-              <p className="text-sm text-gray-500 mt-1">{p.desc}</p>
-            </button>
-          ))}
-        </div>
-
-        {/* Feature grid */}
-        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-          <div className="grid grid-cols-3 gap-4">
-            {FEATURES.map((f) => (
-              <div key={f.label} className="flex flex-col items-center text-center">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center mb-2">
-                  <f.icon size={20} className="text-indigo-600" />
-                </div>
-                <span className="text-[11px] text-gray-600 leading-tight">{f.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Fine print */}
-        <p className="text-[11px] text-gray-400 text-center mt-4 px-2">
-          No commitment, cancel anytime from your account settings. Payment is charged to your Apple ID.
+      {/* The middle: everything that scrolls, with nothing pinned over it. */}
+      <div className="flex-1 overflow-y-auto px-4 pb-6">
+        <h2 className="text-2xl font-bold leading-tight text-gray-900 dark:text-white">Unlock Levli Premium</h2>
+        <p className="mt-2 text-sm text-gray-500 dark:text-[#9A9DAE]">
+          Track every shot and see your progress clearly.
         </p>
 
-        {/* Footer links */}
-        <div className="flex items-center justify-center gap-3 mt-3 text-xs text-gray-400 flex-wrap">
-          <a href="/terms" className="hover:text-indigo-600">Terms of Service</a>
-          <span>·</span>
-          <button onClick={handleRestore} className="hover:text-indigo-600">Restore Purchase</button>
-          <span>·</span>
-          <a href="/privacy" className="hover:text-indigo-600">Privacy Policy</a>
-        </div>
+        <PaywallBenefits />
+
+        <PaywallPlans plans={plans} selected={selected} onSelect={setSelected} loading={loading} />
       </div>
 
-      {/* Continue button pinned bottom */}
-      <div className="absolute bottom-0 left-0 right-0 px-5 pb-8 pt-4 bg-gradient-to-t from-white to-transparent">
-        <button onClick={handleCheckout} disabled={busy}
-          className="w-full py-4 btn-pill btn-primary font-bold text-lg disabled:opacity-60">
-          {busy ? "Please wait…" : "Continue"}
-        </button>
-      </div>
+      <PaywallBar
+        label={plan?.button || "Continue"}
+        terms={plan?.terms || ""}
+        busy={busy}
+        disabled={!plan}
+        error={barError}
+        onSubscribe={handleSubscribe}
+        onRetry={retry}
+        onRestore={handleRestore}
+        restoring={restoring}
+      />
 
-      {/* No Subscription Found modal */}
+      {/* No Subscription Found */}
       {showNoSub && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-8">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-xs text-center shadow-xl">
-            <h3 className="text-lg font-bold text-gray-900">No Subscription Found</h3>
-            <p className="text-sm text-gray-500 mt-2">We couldn't find an active subscription for your account.</p>
-            <button onClick={() => setShowNoSub(false)}
-              className="mt-5 w-full py-3 btn-pill btn-primary font-semibold">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-8 dark:bg-black/60">
+          <div className="w-full max-w-xs rounded-2xl bg-white p-6 text-center shadow-xl dark:bg-[#16181f]">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">No Subscription Found</h3>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-300">
+              We couldn't find an active subscription for your account.
+            </p>
+            <button type="button" onClick={() => setShowNoSub(false)} className="btn-pill btn-primary mt-5 w-full">
               Okay
             </button>
           </div>
