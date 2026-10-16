@@ -15,8 +15,9 @@ import {
   levelMedicationOptions,
 } from "@/lib/medicationLevel";
 
-/** The card's caveat, word for word as it is meant to be read. */
-const DISCLAIMER = "Illustrative estimate based on typical patterns. Everyone responds differently. Not a blood test and not for adjusting your dose.";
+/** The card's caveat, word for word as it is meant to be read. One short line:
+ *  what is not explained here is in the card's "How this works" sheet. */
+const DISCLAIMER = "Estimate only. Not a blood test or dosing advice.";
 
 /**
  * Medication Level — what one dose's typical shape adds up to on any day, from the
@@ -105,8 +106,8 @@ export default function MedicationLevelCard() {
             <>
               <p className="text-3xl font-bold leading-tight text-gray-900 dark:text-white">{percent}%</p>
               <p className="mt-0.5 text-xs text-gray-500 dark:text-[#9A9DAE]">
-                of a single-dose peak
-                {daysSince > 0 ? ` · day ${daysSince} after dose` : daysSince === 0 ? " · dose taken today" : ""}
+                of single-dose peak
+                {daysSince > 0 ? ` · day ${daysSince} after dose` : ""}
               </p>
             </>
           ) : (
@@ -138,10 +139,7 @@ export default function MedicationLevelCard() {
         </p>
       )}
 
-      <p className={`mt-3 ${FOOTNOTE}`}>
-        Syringe: a dose logged · Solid: your level · Dashed: the next days, if your next dose is on time
-      </p>
-      <p className={`mt-1.5 ${FOOTNOTE}`}>{DISCLAIMER}</p>
+      <p className={`mt-3 text-center ${FOOTNOTE}`}>{DISCLAIMER}</p>
 
       {/* Centred on the card's own axis: the row takes the full width and the
           link keeps its colour, weight and size. */}

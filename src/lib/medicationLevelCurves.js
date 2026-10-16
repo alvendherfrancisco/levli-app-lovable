@@ -39,17 +39,18 @@ const SEMAGLUTIDE_VALUES = [
   0.0273, 0.0247, 0.0224, 0.0203, 0.0183, 0.0166, 0.0150, 0.0136, 0.0123, 0.0112,
 ];
 
-// The lines said under the graph, in the sheet's own words — "may" and "can",
-// never "will" — for the days both curves share. The sheet's own appetite note
-// marks days 6 and 7 of a weekly cycle as the point where appetite can come back
-// a little, and its washout notes carry the rest.
+// The line said under the graph: one short line each, in the sheet's own words —
+// "may" and "can", never "will" — for the days both curves share. The longer
+// explanation behind them belongs in the card's "How this works" sheet, not here.
+// The sheet's own appetite note marks days 6 and 7 of a weekly cycle as the point
+// where appetite can come back a little, and its washout notes carry the rest.
 const SHARED_NOTES = [
-  { from: 0, to: 0, text: "Absorption starts today. There is no single moment of peak." },
-  { from: 3, to: 3, text: "The level is in its peak window. Satiety effects may emerge; GI symptoms are possible." },
-  { from: 4, to: 5, text: "The level is coming down, though effects can persist as it falls." },
-  { from: 6, to: 7, text: "A small increase in appetite can occur around day 6 to 7." },
-  { from: 8, to: 21, text: "The level keeps falling without another dose. How long the effects last can vary." },
-  { from: 22, to: null, text: "Only a low level remains and it is still coming down. A low level does not always mean the effect has gone." },
+  { from: 0, to: 0, text: "Absorption starts today." },
+  { from: 3, to: 3, text: "Near the peak now." },
+  { from: 4, to: 5, text: "The level is coming down." },
+  { from: 6, to: 7, text: "Appetite can rise a little." },
+  { from: 8, to: 21, text: "Still coming down between doses." },
+  { from: 22, to: null, text: "Low level, still coming down." },
 ];
 
 export const MEDICATION_CURVES = {
@@ -60,7 +61,7 @@ export const MEDICATION_CURVES = {
     peakDay: 2,
     values: TIRZEPATIDE_VALUES,
     notes: [
-      { from: 1, to: 2, text: "Hunger and food noise may be reduced." },
+      { from: 1, to: 2, text: "Hunger and food noise may ease." },
     ],
   },
   semaglutide: {
@@ -69,8 +70,8 @@ export const MEDICATION_CURVES = {
     peakDay: 3,
     values: SEMAGLUTIDE_VALUES,
     notes: [
-      { from: 1, to: 1, text: "Hunger and food noise may be reduced a little." },
-      { from: 2, to: 2, text: "The greatest reduction in hunger and food noise may occur around now." },
+      { from: 1, to: 1, text: "Hunger and food noise may ease." },
+      { from: 2, to: 2, text: "Hunger and food noise may ease most now." },
     ],
   },
 };

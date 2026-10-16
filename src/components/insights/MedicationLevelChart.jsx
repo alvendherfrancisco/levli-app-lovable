@@ -2,6 +2,7 @@ import React from "react";
 import {
   CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
+import { Syringe } from "lucide-react";
 import { formatDayKeyShort, formatLocaleDate, fromDayKey } from "@/lib/dateUtils";
 
 // The one place the graph's colours are set: the level already lived, the same
@@ -49,6 +50,17 @@ function LevelTooltip({ active, payload }) {
   );
 }
 
+/** One key in the legend under the graph: whatever draws the mark, and its word.
+ *  The same size and the same colour as the weight chart's own legend. */
+function LegendKey({ label, children }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      {children}
+      <span className="text-xs text-gray-500 dark:text-[#9A9DAE]">{label}</span>
+    </div>
+  );
+}
+
 /**
  * The card's one graph: the level already lived as a solid line, the next days as
  * a dashed forecast, a syringe on every day a dose was taken, and today marked so
@@ -69,8 +81,10 @@ export default function MedicationLevelChart({ points, tickFill, example = false
   const interval = Math.max(0, Math.ceil(points.length / 5) - 1);
 
   return (
-    <div className={example ? "opacity-40" : ""}>
-      <div className="h-56" role="img" aria-label={ariaLabel}>
+    <div>
+      {/* Only the drawing is held back for the example; the legend under it stays
+          at full strength, so it can be read on a card with nothing logged yet. */}
+      <div className={`h-56 ${example ? "opacity-40" : ""}`} role="img" aria-label={ariaLabel}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={points} margin={{ top: 22, right: 14, bottom: 4, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
@@ -137,6 +151,23 @@ export default function MedicationLevelChart({ points, tickFill, example = false
             />
           </ComposedChart>
         </ResponsiveContainer>
+      </div>
+
+      {/* The marks the graph is drawn with, in three words — a syringe for a dose,
+          a solid line for the level already lived, a dashed one for the forecast.
+          One row, evenly spaced, never wrapping. */}
+      <div className="mt-3 flex items-center justify-center gap-4">
+        <LegendKey label="Dose">
+          <Syringe size={14} style={{ color: DOSE }} aria-hidden="true" />
+        </LegendKey>
+        <LegendKey label="Your level">
+          <span className="h-0.5 w-4 rounded" style={{ background: LIVED }} />
+        </LegendKey>
+        <LegendKey label="Forecast">
+          <svg width="16" height="2" aria-hidden="true">
+            <line x1="0" y1="1" x2="16" y2="1" stroke={FORECAST} strokeWidth="2" strokeDasharray="4 3" strokeLinecap="round" />
+          </svg>
+        </LegendKey>
       </div>
     </div>
   );

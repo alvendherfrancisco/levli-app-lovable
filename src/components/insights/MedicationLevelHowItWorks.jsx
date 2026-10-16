@@ -6,6 +6,7 @@ import InsightSheet from "@/components/insights/InsightSheet";
 // later than the prescriber's schedule.
 const POINTS = [
   "Every dose you log adds the typical shape of one dose to your level, counted from the day you took it. Doses taken on schedule build on each other.",
+  "Absorption starts on the day of the dose, so there is no single moment of peak.",
   "The level is a share of the peak of a single dose, so 100% is one dose at its peak. It can go above 100% when doses stack.",
   "The dashed part is a forecast, and it only assumes your next dose is taken on schedule.",
   "Late or missed doses need no correction: the line follows the doses you actually logged.",
