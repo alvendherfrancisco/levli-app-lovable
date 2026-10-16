@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Settings, BookOpen, Search } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
@@ -10,11 +10,10 @@ import ListSearchBar from "@/components/longlist/ListSearchBar";
 import { HEADER_ICON, HEADER_GLYPH } from "@/components/longlist/HeaderIconButton";
 import { DATE_PERIODS, inDatePeriod } from "@/lib/datePeriod";
 import JournalEntryCard from "@/components/journal/JournalEntryCard";
-import MonthSectionList from "@/components/longlist/MonthSectionList";
 import MonthJumpButton from "@/components/longlist/MonthJumpButton";
 import BackToTop from "@/components/longlist/BackToTop";
 import useProgressiveList from "@/hooks/useProgressiveList";
-import { groupByMonth, monthKeysOf } from "@/lib/monthGroups";
+import { monthKeyOf, monthKeysOf } from "@/lib/monthGroups";
 import { useAppState } from "@/lib/AppState";
 import { SIDE_EFFECT_CATEGORY, categoryMeta, normaliseCategory, sortJournalNewestFirst } from "@/lib/journalMeta";
 import { toast } from "@/lib/toast";
@@ -24,11 +23,12 @@ import { toast } from "@/lib/toast";
  * exercise, milestones and general entries.
  *
  * It is a long list, so it behaves like one, and it reads top to bottom: the
- * categories, then the word to look for with the dates beside it, then the
- * entries themselves — newest first, split into months, 20 drawn at a time as the
- * list is scrolled. The date sheet carries this week, this month, and every month
- * the journal holds. Narrowing the list writes nothing, and "Clear filters"
- * brings the whole journal back.
+ * categories, then the word to look for with the dates beside it, then History —
+ * the entries themselves, newest first in one list, 20 drawn at a time as the
+ * list is scrolled. The date sheet beside the search bar carries this week, this
+ * month, and every month the journal holds, and is what narrows the list by date.
+ * Narrowing the list writes nothing, and "Clear filters" brings the whole journal
+ * back.
  *
  * Side effects have a form of their own (Home and History) and a summary of their
  * own (the card on Insights), so they are neither written, filtered nor listed
@@ -75,17 +75,30 @@ export default function Journal() {
   const list = useProgressiveList(filtered, {
     resetKey: `${category}|${search}|${period}`,
   });
-  const groups = useMemo(() => groupByMonth(list.visible, (e) => e.date), [list.visible]);
   const months = useMemo(() => monthKeysOf(filtered, (e) => e.date), [filtered]);
 
   const { loadMore, hasMore } = list;
-  // A jump to a month the first page does not reach: keep taking pages in until
-  // that month arrives, or the list runs out.
+  // The row a jump lands on: the first entry of the month the date sheet asked
+  // for. A month the first page does not reach is fed pages until it arrives, or
+  // the list runs out, and the row is then brought to the top of the screen once.
+  const jumpIndex = useMemo(
+    () => (jumpMonth ? list.visible.findIndex((e) => monthKeyOf(e.date) === jumpMonth) : -1),
+    [jumpMonth, list.visible],
+  );
+  const jumpRowRef = useRef(null);
+  const jumpedRef = useRef(null);
+
   useEffect(() => {
     if (!jumpMonth || !hasMore) return;
-    if (groups.some((g) => g.key === jumpMonth)) return;
+    if (jumpIndex >= 0) return;
     loadMore();
-  }, [jumpMonth, hasMore, groups, loadMore]);
+  }, [jumpMonth, hasMore, jumpIndex, loadMore]);
+
+  useEffect(() => {
+    if (!jumpMonth || jumpIndex < 0 || jumpedRef.current === jumpMonth) return;
+    jumpedRef.current = jumpMonth;
+    jumpRowRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [jumpMonth, jumpIndex]);
 
   const hasFilters = category !== "All" || !!search.trim() || period !== "all";
   const clearFilters = () => {
@@ -176,13 +189,22 @@ export default function Journal() {
           </div>
         ) : (
           <div className="px-4 pt-4">
-            <MonthSectionList
-              groups={groups}
-              jumpTo={jumpMonth}
-              renderItem={(entry) => (
-                <JournalEntryCard entry={normaliseEntry(entry)} onEdit={openEdit} />
-              )}
-            />
+            {/* One list, newest first, under its own heading — the same heading
+                the Shots history carries, so both screens read the same way. The
+                date button beside the search bar is what narrows it by month. */}
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">History</h2>
+
+            <div className="space-y-2">
+              {list.visible.map((entry, index) => (
+                <div
+                  key={entry.id}
+                  ref={index === jumpIndex ? jumpRowRef : null}
+                  className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden scroll-mt-24"
+                >
+                  <JournalEntryCard entry={normaliseEntry(entry)} onEdit={openEdit} />
+                </div>
+              ))}
+            </div>
 
             {hasMore && (
               <div ref={list.sentinelRef} className="pt-1 pb-3 text-center">

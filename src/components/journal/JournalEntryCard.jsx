@@ -10,7 +10,7 @@ import { parseShotDate, formatLocaleDate } from "@/lib/dateUtils";
  * away permanently: the note is the same note, simply not all of it on screen at
  * once.
  *
- * It carries no card of its own; the month it belongs to is the card.
+ * It carries no card of its own; the list draws the card around it.
  */
 export default function JournalEntryCard({ entry, onEdit }) {
   const [open, setOpen] = useState(false);
