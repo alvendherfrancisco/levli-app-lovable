@@ -11,7 +11,33 @@ import React from "react";
  * shows all four side by side on a phone, and choosing another range only changes
  * the colours: the row never resizes or shifts as the selection moves.
  */
-export default function RangeTabs({ options, value, onChange, className = "mb-5" }) {
+export default function RangeTabs({ options, value, onChange, className = "mb-5", variant = "plain" }) {
+  // The same tabs inside one shared container — the compact pill group a card
+  // uses when its ranges are short. The tabs themselves are unchanged: the same
+  // pill, the same colours, the same type; only the container around them is new,
+  // and it hugs its content rather than stretching across the card.
+  if (variant === "segmented") {
+    return (
+      <div className={`inline-flex items-center gap-1 rounded-full bg-gray-100 p-1 dark:bg-white/[0.06] ${className}`}>
+        {options.map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => onChange(option)}
+            aria-pressed={value === option}
+            className={`min-h-[32px] rounded-full px-3 text-[11px] sm:text-xs font-medium whitespace-nowrap transition-colors ${
+              value === option
+                ? "bg-indigo-600 text-white"
+                : "text-gray-500 dark:text-[#9A9DAE] hover:text-gray-700 dark:hover:text-white"
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className={`flex items-center gap-1 flex-wrap ${className}`}>
       {options.map((option) => (

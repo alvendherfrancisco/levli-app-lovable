@@ -445,11 +445,6 @@ input[type="range"].pain-slider:active::-moz-range-thumb { transform: scale(1.1)
   overflow: hidden;
 }
 
-/* Dark-mode bar track for Site Rotation chart */
-.dark .site-rotation-chart .recharts-bar-background-rect {
-  fill: rgba(255, 255, 255, 0.06) !important;
-}
-
 /* Slide-in animation */
 @keyframes slideInFromBottom {
   from { transform: translateY(100%); }
