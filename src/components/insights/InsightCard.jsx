@@ -7,9 +7,9 @@ import React from "react";
  * card on the page is drawn from here, so no two sections can differ in
  * padding, corner radius or spacing.
  */
-export default function InsightCard({ children, className = "" }) {
+export default function InsightCard({ children, className = "", id }) {
   return (
-    <div className={`mx-4 mb-5 bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm card-line ${className}`}>
+    <div id={id} className={`mx-4 mb-5 bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm card-line ${className}`}>
       {children}
     </div>
   );

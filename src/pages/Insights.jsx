@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useMemo, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Settings } from "lucide-react";
 import IonIcon from "@/components/IonIcon";
 import StatTile from "@/components/insights/StatTile";
@@ -58,6 +58,18 @@ export default function Insights() {
     [weightHistory, profile, shots, weightUnit, weightRange]
   );
   const rows = progress?.rows || [];
+
+  // Arriving from Home's Weight Progress card: the page opens on the Weight Change
+  // card instead of at the top. The card belongs to this page, so by the time this
+  // runs it is on screen — the short wait is only for the layout to settle.
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash !== "#weight-change") return;
+    const timer = window.setTimeout(() => {
+      document.getElementById("weight-change")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [hash]);
 
   const formatPhotoDate = (isoDate) => {
     const [y, m, d] = isoDate.split("-").map(Number);
@@ -150,7 +162,7 @@ export default function Insights() {
 
       <div className="w-full max-w-3xl mx-auto pt-4">
         {/* Weight Change Panel */}
-        <InsightCard className="overflow-hidden">
+        <InsightCard id="weight-change" className="overflow-hidden scroll-mt-24">
           <SectionHeader
             icon={<IonIcon name="trending-down" size={20} className="text-indigo-600 dark:text-indigo-400" />}
             title="Weight Change"
