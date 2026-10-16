@@ -11,15 +11,12 @@ import RangeTabs from "@/components/insights/RangeTabs";
 import ProgressPhotoCard from "@/components/insights/ProgressPhotoCard";
 import WeightProgressChart from "@/components/insights/WeightProgressChart";
 import SideEffectsCard from "@/components/insights/SideEffectsCard";
-import HowItWorksLink from "@/components/insights/HowItWorksLink";
 import AddMetricModal from "@/components/modals/AddMetricModal";
 import { useAppState } from "@/lib/AppState";
 import { todayKey } from "@/lib/dateUtils";
-import { getHalfLifeDays, getDosingInterval } from "@/lib/medicationData";
 import { fromKg, heightCmOf, shownBmi, weightUnitLabel } from "@/lib/measure";
 import { buildWeightProgress } from "@/lib/expectedProgress";
 import { sound } from "@/lib/sounds";
-import ExposureHowItWorks from "@/components/insights/ExposureHowItWorks";
 import WellbeingPanel from "@/components/insights/WellbeingPanel";
 import { toast } from "@/lib/toast";
 import useDoseColors from "@/hooks/useDoseColors";
@@ -43,20 +40,11 @@ export default function Insights() {
   const [weightRange, setWeightRange] = useState("180 Days");
   // The expected curve is on to begin with; the toggle above the graph turns it off.
   const [showExpected, setShowExpected] = useState(true);
-  const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [photoModal, setPhotoModal] = useState(null);
   const weightUnit = profile?.weight_unit || "lb";
   // Markers and the chart's axis labels follow the theme, so they repaint with it.
   const { isDark } = useDoseColors();
   const tickFill = isDark ? "#B4B8C7" : "#767676";
-
-  // The sheet behind "How GLP-1s work" describes the product in hand.
-  const latestShot = shots[0] || null;
-  const howItWorks = {
-    medication: latestShot?.medication || "",
-    halfLifeDays: latestShot ? getHalfLifeDays(latestShot.medication, latestShot.route || "subcutaneous") : null,
-    intervalDays: latestShot ? getDosingInterval(latestShot.medication) || null : null,
-  };
 
   // Everything the one graph draws: the weights logged in the range, their
   // 7-day average, the expected curve and the goal.
@@ -265,7 +253,6 @@ export default function Insights() {
             />
           )}
 
-          <HowItWorksLink onClick={() => setShowHowItWorks(true)} />
         </InsightCard>
 
         {/* The gentle check-in, when the weight trend itself calls for one. It
@@ -308,14 +295,6 @@ export default function Insights() {
             onSave={handleSavePhotoModal} onDelete={photoModal?.mode === "edit" ? handleDeletePhotoModal : undefined} />
         </InsightCard>
 
-        {/* The explainer behind the "How GLP-1s work" link on Expected Progress. */}
-        <ExposureHowItWorks
-          open={showHowItWorks}
-          onClose={() => setShowHowItWorks(false)}
-          medication={howItWorks.medication}
-          halfLifeDays={howItWorks.halfLifeDays}
-          intervalDays={howItWorks.intervalDays}
-        />
       </div>
     </PageContainer>
   );

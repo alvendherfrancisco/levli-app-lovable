@@ -1,22 +1,21 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Settings, Syringe, Info, HelpCircle, Wind, ArrowRight } from "lucide-react";
+import { Settings, Info, Wind } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import DateStrip from "@/components/home/DateStrip";
 import NextShotCard from "@/components/home/NextShotCard";
 import RepeatDoseCard from "@/components/home/RepeatDoseCard";
 import MetricsGrid from "@/components/home/MetricsGrid";
+import WeightProgressCard from "@/components/home/WeightProgressCard";
 import AddShotModal from "@/components/modals/AddShotModal";
 import SideEffectsModal from "@/components/modals/SideEffectsModal";
 import { useAppState } from "@/lib/AppState";
 import { toDayKey, todayKey } from "@/lib/dateUtils";
 import { logsAsDose } from "@/lib/medicationForm";
 import { isActiveMedication } from "@/lib/medicationLink";
-import LockedFeatureCard from "@/components/LockedFeatureCard";
 import UnitCheckPrompt from "@/components/home/UnitCheckPrompt";
 import PushOptInBanner from "@/components/home/PushOptInBanner";
-import { useSubscription } from "@/lib/SubscriptionContext";
 import { useMountProbe } from "@/lib/perfProbe";
 
 export default function Home() {
@@ -28,7 +27,6 @@ export default function Home() {
   const [showSideEffects, setShowSideEffects] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const { getSideEffects, adverseEventsByDay, medications, profile, shots } = useAppState();
-  const { isPremium } = useSubscription();
   const dk = toDayKey(selectedDate);
   // The action, named for the product in hand: a dose is taken, a shot is given.
   // The medication's form decides it (see src/lib/medicationForm.js), and the
@@ -96,37 +94,10 @@ export default function Home() {
           </div>
         </button>
 
-        {/* Medication Levels card */}
-        <div className="mx-3 mb-4 bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:"rgba(99,102,241,0.13)"}}>
-                <Syringe size={16} className="text-indigo-600" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900 dark:text-white">Modelled Medication Exposure</h3>
-                <p className="text-xs text-indigo-500">Illustrative estimate of relative medication exposure (not a blood-level measurement).</p>
-              </div>
-            </div>
-            <HelpCircle size={18} className="text-indigo-400" />
-          </div>
-          <div className="border-b-2 border-indigo-500 w-12 mb-3" />
-          {isPremium ? (
-            <Link to="/insights" className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-3 flex items-center gap-2 block border border-transparent dark:border-indigo-500/15">
-              <Info size={16} className="text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
-              <p className="text-sm text-indigo-700 dark:text-indigo-300">View full exposure chart in Insights <ArrowRight size={12} className="inline" /></p>
-            </Link>
-          ) : (
-            <LockedFeatureCard subtitle="Upgrade to premium to view estimated medication levels.">
-              <div className="flex items-center gap-2 mb-3 flex-wrap">
-                {["7 Days", "30 Days", "90 Days"].map((r) => (
-                  <span key={r} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-400">{r}</span>
-                ))}
-              </div>
-              <div className="h-32 rounded-xl bg-gradient-to-b from-indigo-50 to-transparent dark:from-indigo-500/10" />
-            </LockedFeatureCard>
-          )}
-        </div>
+        {/* Weight Progress — the weight now, what has been lost since the first
+            weight logged and how far the goal on Profile still is. It reads the
+            same weight history the Insights page reads, so the two always agree. */}
+        <WeightProgressCard dayKey={dk} />
       </div>
 
       {canLogForDay && (

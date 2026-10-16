@@ -6,7 +6,7 @@ import { useAppState } from "@/lib/AppState";
 import AddNutritionModal from "@/components/modals/AddNutritionModal";
 import AddMetricModal from "@/components/modals/AddMetricModal";
 import { todayKey } from "@/lib/dateUtils";
-import { checkWeight } from "@/lib/measure";
+import { weightEntry } from "@/lib/weightEntry";
 import { toast } from "@/lib/toast";
 
 // Card order — also the order of the value signature used for the saved flash.
@@ -74,19 +74,9 @@ export default function MetricsGrid({ dayKey }) {
       icon: <WeightFilledIcon size={20} className="text-amber-500 dark:text-amber-400" />, label: "Weight",
       value: weight != null ? oneDec(weight) : "–", unit: weightUnit, color: "bg-amber-50 dark:bg-amber-500/10",
       ariaLabel: addLabel("Weight", weight != null ? `${oneDec(weight)} ${weightUnit}` : "no entry today"),
-      // The unit is shown next to the input, a value outside the plausible adult
-      // range is not saved, and the last weight on record is the placeholder.
-      onAdd: () => setMetricModal({
-        label: "Weight",
-        unit: weightUnit,
-        current: weight != null ? String(weight) : "",
-        placeholder: weight == null && lastLoggedWeight != null ? oneDec(lastLoggedWeight) : "",
-        validate: (v) => { const check = checkWeight(v, weightUnit); return check.ok ? "" : check.message; },
-        onSave: async (v) => { await saveWeight(dk, v); weight != null ? toast.success("Weight updated") : toast.success("Weight added"); },
-        // An entry already on record can be removed from the sheet itself, and
-        // only then is the sheet offered the way to do it.
-        onDelete: weight != null ? async () => { await saveWeight(dk, null); toast.deleted("Weight entry deleted"); } : undefined,
-      }),
+      // The entry sheet is the app's one weight sheet, shared with the Weight
+      // Progress card (src/lib/weightEntry.js).
+      onAdd: () => setMetricModal(weightEntry({ dayKey: dk, weight, unit: weightUnit, lastLogged: lastLoggedWeight, saveWeight })),
     },
     {
       icon: <IonIcon name="flame" size={20} className="text-orange-500 dark:text-orange-400" />, label: "Calories",
