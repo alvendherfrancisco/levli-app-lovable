@@ -43,9 +43,10 @@ const CARD = "bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray
 const CARD_ROWS = `${CARD} px-4 divide-y divide-gray-100 dark:divide-white/[0.07]`;
 
 export default function SettingsPage() {
-  const { darkMode, setDarkMode, profile, setProfile, shots, journalEntries, dayMetrics, adverseEvents, medications, repeatSchedules, proxyAccess, resetState } = useAppState();
+  const { darkMode, setDarkMode, profile, setProfile, shots, journalEntries, dayMetrics, adverseEvents, medications, repeatSchedules, proxyAccess, resetState, undoUnitConversion } = useAppState();
   const { logout, user } = useAuth();
   const [exportLoading, setExportLoading] = useState(false);
+  const [undoUnitLoading, setUndoUnitLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteEmail, setDeleteEmail] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -54,6 +55,22 @@ export default function SettingsPage() {
 
   const handleDarkMode = async (val) => {
     await setDarkMode(val);
+  };
+
+  // The one conversion the app ever makes — pounds read as kilograms — can be put
+  // back from here for as long as it stands (see UnitCheckPrompt). Undoing it
+  // restores every entry exactly as it was logged, and the row then goes away.
+  const handleUndoUnitConversion = async () => {
+    setUndoUnitLoading(true);
+    try {
+      const n = await undoUnitConversion();
+      toast.success(`Undone. ${n} entries back to pounds`);
+    } catch (err) {
+      console.error("Undo unit change failed:", err);
+      toast.error("Could not undo that change. Please try again.");
+    } finally {
+      setUndoUnitLoading(false);
+    }
   };
 
   // A unit is a display preference: it is written to the profile and every
@@ -175,6 +192,16 @@ export default function SettingsPage() {
             <p className="text-xs text-gray-500 dark:text-gray-400 pt-2">
               Everything you have already saved stays exactly as it is — only how it is shown changes.
             </p>
+            {profile?.unit_check_status === "converted" && (
+              <button
+                type="button"
+                onClick={handleUndoUnitConversion}
+                disabled={undoUnitLoading}
+                className="mt-4 w-full rounded-xl border border-gray-200 dark:border-white/10 py-3 text-sm font-semibold text-gray-700 dark:text-[#E8E9F0] disabled:opacity-60"
+              >
+                {undoUnitLoading ? "Undoing…" : "Undo last unit change"}
+              </button>
+            )}
           </div>
         </div>
 
