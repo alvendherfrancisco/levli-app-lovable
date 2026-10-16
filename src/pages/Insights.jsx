@@ -9,13 +9,14 @@ import SectionHeader from "@/components/insights/SectionHeader";
 import InsightEmptyState from "@/components/insights/InsightEmptyState";
 import RangeTabs from "@/components/insights/RangeTabs";
 import ProgressPhotoCard from "@/components/insights/ProgressPhotoCard";
-import ExpectedProgressCard from "@/components/insights/ExpectedProgressCard";
+import WeightProgressChart from "@/components/insights/WeightProgressChart";
+import HowItWorksLink from "@/components/insights/HowItWorksLink";
 import AddMetricModal from "@/components/modals/AddMetricModal";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useAppState } from "@/lib/AppState";
-import { todayKey, toDayKey } from "@/lib/dateUtils";
+import { todayKey } from "@/lib/dateUtils";
 import { getHalfLifeDays, getDosingInterval } from "@/lib/medicationData";
-import { heightCmOf, shownBmi } from "@/lib/measure";
+import { fromKg, heightCmOf, shownBmi, weightUnitLabel } from "@/lib/measure";
+import { buildWeightProgress } from "@/lib/expectedProgress";
 import { sound } from "@/lib/sounds";
 import ExposureHowItWorks from "@/components/insights/ExposureHowItWorks";
 import WellbeingPanel from "@/components/insights/WellbeingPanel";
@@ -23,42 +24,24 @@ import { toast } from "@/lib/toast";
 import useDoseColors from "@/hooks/useDoseColors";
 import PageContainer from "@/components/PageContainer";
 
-function buildWeightData(weightHistory, daysBack) {
-  if (!weightHistory.length) return [];
-  const mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const byDay = {};
-  weightHistory.forEach(({ date, weight }) => { if (weight != null) byDay[date] = weight; });
-
-  // A continuous day-by-day axis from the start of the selected range up to
-  // TODAY. Days with no entry carry null, so the chart shows a real gap and
-  // never ends at the last entry.
-  const end = new Date(); end.setHours(0,0,0,0);
-  const start = new Date(end); start.setDate(start.getDate() - (daysBack - 1));
-  const points = [];
-  for (const day = new Date(start); day <= end; day.setDate(day.getDate() + 1)) {
-    const key = toDayKey(day);
-    points.push({
-      date: `${mNames[day.getMonth()]} ${day.getDate()}`,
-      weight: byDay[key] != null ? byDay[key] : null,
-      _isoDate: key,
-    });
-  }
-
-  // 7-day rolling average over the logged entries themselves.
-  const entries = points.filter((p) => p.weight != null);
-  entries.forEach((point, i) => {
-    const window = entries.slice(Math.max(0, i - 6), i + 1);
-    const avg = window.reduce((a, p) => a + p.weight, 0) / window.length;
-    point.rollingAvg = Math.round(avg * 10) / 10;
-  });
-  return points;
-}
-
-const WEIGHT_RANGES = { "30 Days": 30, "180 Days": 180, "1 Year": 365 };
+/**
+ * The ranges the card offers: how far back each one reaches, and whether the
+ * expected curve is drawn on it. "Since start" runs from the first logged weight
+ * instead, and every range draws the curve but the 30-day one — over four weeks
+ * it is a flat line that adds nothing.
+ */
+const WEIGHT_RANGES = {
+  "30 Days": { days: 30, curve: false },
+  "180 Days": { days: 180, curve: true },
+  "1 Year": { days: 365, curve: true },
+  "Since start": { days: null, curve: true },
+};
 
 export default function Insights() {
   const { shots, weightHistory, profile, progressPhotosList, addProgressPhotoRecord, updateProgressPhotoRecord, deleteProgressPhotoRecord, getWeight, unitCheck } = useAppState();
   const [weightRange, setWeightRange] = useState("180 Days");
+  // The expected curve is on to begin with; the toggle above the graph turns it off.
+  const [showExpected, setShowExpected] = useState(true);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [photoModal, setPhotoModal] = useState(null);
   const weightUnit = profile?.weight_unit || "lb";
@@ -74,7 +57,18 @@ export default function Insights() {
     intervalDays: latestShot ? getDosingInterval(latestShot.medication) || null : null,
   };
 
-  const weightData = useMemo(() => buildWeightData(weightHistory, WEIGHT_RANGES[weightRange]), [weightHistory, weightRange]);
+  // Everything the one graph draws: the weights logged in the range, their
+  // 7-day average, the expected curve and the goal.
+  const progress = useMemo(
+    () => buildWeightProgress({
+      weightHistory, profile, shots,
+      unit: weightUnit,
+      daysBack: WEIGHT_RANGES[weightRange].days,
+      showCurve: WEIGHT_RANGES[weightRange].curve,
+    }),
+    [weightHistory, profile, shots, weightUnit, weightRange]
+  );
+  const rows = progress?.rows || [];
 
   const formatPhotoDate = (isoDate) => {
     const [y, m, d] = isoDate.split("-").map(Number);
@@ -113,8 +107,8 @@ export default function Insights() {
     toast.deleted("Progress photo deleted");
   };
 
-  // ── Weight stats (over the entries actually logged) ─────────────────────────
-  const weightEntries = weightData.filter((p) => p.weight != null);
+  // ── Weight stats (over the entries actually logged in the range) ────────────
+  const weightEntries = rows.filter((r) => r.weight != null);
   const firstEntry = weightEntries[0] || null;
   const lastEntry = weightEntries[weightEntries.length - 1] || null;
 
@@ -124,8 +118,8 @@ export default function Insights() {
 
   const actualWeeks = weightEntries.length >= 2
     ? Math.max(1, (() => {
-        const [y1,m1,d1] = firstEntry._isoDate.split("-").map(Number);
-        const [y2,m2,d2] = lastEntry._isoDate.split("-").map(Number);
+        const [y1,m1,d1] = firstEntry.isoDate.split("-").map(Number);
+        const [y2,m2,d2] = lastEntry.isoDate.split("-").map(Number);
         const msElapsed = new Date(y2,m2-1,d2) - new Date(y1,m1-1,d1);
         return msElapsed / (7 * 86400000);
       })())
@@ -153,7 +147,9 @@ export default function Insights() {
   // A plain-language summary of the weight chart, for screen readers and small
   // screens: "Down 3.8 lb over 180 days".
   const weightSummary = weightEntries.length >= 2
-    ? `${weightLoss >= 0 ? "Down" : "Up"} ${Math.abs(weightLoss).toFixed(1)} ${weightUnit} over ${weightRange.toLowerCase()}`
+    ? `${weightLoss >= 0 ? "Down" : "Up"} ${Math.abs(weightLoss).toFixed(1)} ${weightUnit} ${
+        weightRange === "Since start" ? "since your first logged weight" : `over ${weightRange.toLowerCase()}`
+      }`
     : "";
 
   return (
@@ -217,46 +213,60 @@ export default function Insights() {
             </div>
           )}
 
-          {weightEntries.length >= 2 ? (
-            <div className="h-52" role="img" aria-label={weightSummary || "Weight chart"}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={weightData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(150,150,150,0.15)" />
-                  {/* 4–6 readable ticks rather than a label per entry */}
-                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: tickFill }} stroke={tickFill} interval={Math.max(0, Math.floor(weightData.length / 5))} />
-                  <YAxis tick={{ fontSize: 12, fill: tickFill }} stroke={tickFill} domain={["auto", "auto"]} width={40} />
-                  <Tooltip
-                    formatter={(v, name) => [`${v} ${weightUnit}`, name === "rollingAvg" ? "7-day avg" : "Weight"]}
-                    contentStyle={{ background: "rgba(20,22,32,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#E8E9F0" }}
-                  />
-                  <Line type="monotone" dataKey="weight" stroke="#6366F1" strokeWidth={2} dot={{ fill: "#6366F1", r: 3 }} activeDot={{ r: 5 }} />
-                  <Line type="monotone" dataKey="rollingAvg" stroke="#8B5CF6" strokeWidth={2} strokeDasharray="4 4" dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+          {/* The expected curve is offered only where it can be read: the 30-day
+              range hides it, because four weeks of a two-year curve is a flat
+              line that adds nothing. */}
+          {progress?.showCurve && weightEntries.length > 0 && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showExpected}
+              onClick={() => setShowExpected((v) => !v)}
+              className="mb-3 flex min-h-[44px] w-full items-center justify-between gap-3 rounded-xl border border-cardline px-3.5"
+            >
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Expected</span>
+              <span className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${showExpected ? "bg-indigo-600" : "bg-gray-300 dark:bg-white/20"}`}>
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${showExpected ? "left-4" : "left-0.5"}`} />
+              </span>
+            </button>
+          )}
+
+          {weightEntries.length > 0 ? (
+            <>
+              <WeightProgressChart
+                rows={rows}
+                startKey={progress.startKey}
+                windowStart={progress.windowStart}
+                windowEnd={progress.windowEnd}
+                goal={fromKg(progress.goalKg, weightUnit)}
+                showCurve={progress.showCurve && showExpected}
+                unitLabel={weightUnitLabel(weightUnit)}
+                tickFill={tickFill}
+                ariaLabel={weightSummary || "Weight chart"}
+              />
+              <p className={`mt-3 text-center ${FOOTNOTE}`}>
+                Illustrative only. Everyone responds differently. Not medical advice.
+              </p>
+              <p className={`mt-2 text-center ${FOOTNOTE}`}>Dots: your logged weights · Dashed: 7-day average</p>
+              {weightEntries.length === 1 && (
+                <div className="mt-4 flex justify-center">
+                  <Link to="/" className="btn-pill btn-pill-sm btn-primary">Log your weight</Link>
+                </div>
+              )}
+            </>
           ) : (
             <InsightEmptyState
               message="No weights in this range yet."
               action={<Link to="/" className="btn-pill btn-pill-sm btn-primary">Log your weight</Link>}
             />
           )}
-          {/* The chart's legend describes the chart, so it appears with it. */}
-          {weightEntries.length >= 2 && (
-            <p className={`mt-3 text-center ${FOOTNOTE}`}>Solid: daily entries · Dashed: 7-day average</p>
-          )}
+
+          <HowItWorksLink onClick={() => setShowHowItWorks(true)} />
         </InsightCard>
 
         {/* The gentle check-in, when the weight trend itself calls for one. It
             draws nothing at all unless a safeguard is active. */}
         <WellbeingPanel />
-
-        {/* Expected Progress Panel */}
-        <ExpectedProgressCard
-          weightHistory={weightHistory}
-          profile={profile}
-          shots={shots}
-          onHowItWorks={() => setShowHowItWorks(true)}
-        />
 
         {/* Progress Pictures Panel — a strip of thumbnails with the Add button in
             the header, so the card stays one row tall. */}

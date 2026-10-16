@@ -17,9 +17,11 @@ import { fromKg } from "@/lib/measure";
  * than a single point.
  *
  * "Since start" (daysBack null) is the exception: it runs from the first logged
- * weight and draws the whole curve to its own last week, so the long view ahead
- * is there. The 30-day range hides the curve — four weeks of a two-year curve is
- * a flat line that tells the user nothing.
+ * weight rather than the last N days, and draws the whole curve to its own last
+ * week, so the long view ahead is on screen.
+ *
+ * showCurve (false on the card's 30-day range) drops the expected values
+ * altogether: four weeks of a two-year curve is a flat line that adds nothing.
  *
  * Values are in the unit the profile displays (kg or lb), so the chart, the
  * tooltip and the goal line are all in one unit.
@@ -63,7 +65,7 @@ export function fullDateLabel(key) {
  * shots (the latest shot's medication decides which curve the user is compared
  * with). Returns null when no weight has ever been logged.
  */
-export function buildWeightProgress({ weightHistory = [], profile, shots = [], unit = "lb", daysBack = null }) {
+export function buildWeightProgress({ weightHistory = [], profile, shots = [], unit = "lb", daysBack = null, showCurve = true }) {
   if (!weightHistory.length) return null;
 
   const first = weightHistory[0];
@@ -71,15 +73,15 @@ export function buildWeightProgress({ weightHistory = [], profile, shots = [], u
   const medication = shots[0]?.medication || profile?.default_medication || "";
   const seriesKey = seriesKeyForMedication(medication, shots[0]?.route);
   const seriesEnd = seriesEndWeek(seriesKey);
-  const showCurve = daysBack != null;
+  const sinceStart = daysBack == null;
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayWeek = Math.max(0, (today - dayOf(first.date)) / WEEK_MS);
   // "Since start" runs the whole history out to the end of the curve — or to
   // today, when the user has already gone past it. Every other range is the last
   // N days, ending today.
-  const startWeek = showCurve ? Math.max(0, todayWeek - daysBack / 7) : 0;
-  const roughEnd = showCurve ? todayWeek : Math.max(todayWeek, seriesEnd);
+  const startWeek = sinceStart ? 0 : Math.max(0, todayWeek - daysBack / 7);
+  const roughEnd = sinceStart ? Math.max(todayWeek, seriesEnd) : todayWeek;
 
   const startDay = Math.round(startWeek * 7);
   const endDay = Math.round(Math.max(roughEnd, startWeek + 2) * 7);
