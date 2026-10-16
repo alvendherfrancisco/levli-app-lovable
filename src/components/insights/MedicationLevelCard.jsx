@@ -98,26 +98,29 @@ export default function MedicationLevelCard() {
           : null}
       />
 
-      {/* Today, before the graph: the level in hand and the phase it is in. */}
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      {/* Today, before the graph: the level in hand, the phase it is in beside
+          the heading, and what the figure is measured against on a row of its
+          own — so the badge never squeezes that line. */}
+      <div className="mb-4">
+        <div className="flex items-start justify-between gap-3">
           <p className="text-xs text-gray-400 dark:text-[#9A9DAE]">Today</p>
-          {level.hasDoses ? (
-            <>
-              <p className="text-3xl font-bold leading-tight text-gray-900 dark:text-white">{percent}%</p>
-              <p className="mt-0.5 text-xs text-gray-500 dark:text-[#9A9DAE]">
-                of single-dose peak
-                {daysSince > 0 ? ` · day ${daysSince} after dose` : ""}
-              </p>
-            </>
-          ) : (
-            <p className="mt-1 text-sm text-gray-500 dark:text-[#9A9DAE]">Log your first dose to see your level.</p>
+          {level.hasDoses && level.today.phase && (
+            <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${PHASE_TONE[level.today.phase]}`}>
+              {level.today.phase}
+            </span>
           )}
         </div>
-        {level.hasDoses && level.today.phase && (
-          <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${PHASE_TONE[level.today.phase]}`}>
-            {level.today.phase}
-          </span>
+        {level.hasDoses ? (
+          <>
+            <p className="text-3xl font-bold leading-tight text-gray-900 dark:text-white">{percent}%</p>
+            {/* Full card width, one line always: it shrinks rather than wrapping. */}
+            <p className="mt-0.5 min-w-0 shrink whitespace-nowrap text-[13px] text-gray-500 dark:text-[#9A9DAE]">
+              of single-dose peak
+              {daysSince > 0 ? ` · day ${daysSince} after dose` : ""}
+            </p>
+          </>
+        ) : (
+          <p className="mt-1 text-sm text-gray-500 dark:text-[#9A9DAE]">Log your first dose to see your level.</p>
         )}
       </div>
 
