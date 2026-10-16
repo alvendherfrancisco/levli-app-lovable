@@ -82,7 +82,7 @@ export default function Shots() {
         />
 
         <div className="px-4">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">History</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">History</h2>
           {shotsLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 size={28} className="animate-spin text-indigo-400" />
@@ -96,7 +96,7 @@ export default function Shots() {
               <p className="text-sm">Log your first {words.one} to track your doses, injection sites, and how you feel over time.</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-4">
               {visibleShots.map((shot) => (
                 <button key={shot.id} onClick={() => openEdit(shot)} className="w-full text-left">
                   <ShotCard {...shot} drugClass={shot.drug_class} />
@@ -119,8 +119,9 @@ export default function Shots() {
       </div>
 
       {/* Where the shots were given, below the history it describes (moved here
-          from Insights). */}
-      <div className="w-full max-w-3xl mx-auto">
+          from Insights), with the page's own 16px gap above it rather than
+          sitting against the last card. */}
+      <div className="w-full max-w-3xl mx-auto mt-4">
         <InjectionSiteCard />
       </div>
 

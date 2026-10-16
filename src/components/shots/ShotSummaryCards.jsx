@@ -86,7 +86,7 @@ export default function ShotSummaryCards({
   ];
 
   return (
-    <div className="mb-5 px-4">
+    <div className="mb-4 px-4">
       <div className={`grid gap-2 ${cards.length > 3 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
         {cards.map((c) => (
           <Tile key={c.key} icon={c.icon} tint={c.tint} label={c.label}>
