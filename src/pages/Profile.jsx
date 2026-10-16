@@ -8,7 +8,7 @@ import PageContainer from "@/components/PageContainer";
 import WellbeingNotice from "@/components/wellbeing/WellbeingNotice";
 import {
   heightCmOf, heightCmFromParts, heightPartsFromCm,
-  checkHeight, checkGoal, fromKg, weightUnitLabel, kgOfEntry, shownBmi,
+  checkHeight, checkGoal, fromKg, weightUnitLabel, shownBmi,
 } from "@/lib/measure";
 import { goalBmiSafeguard, wellbeingMessage } from "@/lib/wellbeing";
 
@@ -54,7 +54,7 @@ function SavedFlag({ show }) {
 }
 
 export default function Profile() {
-  const { profile, setProfile, dayMetrics } = useAppState();
+  const { profile, setProfile, weightHistory } = useAppState();
 
   const heightUnit = profile?.height_unit === "cm" ? "cm" : "in";
   const weightUnit = profile?.weight_unit === "kg" ? "kg" : "lb";
@@ -137,13 +137,12 @@ export default function Profile() {
   // The latest weight that has been logged, and the BMI it makes with the saved
   // height (null when that cannot be a real adult value — never a stand-in).
   const heightCm = heightCmOf(profile);
+  // The logged weights, already in date order and reduced to kilograms by the
+  // app state — the last one is the latest.
   const latestWeightKg = useMemo(() => {
-    const rows = (dayMetrics || [])
-      .filter((m) => m?.weight != null)
-      .slice()
-      .sort((a, b) => String(a.day_key).localeCompare(String(b.day_key)));
-    return rows.length ? kgOfEntry(rows[rows.length - 1]) : null;
-  }, [dayMetrics]);
+    const rows = (weightHistory || []).filter((p) => p?.kg != null);
+    return rows.length ? rows[rows.length - 1].kg : null;
+  }, [weightHistory]);
   const currentBmi = shownBmi(latestWeightKg, heightCm);
 
   // The same gentle notice Insights shows, in the same words, and only for the
