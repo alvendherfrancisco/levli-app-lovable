@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Eye, Loader2 } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "@/lib/toast";
 import { useAppState } from "@/lib/AppState";
@@ -14,10 +14,10 @@ import { buildReportPdf } from "@/lib/reportPdf";
 import { reportFileName, downloadPdf } from "@/lib/shareReport";
 import ReportOptions from "@/components/report/ReportOptions";
 import ReportPreview from "@/components/report/ReportPreview";
-import ReportLock from "@/components/report/ReportLock";
+import ReportLockView from "@/components/report/ReportLockView";
 import ReportEmptyState from "@/components/report/ReportEmptyState";
 import ReportStatusScreen from "@/components/report/ReportStatusScreen";
-import PremiumBadge from "@/components/PremiumBadge";
+import ReportHeader from "@/components/report/ReportHeader";
 import { ReportThemeProvider } from "@/components/report/ReportTheme";
 
 export default function ReportPage() {
@@ -59,8 +59,8 @@ export default function ReportPage() {
     observer.observe(el);
     measure();
     return () => observer.disconnect();
-    // The bar only exists with Premium (see below), so the measurement is taken
-    // again when the account's plan changes and the bar appears or goes.
+    // The bar belongs to the screen's Premium state (see below), so the
+    // measurement is taken again when the account's plan changes.
   }, [isPremium]);
 
   // The name starts from the first name saved in Profile. Once the field has
@@ -94,12 +94,18 @@ export default function ReportPage() {
     ? options.medication
     : "all";
 
+  // The report is put together only for an account with Premium. This is the one
+  // screen that is Premium whole, so without it nothing of the person's own is
+  // assembled at all — what the locked screen shows is an invented sample page
+  // (see ReportLockView).
+  //
   // The weight unit is never chosen here: it follows Settings, through the
   // profile, so the report and the app always read in the same unit.
-  const report = useMemo(() => buildReport(
+  const report = useMemo(() => (isPremium ? buildReport(
     { shots, weightHistory, dayMetrics, adverseEvents, journalEntries, progressPhotosList, profile, medications },
     { ...options, medication },
-  ), [
+  ) : null), [
+    isPremium,
     shots, weightHistory, dayMetrics, adverseEvents, journalEntries, progressPhotosList, profile, medications,
     options, medication,
   ]);
@@ -142,37 +148,36 @@ export default function ReportPage() {
     }
   };
 
+  // The locked screen, whole: the header, and under it one blurred sample of this
+  // very screen with the single lock group over it. Nothing scrolls, nothing on
+  // the sample can be pressed, and nothing of the report is drawn behind the
+  // blur. It comes before the loading gate: an account without Premium has no
+  // report of its own to wait for.
+  if (!isPremium) {
+    return (
+      <div className="flex h-[100dvh] flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
+        <ReportHeader onBack={() => navigate(-1)} showBadge={false} />
+        {/* Everything under the header, in the room that is left of the screen —
+            the header keeps the status-bar inset, and the group is centred in it,
+            clear of the foot of the screen. */}
+        <div className="relative min-h-0 flex-1">
+          <ReportThemeProvider>
+            <ReportLockView onUnlock={openPaywall} />
+          </ReportThemeProvider>
+        </div>
+      </div>
+    );
+  }
+
   if (shotsLoading) {
     return <ReportStatusScreen failed={timedOut} onRetry={retry} />;
   }
 
   return (
     <div className="bg-gray-50 dark:bg-gray-950 min-h-screen w-full">
-      <header
-        className="w-full sticky top-0 z-30 grid items-center px-5 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800"
-        style={{
-          gridTemplateColumns: "1fr auto 1fr",
-          paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))",
-          paddingBottom: "0.75rem",
-        }}
-      >
-        <button
-          onClick={() => navigate(-1)}
-          aria-label="Back"
-          className="justify-self-start flex items-center gap-1 min-w-[44px] min-h-[44px] text-indigo-600 dark:text-indigo-400"
-        >
-          <ChevronLeft size={22} /><span className="font-medium">Back</span>
-        </button>
-        {/* The screen is a Premium feature, and says so beside its own name, in
-            the crown pill the app's locked cards already wear. */}
-        <div className="flex items-center justify-center gap-2">
-          <h1 className="whitespace-nowrap text-[18px] font-semibold text-gray-900 dark:text-white">Report</h1>
-          <PremiumBadge />
-        </div>
-        {/* The header carries no second download action: the one main button at
-            the foot of the screen is the only way the report is exported. */}
-        <span aria-hidden="true" />
-      </header>
+      {/* The screen is a Premium feature, and says so beside its own name, in the
+          crown pill the app's locked cards already wear (see ReportHeader). */}
+      <ReportHeader onBack={() => navigate(-1)} />
 
       {/* A single readable column — the settings, the preview and the button all
           belong to it — with room kept at the foot for the fixed button bar: the
@@ -209,15 +214,7 @@ export default function ReportPage() {
                 what is read here is what is exported. The exported PDF itself is
                 always the light one, whatever theme the app is in. */}
             <ReportThemeProvider>
-              {/* Without Premium the report is still set up and still read — the
-                  header, the name and the dates stay sharp — and everything under
-                  it is held behind the lock, with the way into the plans on top
-                  of it (see ReportPreview's `locked`). */}
-              <ReportPreview
-                report={report}
-                locked={!isPremium}
-                overlay={isPremium ? null : <ReportLock onUnlock={openPaywall} />}
-              />
+              <ReportPreview report={report} />
             </ReportThemeProvider>
           </>
         ) : (
@@ -226,47 +223,28 @@ export default function ReportPage() {
           </button>
         )}
 
-        {/* The room the fixed bar takes, measured as it renders — only while
-            there is a bar to make room for. */}
-        {isPremium && <div aria-hidden="true" style={{ height: barHeight + 16 }} />}
-
-        {/* Without Premium the screen has no bar at all, so the sharing note is
-            simply the end of the page: one small muted line, inside the column's
-            own 16px margins, scrolling with the content, with the room the home
-            indicator needs kept under it. */}
-        {!isPremium && (
-          <p
-            className="text-center text-[11px] text-gray-500 dark:text-gray-400"
-            style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
-          >
-            {SHARE_NOTICE}
-          </p>
-        )}
+        {/* The room the fixed bar takes, measured as it renders. */}
+        <div aria-hidden="true" style={{ height: barHeight + 16 }} />
       </div>
 
       {/* One main action, fixed at the foot of the screen so it is always
-          reachable, with the sharing note directly above it. It is the only bar
-          the screen has: without Premium there is no bar at all — the note sits
-          at the end of the page instead, and the one way into the plans is the
-          Unlock button inside the preview's own lock. */}
-      {isPremium && (
-        <div ref={barRef} className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
-          <div
-            className="max-w-lg md:max-w-2xl mx-auto px-4 pt-3 space-y-2"
-            style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+          reachable, with the sharing note directly above it. */}
+      <div ref={barRef} className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+        <div
+          className="max-w-lg md:max-w-2xl mx-auto px-4 pt-3 space-y-2"
+          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+        >
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center px-2">{SHARE_NOTICE}</p>
+          <button
+            onClick={handleExport}
+            disabled={busy || !report.hasAnyData}
+            className="btn-pill btn-primary w-full"
           >
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center px-2">{SHARE_NOTICE}</p>
-            <button
-              onClick={handleExport}
-              disabled={busy || !report.hasAnyData}
-              className="btn-pill btn-primary w-full"
-            >
-              {busy && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
-              {busy ? "Generating…" : "Download"}
-            </button>
-          </div>
+            {busy && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
+            {busy ? "Generating…" : "Download"}
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
