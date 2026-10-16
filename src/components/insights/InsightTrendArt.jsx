@@ -13,9 +13,11 @@ import useDoseColors from "@/hooks/useDoseColors";
  * charts behind it.
  *
  * Nothing is boxed: there is no background, no panel and no outline around the
- * artwork, and the only thing behind it is a soft purple glow — a radial gradient
- * fading to nothing on every side, so it has no edge to be seen. The card in the
- * middle of it is part of the drawing, not a frame for it.
+ * artwork, and the only thing behind it is the same soft wash the Report lock
+ * draws behind its own picture — a blurred blob of lavender and violet (indigo and
+ * violet on the dark card), faded to nothing on every side so it has no edge to be
+ * seen. The two overlays are therefore lit identically, and the card in the middle
+ * of it is part of the drawing, not a frame for it.
  *
  * `size` is the box the drawing is scaled into — 150px, the size every lock
  * illustration is drawn at (see PremiumLockGroup) — and the glow behind it scales
@@ -32,13 +34,13 @@ export default function InsightTrendArt({ size = 120 }) {
   return (
     <div className="relative mx-auto" style={{ width: size, height: size }} aria-hidden="true">
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        className="onb-art-glow absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
         style={{
-          width: Math.round(size * 1.7),
-          height: Math.round(size * 1.7),
+          width: Math.round(size * 1.2),
+          height: Math.round(size * 1.2),
           background: isDark
-            ? "radial-gradient(closest-side, rgba(99,102,241,0.38), rgba(99,102,241,0))"
-            : "radial-gradient(closest-side, rgba(139,92,246,0.22), rgba(139,92,246,0))",
+            ? "linear-gradient(135deg, #4F46E5, #7C3AED)"
+            : "linear-gradient(135deg, #A5B4FC, #C4B5FD)",
         }}
       />
 

@@ -50,17 +50,18 @@ export default function PremiumLockGroup({ art, title, subtitle, onUnlock, frame
           : ""
       }`}
     >
-      {/* The wash: one soft ellipse of indigo centred under the artwork, on a layer
-          that covers the whole card. It is drawn this way for one reason — it has no
-          edge anywhere. A band starting under the picture draws a line across the
-          card at its own top edge, however gentle its colour; a wash that grows out
-          of nothing and fades back to nothing (nothing at 62px, its full strength at
-          170px, nothing again by 278px) has no edge to be seen, and the picture and
-          the words below it simply sit in it. */}
+      {/* The wash: one soft ellipse of indigo behind the artwork and the words it
+          introduces, on a layer that covers the whole card. It is drawn this way for
+          one reason — it has no edge anywhere. A band starting under the picture
+          draws a line across the card at its own top edge, however gentle its colour;
+          a wash that grows out of nothing and fades back to nothing (nothing at the
+          top of the card, its full strength at the foot of the picture, nothing again
+          just under the button) has no edge to be seen, and the picture, the headline
+          and the line under it simply sit in it. */}
       {framed && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_150px_at_50%_170px,rgba(99,102,241,0.18),rgba(99,102,241,0.06)_40%,rgba(99,102,241,0)_72%)] dark:bg-[radial-gradient(120%_150px_at_50%_170px,rgba(99,102,241,0.34),rgba(99,102,241,0.12)_40%,rgba(99,102,241,0)_72%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_190px_at_50%_180px,rgba(99,102,241,0.20),rgba(99,102,241,0.07)_45%,rgba(99,102,241,0)_76%)] dark:bg-[radial-gradient(120%_190px_at_50%_180px,rgba(99,102,241,0.36),rgba(99,102,241,0.13)_45%,rgba(99,102,241,0)_76%)]"
         />
       )}
 

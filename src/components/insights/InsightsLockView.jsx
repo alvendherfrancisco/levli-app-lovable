@@ -39,20 +39,21 @@ export default function InsightsLockView({ onUnlock, lockScroll = false, classNa
         <InsightsSamplePage />
       </div>
 
-      {/* The fade: transparent for the top two thirds, then the page's own surface
-          arriving through the last one — a light tint in the middle of it, never a
-          near-solid white wash, so the tiles and the charts above it keep their
-          colour and the strip under it is still readable. */}
+      {/* The fade: transparent for the top two thirds, then the same tint the Report
+          lock settles into — a light lavender, a deep indigo in dark mode. It is one
+          light tint rather than a near-solid wash, so the tiles and the charts above
+          it keep their colour and the strip under it is still readable, and it is the
+          Report lock's own tint so the two screens read as one design. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-transparent via-white/30 to-white/55 dark:via-gray-950/40 dark:to-gray-950/60"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-transparent via-white/25 to-indigo-50/70 dark:via-indigo-950/30 dark:to-indigo-950/70"
       />
       {/* The last stretch of the layer: the sample page is longer than the screen,
           so it is clipped at the bottom edge, and these few centimetres settle into
-          the page's own surface so the cut is never seen. */}
+          that tint's solid colour so the cut is never seen. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-white dark:to-gray-950"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-indigo-50 dark:to-indigo-950"
       />
 
       {/* The group: centred on the box it is given both ways, on its own card (see
