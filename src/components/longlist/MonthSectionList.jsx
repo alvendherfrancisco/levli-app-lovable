@@ -15,13 +15,22 @@ import { monthHeading } from "@/lib/monthGroups";
 // looks like every other list in the app. What a row looks like is the caller's:
 // it hands in `renderItem`.
 //
+// The month's own header stays at the top of the screen while its entries go by,
+// so it carries a surface of its own: the entries' card — the same fill, the same
+// hairline, the same 12px corners — drawn as a bar exactly as wide as the card
+// under it, and its words inset to where the card's words start. The month and the
+// entries therefore line up on both margins, and what scrolls under the header is
+// covered by something that belongs to the page rather than by a dark strip with
+// hard edges across it.
+//
 // `jumpTo` is the month a jump should land on (from the header's month picker).
 // The month opens if it was folded, and the screen scrolls to it once it is
 // there — the caller keeps feeding pages in until that month has arrived.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const HEADER =
-  "sticky z-20 flex w-full items-center justify-between gap-2 py-2 " +
+  "sticky z-20 mb-2 flex w-full items-center justify-between gap-2 rounded-xl px-4 py-2 " +
+  "border border-gray-100 dark:border-gray-800 " +
   "text-sm font-semibold text-gray-600 dark:text-[#9A9DAE]";
 
 const CARD =
@@ -34,7 +43,7 @@ export default function MonthSectionList({
   countSingular = "entry",
   countPlural = "",
   stickyTopClass = "month-heading",
-  headerBgClass = "bg-white dark:bg-gray-950",
+  headerBgClass = "bg-white dark:bg-gray-900",
   jumpTo = null,
   className = "",
 }) {
