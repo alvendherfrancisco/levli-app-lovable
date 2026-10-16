@@ -74,10 +74,10 @@ export default function ReportArt({ size = 120 }) {
           strokeLinejoin="round"
         />
 
-        <g className="animate-onb-sparkle">
+        <g className="animate-lock-sparkle">
           <path d="M22 46 L 24 51 L 29 53 L 24 55 L 22 60 L 20 55 L 15 53 L 20 51Z" fill="#F59E0B" />
         </g>
-        <g className="animate-onb-sparkle" style={{ animationDelay: "0.9s" }}>
+        <g className="animate-lock-sparkle" style={{ animationDelay: "0.9s" }}>
           <path d="M100 42 L 102 47 L 107 49 L 102 51 L 100 56 L 98 51 L 93 49 L 98 47Z" fill="#6366F1" />
         </g>
       </svg>

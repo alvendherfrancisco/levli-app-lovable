@@ -3,20 +3,19 @@ import InsightTrendArt from "@/components/insights/InsightTrendArt";
 
 /**
  * The one lock group the Insights screen shows while Levli Premium is not active:
- * the transparent trend illustration (see InsightTrendArt, 88px wide over its soft
- * purple glow), the headline and its muted line on a frosted pill of their own,
- * and the app's own primary pill under them.
+ * the filled trend illustration (see InsightTrendArt, 112px wide over its soft
+ * purple glow), the headline and its muted line, and the app's own primary pill
+ * under them with the terms of the plan in one small line below it.
  *
- * The pill is what keeps the two lines readable over the chart behind them — the
- * whole group sits on top of a blurred, lightly faded page — without drawing a hard
- * box: a translucent surface, softened at the edges, with a soft shadow under it,
- * in both modes.
+ * The words carry no box: there is no card, no panel and no frosted pill behind
+ * them. They are kept legible over the blurred charts in two quiet ways — a faint
+ * radial glow behind the block, fading to nothing on every side, and a soft shadow
+ * on the letters themselves — so the group reads as placed on the page rather than
+ * laid on a card.
  *
  * The spacing is the group's own: 12px between the illustration, the headline and
  * the line, and 16px above the button, which is full width within the group. The
- * button carries the same indigo pill as every other main action in the app, with
- * a soft purple glow of its own so it is unmistakably the one thing to press, and
- * the tiny line under it is what the plans promise (see src/lib/premiumPlans.js).
+ * terms sit 8px under the button.
  *
  * `onUnlock` missing means the lock is read only — the caregiver's view of a
  * record follows the owner's plan and has nothing to sell — and then the group is
@@ -27,11 +26,16 @@ export default function InsightsLockGroup({ onUnlock }) {
     <div className="flex w-full max-w-[320px] flex-col items-center text-center">
       <InsightTrendArt />
 
-      <div className="mt-3 rounded-2xl bg-white/75 px-4 py-1.5 shadow-[0_10px_28px_-12px_rgba(16,24,40,0.28)] backdrop-blur-md dark:bg-gray-950/65 dark:shadow-[0_10px_28px_-12px_rgba(0,0,0,0.7)]">
-        <h3 className="text-[20px] font-semibold leading-tight text-gray-900 dark:text-white">
+      {/* The words, over the glow that keeps them readable and leaves no edge. */}
+      <div className="relative mt-3">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-1/2 h-[220%] w-[130%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.92),rgba(255,255,255,0)_70%)] dark:bg-[radial-gradient(ellipse_at_center,rgba(3,7,18,0.9),rgba(3,7,18,0)_70%)]"
+        />
+        <h3 className="lock-text-shadow relative text-[20px] font-semibold leading-tight text-gray-900 dark:text-white">
           See your whole journey
         </h3>
-        <p className="mt-3 text-[15px] leading-relaxed text-gray-600 dark:text-gray-300">
+        <p className="lock-text-shadow relative mt-3 text-[15px] leading-relaxed text-gray-600 dark:text-gray-300">
           Track every trend and photo
         </p>
       </div>

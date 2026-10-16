@@ -1262,6 +1262,19 @@ button.date-chip {
 }
 .animate-lock-sparkle { animation: lockSparkleDrift 9s ease-in-out infinite; }
 
+/* The words a lock group carries (the headline and its muted line) sit over the
+   blurred page — a chart, a photo strip, a sheet of report paper — with no card
+   and no panel behind them. What keeps them legible is this: a soft halo on the
+   letters themselves, light in light mode and dark in dark mode, so the text keeps
+   its contrast whichever surface happens to be behind it. A faint radial glow
+   behind the block itself does the rest (it is drawn on each group). */
+.lock-text-shadow {
+  text-shadow: 0 1px 2px rgb(255 255 255 / 0.9), 0 0 10px rgb(255 255 255 / 0.55);
+}
+.dark .lock-text-shadow {
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.85), 0 0 12px rgb(0 0 0 / 0.6);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lock-group-in { animation: none; }
   .animate-lock-sparkle { animation: none; }
