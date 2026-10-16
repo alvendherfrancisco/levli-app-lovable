@@ -51,6 +51,8 @@ export default function PaywallModal({ open, onClose }) {
   const [showNoSub, setShowNoSub] = useState(false);
 
   const trackRef = useRef(null);
+  const barRef = useRef(null);
+  const [barHeight, setBarHeight] = useState(0);
   const inWrapper = isRunningInIOSWrapper();
   const handleClose = () => {
     if (inWrapper) sendIOSEvent("wanillajs.event.paywall.closeButtonTapped", { userId: user?.id ?? null });
@@ -60,6 +62,21 @@ export default function PaywallModal({ open, onClose }) {
 
   // A fresh visit starts on the first feature.
   useEffect(() => { if (open) setSlideIndex(0); }, [open]);
+
+  // How tall the bottom bar is, measured as it renders. The scroll area ends with
+  // exactly that much room under the plans (see the spacer in the content), so the
+  // last plan row can always be scrolled clear of the bar and the home indicator —
+  // however tall the bar grows: a plan note that wraps, a larger text size, the
+  // safe area on one device and not another.
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el || !open || typeof ResizeObserver === "undefined") return undefined;
+    const measure = () => setBarHeight(Math.round(el.offsetHeight));
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    measure();
+    return () => observer.disconnect();
+  }, [open]);
 
   if (!open) return null;
 
@@ -135,7 +152,7 @@ export default function PaywallModal({ open, onClose }) {
   const shell =
     "auth-screen fixed inset-0 z-[70] bg-auth-page flex items-stretch sm:items-center justify-center sm:p-6 overflow-hidden";
   const panel =
-    "w-full max-w-lg mx-auto flex flex-col h-full sm:h-[88vh] sm:max-h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:shadow-xl bg-auth-panel backdrop-blur-md overflow-hidden relative z-10 border border-auth-divider";
+    "w-full max-w-lg mx-auto flex flex-col h-full sm:h-[calc(100dvh_-_3rem)] sm:rounded-3xl sm:shadow-xl bg-auth-panel backdrop-blur-md overflow-hidden relative z-10 border border-auth-divider";
 
   const closeButton = (
     <button
@@ -220,6 +237,9 @@ export default function PaywallModal({ open, onClose }) {
               onSelect={setSelected}
               loading={loading}
             />
+            {/* The room the bottom bar takes, so the last plan row (Lifetime) is
+                never left sitting under it or under the home indicator. */}
+            <div aria-hidden="true" style={{ height: barHeight }} />
           </div>
           <div
             aria-hidden="true"
@@ -227,17 +247,19 @@ export default function PaywallModal({ open, onClose }) {
           />
         </div>
 
-        <PaywallBar
-          label={plan?.button || "Continue"}
-          terms={plan?.terms || ""}
-          busy={busy}
-          disabled={!plan}
-          error={barError}
-          onSubscribe={handleSubscribe}
-          onRetry={retry}
-          onRestore={handleRestore}
-          restoring={restoring}
-        />
+        <div ref={barRef} className="flex-shrink-0">
+          <PaywallBar
+            label={plan?.button || "Continue"}
+            terms={plan?.terms || ""}
+            busy={busy}
+            disabled={!plan}
+            error={barError}
+            onSubscribe={handleSubscribe}
+            onRetry={retry}
+            onRestore={handleRestore}
+            restoring={restoring}
+          />
+        </div>
       </div>
 
       {/* No Subscription Found */}

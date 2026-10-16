@@ -32,8 +32,11 @@ export default function SiteRotationLock({ onUnlock }) {
           instead of stretching across it. */}
       <div className="relative flex w-full max-w-[320px] flex-col items-center pb-6 text-center">
         <SiteRotationArt />
-        <h3 className={`${HEADING} mt-4`}>See where you've injected</h3>
-        <p className={`${SUBTITLE} mt-4 whitespace-nowrap`}>Rotate your sites with ease.</p>
+        {/* The lock points at Premium as a whole rather than naming this chart
+            as one of its benefits: rotation is free, and what Premium carries is
+            the set of benefits the paywall lists. */}
+        <h3 className={`${HEADING} mt-4`}>More with Levli Premium</h3>
+        <p className={`${SUBTITLE} mt-4 whitespace-nowrap`}>Reports, insights and full history</p>
         <button type="button" onClick={onUnlock} className={`${PRIMARY_BTN} ${PRIMARY_BTN_ON} mt-4`}>
           Unlock
         </button>

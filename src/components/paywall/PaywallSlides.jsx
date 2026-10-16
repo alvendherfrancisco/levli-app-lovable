@@ -2,18 +2,21 @@ import React from "react";
 import { PREMIUM_SLIDES } from "@/lib/premiumPlans";
 import { HEADING, SUBTITLE } from "@/lib/uiStyles";
 import {
-  InsightsIllustration, ReportsIllustration, SitesIllustration,
+  CleanIllustration, HistoryIllustration, InsightsIllustration,
+  ReportsIllustration, ShotLimitIllustration,
 } from "@/components/paywall/PaywallIllustrations";
 
-/** Each slide's own picture, by the feature it belongs to. */
+/** Each slide's own picture, by the benefit it belongs to. */
 const ART = {
-  reports: ReportsIllustration,
-  sites: SitesIllustration,
+  shots: ShotLimitIllustration,
   insights: InsightsIllustration,
+  history: HistoryIllustration,
+  reports: ReportsIllustration,
+  ads: CleanIllustration,
 };
 
 /**
- * The three features, side by side and swiped one at a time — the way the
+ * The five benefits, side by side and swiped one at a time — the way the
  * onboarding moves from step to step, and the reason this screen reads as the
  * step after it: the same artwork slot at the top, a headline in the same type,
  * one short line under it, and the picture the copy is about.
