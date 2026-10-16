@@ -129,10 +129,8 @@ export default function History() {
           </div>
         </div>
 
-        {/* Selected day metrics */}
-        {selectedDayKey && <MetricsGrid dayKey={selectedDayKey} />}
-
-        {/* Selected day shots */}
+        {/* Selected day shots — the day's own log sits directly under the
+            calendar, above the trackers it belongs to. */}
         {selectedDay && selectedShots.length > 0 && (
           <div className="px-4 mb-4 space-y-2">
             {selectedShots.map((s) => (
@@ -149,6 +147,9 @@ export default function History() {
             </div>
           </div>
         )}
+
+        {/* Selected day metrics */}
+        {selectedDayKey && <MetricsGrid dayKey={selectedDayKey} />}
 
         {/* Side Effects for selected day */}
         {selectedDayKey && (
