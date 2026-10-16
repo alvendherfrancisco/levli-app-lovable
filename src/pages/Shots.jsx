@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Settings, FileText, Syringe, Loader2, Crown } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
-import ShotCard from "@/components/shots/ShotCard";
+import ShotListRow from "@/components/shots/ShotListRow";
 import ShotSummaryCards from "@/components/shots/ShotSummaryCards";
 import InjectionSiteCard from "@/components/shots/InjectionSiteCard";
 import AddShotModal from "@/components/modals/AddShotModal";
@@ -18,8 +18,8 @@ import SupplyAlertBanner from "@/components/SupplyAlertBanner";
 
 // The History block on this screen is a look at the most recent doses; the whole
 // history opens on its own screen (see src/pages/ShotsHistory.jsx) so this page
-// stays a short one.
-const PREVIEW_COUNT = 5;
+// stays a short one. Three is what it shows.
+const PREVIEW_COUNT = 3;
 
 export default function Shots() {
   const [showShot, setShowShot] = useState(false);
@@ -97,8 +97,10 @@ export default function Shots() {
         <div className="px-4">
           <div className="flex items-center justify-between gap-2 mb-4">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">History</h2>
-            {shots.length > 0 && (
-              <Link to="/shots/history" className="btn-link text-sm">View all {words.many}</Link>
+            {/* The one way into the whole history, and only once there is more of
+                it than the three this screen shows. */}
+            {shots.length > PREVIEW_COUNT && (
+              <Link to="/shots/history" className="btn-link text-sm">View all</Link>
             )}
           </div>
 
@@ -115,12 +117,13 @@ export default function Shots() {
               <p className="text-sm">Log your first {words.one} to track your {words.many}{words.one === "shot" ? ", injection sites," : ""} and how you feel over time.</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {/* The five most recent, and a way into the whole history. */}
+            <div className="space-y-2">
+              {/* The three most recent, each the same compact row the whole
+                  history draws. */}
               {previewShots.map((shot) => (
-                <button key={shot.id} onClick={() => openEdit(shot)} className="w-full text-left">
-                  <ShotCard {...shot} drugClass={shot.drug_class} />
-                </button>
+                <div key={shot.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+                  <ShotListRow shot={shot} onOpen={openEdit} />
+                </div>
               ))}
 
               {hiddenCount > 0 && (
@@ -129,15 +132,12 @@ export default function Shots() {
                     <Crown size={18} className="text-indigo-600" />
                   </div>
                   <div className="text-left">
-                    <p className="font-semibold text-gray-900 dark:text-white text-sm">{hiddenCount} more {words.many} in your history</p>
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm">{hiddenCount} more {hiddenCount === 1 ? words.one : words.many} in your history</p>
                     <p className="text-xs text-gray-400">Unlock with Levli Premium to view your complete {words.one} history.</p>
                   </div>
                 </button>
               )}
 
-              <Link to="/shots/history" className="btn-pill btn-secondary w-full">
-                View all {words.many}
-              </Link>
             </div>
           )}
         </div>

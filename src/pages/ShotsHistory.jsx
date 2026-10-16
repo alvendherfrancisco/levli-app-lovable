@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Crown, Loader2, Search, Syringe } from "lucide-react";
+import { ChevronLeft, Crown, Filter, Loader2, Plus, Search, Syringe, X } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import EmptyStateCard from "@/components/EmptyStateCard";
 import AddShotModal from "@/components/modals/AddShotModal";
 import ShotListRow from "@/components/shots/ShotListRow";
-import FilterSelect from "@/components/longlist/FilterSelect";
+import ShotFilterSheet from "@/components/shots/ShotFilterSheet";
+import HeaderIconButton from "@/components/longlist/HeaderIconButton";
 import MonthSectionList from "@/components/longlist/MonthSectionList";
 import MonthJumpButton from "@/components/longlist/MonthJumpButton";
 import BackToTop from "@/components/longlist/BackToTop";
@@ -13,21 +14,21 @@ import { useAppState } from "@/lib/AppState";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import useProgressiveList from "@/hooks/useProgressiveList";
 import { groupByMonth, monthKeysOf } from "@/lib/monthGroups";
-import { formatDayKeyShort } from "@/lib/dateUtils";
 import { logWords } from "@/lib/medicationForm";
 import { isActiveMedication } from "@/lib/medicationLink";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The whole dose history, on its own screen.
 //
-// It opens from the Shots page's "View all" link and gives the list the room a
-// long one needs: the total and the dates it covers at the top, the three
-// filters that matter (medication, dose, site), then every entry newest first,
-// month by month, 20 at a time as the list is scrolled. A dose opens the same
-// editor it opens anywhere else, so nothing about a logged entry changes here.
+// It is a browsing screen, so nothing on it is asked for until it is needed: the
+// count is in the title, the two small icons in the header open the date and the
+// filter sheets, and the list itself starts straight away — every entry newest
+// first, month by month, 20 at a time as it is scrolled.
 //
-// The list only ever narrows what is on screen: a filter writes nothing, and
-// "Clear filters" brings the whole history straight back.
+// A filter writes nothing and shows as a small dot on the filter icon and a
+// removable chip, so what is on screen is always answerable at a glance. A dose
+// opens the same editor it opens anywhere else, and going back leaves the list
+// exactly where it was.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ALL = "all";
@@ -37,9 +38,9 @@ export default function ShotsHistory() {
   const { shots, shotsLoading, medications } = useAppState();
   const { isPremium, openPaywall } = useSubscription();
 
-  const [medFilter, setMedFilter] = useState(ALL);
-  const [doseFilter, setDoseFilter] = useState(ALL);
-  const [siteFilter, setSiteFilter] = useState(ALL);
+  // The choices the filter sheet is working on, and what it last applied.
+  const [filters, setFilters] = useState({ medication: ALL, dose: ALL, site: ALL });
+  const [showFilters, setShowFilters] = useState(false);
   const [jumpMonth, setJumpMonth] = useState(null);
   const [showShot, setShowShot] = useState(false);
   const [editingShot, setEditingShot] = useState(null);
@@ -58,41 +59,39 @@ export default function ShotsHistory() {
   });
   const title = words.one === "dose" ? "Dose history" : "Shot history";
 
-  // The three filters, offered from the whole history so a choice never
+  // What the sheet offers, taken from the whole history so a choice never
   // disappears once another filter is set.
-  const medOptions = useMemo(() => {
+  const options = useMemo(() => {
     const names = [...new Set(visibleShots.map((s) => s.medication).filter(Boolean))].sort();
-    return [{ value: ALL, label: "All medications" }, ...names.map((n) => ({ value: n, label: n }))];
-  }, [visibleShots]);
-
-  const doseOptions = useMemo(() => {
-    const seen = new Map();
+    const doses = new Map();
     visibleShots.forEach((s) => {
       if (s.dose == null) return;
       const key = `${s.dose}|${s.dose_unit || "mg"}`;
-      if (!seen.has(key)) seen.set(key, `${s.dose} ${s.dose_unit || "mg"}`);
+      if (!doses.has(key)) doses.set(key, `${s.dose} ${s.dose_unit || "mg"}`);
     });
-    return [{ value: ALL, label: "All doses" }, ...[...seen.entries()].map(([value, label]) => ({ value, label }))];
-  }, [visibleShots]);
-
-  const siteOptions = useMemo(() => {
     const sites = [...new Set(visibleShots.map((s) => s.site).filter(Boolean))].sort();
-    return [{ value: ALL, label: "All sites" }, ...sites.map((s) => ({ value: s, label: s }))];
+    return {
+      medication: [{ value: ALL, label: "All" }, ...names.map((n) => ({ value: n, label: n }))],
+      dose: [{ value: ALL, label: "All" }, ...[...doses.entries()].map(([value, label]) => ({ value, label }))],
+      site: [{ value: ALL, label: "All" }, ...sites.map((s) => ({ value: s, label: s }))],
+    };
   }, [visibleShots]);
 
   const filtered = useMemo(
     () =>
       visibleShots.filter((s) => {
-        if (medFilter !== ALL && s.medication !== medFilter) return false;
-        if (doseFilter !== ALL && `${s.dose}|${s.dose_unit || "mg"}` !== doseFilter) return false;
-        if (siteFilter !== ALL && s.site !== siteFilter) return false;
+        if (filters.medication !== ALL && s.medication !== filters.medication) return false;
+        if (filters.dose !== ALL && `${s.dose}|${s.dose_unit || "mg"}` !== filters.dose) return false;
+        if (filters.site !== ALL && s.site !== filters.site) return false;
         return true;
       }),
-    [visibleShots, medFilter, doseFilter, siteFilter],
+    [visibleShots, filters],
   );
 
-  const list = useProgressiveList(filtered, { resetKey: `${medFilter}|${doseFilter}|${siteFilter}` });
-  const groups = useMemo(() => groupByMonth(list.visible, (s) => s.date, { singular: "dose" }), [list.visible]);
+  const list = useProgressiveList(filtered, {
+    resetKey: `${filters.medication}|${filters.dose}|${filters.site}`,
+  });
+  const groups = useMemo(() => groupByMonth(list.visible, (s) => s.date), [list.visible]);
   const months = useMemo(() => monthKeysOf(filtered, (s) => s.date), [filtered]);
 
   const { loadMore, hasMore } = list;
@@ -104,50 +103,57 @@ export default function ShotsHistory() {
     loadMore();
   }, [jumpMonth, hasMore, groups, loadMore]);
 
-  const hasFilters = medFilter !== ALL || doseFilter !== ALL || siteFilter !== ALL;
-  const clearFilters = () => { setMedFilter(ALL); setDoseFilter(ALL); setSiteFilter(ALL); };
+  const hasFilters = filters.medication !== ALL || filters.dose !== ALL || filters.site !== ALL;
+  const clearFilters = () => setFilters({ medication: ALL, dose: ALL, site: ALL });
 
-  const firstDate = visibleShots.length ? visibleShots[visibleShots.length - 1]?.date : "";
-  const lastDate = visibleShots.length ? visibleShots[0]?.date : "";
-  const rangeText = firstDate && lastDate && firstDate !== lastDate
-    ? `${formatDayKeyShort(firstDate)} – ${formatDayKeyShort(lastDate)}`
-    : "";
+  // One chip per choice in hand, each removable on its own.
+  const chips = [
+    filters.medication !== ALL && { key: "medication", label: filters.medication },
+    filters.dose !== ALL && {
+      key: "dose",
+      label: (options.dose.find((o) => o.value === filters.dose) || {}).label || filters.dose,
+    },
+    filters.site !== ALL && { key: "site", label: filters.site },
+  ].filter(Boolean);
 
   const openEdit = (shot) => { setEditingShot(shot); setShowShot(true); };
+  const openNew = () => { setEditingShot(null); setShowShot(true); };
+  const heading = visibleShots.length ? `${title} (${visibleShots.length})` : title;
 
   return (
     <PageContainer bottomInset="default">
-      <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center gap-3 px-5 pt-6 pb-4">
-        <button onClick={() => navigate(-1)} aria-label="Go back">
+      <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center gap-1 px-5 pt-6 pb-4">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          aria-label="Go back"
+          className="-my-1.5 -ml-1 w-8 h-11 flex shrink-0 items-center justify-center"
+        >
           <ChevronLeft size={24} className="text-gray-600 dark:text-gray-400" />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex-1 min-w-0 truncate">{title}</h1>
-        <MonthJumpButton months={months} onJump={setJumpMonth} />
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex-1 min-w-0 truncate">{heading}</h1>
+        <MonthJumpButton months={months} onJump={setJumpMonth} compact />
+        <HeaderIconButton label="Filter" onClick={() => setShowFilters(true)} active={hasFilters}>
+          <Filter size={20} aria-hidden="true" />
+        </HeaderIconButton>
       </div>
 
       <div className="w-full max-w-3xl mx-auto px-4 pt-4">
-        {/* How many, and how far back they go. */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 mb-4">
-          <p className="text-sm font-semibold text-gray-900 dark:text-white">
-            {visibleShots.length} {words.many} logged
-          </p>
-          {rangeText && (
-            <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-0.5">Your history covers {rangeText}</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <FilterSelect label="Medication" value={medFilter} onChange={setMedFilter} options={medOptions} className="col-span-2" />
-          <FilterSelect label="Dose" value={doseFilter} onChange={setDoseFilter} options={doseOptions} />
-          <FilterSelect label="Site" value={siteFilter} onChange={setSiteFilter} options={siteOptions} />
-        </div>
-
-        {hasFilters && (
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <p className="text-xs text-gray-500 dark:text-[#9A9DAE]">
-              Showing {filtered.length} of {visibleShots.length}
-            </p>
-            <button type="button" onClick={clearFilters} className="btn-link text-sm">Clear filters</button>
+        {/* What is being filtered by, and a tap to take any of it off again. */}
+        {chips.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {chips.map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={() => setFilters((f) => ({ ...f, [chip.key]: ALL }))}
+                className="btn-pill btn-pill-sm gap-1.5 border border-gray-200 bg-white text-gray-700 dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0]"
+              >
+                {chip.label}
+                <X size={13} aria-hidden="true" className="text-gray-400" />
+                <span className="sr-only">Remove this filter</span>
+              </button>
+            ))}
           </div>
         )}
 
@@ -156,19 +162,16 @@ export default function ShotsHistory() {
             <Loader2 size={28} className="animate-spin text-indigo-400" />
           </div>
         ) : visibleShots.length === 0 ? (
-          <EmptyStateCard
-            icon={Syringe}
-            title={`No ${words.Many} Logged`}
-            description={`Log your first ${words.one} to start your history.`}
-          />
+          <>
+            <EmptyStateCard icon={Syringe} title={`No ${words.many} yet`} />
+            <button type="button" onClick={openNew} className="btn-pill btn-pill-sm btn-primary mx-auto mt-4 flex">
+              <Plus size={16} aria-hidden="true" /> Log {words.one}
+            </button>
+          </>
         ) : filtered.length === 0 ? (
           <>
-            <EmptyStateCard
-              icon={Search}
-              title={`No ${words.many} match`}
-              description="Try another medication, dose or site, or clear the filters to see everything."
-            />
-            <button type="button" onClick={clearFilters} className="btn-pill btn-secondary w-full mt-3">
+            <EmptyStateCard icon={Search} title="No matches" />
+            <button type="button" onClick={clearFilters} className="btn-link text-sm mx-auto mt-4 flex">
               Clear filters
             </button>
           </>
@@ -176,6 +179,7 @@ export default function ShotsHistory() {
           <>
             <MonthSectionList
               groups={groups}
+              countSingular={words.one}
               jumpTo={jumpMonth}
               renderItem={(shot) => <ShotListRow shot={shot} onOpen={openEdit} />}
             />
@@ -195,12 +199,20 @@ export default function ShotsHistory() {
               <Crown size={18} className="text-indigo-600 dark:text-indigo-400" />
             </div>
             <div className="text-left">
-              <p className="font-semibold text-gray-900 dark:text-white text-sm">{hiddenCount} more {words.many} in your history</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-sm">{hiddenCount} more {hiddenCount === 1 ? words.one : words.many} in your history</p>
               <p className="text-xs text-gray-400">Unlock with Levli Premium to view your complete {words.one} history.</p>
             </div>
           </button>
         )}
       </div>
+
+      <ShotFilterSheet
+        open={showFilters}
+        onClose={() => setShowFilters(false)}
+        value={filters}
+        options={options}
+        onApply={setFilters}
+      />
 
       <BackToTop />
       <AddShotModal

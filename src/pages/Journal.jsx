@@ -6,13 +6,15 @@ import PageContainer from "@/components/PageContainer";
 import Fab from "@/components/Fab";
 import EmptyStateCard from "@/components/EmptyStateCard";
 import JournalEntryModal from "@/components/modals/JournalEntryModal";
-import JournalFilters from "@/components/journal/JournalFilters";
+import JournalCategoryChips from "@/components/journal/JournalCategoryChips";
+import JournalSearchBar from "@/components/journal/JournalSearchBar";
+import HeaderIconButton, { HEADER_ICON } from "@/components/longlist/HeaderIconButton";
 import JournalEntryCard from "@/components/journal/JournalEntryCard";
 import MonthSectionList from "@/components/longlist/MonthSectionList";
 import MonthJumpButton from "@/components/longlist/MonthJumpButton";
 import BackToTop from "@/components/longlist/BackToTop";
 import useProgressiveList from "@/hooks/useProgressiveList";
-import { groupByMonth, monthCountText, monthKeysOf } from "@/lib/monthGroups";
+import { groupByMonth, monthKeysOf } from "@/lib/monthGroups";
 import { useAppState } from "@/lib/AppState";
 import { SIDE_EFFECT_CATEGORY, categoryMeta, normaliseCategory, sortJournalNewestFirst } from "@/lib/journalMeta";
 import { toast } from "@/lib/toast";
@@ -22,10 +24,11 @@ import { toast } from "@/lib/toast";
  * exercise, milestones and general entries.
  *
  * It is a long list, so it behaves like one: the entries newest first, split
- * into months, 20 drawn at a time as the list is scrolled, and a month picker in
- * the header to go straight to a month further back. A word can be searched for
- * and the dates narrowed to this week, this month or a range — that only ever
- * narrows what is on screen, and "Clear filters" brings the whole journal back.
+ * into months, 20 drawn at a time as the list is scrolled, and one row of
+ * categories above them. Everything else is behind the two icons in the header —
+ * the search opens a field in the place of that row, and the calendar sheet
+ * carries this week, this month, and every month the journal holds. Narrowing the
+ * list writes nothing, and "Clear filters" brings the whole journal back.
  *
  * Side effects have a form of their own (Home and History) and a summary of their
  * own (the card on Insights), so they are neither written, filtered nor listed
@@ -34,8 +37,16 @@ import { toast } from "@/lib/toast";
  * shown in this list.
  */
 
+// The dates the calendar sheet offers, beside the month picker itself
+// (src/components/longlist/MonthJumpButton.jsx).
+const DATE_OPTIONS = [
+  { key: "all", label: "All dates" },
+  { key: "week", label: "This week" },
+  { key: "month", label: "This month" },
+];
+
 // The dates the chosen period covers, as day keys (YYYY-MM-DD).
-function dateWindow(period, from, to) {
+function dateWindow(period) {
   if (period === "week") {
     return {
       start: moment().startOf("isoWeek").format("YYYY-MM-DD"),
@@ -48,7 +59,6 @@ function dateWindow(period, from, to) {
       end: moment().endOf("month").format("YYYY-MM-DD"),
     };
   }
-  if (period === "custom") return { start: from || "", end: to || "" };
   return { start: "", end: "" };
 }
 
@@ -59,8 +69,7 @@ export default function Journal() {
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [period, setPeriod] = useState("all");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [jumpMonth, setJumpMonth] = useState(null);
 
   // Newest first, by the date and time each entry was written, and never the
@@ -76,7 +85,7 @@ export default function Journal() {
   // What the filters ask for: the category, the word and the dates.
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    const window = dateWindow(period, from, to);
+    const window = dateWindow(period);
     return entries.filter((e) => {
       if (category !== "All" && normaliseCategory(e.category) !== category) return false;
       const day = e.date || "";
@@ -86,12 +95,12 @@ export default function Journal() {
       return [e.text, categoryMeta(normaliseCategory(e.category)).label, e.mood]
         .some((value) => (value || "").toLowerCase().includes(term));
     });
-  }, [entries, category, search, period, from, to]);
+  }, [entries, category, search, period]);
 
   // 20 entries at a time; a new word, category or period starts the list again
   // from the first page.
   const list = useProgressiveList(filtered, {
-    resetKey: `${category}|${search}|${period}|${from}|${to}`,
+    resetKey: `${category}|${search}|${period}`,
   });
   const groups = useMemo(() => groupByMonth(list.visible, (e) => e.date), [list.visible]);
   const months = useMemo(() => monthKeysOf(filtered, (e) => e.date), [filtered]);
@@ -110,21 +119,7 @@ export default function Journal() {
     setCategory("All");
     setSearch("");
     setPeriod("all");
-    setFrom("");
-    setTo("");
   };
-
-  // One line saying what is on screen: the entries this month, or the entries the
-  // chosen period covers.
-  const summary = useMemo(() => {
-    const count = filtered.length;
-    if (period === "week") return `${monthCountText(count, "entry")} this week`;
-    if (period === "month") return `${monthCountText(count, "entry")} this month`;
-    if (period === "custom") return `${monthCountText(count, "entry")} in the dates you chose`;
-    const monthStart = moment().startOf("month").format("YYYY-MM-DD");
-    const thisMonth = filtered.filter((e) => (e.date || "") >= monthStart).length;
-    return thisMonth > 0 ? `${monthCountText(thisMonth, "entry")} this month` : monthCountText(count, "entry");
-  }, [filtered, period]);
 
   const handleSave = async (entry) => {
     if (editingEntry) {
@@ -156,19 +151,37 @@ export default function Journal() {
     <PageContainer bottomInset="fab" disclaimer>
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Journal</h1>
-        <div className="flex items-center gap-2">
-          <MonthJumpButton months={months} onJump={setJumpMonth} />
-          <Link to="/settings" aria-label="Settings" className="w-11 h-11 -m-2.5 flex items-center justify-center rounded-full"><Settings size={22} className="text-gray-600 dark:text-gray-400" aria-hidden="true" /></Link>
+        <div className="flex items-center gap-1">
+          <HeaderIconButton label="Search entries" onClick={() => setSearchOpen(true)}>
+            <Search size={20} aria-hidden="true" />
+          </HeaderIconButton>
+          <MonthJumpButton
+            months={months}
+            onJump={setJumpMonth}
+            compact
+            title="Dates"
+            quickOptions={DATE_OPTIONS}
+            quickValue={period}
+            onQuick={setPeriod}
+          />
+          <Link to="/settings" aria-label="Settings" className={HEADER_ICON}>
+            <Settings size={20} className="text-gray-600 dark:text-gray-400" aria-hidden="true" />
+          </Link>
         </div>
       </div>
 
       <div className="w-full max-w-3xl mx-auto">
-        <JournalFilters
-          category={category} onCategory={setCategory}
-          search={search} onSearch={setSearch}
-          period={period} onPeriod={setPeriod}
-          from={from} to={to} onFrom={setFrom} onTo={setTo}
-        />
+        {/* The categories, or the search field in their place: one row either
+            way, so the list always starts at the same height. */}
+        {searchOpen ? (
+          <JournalSearchBar
+            value={search}
+            onChange={setSearch}
+            onClose={() => { setSearch(""); setSearchOpen(false); }}
+          />
+        ) : (
+          <JournalCategoryChips category={category} onCategory={setCategory} />
+        )}
 
         {entries.length === 0 ? (
           <div className="px-4 pt-4">
@@ -193,8 +206,6 @@ export default function Journal() {
           </div>
         ) : (
           <div className="px-4 pt-4">
-            <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{summary}</p>
-
             <MonthSectionList
               groups={groups}
               jumpTo={jumpMonth}

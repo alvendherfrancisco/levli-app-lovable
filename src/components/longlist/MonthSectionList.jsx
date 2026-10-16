@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { monthHeading } from "@/lib/monthGroups";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // A long list, told in months.
@@ -21,7 +22,7 @@ import { ChevronDown } from "lucide-react";
 
 const HEADER =
   "sticky z-20 flex w-full items-center justify-between gap-2 py-2 " +
-  "text-[13px] font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9A9DAE]";
+  "text-sm font-semibold text-gray-600 dark:text-[#9A9DAE]";
 
 const CARD =
   "bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden " +
@@ -30,6 +31,8 @@ const CARD =
 export default function MonthSectionList({
   groups,
   renderItem,
+  countSingular = "entry",
+  countPlural = "",
   stickyTopClass = "month-heading",
   headerBgClass = "bg-white dark:bg-gray-950",
   jumpTo = null,
@@ -61,7 +64,9 @@ export default function MonthSectionList({
               aria-expanded={!isFolded}
               className={`${HEADER} ${stickyTopClass} ${headerBgClass}`}
             >
-              <span>{group.heading}</span>
+              {/* The month's own name, and how much is inside it only once it
+                  is folded away — so an open month adds no numbers to read. */}
+              <span>{monthHeading(group.key, isFolded ? group.count : null, countSingular, countPlural)}</span>
               <ChevronDown
                 size={16}
                 aria-hidden="true"

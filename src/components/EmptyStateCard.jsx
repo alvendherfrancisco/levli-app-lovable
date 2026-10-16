@@ -15,7 +15,7 @@ export default function EmptyStateCard({ icon: Icon, title, description, classNa
         {Icon && <Icon size={32} className="opacity-30" aria-hidden="true" />}
       </div>
       <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">{title}</h3>
-      <p className="text-sm">{description}</p>
+      {description && <p className="text-sm">{description}</p>}
     </div>
   );
 }

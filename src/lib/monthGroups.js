@@ -22,26 +22,37 @@ export function monthNameOf(key) {
   return m.isValid() ? m.format("MMMM YYYY") : "";
 }
 
-/** "4 entries" / "1 entry" — the count in the list's own words. */
-export function monthCountText(count, singular = "entry", plural = `${singular}s`) {
-  return `${count} ${count === 1 ? singular : plural}`;
+/** "entry" → "entries", "shot" → "shots", "dose" → "doses". */
+function pluralOf(singular) {
+  if (/[^aeiou]y$/.test(singular)) return `${singular.slice(0, -1)}ies`;
+  if (/(s|x|ch|sh)$/.test(singular)) return `${singular}es`;
+  return `${singular}s`;
 }
 
-/** What a month's sticky header says: "October 2026 · 4 entries". */
-export function monthHeading(key, count, singular, plural) {
+/** "4 entries" / "1 entry" — the count in the list's own words, both ways. */
+export function monthCountText(count, singular = "entry", plural = "") {
+  return `${count} ${count === 1 ? singular : plural || pluralOf(singular)}`;
+}
+
+/**
+ * What a month's sticky header says. The month's own name alone — "October 2026"
+ * — and, only when it is asked for (a folded month), how much is inside it.
+ */
+export function monthHeading(key, count = null, singular = "entry", plural = "") {
   const name = monthNameOf(key);
   if (!name) return "";
+  if (count == null) return name;
   return `${name} · ${monthCountText(count, singular, plural)}`;
 }
 
 /**
  * The list in months, newest first:
- *   [{ key: "2026-10", heading: "October 2026 · 4 entries", count, items }]
+ *   [{ key: "2026-10", name: "October 2026", count, items }]
  *
  * `dateOf(item)` is what decides the month. Only what is inside `items` is
  * counted and shown, so a header always describes the rows under it.
  */
-export function groupByMonth(items, dateOf, { singular = "entry", plural } = {}) {
+export function groupByMonth(items, dateOf) {
   const groups = new Map();
 
   items.forEach((item) => {
@@ -55,7 +66,7 @@ export function groupByMonth(items, dateOf, { singular = "entry", plural } = {})
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
     .map(([key, rows]) => ({
       key,
-      heading: monthHeading(key, rows.length, singular, plural),
+      name: monthNameOf(key),
       count: rows.length,
       items: rows,
     }));

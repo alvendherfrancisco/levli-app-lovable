@@ -1,14 +1,19 @@
 import React, { useMemo, useState } from "react";
 import { CalendarDays } from "lucide-react";
+import HeaderIconButton from "@/components/longlist/HeaderIconButton";
 import { monthKeysBetween, monthNameOf } from "@/lib/monthGroups";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The calendar button a long list carries in its header.
 //
 // It opens the months the list actually holds — the year first, then that year's
-// months — and jumping to one asks the list to go there. A month the list has
-// nothing in is shown, but dimmed: the picker never promises an entry that is not
-// there.
+// months — and a month with entries in it is marked with a dot, so the picker
+// never promises a month the list has nothing in. Jumping to one asks the list to
+// go there.
+//
+// A list that also narrows by date (the Journal: this week, this month) passes
+// them as `quickOptions` and they sit at the top of the same sheet, so every date
+// choice is behind this one button instead of in a row on the screen.
 //
 // `months` is every month the list holds, newest first (see src/lib/monthGroups.js).
 // ─────────────────────────────────────────────────────────────────────────────
@@ -21,8 +26,14 @@ const MONTH_NAMES = [
 const CHIP =
   "btn-pill btn-pill-sm min-w-[4.5rem] justify-center border border-gray-200 bg-white text-gray-700 " +
   "dark:border-white/[0.12] dark:bg-white/[0.05] dark:text-[#E8E9F0]";
+const CHIP_ON =
+  "btn-pill btn-pill-sm min-w-[4.5rem] justify-center border-[1.5px] border-indigo-300 bg-indigo-50 text-indigo-700 " +
+  "dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300";
 
-export default function MonthJumpButton({ months = [], onJump, title = "Jump to month", className = "" }) {
+export default function MonthJumpButton({
+  months = [], onJump, title = "Jump to month", className = "",
+  compact = false, quickOptions = null, quickValue = null, onQuick = null,
+}) {
   const [open, setOpen] = useState(false);
 
   const available = useMemo(() => new Set(months), [months]);
@@ -45,16 +56,24 @@ export default function MonthJumpButton({ months = [], onJump, title = "Jump to 
 
   if (!months.length) return null;
 
+  const hasQuick = !!(quickOptions && quickOptions.length);
+
   return (
     <div className={className}>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label={title}
-        className="btn-pill btn-pill-sm btn-secondary"
-      >
-        <CalendarDays size={18} aria-hidden="true" />
-      </button>
+      {compact ? (
+        <HeaderIconButton label={title} onClick={() => setOpen(true)}>
+          <CalendarDays size={20} aria-hidden="true" />
+        </HeaderIconButton>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label={title}
+          className="btn-pill btn-pill-sm btn-secondary"
+        >
+          <CalendarDays size={18} aria-hidden="true" />
+        </button>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
@@ -65,10 +84,24 @@ export default function MonthJumpButton({ months = [], onJump, title = "Jump to 
           <div className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl bg-white dark:bg-gray-900 card-line sheet-lock animate-in slide-in-from-bottom max-h-[80vh] overflow-y-auto no-scrollbar pb-modal-footer">
             <div className="px-5 pt-5 pb-3">
               <h2 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h2>
-              <p className="text-xs text-gray-500 dark:text-[#9A9DAE] mt-0.5">
-                The months this list has entries in.
-              </p>
             </div>
+
+            {/* The quick dates this list offers, ahead of the months themselves. */}
+            {hasQuick && (
+              <div className="px-5 pb-4 flex flex-wrap gap-2">
+                {quickOptions.map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={() => { setOpen(false); onQuick?.(option.key); }}
+                    aria-pressed={option.key === quickValue}
+                    className={option.key === quickValue ? CHIP_ON : CHIP}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* The years the list covers, newest first. */}
             <div className="px-5 pb-3 flex gap-2 overflow-x-auto no-scrollbar">
@@ -108,7 +141,14 @@ export default function MonthJumpButton({ months = [], onJump, title = "Jump to 
                     }`}
                     aria-label={monthNameOf(key)}
                   >
-                    {name.slice(0, 3)}
+                    <span className="flex flex-col items-center leading-none">
+                      <span>{name.slice(0, 3)}</span>
+                      {/* A month with entries is marked, so a month is never picked blind. */}
+                      <span
+                        className={`mt-1 w-1 h-1 rounded-full ${has ? "bg-indigo-500 dark:bg-indigo-400" : "bg-transparent"}`}
+                        aria-hidden="true"
+                      />
+                    </span>
                   </button>
                 );
               })}
