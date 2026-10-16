@@ -30,10 +30,10 @@ const NINETY_DAYS = RANGES["90 Days"];
  *   card, the tabs below the header run the full card width so they line up with
  *   them, and the tip sits under the sites it is about.
  * · locked — the same panel, drawn from sample sites and held behind a light
- *   dimming blur, with one compact lock over it carrying the app's icon, what the
- *   feature is for and the way into the plans. The preview stays there to be seen
- *   for the rest of the session, and takes no tap and no scroll while it is
- *   locked.
+ *   dimming blur, with one soft scrim over it carrying the feature's own
+ *   illustration, a headline and the way into the plans. The preview stays there
+ *   to be seen for the rest of the session, and takes no tap and no scroll while
+ *   it is locked.
  *
  * Premium accounts and the caregiver read-only view never see the lock: the first
  * has nothing left to unlock, and the second reads the records it was shared on
@@ -71,6 +71,7 @@ export default function InjectionSiteCard() {
         compact
         icon={<IonIcon name="location" size={16} className="text-indigo-600 dark:text-indigo-400" />}
         title="Injection Site Rotation"
+        titleClass="text-[15px]"
         action={locked ? <PremiumBadge /> : null}
       />
 

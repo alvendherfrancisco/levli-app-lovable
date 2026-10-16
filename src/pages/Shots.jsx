@@ -215,9 +215,9 @@ export default function Shots() {
       {/* Where the shots were given, below the history it describes (moved here
           from Insights), with the page's own 16px gap above it rather than
           sitting against the last card — and the room under it that keeps its
-          last line, the rotation tip, clear of the floating button and the tab
-          bar on every device. */}
-      <div className="w-full max-w-3xl mx-auto mt-4 pb-16">
+          last line, the rotation tip, and the whole locked card above it, clear of
+          the floating button and the tab bar on every device. */}
+      <div className="w-full max-w-3xl mx-auto mt-4 pb-24">
         <InjectionSiteCard />
       </div>
 
