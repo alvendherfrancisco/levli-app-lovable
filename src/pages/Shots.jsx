@@ -99,17 +99,22 @@ export default function Shots() {
 
   return (
     <PageContainer bottomInset="fab" disclaimer>
-      {/* 16px at the sides, the page's one margin: the title starts on the same
-          line as the edge of every card below it. */}
-      <div className="sticky top-0 z-30 bg-white dark:bg-gray-950 w-full flex items-center justify-between px-4 pt-6 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{words.Many}</h1>
-        <div className="flex items-center gap-1">
-          <HeaderIconButton label="Report" onClick={() => navigate("/report")}>
-            <FileText size={HEADER_GLYPH} aria-hidden="true" />
-          </HeaderIconButton>
-          <Link to="/settings" aria-label="Settings" className={HEADER_ICON}>
-            <Settings size={HEADER_GLYPH} aria-hidden="true" />
-          </Link>
+      {/* 16px at the sides, the page's one margin: the title is seated inside the
+          same centred column as the cards below it, so it starts on the very line
+          their edges start on at every screen width. The bar itself stays full
+          width, so nothing shows at the sides of it while the page scrolls under
+          it, and it keeps the top padding the status-bar inset is added to. */}
+      <div className="sticky top-0 z-30 w-full bg-white pt-6 dark:bg-gray-950">
+        <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-4 pb-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{words.Many}</h1>
+          <div className="flex items-center gap-1">
+            <HeaderIconButton label="Report" onClick={() => navigate("/report")}>
+              <FileText size={HEADER_GLYPH} aria-hidden="true" />
+            </HeaderIconButton>
+            <Link to="/settings" aria-label="Settings" className={HEADER_ICON}>
+              <Settings size={HEADER_GLYPH} aria-hidden="true" />
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -209,8 +214,10 @@ export default function Shots() {
 
       {/* Where the shots were given, below the history it describes (moved here
           from Insights), with the page's own 16px gap above it rather than
-          sitting against the last card. */}
-      <div className="w-full max-w-3xl mx-auto mt-4 pb-8">
+          sitting against the last card — and the room under it that keeps its
+          last line, the rotation tip, clear of the floating button and the tab
+          bar on every device. */}
+      <div className="w-full max-w-3xl mx-auto mt-4 pb-16">
         <InjectionSiteCard />
       </div>
 
